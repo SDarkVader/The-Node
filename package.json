@@ -9,6 +9,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/sim/cli.ts",
+    "vacancy-sim": "tsx src/sim/vacancyCli.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },
