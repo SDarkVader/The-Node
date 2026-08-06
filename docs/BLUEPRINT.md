@@ -53,7 +53,7 @@ The Godot project (`client/`) is a **thin renderer** talking to it over WebSocke
 | Phase | Contents | Status |
 |---|---|---|
 | 1 | Economic core (Miller/Baker reaction engine) | **Built, tested.** One deviation from the brief's literal equations — see "Open deviations" below. |
-| 2 | Vacancy, churn, backstop system | Not started |
+| 2 | Vacancy, churn, backstop system | **Core built, tested** (§2.1-2.5: semi-Markov engine, hazard function, NPC-backstop state). Not integrated with the Phase 1 market yet (a BACKSTOPPED Baker doesn't yet participate in pricing) — see "Open deviations." §2.6 (Shift Cover) not started — needs a player-session concept that doesn't exist in this headless engine yet. |
 | 3 | Communication layer (Wall, Envelopes, rumour mill) | **MVP slice built, tested** — grammar-constrained Wall/Envelope + rumour mill. No moderation pipeline (that's Phase 5), no persistence. |
 | 4 | Identity, camera, ambient visual system | Not started — a scaffold client exists (`client/`) that proves the network wire-up with a plain-text UI, not real Phase 4 rendering. Godot locked in as the engine (see above). |
 | 5 | Voice & safety architecture | Not started |
@@ -68,6 +68,9 @@ src/engine/     Pure market simulation functions. No I/O, no randomness source o
   bakers.ts     Bertrand price layer (§1.3), fed by flour price.
   market.ts     Chains the two into one tick (§1.1); owns MarketState/MarketConfig shape.
   util.ts       clip/mean/spread helpers.
+  vacancy.ts    Phase 2 vacancy semi-Markov process (§2.1-2.3): FILLED/VACANT/BACKSTOPPED
+                state machine, fillHazard() (§2.2), stepSlot() for one day's transition.
+                Not yet wired into market.ts — see "Open deviations."
 
 src/sim/        Everything that needs randomness or orchestrates the engine over time.
   rng.ts        Seeded PRNG (mulberry32) + gaussian sampler. All simulation randomness
@@ -76,6 +79,11 @@ src/sim/        Everything that needs randomness or orchestrates the engine over
                 derived spread series. tailAverage() — steady-state metric after burn-in.
   sweep.ts      sweepStability() — grid-sweeps headcounts/gamma, returns stability points.
   cli.ts        `npm run sim` entry point; prints a sweep table to stdout.
+  vacancyHarness.ts  runVacancySim() — runs R role-slots through the vacancy process for
+                N days, returns fill/backstop counts, vacant vs. backstopped slot-days
+                (tracked separately, see "Phase 2" below), gap distribution.
+  vacancyCli.ts `npm run vacancy-sim` entry point; prints the same sweep table used to
+                verify (or in this case, not verify) §2.4's targets.
 
 src/comms/      Phase 3 slice — communication layer, no I/O of its own.
   grammar.ts    Wall posts + Envelopes, both built from one curated SelfState template
@@ -116,7 +124,9 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 2nd/3rd-person and non-present-tense). rumourMill.test.ts checks
                 propagation, decay, distortion-sometimes-not-always, and hop caps.
                 decay.test.ts tests stepClarity/applyDistortion directly, independent of
-                the rumour mill.
+                the rumour mill. vacancy.regression.test.ts encodes what's genuinely
+                verified about the Phase 2 engine — NOT the brief's §2.4 numeric targets,
+                see "Open deviations."
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
                 DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
@@ -215,6 +225,71 @@ discarded as burn-in before averaging. If you change the noise model, the reacti
 equations, or the burn-in/day count, re-verify these hold — they're checked automatically
 by `npm test` either way.
 
+## Phase 2 — Vacancy, Churn & the Backstop System
+
+### Data flow
+
+```
+VacancyParams (N, R, pDaily, beta, tPain, vBoost, tFlag, tHard)
+        |
+        v  (each day, per role-slot)
+stepSlot(slot, day, params, rng):
+  FILLED      -> roll pDaily -> VACANT (churn)
+  VACANT      -> tau >= tHard?        -> BACKSTOPPED (backstop fires)
+              -> else roll fillHazard(tau) -> FILLED (voluntary fill)
+  BACKSTOPPED -> roll ambient hazard (see below) -> FILLED (voluntary fill, fromBackstopped)
+        |
+        v
+  new RoleSlot + optional VacancyEvent
+```
+
+Three states, not two — the brief's own notation table (§1) lists FILLED, VACANT,
+BACKSTOPPED, even though §2.1's shorthand diagram collapses the hard-backstop transition
+into "FILLED" for brevity. BACKSTOPPED is real and distinct: an NPC-run slot (§2.5), not
+a synonym for player-filled.
+
+### Key equations (as implemented, matches brief §2.2/§2.3 verbatim except where noted)
+
+- `p_d = 1 - (1 - p_m)^(1/30)` — daily churn from monthly. `[DERIVED]`
+- `p_c(τ) = β · (0.2 + 0.8 · min(τ/T_pain, 1)) · V(τ)` where `V(τ) = 1` if `τ < t_flag`, else `v_boost`.
+- `λ_fill(τ) = 1 - (1 - p_c(τ))^(N - R)` — §2.2, matches the brief verbatim.
+- Defaults: `beta=0.0008, tPain=14, vBoost=3.0, tFlag=3, tHard=14` — all `[CALIBRATED — provisional]` per the brief.
+
+### The gap the brief leaves open: BACKSTOPPED -> FILLED
+
+The brief's §2.4 findings describe the pre-backstop VACANT phase only — there's no
+specified rate for a real player later displacing the NPC and returning a BACKSTOPPED
+slot to FILLED. Left unmodeled, every slot would eventually ratchet into BACKSTOPPED
+permanently over a long run, which can't be right — it would contradict "starved
+fraction stays near 1-2% of the year" ever being a stable figure rather than one that
+monotonically grows toward 100%.
+
+Implemented as an ambient, non-escalating hazard: `fillHazard()` frozen at `τ=t_hard`
+(the pressure-plateau value), applied every day a slot is BACKSTOPPED. Matches the
+brief's own 49-51 framing — pressure "bites but doesn't compound" past the backstop.
+This is an interpretive gap-fill, not a brief-specified number; a different (and
+possibly better-justified) choice could change the aggregate numbers below.
+
+### Verified findings (regression-tested in `test/vacancy.regression.test.ts`)
+
+Unlike Phase 1, these do **not** include the brief's §2.4 numeric targets — see "Open
+deviations" below for why. What's genuinely verified about this implementation:
+
+1. No vacancy gap ever exceeds `t_hard` (14 days) — a structural guarantee, not just an
+   empirical tendency.
+2. Both voluntary fills and backstop fires actually occur over a long run at
+   `N=50, R=3, p_m=0.20` — neither mechanism is accidentally disabled.
+3. The VACANT fraction reaches a stable steady state (first-half vs. second-half of a
+   20-year run differ by less than 3 percentage points) rather than drifting toward 0%
+   or 100% — matches "permanently tilted, never collapsing."
+4. The voluntary:backstop ratio increases with `N` (50 -> 80), matching the brief's
+   claimed *direction* even though not its exact magnitude.
+5. BACKSTOPPED is a real, measurably-occupied state, distinct from VACANT.
+
+Methodology: 5 seeds x 20 years (`R=3` role-slots each), summed for statistical power —
+a single year with only 3 slots produces ~11 events, far too noisy to judge against;
+250+ slot-years of data is what the numbers above are actually based on.
+
 ## Phase 3 slice — Communication Layer
 
 ### Grammar constraint (§3.1)
@@ -283,6 +358,43 @@ Everywhere else the brief left a genuine gap (noise magnitude in Phase 1, rumour
 parameter values in Phase 3, since §3.2 says the mill isn't fully specified), the gap was
 filled with a `[CALIBRATED — provisional]` value in the same style as the brief's own
 provisional constants, not treated as a silent design decision.
+
+**Phase 2's §2.4 targets don't reproduce under a faithful implementation (2026-08-06) —
+flagged, not silently forced.** The brief claims the literal §2.2/§2.3 equations at
+`beta=0.0008, T_pain=14, v_boost=3.0` produce a voluntary:backstop ratio of ~1.2:1 at
+N=50 rising to ~2.8:1 at N=80, and a starved fraction near 1-2% of the year. A faithful
+implementation of those exact equations and constants (`src/engine/vacancy.ts`),
+verified with 250+ slot-years of simulated data (not a small noisy sample — an earlier
+1-year/3-slot check gave a wildly different-looking result that turned out to just be
+insufficient sample size, corrected before drawing any conclusion), instead converges to
+ratio≈2.5 at N=50 rising to ≈4.2 at N=80, and a starved (VACANT-only) fraction of
+6-7% — both off by roughly 3-5x from the brief's stated targets, though the *direction*
+of the N-dependence matches.
+
+Checked whether this was a tunable-constant problem before concluding it wasn't: swept
+`beta` from 0.0008 to 0.01 at N=50. Starved fraction does fall toward the 1-2% target as
+beta increases, but the ratio explodes past it in the same sweep — from 2.5:1 at
+beta=0.0008 to 783:1 at beta=0.01. No single beta value hits both targets simultaneously;
+they move in the same direction but at very different rates. That rules out "just retune
+the calibrated constant" as a fix — the discrepancy is structural, not a tuning miss.
+
+Two candidate explanations, neither confirmed: (a) the interpretive gap-fill for
+BACKSTOPPED -> FILLED recovery (see the Phase 2 section above) may not match whatever the
+brief's own original simulation used, since the brief doesn't specify that transition at
+all; (b) "starved fraction" may have been defined differently in the brief's own
+methodology than either of the two definitions tried here (VACANT-only vs.
+VACANT+BACKSTOPPED — both checked, neither reconciles both targets). Not resolved — flag
+rather than silently pick a definition or invent a fix that isn't verified. Also found and
+fixed a real bug in the process: `gapDays` was originally double-counting a
+BACKSTOPPED-recovery episode's full elapsed time on top of the gap already recorded when
+the backstop first fired, producing gap values that impossibly exceeded `t_hard` (17 days
+seen, against a 14-day hard cap by construction) — fixed before the finding above was
+trusted.
+
+`test/vacancy.regression.test.ts` encodes what's genuinely verified (structural
+guarantees and the qualitative N-dependence trend) rather than the exact numeric targets,
+consistent with the brief's own §1.4/§2.4 framing that these figures are hypotheses to be
+checked against a real implementation, not assumed to hold.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
