@@ -6,6 +6,25 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-06 — Private diary designed collaboratively, refining "private per-player maps"
+
+Extended back-and-forth design conversation (not implementation) working out a concrete
+mechanic for the addendum's "private per-player maps" idea, which had been left vague
+("tags, suspicion markers, trust notes"). Landed on a specific, coherent shape — full
+writeup in `docs/DESIGN_ADDENDUM_2026-08-06.md`'s new "Refinement — the private diary"
+subsection, not duplicated here. Short version: composed (not free-typed) entries from
+SUBJECT/OBSERVATION/READING/CONTEXT slots, unprompted-only creation, rolling per-entry
+silent expiry (~30 days, illustrative) instead of permanent accumulation. Reframed the
+diary's purpose along the way — not a persistent dossier, a bounded private space to
+process a feeling in the game's own vocabulary, with the player's own memory expected to
+outlast the system record.
+
+Worth noting for how this kind of session should go: this stayed pure design
+conversation until explicitly asked to write it down ("keep developing it out loud"),
+rather than getting formalized into docs prematurely. Nothing built, no code touched.
+
+---
+
 ## 2026-08-06 — Design addendum review: exit-ticket gamble stake-direction bug found
 
 **Context.** User provided a design addendum (`docs/DESIGN_ADDENDUM_2026-08-06.md`) and a
