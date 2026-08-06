@@ -22,9 +22,10 @@ divergence between shards as the default (not a risk), ruin/rejuvenation falling
 the existing vacancy backstop mechanic pushed to its limit (no new system needed), and
 five standing design constraints now also in `CLAUDE.md` (simulate before trusting, no
 permanent zero-state at any scale, minimize what's modelable, nothing gets recorded ever,
-let outcomes be real). Has one open tension with the diary refinement above — see that
-document's inline note. Read both before Phase 2/4/5 work starts, and before any
-ecosystem/multi-shard work of any kind.
+let outcomes be real). Its private-per-player-maps section originally conflicted with the
+diary refinement above (accumulating vs. bounded); resolved — the diary's bounded model
+is authoritative at every scale, see that document's inline note. Read both before
+Phase 2/4/5 work starts, and before any ecosystem/multi-shard work of any kind.
 
 ## Design intent (from the brief, §0 — do not drift from this)
 
@@ -83,9 +84,15 @@ src/comms/      Phase 3 slice — communication layer, no I/O of its own.
                 mechanism, not a layer in front of one.
   connections.ts  Per-edge connection graph (§4.3's "no persistent global graph" model,
                 borrowed here since the rumour mill needs the same shape rendering will).
+  decay.ts      Generic "signal fidelity decays with distance" primitive (stepClarity +
+                applyDistortion), extracted from rumourMill.ts so future distance-based
+                propagation (proximity conversation, shard-graph distance) can reuse it
+                instead of reimplementing decay/distortion. NOT used by the diary — that's
+                a deliberately different mechanic (hard TTL expiry, no gradual fade).
   rumourMill.ts Propagates a Wall post outward from its author via BFS over the
-                connection graph: decays in clarity per hop, sometimes distorts into a
-                semantically-adjacent self-state (§3.2). All knobs in one config object.
+                connection graph, using decay.ts's primitives: decays in clarity per hop,
+                sometimes distorts into a semantically-adjacent self-state (§3.2). All
+                knobs in one config object.
 
 src/mvp/        §8's "two Bakers plus a working rumour mill" scenario.
   scenario.ts   Reusable simulation step (initScenario/stepScenario) — real Phase 1
@@ -108,8 +115,11 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 grammar.test.ts checks the template table structurally (regexes for
                 2nd/3rd-person and non-present-tense). rumourMill.test.ts checks
                 propagation, decay, distortion-sometimes-not-always, and hop caps.
+                decay.test.ts tests stepClarity/applyDistortion directly, independent of
+                the rumour mill.
 
-docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf.
+docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
+                DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
 ```
 
 ## Client/server scaffold
