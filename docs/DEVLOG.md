@@ -6,6 +6,51 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-06 — Unified decay primitive extracted; two open items resolved
+
+User resolved both items left open at the end of the previous entry.
+
+**1. Private per-player maps vs. the diary — resolved, diary wins.** User: "this
+document was unaware, keep our diary." Updated
+`docs/ECOSYSTEM_VISION_2026-08-06.md`'s private-per-player-maps section: removed the
+"accumulating impressions" framing, made explicit that the diary's bounded ~30-day
+rolling expiry is authoritative at every scale, and that there's no separate
+longer-lived "shard impression" system record above it — whatever a player carries about
+a shard beyond a still-live diary entry is their own untracked human memory, not
+something the system stores. `BLUEPRINT.md`'s pointer updated to match (was "open
+tension," now "resolved").
+
+**2. Unified decay/distortion model — built, verified nothing broke.** User: "feel free
+to build a unified model if again, nothing breaks." Only the rumour mill is actually
+implemented in code (proximity conversation and shard-graph propagation are still
+design-only), so this concretely meant: extract the rumour mill's decay/distortion math
+into a generic, reusable primitive those can plug into later, without changing anything
+about how the rumour mill currently behaves.
+
+Added `src/comms/decay.ts` (`stepClarity`, `applyDistortion`) and refactored
+`src/comms/rumourMill.ts` to call it internally. Deliberately kept `RumourMillConfig`'s
+field names (`baseSpreadChance`, `decayPerHop`, ...) completely unchanged — the new
+primitive's own config shape is mapped at the call site — so zero callers or tests needed
+to change, the lowest-risk version of this refactor. Preserved the exact rng() call
+order (one call for the pass/fail roll, then conditionally one or two more for
+distortion) since the existing tests are seeded and would produce different specific
+values under a different call sequence even with equivalent logic.
+
+Verified, not assumed: full suite before (24 tests) vs. after (30 tests: 24 unchanged +
+6 new `decay.test.ts` tests exercising the primitive directly) — all passing, `tsc
+--noEmit` clean, and reran `npm run mvp` to confirm byte-identical day-by-day output to
+before the refactor (same posts, same hops, same distortions, same clarity values).
+
+**Correction to the previous entry, caught on this pass:** that entry's second bullet
+said the decay-with-distance pattern was independently reinvented "the fourth time,"
+counting the diary as a member. That was wrong — the diary uses hard silent TTL expiry,
+not gradual decay, which the user chose explicitly over the fade/blur alternative
+offered earlier. It's the third reinvention (rumour mill, proximity conversation,
+shard-graph distance), not the fourth. Corrected inline in that entry rather than
+silently rewritten.
+
+---
+
 ## 2026-08-06 — Ecosystem Vision reviewed, standing constraints added to CLAUDE.md
 
 User provided `ECOSYSTEM_VISION_2026-08-06.pdf` — a one-level-up companion to
@@ -17,12 +62,16 @@ Genuine findings from reviewing it, not just filing it:
 - The doc's "shards relate to each other the way players relate within a shard" claim
   isn't just a metaphor — `src/comms/connections.ts`'s `ConnectionGraph` already models
   exactly that shape and is directly reusable one level up when ecosystem work starts.
-- The "information degrades with graph distance" idea is the fourth independent
+- The "information degrades with graph distance" idea is the third independent
   reinvention of the same primitive this session: rumour mill (social hops), proximity
-  conversation (physical distance), the private diary (time), now this (shard-graph
-  distance). Worth building one shared decay/distortion utility, parameterized by
-  distance metric, rather than four separate implementations later — noted for whenever
-  any of this gets built.
+  conversation (physical distance), now this (shard-graph distance). Worth building one
+  shared decay/distortion utility, parameterized by distance metric, rather than three
+  separate implementations later — noted for whenever any of this gets built.
+  ***Correction, later same session:*** this bullet originally said "fourth" and included
+  the private diary as a member of this family. That was wrong — the diary explicitly uses
+  hard silent TTL expiry, not gradual decay/distortion (the user chose that directly over
+  the fade option offered). Caught on a later pass; see this date's later entry, where the
+  primitive was actually extracted from `rumourMill.ts` into `src/comms/decay.ts`.
 - Flagged one real tension rather than silently picking a side: the vision doc's private
   per-player maps section describes "accumulating" impressions, but the diary refinement
   added to the addendum earlier today gives person-level entries a bounded ~30-day
