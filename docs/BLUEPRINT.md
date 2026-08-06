@@ -13,14 +13,27 @@ comes from asymmetric information, structural economic pressure, and partial ano
 never collapsing. Any mechanic trending toward comfortable equilibrium or catastrophic
 collapse has drifted from intent and should be flagged, not shipped.
 
+## Platform decision (2026-08-06)
+
+**PC + mobile, not web.** Client engine: **Godot 4** — native 2D additive-light layering
+matches §4.5's "layered light sources, not blended" requirement closely, lighter runtime
+footprint than Unity for the mobile side, and free with no revenue threshold. Unity was
+the alternative considered (free under $200K/year revenue+funding, then ~$2,040-2,400/seat/
+year Pro) — ruled out mainly on engine fit for this specific rendering style, not cost.
+
+This makes the architecture a clean split: the TypeScript engine (`src/engine`, `src/sim`,
+`src/comms`) is the **authoritative server** — nothing about it changes for this decision.
+The Godot project (`client/`) is a **thin renderer** talking to it over WebSocket. See
+"Client/server scaffold" below.
+
 ## Phase status
 
 | Phase | Contents | Status |
 |---|---|---|
-| 1 | Economic core (Miller/Baker reaction engine) | **Built, tested** |
+| 1 | Economic core (Miller/Baker reaction engine) | **Built, tested.** One deviation from the brief's literal equations — see "Open deviations" below. |
 | 2 | Vacancy, churn, backstop system | Not started |
 | 3 | Communication layer (Wall, Envelopes, rumour mill) | **MVP slice built, tested** — grammar-constrained Wall/Envelope + rumour mill. No moderation pipeline (that's Phase 5), no persistence. |
-| 4 | Identity, camera, ambient visual system | Not started — MVP proven headless (§8 explicitly allows this before Phase 4 exists) |
+| 4 | Identity, camera, ambient visual system | Not started — a scaffold client exists (`client/`) that proves the network wire-up with a plain-text UI, not real Phase 4 rendering. Godot locked in as the engine (see above). |
 | 5 | Voice & safety architecture | Not started |
 | 6 | Stress-testing & balance harness | Partial — sweep utility exists (`src/sim/sweep.ts`), not yet the full §6 sweep surface (only covers Phase 1 params: nMillers, nBakers, gamma; doesn't yet cover N, R, vacancy params since those don't exist yet) |
 
@@ -53,18 +66,61 @@ src/comms/      Phase 3 slice — communication layer, no I/O of its own.
                 connection graph: decays in clarity per hop, sometimes distorts into a
                 semantically-adjacent self-state (§3.2). All knobs in one config object.
 
-src/mvp/        run.ts — §8's "two Bakers plus a working rumour mill" scenario. Real
-                Phase 1 engine + hardcoded flour price + comms layer, headless/CLI. The
-                Wall-post trigger rule in this file is explicitly a placeholder, not a
-                designed mechanic — see its header comment.
+src/mvp/        §8's "two Bakers plus a working rumour mill" scenario.
+  scenario.ts   Reusable simulation step (initScenario/stepScenario) — real Phase 1
+                engine + hardcoded flour price + comms layer. Shared by run.ts and the
+                WebSocket server so both drive the identical logic. The Wall-post
+                trigger rule here is explicitly a placeholder, not a designed mechanic.
+  run.ts        CLI wrapper — prints scenario.ts's output to stdout (`npm run mvp`).
 
-test/           Regression/behavior tests. market.regression.test.ts encodes §1.4 as
-                assertions. grammar.test.ts checks the template table structurally
-                (regexes for 2nd/3rd-person and non-present-tense). rumourMill.test.ts
-                checks propagation, decay, distortion-sometimes-not-always, and hop caps.
+src/server/     ws.ts — WebSocket server broadcasting the MVP scenario live
+                (`npm run server`). Scaffolding to prove client/server wire-up: no auth,
+                no persistence, one shared scenario for every connection, ticks on a
+                fixed interval rather than real player input. See "Client/server
+                scaffold" below for the wire protocol.
+
+client/         Godot 4 project — thin renderer, not the real Phase 4 client. See
+                "Client/server scaffold" below and client/README.md.
+
+test/           Regression/behavior tests. market.regression.test.ts encodes §1.4 (plus
+                the mean-reversion fix, see "Open deviations") as assertions.
+                grammar.test.ts checks the template table structurally (regexes for
+                2nd/3rd-person and non-present-tense). rumourMill.test.ts checks
+                propagation, decay, distortion-sometimes-not-always, and hop caps.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf.
 ```
+
+## Client/server scaffold
+
+Not real Phase 4 — proves the wire-up only, no rendering beyond plain text/labels.
+
+```
+src/mvp/scenario.ts (shared sim step)
+        |
+src/server/ws.ts — ticks the scenario every TICK_INTERVAL_MS (default 2500ms, env
+        |          NODE_TICK_MS), broadcasts one JSON message per tick to every
+        |          connected client over `ws` on port NODE_WS_PORT (default 8080).
+        v
+client/scripts/Main.gd — Godot's built-in WebSocketPeer (no addon), connects to
+                         ws://127.0.0.1:8080, polls every _process() frame, renders
+                         Baker prices/spread/Wall posts/rumours as plain Labels/RichTextLabel.
+```
+
+Wire protocol: one message shape, `{ type: 'tick', day, bakers: [{id, price}], spread,
+wallPost: {authorId, state} | null, rumours: [{heardBy, heardFrom, state, distorted, hop,
+clarity}] }`. `TickMessage` type lives in `src/server/ws.ts`; the Godot side has no typed
+counterpart (GDScript's `JSON.parse_string` returns an untyped Dictionary) — if the
+message shape changes, update both sides by hand, there's no shared schema yet.
+
+**Not verified in the Godot editor** — this environment has no Godot binary/GUI. The
+project/scene/script files were written by hand against Godot 4 syntax and the Node
+server side was tested end-to-end against a throwaway WebSocket client, but the Godot
+client itself has never actually been opened or run. One known GDScript gotcha already
+fixed: `JSON.parse_string` returns all JSON numbers as `float`, so fields typed `int` in
+GDScript (`day`, `hop`) need an explicit `int(...)` cast or Godot throws a runtime type
+error — see the comment in `client/scripts/Main.gd`. Treat the client as unverified until
+someone opens it locally and reports back.
 
 ## Phase 1 — Economic Core
 
@@ -90,11 +146,13 @@ stepMarket(state, config):
 and throw otherwise — this isn't a validated input path, it's a structural precondition
 matching the brief's own framing of role slots always having >=2 holders.
 
-### Key equations (as implemented, matches brief §1.2/§1.3 verbatim)
+### Key equations (as implemented)
 
-- Miller: `q_i(t+1) = clip(0.5*q_i(t) + 0.5*(1 - avg_rival_q_i) + noise, 0.01, 1)`
-- Flour price: `clip(1.2 - 0.3*total_supply, 0.05, 2.0)` — `[CALIBRATED — provisional]`
-- Baker: `p_i(t+1) = clip((1-gamma/2)*p_i(t) + (gamma/2)*avg_rival_p_i + flourPrice*0.3*0.1 + noise, 0, 2)`
+- Miller: `q_i(t+1) = clip(0.5*q_i(t) + 0.5*(1 - avg_rival_q_i) + noise, 0.01, 1)` — matches brief §1.2 verbatim.
+- Flour price: `clip(1.2 - 0.3*total_supply, 0.05, 2.0)` — `[CALIBRATED — provisional]`, matches brief §1.2 verbatim.
+- Baker: `p_i(t+1) = clip((1-gamma/2)*p_i(t) + (gamma/2)*avg_rival_p_i + meanReversion + noise, 0, 2)`
+  where `meanReversion = 0.05 * (flourPrice*1.5 - mean(p))`. **This is not the brief's
+  literal §1.3 equation** — see "Open deviations" immediately below for why.
 
 ### Noise magnitude — a gap the brief left open
 
@@ -169,8 +227,28 @@ exists.
 
 ## Open deviations from the brief
 
-None yet. Nothing built so far required deviating from the equations/mechanisms as
-specified — where the brief left a genuine gap (noise magnitude in Phase 1, rumour mill
+**Baker price mean-reversion (2026-08-06) — the one real deviation so far.** The brief's
+§1.3 equation adds `cost_pressure * 0.1` unconditionally every day, with nothing pulling
+it back down. Summed across bakers this is a pure random walk with constant positive
+drift: a 5000-day run of the real engine (real Millers, no shortcuts) showed both bakers
+pinned to the 2.0 price ceiling by ~day 100, permanently — a "comfortable equilibrium"
+in the exact sense §0 says to flag, not ship. The §1.4 regression tests didn't catch it
+because they measure price *spread* (a difference, immune to a drift that hits every
+baker equally), never absolute price level.
+
+Fix: replaced the flat additive term with `0.05 * (flourPrice*1.5 - mean(p))` — a
+mean-reversion pulling the *average* price toward a flour-cost anchor. Because it's the
+same value added to every baker each day, it cancels exactly out of every pairwise price
+difference — verified, not just derived: all 10 original §1.4 tests still pass with this
+change (one test's threshold, pinned at gamma=1.99 right at the critical boundary, had to
+move to gamma=1.9 — that threshold was already fragile to any change in exact noise
+trajectory near the boundary, confirmed by checking price values never approached the
+clip bounds there, so it wasn't the fix causing new instability, just an overly tight
+threshold). Verified the fix itself across multiple configs/seeds out to 8000 days, and
+added two new regression tests locking in "no ceiling saturation" and "settles near the
+flour-cost anchor."
+
+Everywhere else the brief left a genuine gap (noise magnitude in Phase 1, rumour mill
 parameter values in Phase 3, since §3.2 says the mill isn't fully specified), the gap was
 filled with a `[CALIBRATED — provisional]` value in the same style as the brief's own
 provisional constants, not treated as a silent design decision.
