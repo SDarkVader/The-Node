@@ -5,6 +5,16 @@ whenever architecture changes, a brief §7 open question gets resolved, or a mec
 deviates from `NODE_Build_Brief_v1.pdf`. Aspirational/not-yet-built work belongs in
 `HANDOVER.md`'s "what's next," not here.
 
+**New design material, not yet built:** `docs/DESIGN_ADDENDUM_2026-08-06.md` — vacancy
+backstop rationale (matches what's already built, no change needed), the shard exit
+ticket + Oracle system, private per-player maps (a real departure from fog-of-recognition
+as scoped for Phase 4), an atmosphere principle for Phase 4 visual work, proximity
+conversation (a no-microphone, template-composed alternative to live voice — meaningfully
+reshapes Phase 5's scope), and multi-shard passport tiers. Read before Phase 2/4/5 work
+starts. One open item needs a decision before it's locked: the exit-ticket gamble's
+staking formula has a verified stake-direction bug — see the addendum's top note and
+`docs/DEVLOG.md`'s entry for 2026-08-06.
+
 ## Design intent (from the brief, §0 — do not drift from this)
 
 Persistent multiplayer social-economic game, ~50–80 players per node. No combat — tension
