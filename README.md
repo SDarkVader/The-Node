@@ -5,6 +5,14 @@ A world where human interaction, relationships, disputes and conflict resolution
 
 Full build spec: [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pdf). Build order and design intent (§0) are load-bearing — read that before touching any phase past what's built here.
 
+## Documentation
+
+This section is the current-state snapshot; for detail see:
+
+- [`docs/HANDOVER.md`](docs/HANDOVER.md) — start here, fast orientation for picking up work.
+- [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) — system architecture as actually implemented.
+- [`docs/DEVLOG.md`](docs/DEVLOG.md) — chronological build log, including failures and dead ends.
+
 ## Status
 
 **Phase 1 — Economic Core** (Miller/Baker reaction engine, §1) is implemented and tested, headless, per the brief's build order. Nothing player-facing exists yet.
