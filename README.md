@@ -15,17 +15,20 @@ This section is the current-state snapshot; for detail see:
 
 ## Status
 
-**Phase 1 — Economic Core** (Miller/Baker reaction engine, §1) is implemented and tested, headless, per the brief's build order. Nothing player-facing exists yet.
+**Phase 1 (Economic Core) is built and tested. The §8 MVP mechanic — two Bakers plus a working rumour mill — is also built and tested.** Everything still runs headless (CLI + tests only) — no server, client, or persistence yet.
 
 - `src/engine/` — the chained Cournot (Miller) → Bertrand (Baker) market, pure functions, no I/O.
 - `src/sim/` — deterministic seeded harness + parameter sweeps (`npm run sim` prints a stability-curve table).
-- `test/market.regression.test.ts` — encodes the §1.4 validated findings (γ=2 boundary, the n=2 instability cliff, Miller-vs-Baker headcount effects) as regression tests, per the brief's own instruction to preserve these across refactors.
+- `src/comms/` — grammar-constrained Wall/Envelopes (§3.1) + rumour mill (§3.2).
+- `src/mvp/run.ts` — the §8 scenario: two Bakers on the real engine, hardcoded flour price, price shocks trigger Wall posts that propagate through connected players (`npm run mvp`).
+- `test/` — 21 tests: Phase 1's §1.4 regression findings, the grammar template table's structural constraints, and rumour mill propagation/decay/distortion behavior.
 
 ```
 npm install
-npm test        # regression tests
-npm run sim      # prints a stability-curve sweep to stdout
+npm test         # 21 tests
+npm run sim      # Phase 1 stability-curve sweep to stdout
+npm run mvp      # two-Baker + rumour-mill scenario, day-by-day output
 npm run typecheck
 ```
 
-Not yet built: Phase 2 (vacancy/churn/backstop), Phase 3 (Wall/Envelopes/rumour mill), Phase 4 (camera/identity/ambient visuals), Phase 5 (voice/safety), Phase 6 (full stress-test harness). Per §8, the next milestone is the two-Baker + rumour-mill MVP, which needs a slice of Phase 3 and Phase 4 on top of what's here.
+Not yet built: Phase 2 (vacancy/churn/backstop), Phase 4 (camera/identity/ambient visuals — rendering entirely, not just the isometric parts), Phase 5 (voice/safety), Phase 6 (full stress-test harness beyond Phase 1's sweep). The next real decision is what the playable surface is (client/hosting/persistence) — see `docs/HANDOVER.md`.

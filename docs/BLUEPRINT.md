@@ -19,8 +19,8 @@ collapse has drifted from intent and should be flagged, not shipped.
 |---|---|---|
 | 1 | Economic core (Miller/Baker reaction engine) | **Built, tested** |
 | 2 | Vacancy, churn, backstop system | Not started |
-| 3 | Communication layer (Wall, Envelopes, rumour mill) | Not started |
-| 4 | Identity, camera, ambient visual system | Not started |
+| 3 | Communication layer (Wall, Envelopes, rumour mill) | **MVP slice built, tested** — grammar-constrained Wall/Envelope + rumour mill. No moderation pipeline (that's Phase 5), no persistence. |
+| 4 | Identity, camera, ambient visual system | Not started — MVP proven headless (§8 explicitly allows this before Phase 4 exists) |
 | 5 | Voice & safety architecture | Not started |
 | 6 | Stress-testing & balance harness | Partial — sweep utility exists (`src/sim/sweep.ts`), not yet the full §6 sweep surface (only covers Phase 1 params: nMillers, nBakers, gamma; doesn't yet cover N, R, vacancy params since those don't exist yet) |
 
@@ -42,8 +42,26 @@ src/sim/        Everything that needs randomness or orchestrates the engine over
   sweep.ts      sweepStability() — grid-sweeps headcounts/gamma, returns stability points.
   cli.ts        `npm run sim` entry point; prints a sweep table to stdout.
 
-test/           Regression tests. market.regression.test.ts encodes the brief's §1.4
-                findings as assertions (see below) — these are "hard truth," not tunable.
+src/comms/      Phase 3 slice — communication layer, no I/O of its own.
+  grammar.ts    Wall posts + Envelopes, both built from one curated SelfState template
+                table (§3.1). Validity enforced at the function boundary — throws on
+                anything outside the template set. This IS the harassment-prevention
+                mechanism, not a layer in front of one.
+  connections.ts  Per-edge connection graph (§4.3's "no persistent global graph" model,
+                borrowed here since the rumour mill needs the same shape rendering will).
+  rumourMill.ts Propagates a Wall post outward from its author via BFS over the
+                connection graph: decays in clarity per hop, sometimes distorts into a
+                semantically-adjacent self-state (§3.2). All knobs in one config object.
+
+src/mvp/        run.ts — §8's "two Bakers plus a working rumour mill" scenario. Real
+                Phase 1 engine + hardcoded flour price + comms layer, headless/CLI. The
+                Wall-post trigger rule in this file is explicitly a placeholder, not a
+                designed mechanic — see its header comment.
+
+test/           Regression/behavior tests. market.regression.test.ts encodes §1.4 as
+                assertions. grammar.test.ts checks the template table structurally
+                (regexes for 2nd/3rd-person and non-present-tense). rumourMill.test.ts
+                checks propagation, decay, distortion-sometimes-not-always, and hop caps.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf.
 ```
@@ -108,9 +126,54 @@ discarded as burn-in before averaging. If you change the noise model, the reacti
 equations, or the burn-in/day count, re-verify these hold — they're checked automatically
 by `npm test` either way.
 
+## Phase 3 slice — Communication Layer
+
+### Grammar constraint (§3.1)
+
+Both channels (`WallPost`, `Envelope`) are built from one `Record<SelfState, string>`
+template table — ten fixed first-person, present-tense statements naming nobody.
+`postToWall`/`sendEnvelope` reject anything not in `SELF_STATES` at the function
+boundary. This is deliberately the cheapest possible implementation of the brief's
+"vocabulary genuinely unavailable, not merely discouraged" requirement: there is no
+free-text path to route around, no filter to evade. Expanding the template set later is
+safe as long as every new entry passes the same first-person/present-tense/no-third-party
+shape — `test/grammar.test.ts` checks this structurally against the whole table, not just
+the entries that existed when the test was written.
+
+### Rumour mill (§3.2)
+
+BFS propagation from a Wall post's author outward over a `ConnectionGraph`. Per hop: a
+neighbor picks it up with probability `baseSpreadChance * edgeWeight * carrierClarity`;
+clarity then drops by `decayPerHop`, and propagation to that neighbor is dropped if
+clarity falls below `clarityFloor` or `maxHops` is exceeded. Each successful hop has an
+independent `distortionRate` chance of drifting the relayed state to a
+semantically-adjacent one (table in `DISTORTION_NEIGHBORS`) rather than passing it
+faithfully. A player only ever hears the first version that reaches them (no duplicate/
+conflicting hearsay from multiple paths in this version).
+
+All four knobs live in one `RumourMillConfig`, defaulted in `DEFAULT_RUMOUR_CONFIG` and
+marked `[CALIBRATED — provisional]` — brief §3.2 flags this system as the one "most
+likely to need hands-on iteration once playable," so retuning is a one-object edit, not
+a re-architecture.
+
+### MVP scenario (`src/mvp/run.ts`, §8)
+
+Two Bakers on the real Phase 1 engine, hardcoded flour price (0.6) standing in for the
+Miller layer per the brief's own suggestion. Three gossip-layer players connected via a
+hand-built graph. A Baker posts to the Wall when the day's price gap crosses a threshold;
+the post propagates through the mill; output is a per-day printout of prices, posts, and
+who heard what (faithful or distorted, how many hops out). The trigger rule itself
+(post when price gap > threshold) is scaffolding to exercise the pipeline, not a designed
+mechanic — don't treat it as a spec for when Bakers "should" post once real player input
+exists.
+
 ## Open deviations from the brief
 
-None yet. Nothing in Phase 1 required deviating from the equations as specified.
+None yet. Nothing built so far required deviating from the equations/mechanisms as
+specified — where the brief left a genuine gap (noise magnitude in Phase 1, rumour mill
+parameter values in Phase 3, since §3.2 says the mill isn't fully specified), the gap was
+filled with a `[CALIBRATED — provisional]` value in the same style as the brief's own
+provisional constants, not treated as a silent design decision.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
