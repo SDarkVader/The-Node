@@ -1,5 +1,6 @@
 import type { SelfState, WallPost } from './grammar.js';
 import type { ConnectionGraph } from './connections.js';
+import { stepClarity, applyDistortion } from './decay.js';
 
 /**
  * Rumour mill (§3.2) — explicitly under-specified in the brief, built to be easy to
@@ -79,14 +80,20 @@ export function propagateRumour(
       if (carrier.hop >= config.maxHops) continue;
       for (const { id: neighborId, weight } of graph.neighbors(carrier.carrierId)) {
         if (heard.has(neighborId)) continue;
-        const spreadChance = config.baseSpreadChance * weight * carrier.clarity;
-        if (config.rng() >= spreadChance) continue;
 
-        const clarity = carrier.clarity - config.decayPerHop;
-        if (clarity < config.clarityFloor) continue;
+        const step = stepClarity(
+          carrier.clarity,
+          weight,
+          { baseSuccessChance: config.baseSpreadChance, decayPerStep: config.decayPerHop, clarityFloor: config.clarityFloor },
+          config.rng,
+        );
+        if (!step.passed) continue;
 
-        const distorted = config.rng() < config.distortionRate;
-        const state = distorted ? pickDistortion(carrier.state, config.rng) : carrier.state;
+        const { value: state, distorted } = applyDistortion(
+          carrier.state,
+          { distortionRate: config.distortionRate, neighbors: DISTORTION_NEIGHBORS },
+          config.rng,
+        );
 
         heard.add(neighborId);
         nextId += 1;
@@ -98,19 +105,13 @@ export function propagateRumour(
           state,
           distorted,
           hop: carrier.hop + 1,
-          clarity,
+          clarity: step.nextClarity,
         });
-        next.push({ carrierId: neighborId, state, clarity, hop: carrier.hop + 1 });
+        next.push({ carrierId: neighborId, state, clarity: step.nextClarity, hop: carrier.hop + 1 });
       }
     }
     frontier = next;
   }
 
   return events;
-}
-
-function pickDistortion(state: SelfState, rng: () => number): SelfState {
-  const options = DISTORTION_NEIGHBORS[state];
-  const idx = Math.floor(rng() * options.length);
-  return options[Math.min(idx, options.length - 1)]!;
 }
