@@ -1,0 +1,25 @@
+{
+  "name": "the-node",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NODE — persistent multiplayer social-economic game engine",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "sim": "tsx src/sim/cli.ts",
+    "mvp": "tsx src/mvp/run.ts",
+    "server": "tsx src/server/ws.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "ws": "^8.21.2"
+  }
+}
