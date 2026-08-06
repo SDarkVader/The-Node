@@ -128,23 +128,28 @@ once Phase 4 gets anywhere near ecosystem-level views.
 
 **Private per-player maps become a patchwork with no canonical version anywhere, not even
 at the top.** Within a shard, no player sees a single ground truth, only their own
-accumulating, error-prone impressions of others. At ecosystem scale this compounds
-cleanly rather than needing new design: no player ever holds a canonical picture of the
-ecosystem either, only their own patchwork of every shard they've personally touched or
-heard about — and per the point above, what they've heard about shards they haven't
-visited is itself rumour-mill-degraded. There is no view of NODE, at any scale, that is
-the objectively true one. That's not a limitation to work around — it's the same design
-principle that made the screenshot problem disappear at the shard level, now holding the
-entire ecosystem to the same honesty.
+private, non-canonical impressions of others — and per the diary refinement below, those
+impressions are not a permanent system record. At ecosystem scale this compounds cleanly
+rather than needing new design: no player ever holds a canonical picture of the ecosystem
+either, only their own patchwork of every shard they've personally touched or heard about
+— and per the point above, what they've heard about shards they haven't visited is itself
+rumour-mill-degraded. There is no view of NODE, at any scale, that is the objectively
+true one. That's not a limitation to work around — it's the same design principle that
+made the screenshot problem disappear at the shard level, now holding the entire
+ecosystem to the same honesty.
 
-> **Note added same day, after review:** this section predates (or was written
-> independently of) the "private diary" refinement developed in conversation and added to
-> `DESIGN_ADDENDUM_2026-08-06.md`'s "Private per-player maps" section — which gave
-> person-level entries a bounded, ~30-day rolling silent expiry rather than the
-> "accumulating" framing above. Whether a player's higher-level *picture of a shard*
-> (built from many such observations) inherits that same erosion, or is meant to be more
-> durable than person-level impression, is now an open question between these two
-> documents — not resolved, flagged for a decision.
+> **Resolved same day, after review:** this section originally said "accumulating"
+> impressions, written independently of (unaware of) the "private diary" refinement
+> developed in conversation and added to `DESIGN_ADDENDUM_2026-08-06.md`'s "Private
+> per-player maps" section — which gives person-level entries a bounded, ~30-day rolling
+> silent expiry, not an ever-growing dossier. Confirmed: the diary's model is
+> authoritative at every scale, corrected above. There is no separate, longer-lived
+> "shard impression" system record sitting above the diary — whatever a player carries
+> about a shard beyond what a still-live diary entry shows is their own untracked human
+> memory, exactly as the diary was designed to lean on ("people will remember the person
+> and events; the diary is just a private space to vent in the language of the game"),
+> not a second data structure the system maintains and would need its own retention rule
+> for.
 
 **The Oracle's flat, identity-agnostic fairness holds ecosystem-wide, and that matters
 more at scale, not less.** If every shard has its own Oracle reading its own economic
