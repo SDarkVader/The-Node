@@ -35,6 +35,31 @@ player-facing, then the two-Baker-plus-rumour-mill MVP slice (§8) before full P
 builds. Don't jump ahead to later phases' polish while an earlier phase's regression tests
 (§1.4, §2.4) are unverified.
 
+## Standing design constraints (from `docs/ECOSYSTEM_VISION_2026-08-06.md` §6)
+
+Binding on everything built beyond the single-shard core, not just narrative — check new
+work against these before shipping it, the same way the documentation rules above are
+checked every session:
+
+1. **Simulate before trusting, every time a mechanic gets new reach.** Population-check
+   against a deterministic baseline before accepting a mechanic works, the same way the
+   exit ticket gamble and the Phase 1 §1.4 findings were verified, not just derived.
+2. **No permanent zero-state, at any scale.** Before shipping any new system, ask: does
+   failure here ever produce a state nothing can recover from? If yes, it doesn't belong
+   in this design — whether that's a player, a role-slot, or eventually a whole shard.
+3. **Ask "does this need to be an agent" before building anything new.** Anything with
+   behavior, motivation, or belief to infer is a deception surface. Minimize what's
+   modelable, at every scale, by default — this is why the vacancy NPC and the Oracle are
+   both mechanical, not behavioral.
+4. **Nothing gets recorded, ever, regardless of how big this gets.** Any future system
+   touching player expression should be built so there's nothing to capture in the first
+   place, not something captured and then handled responsibly. This is why voice is a
+   constrained grammar, not real audio.
+5. **Let outcomes be real, don't script them.** Shard death, rejuvenation, migration
+   patterns, which shards thrive and which stay thin — none of it gets authored. The
+   system's job is to make every outcome genuinely possible and consequence-bearing, then
+   get out of the way.
+
 ## Commands
 
 ```
