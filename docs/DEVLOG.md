@@ -6,6 +6,69 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-06 — Phase 2 vacancy engine built; §2.4 targets found not to reproduce
+
+**Context.** User: "let's start building what we can." Phase 2 (vacancy/churn/backstop)
+was the obvious next piece — next in the brief's own build order, fully specified with
+concrete equations, doesn't depend on the Godot client or any of the day's still-open
+design decisions (exit-ticket stake formula, etc.).
+
+**Built.** `src/engine/vacancy.ts` — the semi-Markov process from §2.1-2.3: three states
+(FILLED/VACANT/BACKSTOPPED, per the brief's own §1 notation table, not the two implied by
+§2.1's shorthand diagram), `fillHazard()` implementing §2.2's equations verbatim,
+two-stage flag/hard-backstop thresholds. `src/sim/vacancyHarness.ts` +
+`vacancyCli.ts` (`npm run vacancy-sim`) for running many role-slots over many days.
+
+**Gap the brief leaves open, documented rather than guessed past:** no rate is specified
+anywhere for BACKSTOPPED -> FILLED (a real player displacing the NPC). Without modeling
+it at all, every slot would eventually ratchet permanently into BACKSTOPPED over a long
+run, which can't be right — "starved fraction stays near 1-2% of the year" wouldn't be a
+stable figure otherwise. Modeled as an ambient hazard frozen at the pressure-plateau
+value (fillHazard at tau=t_hard) — documented clearly in BLUEPRINT.md as an interpretive
+choice, not a brief-specified number.
+
+**Failure caught during verification, not before shipping.** First pass: ran 1 year with
+only R=3 role-slots (~11 total events) and got numbers that looked wildly different from
+the brief's claims (ratio 2.67-4.00, starved fraction way high). Nearly treated this as
+a finding immediately — caught that 11 events is far too small a sample to trust, reran
+with 5 seeds x 20 years (250+ slot-years) before drawing any conclusion. Also found, while
+doing that, a real bug: BACKSTOPPED-recovery events were double-counting elapsed time on
+top of the gap already recorded when the backstop originally fired, producing gap values
+that impossibly exceeded the 14-day hard cap (17.0 seen against a construction-guaranteed
+max of 14). Fixed before trusting anything downstream of `gapDays`.
+
+**Real finding, verified with statistical power, not forced to match.** Even after the
+fix and with a properly-sized sample, a faithful implementation of the brief's literal
+§2.2 equations and stated `[CALIBRATED — provisional]` constants (beta=0.0008, T_pain=14,
+v_boost=3.0) does not reproduce §2.4's claimed targets: brief says voluntary:backstop
+ratio ~1.2:1 at N=50 rising to ~2.8:1 at N=80 and starved fraction ~1-2%; this
+implementation converges to ratio ~2.5:1 rising to ~4.2:1, and starved fraction ~6-7%
+(checked both a VACANT-only definition and a VACANT+BACKSTOPPED definition of "starved" —
+neither reconciles both targets). The *direction* of the N-dependence matches; the
+magnitudes don't.
+
+Before concluding this was a real discrepancy rather than a calibration miss, swept
+`beta` from 0.0008 to 0.01 at N=50: starved fraction does fall toward 1-2% as beta rises,
+but the ratio explodes to 783:1 in the same sweep — no single beta value hits both
+targets at once. That rules out "just retune the constant," which is why this is
+documented as a structural discrepancy in `BLUEPRINT.md`'s "Open deviations," not
+silently patched by picking whichever beta looks closest to one target while ignoring
+the other.
+
+**Verified, not assumed:** `test/vacancy.regression.test.ts` (5 tests) encodes what's
+genuinely true of this implementation instead — no gap ever exceeds t_hard (structural),
+both mechanisms actually fire over a long run, the VACANT fraction reaches a stable
+steady state rather than drifting, the ratio increases with N (matching the brief's
+claimed direction), BACKSTOPPED is a real measurably-occupied state. 35 tests total (30
+previous + 5 new), all passing, `tsc --noEmit` clean.
+
+**Not done this entry:** §2.5's NPC fallback isn't wired into the Phase 1 market yet (a
+BACKSTOPPED Baker doesn't participate in pricing) — the vacancy engine and the economic
+engine are still separate, unconnected systems. §2.6 (Shift Cover) not started — needs a
+player-session/online-state concept that doesn't exist in this headless engine.
+
+---
+
 ## 2026-08-06 — Unified decay primitive extracted; two open items resolved
 
 User resolved both items left open at the end of the previous entry.
