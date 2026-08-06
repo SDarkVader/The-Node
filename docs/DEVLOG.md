@@ -6,6 +6,80 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-06 — Design addendum review: exit-ticket gamble stake-direction bug found
+
+**Context.** User provided a design addendum (`docs/DESIGN_ADDENDUM_2026-08-06.md`) and a
+Python population sim (`design/exit_ticket_gamble_sim.py`) covering several new,
+not-yet-built mechanics: vacancy backstop rationale, the shard exit ticket, the Oracle,
+private per-player maps, an atmosphere principle, a Wall/rumour threat-model note,
+proximity conversation (no-microphone, template-composed voice alternative), and
+multi-shard passport tiers. Asked for thoughts before any action.
+
+**Finding — exit-ticket gamble stake formula is inverted from its own stated intent.**
+Installed numpy, ran the script (reproduced the addendum's own numbers exactly: 2852
+wins/7384 losses, realized rate 0.279 vs 0.30 target — the script itself runs correctly),
+then traced the actual `f` (required stake) against `p` (progress) directly rather than
+trusting the aggregate stats:
+
+```
+p=0.02 -> f=0.040 (stake 4%)   realized_w=0.300
+p=0.25 -> f=0.500 (stake 50%)  realized_w=0.300
+p=0.50 -> f=1.000 (stake 100%) realized_w=0.300
+p=0.90 -> f=1.000 (stake 100%) realized_w=0.167  <- capped, can't reach target
+p=0.99 -> f=1.000 (stake 100%) realized_w=0.152
+```
+
+Both the script's docstring and the design addendum state the opposite: small stakes
+near completion, large stakes near zero progress. The formula (`f = target_w * p /
+base_odds`) makes required stake *increase* with `p`, and a near-complete player can
+never even reach the target win rate once `p > 0.5` — they're capped at 100% stake with
+degrading odds the closer they get. This is a genuine contradiction between the stated
+design intent and the actual math, not a calibration nicety.
+
+Why the addendum's own "Findings" section didn't catch it: finding #1 (realized win rate
+converges to target) is true by construction — `f` is *solved* to hit `target_w`, so
+convergence is guaranteed algebra, not evidence about which direction the risk curve
+points.
+
+**Verified a fix, did not apply it.** Swapping `p` for `1-p` (distance to completion) in
+the win formula — `w(p,f) = base_odds*f/(1-p)`, so `f = target_w*(1-p)/base_odds` —
+reproduces the stated intent exactly when checked numerically:
+
+```
+p=0.02 -> f=0.653 (stake 65%)  realized_w=0.100
+p=0.50 -> f=0.333 (stake 33%)  realized_w=0.100
+p=0.90 -> f=0.067 (stake 7%)   realized_w=0.100
+p=0.99 -> f=0.007 (stake 0.7%) realized_w=0.100
+```
+(also dropped `target_w` from 0.30 to 0.10 for this check — the original
+`target_w/base_odds` ratio of 2.0 saturates `f=1` across half the `p` range regardless of
+which direction it points; a ratio `<=1` gives a smooth curve across the whole range).
+
+**Did not silently edit the original files.** The addendum itself marks the staking
+formula "still provisional," so this is exactly the right time to flag it, not late. Both
+`docs/DESIGN_ADDENDUM_2026-08-06.md` and `design/exit_ticket_gamble_sim.py` were
+committed with the original content intact, plus a clearly marked, dated verification
+note pointing to this finding — not a rewrite. Awaiting user confirmation before anyone
+changes the formula.
+
+**Everything else in the addendum reviewed, no conflicts found.** Vacancy
+backstop/mechanical-NPC section already matches what's built (§2.6, documented in
+`BLUEPRINT.md`/`HANDOVER.md` since the Phase 1 session) — no new work. Proximity
+conversation is architecturally identical in shape to the already-built `SELF_STATES`
+pattern in `src/comms/grammar.ts` (curated table, throws on anything outside it) and
+would meaningfully reduce Phase 5's scope if built, since it never captures audio at all.
+Private per-player maps is flagged as a real scope change for whenever Phase 4 planning
+starts (private per-user state, not shared-state-with-a-fog-layer). Nothing else touches
+anything currently built.
+
+**Action taken.** Committed the addendum and simulation script to the repo (`docs/`,
+`design/`) for continuity, with the verification note attached. `BLUEPRINT.md` updated
+with a pointer (not merged into its "what's built" body, since none of this is built).
+No code changes to the production engine this entry — this was a design review, not an
+implementation session.
+
+---
+
 ## 2026-08-06 — Platform lock-in (Godot), client/server scaffold, Baker price drift fix
 
 **Context.** User set the platform: PC + mobile, not web ("web is clunky and it helps to
