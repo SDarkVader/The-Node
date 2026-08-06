@@ -31,16 +31,34 @@ To see the client/server loop live: run `npm run server`, then open `client/proj
 in Godot 4.3+ locally and run the main scene. **This has not been verified by anyone yet
 — do that and report back**, especially if the editor throws a parse error on first load.
 
-Working branch: `claude/new-project-setup-h5m6f8`. No PR open yet (about to be created).
-No CI configured.
+Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` (PRs #1 and
+#3 merged — Phase 1/MVP/Godot scaffold, then a `vitest` security bump fixing a critical
+CVE found via `npm audit`, GHSA-5xrq-8626-4rwp). No CI configured.
 
 See `docs/BLUEPRINT.md` for the architecture in detail, including the wire protocol
 between server and client.
 
 ## What's next
 
-**Immediate: verify the Godot client actually runs.** Everything past this point assumes
-it does, or gets fixed once someone reports what broke.
+**Two things need your input before more design work locks in:**
+
+1. **Verify the Godot client actually runs.** Everything past this point assumes it
+   does, or gets fixed once someone reports what broke.
+2. **Confirm the exit-ticket gamble stake-formula fix.** `docs/DESIGN_ADDENDUM_2026-08-06.md`
+   has a verified stake-direction bug (see its top note and `docs/DEVLOG.md`'s entry) —
+   the formula as written makes required stake *increase* with progress, the opposite of
+   the stated intent. A corrected formula (using distance-to-completion instead of
+   progress) was verified numerically but not applied — nobody's fixed
+   `design/exit_ticket_gamble_sim.py` yet, pending your confirmation.
+
+There's also a substantial new design addendum (`docs/DESIGN_ADDENDUM_2026-08-06.md`)
+covering the shard exit ticket, the Oracle, private per-player maps, proximity
+conversation (a no-microphone alternative to live voice), and multi-shard passport tiers
+— read it before Phase 2/4/5 work starts, several items bear directly on those phases.
+Notably: proximity conversation reuses the same curated-template pattern as
+`SELF_STATES` and could meaningfully shrink Phase 5's scope (no audio capture at all);
+private per-player maps is a real departure from fog-of-recognition as originally scoped
+for Phase 4.
 
 Then, roughly in order:
 
