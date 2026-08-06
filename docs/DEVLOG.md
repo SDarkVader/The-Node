@@ -6,6 +6,47 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-06 — Ecosystem Vision reviewed, standing constraints added to CLAUDE.md
+
+User provided `ECOSYSTEM_VISION_2026-08-06.pdf` — a one-level-up companion to
+`BLUEPRINT.md`'s design intent, addressing what NODE looks like as many shards rather
+than one. Transcribed to `docs/ECOSYSTEM_VISION_2026-08-06.md` for continuity (same
+treatment as the design addendum).
+
+Genuine findings from reviewing it, not just filing it:
+- The doc's "shards relate to each other the way players relate within a shard" claim
+  isn't just a metaphor — `src/comms/connections.ts`'s `ConnectionGraph` already models
+  exactly that shape and is directly reusable one level up when ecosystem work starts.
+- The "information degrades with graph distance" idea is the fourth independent
+  reinvention of the same primitive this session: rumour mill (social hops), proximity
+  conversation (physical distance), the private diary (time), now this (shard-graph
+  distance). Worth building one shared decay/distortion utility, parameterized by
+  distance metric, rather than four separate implementations later — noted for whenever
+  any of this gets built.
+- Flagged one real tension rather than silently picking a side: the vision doc's private
+  per-player maps section describes "accumulating" impressions, but the diary refinement
+  added to the addendum earlier today gives person-level entries a bounded ~30-day
+  rolling expiry instead. Whether a player's shard-level impression should inherit that
+  same erosion or stay more durable than person-level impression is now an open question
+  between the two documents — noted inline in the vision doc, not resolved.
+- One precision note: §2's "ruin and rejuvenation — the mechanic you already built" is
+  grounded in the brief's §2.5 NPC-fallback *spec*, not code that exists yet (Phase 2
+  isn't built). The reasoning holds regardless; just flagging so it doesn't get misread as
+  already-implemented.
+
+**Action taken beyond filing:** the document's §6 ("how to scale this without breaking
+it") reads as five binding policy statements, not narrative, so they're now in
+`CLAUDE.md` as standing constraints on all future work — simulate before trusting, no
+permanent zero-state at any scale, ask whether something needs to be an agent before
+building it, nothing gets recorded ever, let outcomes be real rather than scripted. Same
+mechanism as the existing documentation rules: automatically loaded every session, not
+something that has to be re-asked for.
+
+No code touched this entry — design review and documentation only.
+
+---
+---
+
 ## 2026-08-06 — Private diary designed collaboratively, refining "private per-player maps"
 
 Extended back-and-forth design conversation (not implementation) working out a concrete
