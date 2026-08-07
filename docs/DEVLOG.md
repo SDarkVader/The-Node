@@ -6,6 +6,356 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Miller conscription: user's mechanic resolves the recovery-hazard tradeoff
+
+**Context.** Following up directly on the previous entry's finding: closing the Phase 2
+ratio gap fully required BACKSTOPPED recovery to be very slow (~2000-day mean), which
+meant Miller sat NPC-run 79-86% of the time — presented as a real design fork, not
+picked unilaterally. User's response: NPC coverage of a scarce role like Miller should
+only ever be temporary; past a fixed delay, a random player gets mandatorily drafted
+into the role — from the non-role-holding "gossip layer," or from an existing holder of
+a *different* role, which then leaves that role vacant in turn ("one day you're Courier,
+then next the Miller... like it or not").
+
+**Built and verified, not just designed.** New module `src/sim/conscriptionHarness.ts` —
+kept the cross-role coupling logic out of `engine/vacancy.ts`'s `stepSlot` deliberately,
+since drafting a Courier away and creating a new Courier vacancy is inherently a
+multi-slot concern that belongs at the orchestration layer, not inside the tested
+single-slot primitive. Reused `stepSlot`/`fillHazard` for the "other role" pool and
+Miller's own pre-backstop phase; only Miller's BACKSTOPPED phase got new logic —
+deterministic conscription after a delay, replacing the probabilistic recovery hazard
+from the previous entry entirely.
+
+Swept conscription delay (3/7/14/30 days) across N=50/60/80 before trusting it resolved
+anything (`npm run conscription-sim`). It does: the genuine-fill:backstop ratio lands
+close to the brief's §2.4 targets at *every* delay tested, and delay barely moves the
+ratio at all (it only governs what happens after backstop already fired) — but it's the
+dominant lever on how much time Miller actually spends NPC-run, which stays under 8%
+even at a generous 30-day delay. That's the key result: unlike the pure-recovery-hazard
+version, hitting the brief's numbers no longer requires sacrificing "the community runs
+the economy." The other-role cascade is real (6-13% of conscriptions) but checked to
+stay smaller than that role's own organic backstop rate, not left as an assumption.
+
+**What this doesn't fix, stated plainly rather than folded into the win:** the
+pre-backstop VACANT-phase fraction is untouched by conscription (still ~6-7% vs. the
+brief's 1-2%) — a separate, smaller, still-open gap. Conscription resolves the
+NPC-dominance problem; it was never going to touch the earlier phase of the process.
+
+**Verified:** 5 new tests (`test/conscription.regression.test.ts`) — BACKSTOPPED time
+stays low, the ratio-vs-N trend holds, delay length moves BACKSTOPPED time far more than
+it moves the ratio, every conscription is accounted for as gossip or cascade, and the
+cascade stays subordinate to organic churn. 43 tests total, all passing, `tsc --noEmit`
+clean.
+
+**Still open:** exact conscription delay (every value tried keeps the ratio on target —
+this is a pacing/feel question, not something the simulation resolves on its own), the
+residual VACANT-phase gap, and whether any role besides Miller ever needs this.
+
+---
+
+## 2026-08-07 — Found the real driver of the Phase 2 ratio mismatch
+
+**Context.** Yesterday's session flagged that Phase 2's §2.4 targets don't reproduce
+under a faithful implementation, and offered the full numeric trail on request. User
+asked to try tweaking the BACKSTOPPED recovery hazard specifically and rerun the sweep.
+
+**Checked a structural hypothesis before touching the hazard at all.** Every
+`backstopFires` event in this model eventually produces exactly one recovery
+(`voluntaryFill` with `fromBackstopped: true`) later — recovery isn't permanently
+blocked. But the original `voluntaryFills` counter summed genuine pre-backstop fills
+*and* these later recoveries together. That inflates the ratio by roughly
+`(genuine/backstop) + 1` compared to what "voluntary fills outnumber backstop fires"
+almost certainly means (resolved instead of backstop, not resolved after it).
+
+Split the counters (`genuineVoluntaryFills`, `backstopRecoveries`, both now exposed from
+`runVacancySim`). That alone, no other change: N=50 ratio moved from 2.48 to 1.48
+against the brief's stated 1.2 target — confirming most of yesterday's mismatch was this
+counting bug, not beta, not the recovery hazard nobody had touched yet.
+
+**Then did what was actually asked: made the recovery hazard overridable and swept it.**
+Added `VacancyParams.backstoppedRecoveryHazard` (optional override, defaults to the
+original interpretive choice — fillHazard frozen at tau=t_hard — when omitted, so no
+default behavior changed). Swept it from 0.001 to 1.0 at N=50: the corrected ratio
+barely moves (1.14-1.51 across a 1000x range) — it's a downstream consequence of how
+long a slot sits BACKSTOPPED, not a cause of the genuine-fill-vs-backstop-fire balance.
+But it's the dominant lever on BACKSTOPPED *duration*, and at a very low rate
+(0.0005, ~2000-day mean recovery time), both of the brief's headline numbers land close
+to target simultaneously:
+
+```
+N=50: correctedRatio=1.44  vacantOnly=1.18%  (brief: 1.2, 1-2%)
+N=80: correctedRatio=2.89  vacantOnly=1.52%  (brief: 2.8)
+```
+
+**Did not adopt this as the new default.** The catch: hitting both targets this way
+requires role-slots to spend 79-86% of all time BACKSTOPPED (NPC-run) rather than
+player-run. That's not really "matching the brief" so much as relocating the problem —
+it surfaces a bigger, unaddressed design question (how often should an automated role
+realistically return to a real player?) that sits in real tension with the brief's core
+premise of an economy driven by actual Cournot/Bertrand competition. Presented this
+clearly rather than quietly picking the parameterization that makes two numbers match
+while changing the system's character.
+
+**Verified, not assumed.** 3 new tests: the split always sums back to the original
+`voluntaryFills` total, the corrected ratio is measurably closer to the brief's target
+than the inflated one, and recovery hazard changes BACKSTOPPED duration by 3x+ while
+moving the ratio by less than 0.5. 38 tests total, all passing, `tsc --noEmit` clean.
+`npm run vacancy-sim` now prints the corrected/inflated ratio at both the default and
+low-recovery-hazard settings side by side.
+
+**State at end of entry.** The recovery-hazard trade-off is now the concrete open
+question for Phase 2, not "does the implementation have a bug" — the ratio mismatch is
+understood, the remaining gap is a genuine design decision about NPC-vs-player role
+occupancy over time.
+
+---
+
+## 2026-08-06 — Phase 2 vacancy engine built; §2.4 targets found not to reproduce
+
+**Context.** User: "let's start building what we can." Phase 2 (vacancy/churn/backstop)
+was the obvious next piece — next in the brief's own build order, fully specified with
+concrete equations, doesn't depend on the Godot client or any of the day's still-open
+design decisions (exit-ticket stake formula, etc.).
+
+**Built.** `src/engine/vacancy.ts` — the semi-Markov process from §2.1-2.3: three states
+(FILLED/VACANT/BACKSTOPPED, per the brief's own §1 notation table, not the two implied by
+§2.1's shorthand diagram), `fillHazard()` implementing §2.2's equations verbatim,
+two-stage flag/hard-backstop thresholds. `src/sim/vacancyHarness.ts` +
+`vacancyCli.ts` (`npm run vacancy-sim`) for running many role-slots over many days.
+
+**Gap the brief leaves open, documented rather than guessed past:** no rate is specified
+anywhere for BACKSTOPPED -> FILLED (a real player displacing the NPC). Without modeling
+it at all, every slot would eventually ratchet permanently into BACKSTOPPED over a long
+run, which can't be right — "starved fraction stays near 1-2% of the year" wouldn't be a
+stable figure otherwise. Modeled as an ambient hazard frozen at the pressure-plateau
+value (fillHazard at tau=t_hard) — documented clearly in BLUEPRINT.md as an interpretive
+choice, not a brief-specified number.
+
+**Failure caught during verification, not before shipping.** First pass: ran 1 year with
+only R=3 role-slots (~11 total events) and got numbers that looked wildly different from
+the brief's claims (ratio 2.67-4.00, starved fraction way high). Nearly treated this as
+a finding immediately — caught that 11 events is far too small a sample to trust, reran
+with 5 seeds x 20 years (250+ slot-years) before drawing any conclusion. Also found, while
+doing that, a real bug: BACKSTOPPED-recovery events were double-counting elapsed time on
+top of the gap already recorded when the backstop originally fired, producing gap values
+that impossibly exceeded the 14-day hard cap (17.0 seen against a construction-guaranteed
+max of 14). Fixed before trusting anything downstream of `gapDays`.
+
+**Real finding, verified with statistical power, not forced to match.** Even after the
+fix and with a properly-sized sample, a faithful implementation of the brief's literal
+§2.2 equations and stated `[CALIBRATED — provisional]` constants (beta=0.0008, T_pain=14,
+v_boost=3.0) does not reproduce §2.4's claimed targets: brief says voluntary:backstop
+ratio ~1.2:1 at N=50 rising to ~2.8:1 at N=80 and starved fraction ~1-2%; this
+implementation converges to ratio ~2.5:1 rising to ~4.2:1, and starved fraction ~6-7%
+(checked both a VACANT-only definition and a VACANT+BACKSTOPPED definition of "starved" —
+neither reconciles both targets). The *direction* of the N-dependence matches; the
+magnitudes don't.
+
+Before concluding this was a real discrepancy rather than a calibration miss, swept
+`beta` from 0.0008 to 0.01 at N=50: starved fraction does fall toward 1-2% as beta rises,
+but the ratio explodes to 783:1 in the same sweep — no single beta value hits both
+targets at once. That rules out "just retune the constant," which is why this is
+documented as a structural discrepancy in `BLUEPRINT.md`'s "Open deviations," not
+silently patched by picking whichever beta looks closest to one target while ignoring
+the other.
+
+**Verified, not assumed:** `test/vacancy.regression.test.ts` (5 tests) encodes what's
+genuinely true of this implementation instead — no gap ever exceeds t_hard (structural),
+both mechanisms actually fire over a long run, the VACANT fraction reaches a stable
+steady state rather than drifting, the ratio increases with N (matching the brief's
+claimed direction), BACKSTOPPED is a real measurably-occupied state. 35 tests total (30
+previous + 5 new), all passing, `tsc --noEmit` clean.
+
+**Not done this entry:** §2.5's NPC fallback isn't wired into the Phase 1 market yet (a
+BACKSTOPPED Baker doesn't participate in pricing) — the vacancy engine and the economic
+engine are still separate, unconnected systems. §2.6 (Shift Cover) not started — needs a
+player-session/online-state concept that doesn't exist in this headless engine.
+
+---
+
+## 2026-08-06 — Unified decay primitive extracted; two open items resolved
+
+User resolved both items left open at the end of the previous entry.
+
+**1. Private per-player maps vs. the diary — resolved, diary wins.** User: "this
+document was unaware, keep our diary." Updated
+`docs/ECOSYSTEM_VISION_2026-08-06.md`'s private-per-player-maps section: removed the
+"accumulating impressions" framing, made explicit that the diary's bounded ~30-day
+rolling expiry is authoritative at every scale, and that there's no separate
+longer-lived "shard impression" system record above it — whatever a player carries about
+a shard beyond a still-live diary entry is their own untracked human memory, not
+something the system stores. `BLUEPRINT.md`'s pointer updated to match (was "open
+tension," now "resolved").
+
+**2. Unified decay/distortion model — built, verified nothing broke.** User: "feel free
+to build a unified model if again, nothing breaks." Only the rumour mill is actually
+implemented in code (proximity conversation and shard-graph propagation are still
+design-only), so this concretely meant: extract the rumour mill's decay/distortion math
+into a generic, reusable primitive those can plug into later, without changing anything
+about how the rumour mill currently behaves.
+
+Added `src/comms/decay.ts` (`stepClarity`, `applyDistortion`) and refactored
+`src/comms/rumourMill.ts` to call it internally. Deliberately kept `RumourMillConfig`'s
+field names (`baseSpreadChance`, `decayPerHop`, ...) completely unchanged — the new
+primitive's own config shape is mapped at the call site — so zero callers or tests needed
+to change, the lowest-risk version of this refactor. Preserved the exact rng() call
+order (one call for the pass/fail roll, then conditionally one or two more for
+distortion) since the existing tests are seeded and would produce different specific
+values under a different call sequence even with equivalent logic.
+
+Verified, not assumed: full suite before (24 tests) vs. after (30 tests: 24 unchanged +
+6 new `decay.test.ts` tests exercising the primitive directly) — all passing, `tsc
+--noEmit` clean, and reran `npm run mvp` to confirm byte-identical day-by-day output to
+before the refactor (same posts, same hops, same distortions, same clarity values).
+
+**Correction to the previous entry, caught on this pass:** that entry's second bullet
+said the decay-with-distance pattern was independently reinvented "the fourth time,"
+counting the diary as a member. That was wrong — the diary uses hard silent TTL expiry,
+not gradual decay, which the user chose explicitly over the fade/blur alternative
+offered earlier. It's the third reinvention (rumour mill, proximity conversation,
+shard-graph distance), not the fourth. Corrected inline in that entry rather than
+silently rewritten.
+
+---
+
+## 2026-08-06 — Ecosystem Vision reviewed, standing constraints added to CLAUDE.md
+
+User provided `ECOSYSTEM_VISION_2026-08-06.pdf` — a one-level-up companion to
+`BLUEPRINT.md`'s design intent, addressing what NODE looks like as many shards rather
+than one. Transcribed to `docs/ECOSYSTEM_VISION_2026-08-06.md` for continuity (same
+treatment as the design addendum).
+
+Genuine findings from reviewing it, not just filing it:
+- The doc's "shards relate to each other the way players relate within a shard" claim
+  isn't just a metaphor — `src/comms/connections.ts`'s `ConnectionGraph` already models
+  exactly that shape and is directly reusable one level up when ecosystem work starts.
+- The "information degrades with graph distance" idea is the third independent
+  reinvention of the same primitive this session: rumour mill (social hops), proximity
+  conversation (physical distance), now this (shard-graph distance). Worth building one
+  shared decay/distortion utility, parameterized by distance metric, rather than three
+  separate implementations later — noted for whenever any of this gets built.
+  ***Correction, later same session:*** this bullet originally said "fourth" and included
+  the private diary as a member of this family. That was wrong — the diary explicitly uses
+  hard silent TTL expiry, not gradual decay/distortion (the user chose that directly over
+  the fade option offered). Caught on a later pass; see this date's later entry, where the
+  primitive was actually extracted from `rumourMill.ts` into `src/comms/decay.ts`.
+- Flagged one real tension rather than silently picking a side: the vision doc's private
+  per-player maps section describes "accumulating" impressions, but the diary refinement
+  added to the addendum earlier today gives person-level entries a bounded ~30-day
+  rolling expiry instead. Whether a player's shard-level impression should inherit that
+  same erosion or stay more durable than person-level impression is now an open question
+  between the two documents — noted inline in the vision doc, not resolved.
+- One precision note: §2's "ruin and rejuvenation — the mechanic you already built" is
+  grounded in the brief's §2.5 NPC-fallback *spec*, not code that exists yet (Phase 2
+  isn't built). The reasoning holds regardless; just flagging so it doesn't get misread as
+  already-implemented.
+
+**Action taken beyond filing:** the document's §6 ("how to scale this without breaking
+it") reads as five binding policy statements, not narrative, so they're now in
+`CLAUDE.md` as standing constraints on all future work — simulate before trusting, no
+permanent zero-state at any scale, ask whether something needs to be an agent before
+building it, nothing gets recorded ever, let outcomes be real rather than scripted. Same
+mechanism as the existing documentation rules: automatically loaded every session, not
+something that has to be re-asked for.
+
+No code touched this entry — design review and documentation only.
+
+---
+---
+
+## 2026-08-06 — Private diary designed collaboratively, refining "private per-player maps"
+
+Extended back-and-forth design conversation (not implementation) working out a concrete
+mechanic for the addendum's "private per-player maps" idea, which had been left vague
+("tags, suspicion markers, trust notes"). Landed on a specific, coherent shape — full
+writeup in `docs/DESIGN_ADDENDUM_2026-08-06.md`'s new "Refinement — the private diary"
+subsection, not duplicated here. Short version: composed (not free-typed) entries from
+SUBJECT/OBSERVATION/READING/CONTEXT slots, unprompted-only creation, rolling per-entry
+silent expiry (~30 days, illustrative) instead of permanent accumulation. Reframed the
+diary's purpose along the way — not a persistent dossier, a bounded private space to
+process a feeling in the game's own vocabulary, with the player's own memory expected to
+outlast the system record.
+
+Worth noting for how this kind of session should go: this stayed pure design
+conversation until explicitly asked to write it down ("keep developing it out loud"),
+rather than getting formalized into docs prematurely. Nothing built, no code touched.
+
+---
+
+## 2026-08-06 — Design addendum review: exit-ticket gamble stake-direction bug found
+
+**Context.** User provided a design addendum (`docs/DESIGN_ADDENDUM_2026-08-06.md`) and a
+Python population sim (`design/exit_ticket_gamble_sim.py`) covering several new,
+not-yet-built mechanics: vacancy backstop rationale, the shard exit ticket, the Oracle,
+private per-player maps, an atmosphere principle, a Wall/rumour threat-model note,
+proximity conversation (no-microphone, template-composed voice alternative), and
+multi-shard passport tiers. Asked for thoughts before any action.
+
+**Finding — exit-ticket gamble stake formula is inverted from its own stated intent.**
+Installed numpy, ran the script (reproduced the addendum's own numbers exactly: 2852
+wins/7384 losses, realized rate 0.279 vs 0.30 target — the script itself runs correctly),
+then traced the actual `f` (required stake) against `p` (progress) directly rather than
+trusting the aggregate stats:
+
+```
+p=0.02 -> f=0.040 (stake 4%)   realized_w=0.300
+p=0.25 -> f=0.500 (stake 50%)  realized_w=0.300
+p=0.50 -> f=1.000 (stake 100%) realized_w=0.300
+p=0.90 -> f=1.000 (stake 100%) realized_w=0.167  <- capped, can't reach target
+p=0.99 -> f=1.000 (stake 100%) realized_w=0.152
+```
+
+Both the script's docstring and the design addendum state the opposite: small stakes
+near completion, large stakes near zero progress. The formula (`f = target_w * p /
+base_odds`) makes required stake *increase* with `p`, and a near-complete player can
+never even reach the target win rate once `p > 0.5` — they're capped at 100% stake with
+degrading odds the closer they get. This is a genuine contradiction between the stated
+design intent and the actual math, not a calibration nicety.
+
+Why the addendum's own "Findings" section didn't catch it: finding #1 (realized win rate
+converges to target) is true by construction — `f` is *solved* to hit `target_w`, so
+convergence is guaranteed algebra, not evidence about which direction the risk curve
+points.
+
+**Verified a fix, did not apply it.** Swapping `p` for `1-p` (distance to completion) in
+the win formula — `w(p,f) = base_odds*f/(1-p)`, so `f = target_w*(1-p)/base_odds` —
+reproduces the stated intent exactly when checked numerically:
+
+```
+p=0.02 -> f=0.653 (stake 65%)  realized_w=0.100
+p=0.50 -> f=0.333 (stake 33%)  realized_w=0.100
+p=0.90 -> f=0.067 (stake 7%)   realized_w=0.100
+p=0.99 -> f=0.007 (stake 0.7%) realized_w=0.100
+```
+(also dropped `target_w` from 0.30 to 0.10 for this check — the original
+`target_w/base_odds` ratio of 2.0 saturates `f=1` across half the `p` range regardless of
+which direction it points; a ratio `<=1` gives a smooth curve across the whole range).
+
+**Did not silently edit the original files.** The addendum itself marks the staking
+formula "still provisional," so this is exactly the right time to flag it, not late. Both
+`docs/DESIGN_ADDENDUM_2026-08-06.md` and `design/exit_ticket_gamble_sim.py` were
+committed with the original content intact, plus a clearly marked, dated verification
+note pointing to this finding — not a rewrite. Awaiting user confirmation before anyone
+changes the formula.
+
+**Everything else in the addendum reviewed, no conflicts found.** Vacancy
+backstop/mechanical-NPC section already matches what's built (§2.6, documented in
+`BLUEPRINT.md`/`HANDOVER.md` since the Phase 1 session) — no new work. Proximity
+conversation is architecturally identical in shape to the already-built `SELF_STATES`
+pattern in `src/comms/grammar.ts` (curated table, throws on anything outside it) and
+would meaningfully reduce Phase 5's scope if built, since it never captures audio at all.
+Private per-player maps is flagged as a real scope change for whenever Phase 4 planning
+starts (private per-user state, not shared-state-with-a-fog-layer). Nothing else touches
+anything currently built.
+
+**Action taken.** Committed the addendum and simulation script to the repo (`docs/`,
+`design/`) for continuity, with the verification note attached. `BLUEPRINT.md` updated
+with a pointer (not merged into its "what's built" body, since none of this is built).
+No code changes to the production engine this entry — this was a design review, not an
+implementation session.
+
+---
+
 ## 2026-08-06 — Platform lock-in (Godot), client/server scaffold, Baker price drift fix
 
 **Context.** User set the platform: PC + mobile, not web ("web is clunky and it helps to
