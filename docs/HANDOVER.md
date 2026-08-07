@@ -19,9 +19,10 @@ that apply to everything built from here on.
 **Phase 1 (economic core) and Phase 2 (vacancy engine, now hitting the brief's own §2.4
 targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (two Bakers
 + rumour mill) is built and tested. The client/server scaffold now has real per-player
-targeted delivery, not pure broadcast** (see "What's next" below) **— but the Godot
-client itself is still unverified**, no Godot binary in this environment, so it's never
-actually been opened.
+targeted delivery, not pure broadcast, and the Godot client is now genuinely verified**
+(2026-08-07, headless against a real Godot 4.3 engine and a real running server — see
+"Things to know" below) — the one narrower gap left is the GUI editor experience
+specifically, since a headless run can't confirm that.
 
 ```
 npm install
@@ -37,8 +38,10 @@ npm run typecheck
 To see the client/server loop live: run `npm run server`, then open `client/project.godot`
 in Godot 4.3+ locally and run the main scene (set the `player_id` export on Main.gd to
 `wren`/`sable`/`idris` to see targeted rumours arrive for that identity specifically).
-**This has not been verified by anyone yet — do that and report back**, especially if
-the editor throws a parse error on first load.
+**Still worth someone opening it in a real editor** — the headless run confirms the wire
+protocol, connection string, and script logic are all correct, but says nothing about
+the actual GUI experience (does the scene open cleanly, any editor-only warnings, what it
+looks like).
 
 Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` via PR (most
 recently PR #5, merged 2026-08-07). No CI configured. See `docs/BLUEPRINT.md` for full
@@ -46,12 +49,10 @@ architecture detail.
 
 ## What's next
 
-**One thing still needs your input, carried over from earlier — doesn't block other work:**
-
-1. **Verify the Godot client actually runs.**
-
-(The other carried-over item — confirming the exit-ticket gamble's stake-formula fix —
-is moot now: that whole mechanic is superseded, see below.)
+**Both longstanding "needs your input" carried-over items are now closed.** The Godot
+client is verified (2026-08-07, headless — see "Things to know" below; a real editor
+open/report is still worthwhile but no longer a blocking unknown). The exit-ticket
+gamble's stake-formula fix is moot — that mechanic is superseded, see below.
 
 **Identity & targeted networking are now built** (2026-08-07, see
 `docs/BLUEPRINT.md`'s "Architecture scoped ahead of schedule" — scoped first in writing,
@@ -155,10 +156,17 @@ worth reading before the market-wiring or multi-shard work above.
 - **`stepMillers`/`stepBakers` throw below n=2** — intentional, not a bug to guard away.
 - **The Wall-post trigger rule in `src/mvp/scenario.ts` is scaffolding**, not a designed
   mechanic. Don't extend it as if it were real game design without checking first.
-- **The Godot client is unverified.** One likely bug already fixed from careful reading
-  (GDScript's `JSON.parse_string` returns floats for all JSON numbers, so `int`-typed
-  fields needed explicit casts) — there could be others only a real editor run would
-  surface.
+- **The Godot client is verified headless (2026-08-07), not yet in a real GUI editor.**
+  Downloaded Godot 4.3 directly and ran the actual client project in `--headless` mode
+  against a real `npm run server` instance — confirmed it connects, receives broadcast
+  ticks, and receives targeted rumours with correct fields, no errors or warnings. Found
+  and fixed one real bug this way: `WebSocketPeer.connect_to_url()` rejects a bare
+  `host:port?query` URL (needs an explicit `/` before the query string) — the server side
+  and every `ws`-based test were correct throughout, only the client's own connection
+  string was wrong. The `JSON.parse_string`-returns-floats gotcha (explicit `int(...)`
+  casts on `day`/`hop`) was also re-exercised live this run, not just reasoned about.
+  What's still unconfirmed: the actual GUI editor experience specifically (scene-open
+  warnings, visual layout) — narrower than before, not closed.
 - **The private diary is NOT part of the "signal decays with distance" family**
   (`src/comms/decay.ts`, shared by the rumour mill, and design-only so far for proximity
   conversation and shard-graph distance). The diary uses hard silent TTL expiry — no
