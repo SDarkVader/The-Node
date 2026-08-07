@@ -84,6 +84,13 @@ src/sim/        Everything that needs randomness or orchestrates the engine over
                 (tracked separately, see "Phase 2" below), gap distribution.
   vacancyCli.ts `npm run vacancy-sim` entry point; prints the same sweep table used to
                 verify (or in this case, not verify) §2.4's targets.
+  conscriptionHarness.ts  runConscriptionSim() — Miller conscription (not in the brief,
+                see the design addendum). Couples Miller slots (deterministic
+                conscription after a delay) with a lumped "other role" pool (unchanged
+                vacancy.ts mechanic) so drafting an existing role-holder produces a real
+                cascading vacancy. Deliberately not inside engine/vacancy.ts — the
+                cross-role coupling belongs at this orchestration layer.
+  conscriptionCli.ts `npm run conscription-sim` — sweeps conscription delay x N.
 
 src/comms/      Phase 3 slice — communication layer, no I/O of its own.
   grammar.ts    Wall posts + Envelopes, both built from one curated SelfState template
@@ -126,7 +133,9 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 decay.test.ts tests stepClarity/applyDistortion directly, independent of
                 the rumour mill. vacancy.regression.test.ts encodes what's genuinely
                 verified about the Phase 2 engine — NOT the brief's §2.4 numeric targets,
-                see "Open deviations."
+                see "Open deviations." conscription.regression.test.ts covers Miller
+                conscription — BACKSTOPPED time stays low, ratio trend holds, the
+                gossip/other-role cascade split is accounted for and stays bounded.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
                 DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
@@ -440,6 +449,45 @@ hazard, so this is easy to re-inspect. 3 new tests added
 (`test/vacancy.regression.test.ts`) locking in the split-metric invariant and that
 recovery hazard changes BACKSTOPPED time without materially moving the ratio. 38 tests
 total, all passing.
+
+**Resolved (2026-08-07) — Miller conscription replaces the recovery-hazard tradeoff
+entirely.** User proposed a new mechanic in response to the tradeoff above: NPC coverage
+of Miller is temporary only; past a fixed delay, a random player is mandatorily
+conscripted (from the non-role-holding "gossip layer," or from an existing holder of a
+different role — the latter creates a real cascading vacancy in the role they're pulled
+from). Full design writeup in `DESIGN_ADDENDUM_2026-08-06.md`'s "Refinement — Miller
+conscription."
+
+Built as a new sim-level module, `src/sim/conscriptionHarness.ts` — deliberately not a
+change to `engine/vacancy.ts`'s `stepSlot`, since the cross-role coupling (drafting a
+Courier creates a Courier vacancy) is inherently a multi-slot concern that belongs at
+the orchestration layer, not inside the single-slot primitive. `stepSlot` and
+`fillHazard` are reused for the "other role" slots and the pre-backstop Miller phase;
+Miller's BACKSTOPPED phase gets custom deterministic-conscription logic instead of the
+probabilistic recovery hazard.
+
+Verified this actually resolves the tradeoff, not just relocates it again: swept
+conscription delay at 3/7/14/30 days, N=50/60/80 (`npm run conscription-sim`). The
+genuine-fill:backstop ratio lands close to the brief's §2.4 targets at *every* delay
+tested (1.47-1.62 at N=50 vs. target 1.2; 2.52-3.33 at N=80 vs. target 2.8) — delay
+length barely affects the ratio at all, since it only governs what happens *after*
+backstop already fired. What delay controls is how much time Miller spends
+NPC-BACKSTOPPED, and even at a generous 30-day delay that stays under 8% — nothing like
+the 79-86% the pure-recovery-hazard approach needed to hit the same ratio. The
+other-role cascade is real but bounded: 6-13% of conscriptions pull from another role,
+consistently fewer than that role's own organic backstop-fire count (checked directly,
+not assumed).
+
+**Not fully resolved:** the pre-backstop VACANT-phase fraction (Miller sits ~6-7% of the
+time genuinely vacant before any backstop fires, vs. the brief's 1-2% target) is
+untouched by conscription — a separate, smaller residual gap. Conscription delay itself
+is also still open — every value tested keeps the ratio on target, so the choice is
+about pacing/feel (how present should the NPC be before the community's forced to
+respond), not something the simulation alone can settle. `test/conscription.regression.test.ts`
+(5 tests) locks in: BACKSTOPPED time stays low, the ratio trend with N holds, delay
+moves BACKSTOPPED time much more than it moves the ratio, the gossip/other-role split
+accounts for every conscription, and the cascade stays subordinate to organic churn. 43
+tests total, all passing.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
