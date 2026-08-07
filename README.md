@@ -19,19 +19,19 @@ This section is the current-state snapshot; for detail see:
 
 ## Status
 
-**Phase 1 (Economic Core), Phase 2's vacancy engine (recalibrated to hit the brief's own §2.4 targets, plus Miller conscription), and the §8 MVP mechanic (two Bakers + a working rumour mill) are built and tested. A client/server scaffold proves the network wire-up.** The Godot client itself is unverified — no Godot binary in the environment that built it; needs someone to open it locally and confirm it runs. Phase 2's raw vacancy dynamics didn't match the brief's own §2.4 claims under a faithful implementation with the brief's literal provisional constants; found the ratio was partly a counting bug, and proved the brief's two §2.4 numbers are structurally incompatible at its literal `t_hard=14` for any `beta`. A joint `(beta, t_hard)` recalibration plus Miller conscription (a new mechanic, mandatory role drafting once NPC coverage runs too long) together close the gap — both targets now land in range at N=50/60/80, with BACKSTOPPED time lower than the tradeoff an earlier fix required — see `docs/BLUEPRINT.md`.
+**Phase 1 (Economic Core), Phase 2's vacancy engine (recalibrated to hit the brief's own §2.4 targets, plus Miller conscription), and the §8 MVP mechanic (two Bakers + a working rumour mill) are built and tested. The client/server scaffold now has real per-player targeted delivery, not pure broadcast.** The Godot client itself is unverified — no Godot binary in the environment that built it; needs someone to open it locally and confirm it runs. Phase 2's raw vacancy dynamics didn't match the brief's own §2.4 claims under a faithful implementation with the brief's literal provisional constants; found the ratio was partly a counting bug, and proved the brief's two §2.4 numbers are structurally incompatible at its literal `t_hard=14` for any `beta`. A joint `(beta, t_hard)` recalibration plus Miller conscription (a new mechanic, mandatory role drafting once NPC coverage runs too long) together close the gap. Separately, a real player-identity primitive now backs the WebSocket server: rumours used to broadcast to every connected client regardless of who they were, defeating the rumour mill's whole point; they're now targeted per-recipient — see `docs/BLUEPRINT.md`.
 
-- `src/engine/` — the chained Cournot (Miller) → Bertrand (Baker) market, plus the Phase 2 vacancy semi-Markov process (`vacancy.ts`, not yet wired into the market). Pure functions, no I/O.
+- `src/engine/` — the chained Cournot (Miller) → Bertrand (Baker) market, the Phase 2 vacancy semi-Markov process (`vacancy.ts`, not yet wired into the market), and two new identity primitives: `player.ts` (binary identity resolution) and `privateStore.ts` (per-player private state with silent TTL expiry). Pure functions, no I/O.
 - `src/sim/` — deterministic seeded harnesses + parameter sweeps for the market (`npm run sim`), vacancy (`npm run vacancy-sim`), and Miller conscription (`npm run conscription-sim`).
 - `src/comms/` — grammar-constrained Wall/Envelopes (§3.1), rumour mill (§3.2), and a shared decay/distortion primitive (`decay.ts`) extracted from it for reuse by future distance-based systems.
 - `src/mvp/` — the §8 scenario (real engine, hardcoded flour price), shared by the CLI runner and the WebSocket server.
-- `src/server/` — WebSocket server broadcasting the MVP scenario live (`npm run server`).
+- `src/server/` — WebSocket server (`npm run server`) broadcasting shared state (Baker prices, Wall posts) to everyone, but targeting rumours only to the connection identified as their recipient via `?player=<id>`.
 - `client/` — Godot 4 scaffold client. See `client/README.md` to run it against the server.
-- `test/` — 46 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 vacancy + Miller conscription (structural guarantees and the now-met §2.4 numeric targets), the grammar template table, rumour mill, and the decay primitive.
+- `test/` — 58 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 vacancy + Miller conscription (structural guarantees and the now-met §2.4 numeric targets), the grammar template table, rumour mill, the decay primitive, the identity/private-store primitives, and a real-socket integration test verifying targeted rumour delivery.
 
 ```
 npm install
-npm test              # 46 tests
+npm test              # 58 tests
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -40,6 +40,6 @@ npm run server         # WebSocket server for the Godot client to connect to
 npm run typecheck
 ```
 
-Not yet built: real Phase 4 rendering (the current client is plain text, not the isometric/ambient-colour system), Phase 2's integration into the market engine and §2.6 Shift Cover, Phase 5 (voice/safety), Phase 6 (full stress-test harness beyond Phase 1's sweep). See `docs/HANDOVER.md` for what's next.
+Not yet built: real Phase 4 rendering (the current client is plain text, not the isometric/ambient-colour system), Phase 2's integration into the market engine and §2.6 Shift Cover, Phase 5 (voice/safety), Phase 6 (full stress-test harness beyond Phase 1's sweep). The identity primitive unblocks but doesn't yet build the private diary, proximity conversation, or the Oracle. See `docs/HANDOVER.md` for what's next.
 
 There's also substantial not-yet-built design material in `docs/DESIGN_ADDENDUM_2026-08-06.md` (shard exit ticket, the Oracle, a private diary, proximity conversation) and `docs/ECOSYSTEM_VISION_2026-08-06.md` (what NODE looks like as many shards, not one) — the latter's five standing design constraints are now binding rules in `CLAUDE.md`.
