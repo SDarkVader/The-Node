@@ -6,6 +6,60 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Postcard/tier exit-ticket addendum: verified independently, not just trusted
+
+**Context.** User pasted a full new design addendum — a tiered postcard-fusion exit
+ticket (War and Order-style fusion risk + Rise of Kingdoms-style passive accrual floor),
+superseding the single-variable gamble from `DESIGN_ADDENDUM_2026-08-06.md` — with
+simulation findings already run against it, and asked "please check it works." The
+original simulation script (`/home/claude/node_sim/postcard_tier_sim.py`, per the
+addendum's own text) lives in a different local sandbox and was never pushed to this
+repo, so there was nothing to just re-run — verifying it meant building an independent
+model from scratch, from the addendum's prose alone, same discipline as every other
+"simulate before trusting" check in this project.
+
+**Two separate checks, not one.** First, the deterministic safe-path baseline (no
+gambling) is fully closed-form given the stated 5:1 fusion ratio over 4 tiers: 5⁴ = 625
+White postcards per Orange, ×3 Orange required = 1875 White needed. At the addendum's
+illustrative 2.0/hr accrual rate, that's exactly 937.5 hours = 39.06 days — matches the
+addendum's stated "40" (rounding). At 1.0/hr: 78.12 days, matching the stated "79." No
+simulation needed for this part — pure arithmetic, and it checked out on the first pass.
+
+Second, the gambling-strategy population table (median/mean/min/max at k=4/5 through
+k=1/5 shortcut fusion) is inherently stochastic, so this needed an actual Monte Carlo.
+Wrote `design/postcard_tier_verify.py` from the addendum's prose description only —
+deliberately not looking at or guessing at the original script's internals, since it
+wasn't available to compare against anyway. Ran at the addendum's stated population size
+(n=300) across 5 different seeds to check the reported numbers against natural
+sampling noise rather than a single lucky/unlucky run. Every number in the addendum's §6
+table fell inside the range produced across those 5 seeds — median/mean landing within
+~1-2 days of the reported figures, min/max within the same order of magnitude (some
+spread expected there specifically, since extremes of a 300-sample population are
+inherently noisier than the median). Also confirmed the stated per-attempt win rates
+(80/60/40/20% for k=4..1) algebraically, not just empirically: contributing same-tier
+pieces makes the weights in the addendum's win-probability formula cancel exactly,
+leaving `p = k/5` — a clean derivation, not a coincidence of the simulation.
+
+**One assumption flagged, not silently resolved.** The addendum's prose doesn't fully
+pin down whether a "strategy k" player always gambles with exactly k pieces the moment
+they're available, or opportunistically banks toward a safe 5-piece fuse when
+convenient. Modeled the former (always-gamble, matching the "impatience relief" framing
+in the addendum's §2) since it's the more natural reading, but noted this explicitly in
+a verification note at the top of the addendum rather than treating it as settled —
+consistent with the project's rule of not silently picking an interpretation of an
+underspecified mechanic.
+
+**Result: the addendum's findings hold up.** Saved to
+`docs/DESIGN_ADDENDUM_2026-08-07.md` with the verification note prepended (same pattern
+as the 2026-08-06 addendum's stake-formula bug note), `design/postcard_tier_verify.py`
+committed alongside it, `design/README.md` updated to list it and to note the old
+`exit_ticket_gamble_sim.py` is now superseded (kept for the record, not deleted).
+`docs/HANDOVER.md` updated to retire the old "confirm the stake-formula fix" open item,
+since that whole mechanic no longer applies — also caught and fixed a leftover duplicate
+paragraph in HANDOVER.md from an earlier session's edit while in there.
+
+---
+
 ## 2026-08-07 — Identity & targeted-networking primitive: scoped, then built
 
 **Context.** User: "the addendum addresses core mechanics that can't be so easily
