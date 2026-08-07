@@ -262,7 +262,7 @@ a synonym for player-filled.
 - `p_d = 1 - (1 - p_m)^(1/30)` — daily churn from monthly. `[DERIVED]`
 - `p_c(τ) = β · (0.2 + 0.8 · min(τ/T_pain, 1)) · V(τ)` where `V(τ) = 1` if `τ < t_flag`, else `v_boost`.
 - `λ_fill(τ) = 1 - (1 - p_c(τ))^(N - R)` — §2.2, matches the brief verbatim.
-- Defaults: `beta=0.0008, tPain=14, vBoost=3.0, tFlag=3, tHard=14` — all `[CALIBRATED — provisional]` per the brief.
+- Defaults: `beta=0.03, tPain=14, vBoost=3.0, tFlag=3, tHard=3` — `tPain/vBoost/tFlag` are the brief's literal `[CALIBRATED — provisional]` values; `beta` and `tHard` were recalibrated 2026-08-07 (see "Open deviations" below) after proving the brief's literal `beta=0.0008, tHard=14` cannot hit its own §2.4 targets at any beta.
 
 ### The gap the brief leaves open: BACKSTOPPED -> FILLED
 
@@ -478,16 +478,70 @@ other-role cascade is real but bounded: 6-13% of conscriptions pull from another
 consistently fewer than that role's own organic backstop-fire count (checked directly,
 not assumed).
 
-**Not fully resolved:** the pre-backstop VACANT-phase fraction (Miller sits ~6-7% of the
-time genuinely vacant before any backstop fires, vs. the brief's 1-2% target) is
-untouched by conscription — a separate, smaller residual gap. Conscription delay itself
-is also still open — every value tested keeps the ratio on target, so the choice is
-about pacing/feel (how present should the NPC be before the community's forced to
-respond), not something the simulation alone can settle. `test/conscription.regression.test.ts`
-(5 tests) locks in: BACKSTOPPED time stays low, the ratio trend with N holds, delay
-moves BACKSTOPPED time much more than it moves the ratio, the gossip/other-role split
-accounts for every conscription, and the cascade stays subordinate to organic churn. 43
-tests total, all passing.
+Conscription delay itself is still open — every value tested keeps the ratio on target,
+so the choice is about pacing/feel (how present should the NPC be before the community's
+forced to respond), not something the simulation alone can settle.
+`test/conscription.regression.test.ts` (5 tests) locks in: BACKSTOPPED time stays low,
+the ratio trend with N holds, delay moves BACKSTOPPED time much more than it moves the
+ratio, the gossip/other-role split accounts for every conscription, and the cascade stays
+subordinate to organic churn.
+
+**Resolved (2026-08-07) — the pre-backstop VACANT-phase gap: a proven bound, then a joint
+recalibration.** Conscription only acts *after* backstop fires; it never touched why the
+pre-backstop VACANT phase itself sat at ~6-7% of Miller's slot-time against the brief's
+1-2% target. User: "tackle the residual VACANT-phase gap next."
+
+First derived a rigorous bound, independent of the specific hazard function, from pure
+counting: every backstop episode takes exactly `t_hard` days by construction, and the
+ratio definition (`ratio = genuine / backstop`) implies `backstopShare = 1/(1+ratio)` of
+all resolved episodes are backstops. So:
+
+```
+mean_vacant_duration >= backstopShare(ratio) * t_hard
+starved_fraction      >= backstopShare(ratio) * t_hard * pDaily   (approximately, via episode rate)
+```
+
+At the brief's own ratio target (1.2 at N=50), `backstopShare ≈ 45.5%`. At `t_hard=14`,
+that alone forces `starved_fraction >= 4.7%` before any genuine-fill duration is even
+counted — already above the stated 1-2% band. **The brief's own two §2.4 numbers are
+mutually exclusive at t_hard=14**, for any beta. Verified empirically, not just derived:
+swept beta alone (starved fraction barely moves, ratio explodes past 20:1) and t_hard
+alone (ratio crashes toward zero as backstops start dominating) — neither single
+parameter can close the gap, confirming the bound's implication that `t_hard` itself has
+to move.
+
+Ran a joint grid search over `(beta, t_hard)`: for each candidate `t_hard`, bisected
+`beta` to hit the N=50 ratio target, then read off the resulting starved fraction.
+Found `beta=0.03, t_hard=3` (recalibrated from the brief's literal provisional
+`beta=0.0008, t_hard=14`) hits both targets *simultaneously*, verified across N=50/60/80
+and 12 seeds at 20-year runs each:
+
+```
+beta=0.03, t_hard=3:
+  N=50: ratio=1.19  starved(VACANT-only)=1.61%  backstopped=0.42%
+  N=60: ratio=1.60  starved=1.52%                backstopped=0.33%
+  N=80: ratio=2.71  starved=1.36%                backstopped=0.22%
+
+for comparison, brief-literal beta=0.0008, t_hard=14:
+  N=50: ratio=1.27  starved=7.19%  backstopped=2.73%
+  N=80: ratio=2.90  starved=6.41%  backstopped=1.06%
+```
+
+Both targets land within range at every N tested, and BACKSTOPPED time is *lower* than
+before (0.2-0.4% vs. 1-3%) — not a repeat of the recovery-hazard NPC-dominance tradeoff
+from the earlier attempt. This is a genuine second-order effect: shrinking `t_hard` alone
+would crash the ratio, but raising `beta` in tandem keeps enough voluntary fills
+happening inside the now-shorter window to hold the ratio up, while the shorter window
+itself caps how long any single vacancy can run — both levers doing real work together,
+neither one alone.
+
+Applied as the new default in `src/sim/vacancyHarness.ts` (exported as `DEFAULTS`, now
+reused by `src/sim/conscriptionHarness.ts` instead of duplicating the constants).
+`tPain=14` was left unchanged — with `t_hard=3`, the pressure ramp never gets past ~21%
+of its plateau before the hard cap fires, which is an emergent consequence of the fit,
+not a separate deviation needing its own justification. `test/vacancy.regression.test.ts`
+now asserts the brief's actual §2.4 numeric bands (previously it deliberately didn't,
+since they were unreachable) — 3 new tests, 46 total, all passing.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 

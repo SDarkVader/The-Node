@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { runVacancySim } from '../src/sim/vacancyHarness.js';
+import { runVacancySim, DEFAULTS } from '../src/sim/vacancyHarness.js';
 
 /**
- * Regression tests for the Phase 2 vacancy engine (§2.1-2.5). Unlike Phase 1's
- * market.regression.test.ts, these do NOT assert the brief's §2.4 numeric targets
- * (voluntary:backstop ratio 1.2:1-2.8:1, starved fraction 1-2%) — a faithful
- * implementation of the brief's literal equations and stated [CALIBRATED — provisional]
- * constants (beta=0.0008, T_pain=14, v_boost=3.0) does not reproduce those numbers; see
- * docs/BLUEPRINT.md "Open deviations" for the verified finding. What's encoded here are
- * the structural properties that ARE true of this implementation and worth protecting
- * across refactors.
+ * Regression tests for the Phase 2 vacancy engine (§2.1-2.5).
+ *
+ * The brief's literal [CALIBRATED — provisional] constants (beta=0.0008, t_hard=14) do
+ * NOT reproduce its own §2.4 targets (voluntary:backstop ratio ~1.2:1 at N=50, ~2.8:1 at
+ * N=80; starved fraction 1-2%) — proved via a hazard-function-independent bound
+ * (starved_fraction >= backstopShare(ratio) * t_hard * pDaily) showing the two targets
+ * are structurally incompatible at t_hard=14, then confirmed by sweeping beta and t_hard
+ * independently (neither alone can hit both). Recalibrated 2026-08-07 via a joint
+ * (beta, t_hard) grid search to beta=0.03, t_hard=3 (see DEFAULTS in vacancyHarness.ts) —
+ * this pair hits both targets simultaneously across N=50/60/80, with BACKSTOPPED time
+ * landing lower than before, not the NPC-dominance tradeoff a recovery-hazard-only fix
+ * required. See docs/BLUEPRINT.md "Open deviations" for the full numeric trail.
  */
 
 const DAYS_PER_YEAR = 365;
@@ -54,7 +58,7 @@ describe('§2.1-2.3 — structural guarantees of the vacancy semi-Markov process
     const { gapDays } = longRun(50);
     expect(gapDays.length).toBeGreaterThan(100);
     for (const gap of gapDays) {
-      expect(gap).toBeLessThanOrEqual(14);
+      expect(gap).toBeLessThanOrEqual(DEFAULTS.tHard);
     }
   });
 
@@ -99,6 +103,42 @@ describe('§2.4 — qualitative trend preserved even though exact targets are no
     const ratio50 = at50.voluntaryFills / at50.backstopFires;
     const ratio80 = at80.voluntaryFills / at80.backstopFires;
     expect(ratio80).toBeGreaterThan(ratio50);
+  });
+});
+
+describe('§2.4 — recalibrated (beta=0.03, t_hard=3) hits the brief\'s own numeric targets', () => {
+  it('voluntary:backstop ratio lands within range of the brief\'s targets at N=50 and N=80', () => {
+    const at50 = longRun(50);
+    const at80 = longRun(80);
+    const ratio50 = at50.genuineVoluntaryFills / at50.backstopFires;
+    const ratio80 = at80.genuineVoluntaryFills / at80.backstopFires;
+    // Brief: ~1.2:1 at N=50, ~2.8:1 at N=80. Generous band — this is a calibration
+    // target, not an exact physical law, and single-seed noise is real even at 20 years.
+    expect(ratio50).toBeGreaterThan(0.8);
+    expect(ratio50).toBeLessThan(1.7);
+    expect(ratio80).toBeGreaterThan(2.0);
+    expect(ratio80).toBeLessThan(3.6);
+  });
+
+  it('starved (VACANT-only) fraction lands within the brief\'s 1-2% band at N=50 and N=80', () => {
+    const at50 = longRun(50);
+    const at80 = longRun(80);
+    const starved50 = at50.vacantSlotDays / at50.totalSlotDays;
+    const starved80 = at80.vacantSlotDays / at80.totalSlotDays;
+    // A little headroom above the literal 1-2% — same reasoning as the ratio band above.
+    expect(starved50).toBeGreaterThan(0.005);
+    expect(starved50).toBeLessThan(0.03);
+    expect(starved80).toBeGreaterThan(0.005);
+    expect(starved80).toBeLessThan(0.03);
+  });
+
+  it('BACKSTOPPED time stays low — recalibration did not reintroduce NPC dominance', () => {
+    // The failure mode this must NOT reproduce: closing the ratio gap via recovery hazard
+    // alone previously required 79-86% BACKSTOPPED time. This should stay near the low
+    // single digits, well under the 10% conscription already guarantees for Miller.
+    const r = longRun(50);
+    const backstoppedFraction = r.backstoppedSlotDays / r.totalSlotDays;
+    expect(backstoppedFraction).toBeLessThan(0.02);
   });
 });
 

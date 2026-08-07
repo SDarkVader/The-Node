@@ -6,6 +6,55 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — VACANT-phase gap resolved: a proven bound, then a joint (beta, t_hard) recalibration
+
+**Context.** Direct follow-up to the previous entry's "not fully resolved" note: Miller
+conscription fixed the NPC-dominance tradeoff but never touched the pre-backstop VACANT
+phase itself, which sat at ~6-7% of Miller's slot-time against the brief's own 1-2%
+target. User: "tackle the residual VACANT-phase gap next."
+
+**Proved it before searching for a fix, not the other way round.** Every backstop episode
+takes exactly `t_hard` days by construction, and the ratio definition implies
+`backstopShare = 1/(1+ratio)` of resolved episodes are backstops. That gives a bound
+independent of the specific hazard function: `starved_fraction >= backstopShare(ratio) *
+t_hard * pDaily`. At the brief's own N=50 ratio target (1.2), `backstopShare ≈ 45.5%`; at
+`t_hard=14` that alone forces `starved_fraction >= ~4.7%` — already above the stated 1-2%
+band, before any genuine-fill duration is even counted. **The brief's own two §2.4
+numbers are mutually exclusive at t_hard=14, for any beta at all.** Confirmed empirically
+too, not just algebraically: swept beta alone (starved fraction barely moves, ratio
+explodes) and t_hard alone (ratio crashes toward zero as backstops start dominating) —
+neither single-parameter fix works, exactly as the bound predicts.
+
+**Grid search, not a guess.** Since the bound implies t_hard itself has to shrink, and
+shrinking it alone crashes the ratio, swept `(beta, t_hard)` jointly: for each t_hard,
+bisected beta to hit the N=50 ratio target, then read off the resulting starved fraction.
+Found `beta=0.03, t_hard=3` — recalibrated from the brief's literal provisional
+`beta=0.0008, t_hard=14` — hits *both* targets simultaneously, verified across N=50/60/80
+and 12 seeds at 20-year runs: ratio 1.19/1.60/2.71 (targets ~1.2/~2.8), starved 1.6%/1.5%/
+1.4% (target 1-2%), with BACKSTOPPED time landing *lower* than before (0.2-0.4%, not the
+79-86% NPC-dominance the earlier recovery-hazard fix required). Two levers doing real
+work together, neither alone: shrinking t_hard caps how long any vacancy can run, raising
+beta keeps enough fills happening voluntarily inside the now-shorter window to hold the
+ratio up.
+
+**Applied and re-verified.** New `DEFAULTS` exported from `src/sim/vacancyHarness.ts`,
+now also imported by `conscriptionHarness.ts` instead of duplicating the constants. Full
+suite re-run after the change (nothing broke by construction — the existing structural
+tests didn't hardcode the old numbers) plus 3 new tests asserting the brief's actual §2.4
+bands are now met, since that's newly true and worth protecting. Fixed one now-stale
+assertion in the process (`gapDays <= 14` was hardcoded; now references `DEFAULTS.tHard`
+so it stays a real bound instead of a vacuous one under the new t_hard=3). 46 tests total,
+all passing, `tsc --noEmit` clean. `tPain=14` left untouched — with t_hard=3 the pressure
+ramp never gets far enough to matter pre-backstop, an emergent consequence of the fit,
+not a separate deviation.
+
+**Also this session:** brought `main` current — it had been 28 commits behind this branch
+since PR #3 (all of Phase 2, Miller conscription, and the design-doc work existed only on
+`claude/new-project-setup-h5m6f8`). Opened and merged PR #4, no conflicts, 43/43 tests
+passing pre-merge.
+
+---
+
 ## 2026-08-07 — Miller conscription: user's mechanic resolves the recovery-hazard tradeoff
 
 **Context.** Following up directly on the previous entry's finding: closing the Phase 2

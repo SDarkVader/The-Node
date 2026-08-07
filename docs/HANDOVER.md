@@ -16,14 +16,15 @@ that apply to everything built from here on.
 
 ## Current state (as of 2026-08-07)
 
-**Phase 1 (economic core) and Phase 2 (vacancy engine core, plus Miller conscription) are
-built and tested. The §8 MVP mechanic (two Bakers + rumour mill) is built and tested. A
-client/server scaffold exists and proves the wire-up, but the Godot client itself is
-unverified** — no Godot binary in this environment, so it's never actually been opened.
+**Phase 1 (economic core) and Phase 2 (vacancy engine, now hitting the brief's own §2.4
+targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (two Bakers
++ rumour mill) is built and tested. A client/server scaffold exists and proves the
+wire-up, but the Godot client itself is unverified** — no Godot binary in this
+environment, so it's never actually been opened.
 
 ```
 npm install
-npm test              # 43 tests, all passing
+npm test              # 46 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -36,7 +37,9 @@ To see the client/server loop live: run `npm run server`, then open `client/proj
 in Godot 4.3+ locally and run the main scene. **This has not been verified by anyone yet
 — do that and report back**, especially if the editor throws a parse error on first load.
 
-Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main`. No CI
+Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` via PR
+(most recently PR #4, merged 2026-08-07 — `main` was 28 commits behind before that; it
+carries all of Phase 2 vacancy, Miller conscription, and design docs now). No CI
 configured. See `docs/BLUEPRINT.md` for full architecture detail.
 
 ## What's next
@@ -47,22 +50,30 @@ configured. See `docs/BLUEPRINT.md` for full architecture detail.
 2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
    top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
 
-**Phase 2's §2.4 ratio mismatch is resolved — Miller conscription.** Yesterday's
-NPC-recovery-hazard tradeoff (matching the brief's numbers required Miller to be
-NPC-run 79-86% of the time) is gone: past a fixed delay, a real player is now
-mandatorily conscripted into a BACKSTOPPED Miller slot — from the non-role-holding
-"gossip layer," or from an existing holder of a different role (which cascades a real
-vacancy there). Verified across a delay sweep (3/7/14/30 days): the ratio lands close
-to the brief's targets at every delay, and BACKSTOPPED time stays under 8% even at the
-longest delay tested. See `docs/DESIGN_ADDENDUM_2026-08-06.md`'s "Refinement — Miller
-conscription" for the full design, `docs/BLUEPRINT.md`'s "Open deviations" for the
-numeric trail, `npm run conscription-sim` to reproduce it.
+**Phase 2's §2.4 targets are now fully resolved — both the ratio and the starved
+fraction.** Two separate fixes stacked to get here:
+
+1. **Miller conscription** (2026-08-07) — NPC coverage of a BACKSTOPPED Miller slot is
+   temporary only; past a fixed delay, a real player is mandatorily conscripted, from the
+   gossip layer or from an existing holder of a different role (cascading a real vacancy
+   there). Fixed the earlier NPC-dominance tradeoff (recovery-hazard-only would have
+   needed Miller NPC-run 79-86% of the time to hit the ratio target).
+2. **Joint (beta, t_hard) recalibration** (2026-08-07) — proved the brief's own two §2.4
+   numbers (ratio ~1.2:1 at N=50, starved fraction 1-2%) are mathematically incompatible
+   at the brief's literal `t_hard=14`, for any beta — a hazard-function-independent bound,
+   not a guess. A joint grid search found `beta=0.03, t_hard=3` hits both simultaneously
+   across N=50/60/80, with BACKSTOPPED time landing *lower* than before (0.2-0.4%), not a
+   repeat of the NPC-dominance tradeoff. Now the default in `src/sim/vacancyHarness.ts`
+   (`DEFAULTS`, shared by `conscriptionHarness.ts`).
+
+Both mechanisms compose: conscription still governs Miller's post-backstop phase; the
+recalibration fixed the pre-backstop VACANT phase conscription never touched. See
+`docs/BLUEPRINT.md`'s "Open deviations" for the full numeric trail on both, `npm run
+vacancy-sim` / `npm run conscription-sim` to reproduce.
 
 **Still open from this:** exact conscription delay (every value tried keeps the ratio on
 target, so it's a pacing/feel decision, not a number the simulation resolves for you),
-whether any role besides Miller needs this, and a separate smaller residual — the
-pre-backstop VACANT-phase fraction is still ~6-7% vs. the brief's 1-2%, untouched by
-conscription since it only acts after backstop already fires.
+and whether any role besides Miller needs conscription.
 
 **Also still needs your input, carried over from earlier:**
 
@@ -99,15 +110,19 @@ rolling silent expiry — locked design, not yet built in code).
   drift bug (`src/engine/bakers.ts`, explained there and in `BLUEPRINT.md`'s "Open
   deviations") — mean-reversion toward a flour-cost anchor instead of the brief's
   unconditional additive term. Verified not to change the §1.4 spread findings.
-- **The Phase 2 §2.4 ratio mismatch was mostly a metric bug, not a calibration
-  problem.** `voluntaryFills` originally summed genuine pre-backstop fills together with
-  backstop-recovery fills, which inflated the ratio by roughly +1. Now split into
-  `genuineVoluntaryFills`/`backstopRecoveries` (`src/sim/vacancyHarness.ts`) — use the
-  genuine count when comparing against the brief's ratio. Miller conscription
-  (`src/sim/conscriptionHarness.ts`) closes the remaining gap; see "What's next" above.
-  `src/engine/vacancy.ts` still has an interpretive gap-fill for non-Miller roles'
-  BACKSTOPPED->FILLED recovery (the brief never specifies it) — documented inline and in
-  BLUEPRINT.md, unaffected by conscription since conscription only applies to Miller.
+- **Phase 2's beta/t_hard are recalibrated, not the brief's literal values.**
+  `beta=0.03, tHard=3` (`DEFAULTS` in `src/sim/vacancyHarness.ts`, shared by
+  `conscriptionHarness.ts`) replace the brief's provisional `beta=0.0008, tHard=14` — a
+  proven bound shows those two literal values can't hit the brief's own §2.4 targets
+  simultaneously at any beta. Full derivation and grid-search trail in `BLUEPRINT.md`'s
+  "Open deviations." The original ratio mismatch was *also* partly a metric bug (fixed
+  separately): `voluntaryFills` originally summed genuine pre-backstop fills together
+  with backstop-recovery fills, inflating the ratio by roughly +1 — now split into
+  `genuineVoluntaryFills`/`backstopRecoveries`; use the genuine count when comparing
+  against the brief's ratio. `src/engine/vacancy.ts` still has an interpretive gap-fill
+  for non-Miller roles' BACKSTOPPED->FILLED recovery (the brief never specifies it) —
+  documented inline and in BLUEPRINT.md, unaffected by conscription since conscription
+  only applies to Miller.
 - **Noise magnitude in the Phase 1 market equations is a filled-in gap, not a brief
   spec.** Gaussian, sigma=0.01 by default (`DEFAULT_NOISE_SIGMA` in `src/sim/harness.ts`).
 - **`stepMillers`/`stepBakers` throw below n=2** — intentional, not a bug to guard away.
