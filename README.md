@@ -19,23 +19,24 @@ This section is the current-state snapshot; for detail see:
 
 ## Status
 
-**Phase 1 (Economic Core), Phase 2's vacancy engine core, and the §8 MVP mechanic (two Bakers + a working rumour mill) are built and tested. A client/server scaffold proves the network wire-up.** The Godot client itself is unverified — no Godot binary in the environment that built it; needs someone to open it locally and confirm it runs. Phase 2's aggregate behavior doesn't match the brief's own §2.4 claims under a faithful implementation — verified, documented, not silently forced to match; see `docs/BLUEPRINT.md`.
+**Phase 1 (Economic Core), Phase 2's vacancy engine (plus Miller conscription), and the §8 MVP mechanic (two Bakers + a working rumour mill) are built and tested. A client/server scaffold proves the network wire-up.** The Godot client itself is unverified — no Godot binary in the environment that built it; needs someone to open it locally and confirm it runs. Phase 2's raw vacancy dynamics didn't match the brief's own §2.4 claims under a faithful implementation; found the ratio was mostly a counting bug, and Miller conscription (a new mechanic, mandatory role drafting once NPC coverage runs too long) closes most of the remaining gap without the NPC-dominance tradeoff an earlier fix required — see `docs/BLUEPRINT.md`.
 
 - `src/engine/` — the chained Cournot (Miller) → Bertrand (Baker) market, plus the Phase 2 vacancy semi-Markov process (`vacancy.ts`, not yet wired into the market). Pure functions, no I/O.
-- `src/sim/` — deterministic seeded harnesses + parameter sweeps for both the market (`npm run sim`) and vacancy (`npm run vacancy-sim`).
+- `src/sim/` — deterministic seeded harnesses + parameter sweeps for the market (`npm run sim`), vacancy (`npm run vacancy-sim`), and Miller conscription (`npm run conscription-sim`).
 - `src/comms/` — grammar-constrained Wall/Envelopes (§3.1), rumour mill (§3.2), and a shared decay/distortion primitive (`decay.ts`) extracted from it for reuse by future distance-based systems.
 - `src/mvp/` — the §8 scenario (real engine, hardcoded flour price), shared by the CLI runner and the WebSocket server.
 - `src/server/` — WebSocket server broadcasting the MVP scenario live (`npm run server`).
 - `client/` — Godot 4 scaffold client. See `client/README.md` to run it against the server.
-- `test/` — 38 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 (structural guarantees, not the unreproduced §2.4 numeric targets), the grammar template table, rumour mill, and the decay primitive.
+- `test/` — 43 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 vacancy + Miller conscription (structural guarantees and the verified ratio-target trend), the grammar template table, rumour mill, and the decay primitive.
 
 ```
 npm install
-npm test          # 38 tests
-npm run sim        # Phase 1 stability-curve sweep to stdout
-npm run vacancy-sim # Phase 2 vacancy sweep to stdout
-npm run mvp        # two-Baker + rumour-mill scenario, CLI, day-by-day output
-npm run server     # WebSocket server for the Godot client to connect to
+npm test              # 43 tests
+npm run sim            # Phase 1 stability-curve sweep to stdout
+npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
+npm run conscription-sim # Miller conscription sweep (delay x N)
+npm run mvp            # two-Baker + rumour-mill scenario, CLI, day-by-day output
+npm run server         # WebSocket server for the Godot client to connect to
 npm run typecheck
 ```
 
