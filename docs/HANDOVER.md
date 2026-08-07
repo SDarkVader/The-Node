@@ -18,13 +18,14 @@ that apply to everything built from here on.
 
 **Phase 1 (economic core) and Phase 2 (vacancy engine, now hitting the brief's own §2.4
 targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (two Bakers
-+ rumour mill) is built and tested. A client/server scaffold exists and proves the
-wire-up, but the Godot client itself is unverified** — no Godot binary in this
-environment, so it's never actually been opened.
++ rumour mill) is built and tested. The client/server scaffold now has real per-player
+targeted delivery, not pure broadcast** (see "What's next" below) **— but the Godot
+client itself is still unverified**, no Godot binary in this environment, so it's never
+actually been opened.
 
 ```
 npm install
-npm test              # 46 tests, all passing
+npm test              # 58 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -34,13 +35,14 @@ npm run typecheck
 ```
 
 To see the client/server loop live: run `npm run server`, then open `client/project.godot`
-in Godot 4.3+ locally and run the main scene. **This has not been verified by anyone yet
-— do that and report back**, especially if the editor throws a parse error on first load.
+in Godot 4.3+ locally and run the main scene (set the `player_id` export on Main.gd to
+`wren`/`sable`/`idris` to see targeted rumours arrive for that identity specifically).
+**This has not been verified by anyone yet — do that and report back**, especially if
+the editor throws a parse error on first load.
 
-Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` via PR
-(most recently PR #4, merged 2026-08-07 — `main` was 28 commits behind before that; it
-carries all of Phase 2 vacancy, Miller conscription, and design docs now). No CI
-configured. See `docs/BLUEPRINT.md` for full architecture detail.
+Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` via PR (most
+recently PR #5, merged 2026-08-07). No CI configured. See `docs/BLUEPRINT.md` for full
+architecture detail.
 
 ## What's next
 
@@ -50,7 +52,19 @@ configured. See `docs/BLUEPRINT.md` for full architecture detail.
 2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
    top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
 
-**Phase 2's §2.4 targets are now fully resolved — both the ratio and the starved
+**Identity & targeted networking are now built** (2026-08-07, see
+`docs/BLUEPRINT.md`'s "Architecture scoped ahead of schedule" — scoped first in writing,
+then built once confirmed). `src/engine/player.ts` (PlayerId, binary `isKnown()`) and
+`src/engine/privateStore.ts` (generic private state with silent rolling TTL expiry) are
+the two new primitives; `src/server/ws.ts` now sends rumours only to the connection
+identified as their `heardBy`, fixing a real leak — the old broadcast protocol sent every
+player's rumour data to every connected client regardless of who they were. This unblocks
+(doesn't yet build) the private diary, proximity conversation's REFERENT slot, and the
+Oracle's per-player draw state — all of those still need their own design/build passes,
+this only removed the architectural blocker underneath them. `test/ws.integration.test.ts`
+verifies the fix against an independently-computed ground truth, not just a type-check.
+
+**Phase 2's §2.4 targets are fully resolved — both the ratio and the starved
 fraction.** Two separate fixes stacked to get here:
 
 1. **Miller conscription** (2026-08-07) — NPC coverage of a BACKSTOPPED Miller slot is
@@ -86,10 +100,11 @@ Roughly in order from here:
 - **Wire Phase 2 (vacancy + conscription) into the Phase 1 market.** Right now
   `src/engine/vacancy.ts`/`conscriptionHarness.ts` and the Baker/Miller engine are
   separate, unconnected systems — a BACKSTOPPED or conscripted Miller doesn't actually
-  participate in pricing yet. Needs a real player/NPC-agent concept in the market layer.
-- **§2.6 Shift Cover** (offline players' pre-set prices) — needs a player-session/
-  online-state concept this headless engine doesn't have. Natural to build alongside
-  whatever session/auth layer comes with a real client.
+  participate in pricing yet. `src/engine/player.ts`'s `PlayerId` exists now as a
+  building block, but the market layer doesn't reference it yet — still needs real wiring.
+- **§2.6 Shift Cover** (offline players' pre-set prices) — needs online/offline session
+  state, which `player.ts` doesn't track yet (it's just an id, not a session). Natural to
+  build alongside whatever real auth layer comes with a real client.
 - **Real Phase 4 rendering.** The current client is plain Labels/RichTextLabel — proves
   the network works, isn't the isometric camera/ambient colour/fog-of-recognition system
   the brief describes.
@@ -137,11 +152,19 @@ rolling silent expiry — locked design, not yet built in code).
   conversation and shard-graph distance). The diary uses hard silent TTL expiry — no
   gradual fade. Don't retrofit it onto `decay.ts` without checking first; that was
   explicitly rejected in favor of a hard cutoff.
-- **The brief's §7 list of explicitly-unresolved questions is still fully open** — Ruin
-  Floor, density numbers, identity resolution mode, colour palette, ripple decay-weight,
-  Wall/ambient integration, all of §5.2's legal specifics. Flag concretely when one
-  actually blocks something, get a concrete answer, keep moving — don't stall asking
-  about things that aren't blocking yet.
+- **Most of the brief's §7 list of explicitly-unresolved questions is still open** — Ruin
+  Floor, density numbers, colour palette, ripple decay-weight, Wall/ambient integration,
+  all of §5.2's legal specifics. Flag concretely when one actually blocks something, get
+  a concrete answer, keep moving — don't stall asking about things that aren't blocking
+  yet. **Identity resolution mode is the one exception** — scoped to binary for v1
+  (`src/engine/player.ts`'s `isKnown()`), forced by the private diary's SUBJECT slot. See
+  BLUEPRINT.md's "Architecture scoped ahead of schedule" for why binary was chosen over
+  gradual.
+- **`src/server/ws.ts`'s wire protocol changed shape (2026-08-07).** Rumours no longer
+  ride inside the broadcast `TickMessage` — they're a separate targeted `RumourMessage`
+  sent only to the connection that identified itself via `?player=<id>` as that rumour's
+  `heardBy`. If you're touching the server or the Godot client, read both message shapes
+  in `src/server/ws.ts` before assuming the old single-message protocol still holds.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 

@@ -71,6 +71,12 @@ src/engine/     Pure market simulation functions. No I/O, no randomness source o
   vacancy.ts    Phase 2 vacancy semi-Markov process (§2.1-2.3): FILLED/VACANT/BACKSTOPPED
                 state machine, fillHazard() (§2.2), stepSlot() for one day's transition.
                 Not yet wired into market.ts — see "Open deviations."
+  player.ts     PlayerId + isKnown() — the binary identity-resolution primitive scoped
+                in "Architecture scoped ahead of schedule" below. Doesn't decide *when*
+                a player becomes known (Phase 4), only the shape of the answer.
+  privateStore.ts  Generic per-player private state store with silent, rolling per-entry
+                TTL expiry — the storage primitive the diary (not yet built) will use.
+                Not diary-specific; see "Architecture scoped ahead of schedule."
 
 src/sim/        Everything that needs randomness or orchestrates the engine over time.
   rng.ts        Seeded PRNG (mulberry32) + gaussian sampler. All simulation randomness
@@ -119,8 +125,10 @@ src/mvp/        §8's "two Bakers plus a working rumour mill" scenario.
 src/server/     ws.ts — WebSocket server broadcasting the MVP scenario live
                 (`npm run server`). Scaffolding to prove client/server wire-up: no auth,
                 no persistence, one shared scenario for every connection, ticks on a
-                fixed interval rather than real player input. See "Client/server
-                scaffold" below for the wire protocol.
+                fixed interval rather than real player input. Two channels, not pure
+                broadcast — shared state broadcasts to everyone, rumours are targeted
+                per-connection via `?player=<id>`. See "Client/server scaffold" below
+                for the wire protocol.
 
 client/         Godot 4 project — thin renderer, not the real Phase 4 client. See
                 "Client/server scaffold" below and client/README.md.
@@ -132,10 +140,15 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 propagation, decay, distortion-sometimes-not-always, and hop caps.
                 decay.test.ts tests stepClarity/applyDistortion directly, independent of
                 the rumour mill. vacancy.regression.test.ts encodes what's genuinely
-                verified about the Phase 2 engine — NOT the brief's §2.4 numeric targets,
-                see "Open deviations." conscription.regression.test.ts covers Miller
-                conscription — BACKSTOPPED time stays low, ratio trend holds, the
-                gossip/other-role cascade split is accounted for and stays bounded.
+                verified about the Phase 2 engine — the brief's §2.4 numeric targets
+                are now among them, see "Open deviations." conscription.regression.test.ts
+                covers Miller conscription — BACKSTOPPED time stays low, ratio trend
+                holds, the gossip/other-role cascade split is accounted for and stays
+                bounded. player.test.ts and privateStore.test.ts cover the identity/
+                private-state primitives. ws.integration.test.ts spins up a real server
+                and real ws clients to verify targeted rumour delivery against an
+                independently-computed ground truth — the one test file in this repo
+                that talks over an actual socket rather than calling pure functions.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
                 DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
@@ -157,11 +170,15 @@ client/scripts/Main.gd — Godot's built-in WebSocketPeer (no addon), connects t
                          Baker prices/spread/Wall posts/rumours as plain Labels/RichTextLabel.
 ```
 
-Wire protocol: one message shape, `{ type: 'tick', day, bakers: [{id, price}], spread,
-wallPost: {authorId, state} | null, rumours: [{heardBy, heardFrom, state, distorted, hop,
-clarity}] }`. `TickMessage` type lives in `src/server/ws.ts`; the Godot side has no typed
-counterpart (GDScript's `JSON.parse_string` returns an untyped Dictionary) — if the
-message shape changes, update both sides by hand, there's no shared schema yet.
+Wire protocol: two message shapes, not one (2026-08-07, see "Architecture scoped ahead
+of schedule" below). `{ type: 'tick', day, bakers: [{id, price}], spread, wallPost:
+{authorId, state} | null }` still broadcasts identically to every connection. Rumours no
+longer ride along in that payload — `{ type: 'rumour', day, heardFrom, state, distorted,
+hop, clarity }` is sent only to the connection that identified itself (via `?player=<id>`
+on the WS URL) as that rumour's `heardBy`. `TickMessage`/`RumourMessage` types live in
+`src/server/ws.ts`; the Godot side has no typed counterpart (GDScript's
+`JSON.parse_string` returns an untyped Dictionary) — if the message shape changes, update
+both sides by hand, there's no shared schema yet.
 
 **Not verified in the Godot editor** — this environment has no Godot binary/GUI. The
 project/scene/script files were written by hand against Godot 4 syntax and the Node
@@ -339,6 +356,145 @@ who heard what (faithful or distorted, how many hops out). The trigger rule itse
 (post when price gap > threshold) is scaffolding to exercise the pipeline, not a designed
 mechanic — don't treat it as a spec for when Bakers "should" post once real player input
 exists.
+
+## Architecture scoped ahead of schedule — identity & targeted networking (2026-08-07)
+
+**[Built and tested, 2026-08-07 — see "Built" below.]** Scoping section below kept as
+written (the decisions and reasoning still stand); the build itself is documented after
+it rather than folded in, so the "why" and the "what shipped" stay separable.
+
+`docs/DESIGN_ADDENDUM_2026-08-06.md` describes several not-yet-built mechanics (private
+diary/private maps, proximity conversation, the Oracle, the exit ticket). Most of that
+doc is safely deferrable — build order (§0/§8) already says single-shard core before
+player-facing polish, and nothing breaks by designing the Oracle's odds curve or
+proximity conversation's room model later. User flagged a real exception: "the addendum
+addresses core mechanics that can't be so easily bolted on later. we need to scope those
+out now." This section is that scoping pass — decisions to lock before more scaffolding
+gets built on assumptions that would be expensive to unwind.
+
+### The concrete problem, not a hypothetical one
+
+`src/server/ws.ts` broadcasts one identical JSON payload to every connected socket (see
+"Client/server scaffold" above) — there is no per-connection identity anywhere in the
+stack, and the sim layer's own concept of a "player" doesn't extend past an anonymous
+role-slot index. This is already live, not a future risk: the MVP's `TickMessage`
+includes a `rumours` array with every `heardBy`/`heardFrom` pair for the tick, sent to
+every client regardless of who they are. The rumour mill's entire premise (§3.2,
+information asymmetry per §0) is that different players know different things — the
+current wire protocol already leaks the full omniscient rumour graph to whoever connects.
+It hasn't mattered yet only because no real client parses it selectively. It will matter
+the moment any addendum mechanic ships real per-player state on top of this.
+
+### What depends on it
+
+Traced every addendum mechanic against "does this need a real player identity and a
+private per-recipient channel, or does it just need more scaffolding on things that
+already exist":
+
+- **Private diary / private per-player maps** — the addendum itself already flags this as
+  "a materially bigger client build" than fog-of-recognition as scoped. Its SUBJECT slot
+  requires "someone actually resolved" — directly brief §7's still-open **identity
+  resolution mode** (binary vs. gradual). The diary doesn't just sit on top of that
+  open question, it forces an answer: you cannot implement "only known players can be a
+  SUBJECT" without deciding what "known" means first.
+- **Proximity conversation's REFERENT slot** — "a specific *present* player," same
+  resolved-identity dependency, plus needs per-recipient degraded state (§ spatial
+  clarity decay is different per listener, by design — that's incompatible with a single
+  broadcast payload by construction, not just by convention).
+- **The Oracle** — odds are deliberately flat/identity-agnostic, but "has this player
+  drawn today" is inherently per-account state that has to live somewhere server-side.
+- **Exit ticket** — "individual accrual only, non-transferable" (the addendum's own
+  anti-exploit requirement) is meaningless without a real account concept to attach
+  progress to.
+
+All four route through the same missing primitive. None of them need to be built now —
+the primitive they'll all eventually sit on does need to be decided now, because every
+tick of scaffolding added to the current broadcast model makes the eventual rework more
+expensive, not less.
+
+### Decisions locked now
+
+1. **A player is a first-class server-side concept**, distinct from the sim layer's
+   anonymous role-slots. Doesn't require real auth yet — a session-scoped identity is
+   enough to unblock everything above — but it has to exist as a concept the network
+   layer and any future private-state store can both reference.
+2. **The WS layer gets per-connection targeted send**, not only broadcast. Broadcast stays
+   for genuinely shared state (Baker prices, Wall posts — anything every player is
+   supposed to see identically); anything private (diary entries, degraded proximity
+   audio, a player's own Oracle-draw status) goes out addressed to one connection, never
+   folded into the shared tick payload the way rumours currently are.
+3. **Identity resolution is binary, not gradual, for v1.** Closes brief §7's open
+   question, scoped narrowly: a player is either "known" (diary SUBJECT-eligible, real
+   name/identity resolved) or "unknown" (silhouette per fog-of-recognition, cannot be a
+   SUBJECT or a proximity REFERENT). Chosen over gradual resolution because every
+   consumer of "known-ness" so far (diary SUBJECT, proximity REFERENT) treats it as a
+   gate, not a spectrum — a gradual model would need to be invented to serve mechanics
+   that don't actually ask for one. Revisit if a future mechanic genuinely needs partial
+   resolution; none identified yet.
+4. **Private per-player state (diary entries first) is server-authoritative, not
+   client-trusted.** The diary's 30-day silent expiry (design addendum) has to be
+   enforced somewhere a client can't just refuse to forget — that requires the server to
+   hold the canonical copy and apply expiry itself, even though the data is otherwise
+   never surfaced to anyone but its owner.
+
+### Explicitly not scoped now
+
+The Oracle's economic-health→odds mapping (needs Phase 2 wired into the market first,
+already tracked as its own roadmap item), proximity conversation's spatial/room model
+(needs real client movement — Phase 4, hasn't started), and multi-shard passport tiers
+(addendum's own words: "looser... not yet reduced to a concrete mechanic," and the
+brief's build order puts this well past single-shard core). None of these are blocked by
+anything above; they're just not urgent in the way the identity/networking primitive is.
+
+**[OPEN]** Exact shape of the per-player targeted-send API (a `sendTo(playerId, payload)`
+alongside the existing broadcast, vs. a full pub/sub-per-connection redesign) — an
+implementation decision, not a design one; deferred to whenever this primitive actually
+gets built rather than locked here.
+
+### Built (2026-08-07)
+
+The `[OPEN]` question above resolved to a plain `sendTo(playerId, payload)` map lookup —
+no pub/sub redesign needed at this scale, revisit if connection count ever makes a
+`Map<PlayerId, WebSocket>` lookup the wrong tool.
+
+- **`src/engine/player.ts`** — `PlayerId` (a bare string alias, no auth implied) and
+  `isKnown(subject, knownByObserver)`, the binary resolution decision as a pure function:
+  a `ReadonlySet<PlayerId>` in, `'known' | 'unknown'` out. Deliberately doesn't decide
+  *when* a player becomes known — that's still Phase 4 fog-of-recognition design: this
+  only fixes the shape of the answer.
+- **`src/engine/privateStore.ts`** — generic `PrivateStore<T>`, `addEntry`, `getAlive`.
+  Rolling per-entry expiry (each entry ages out on its own `createdOnDay + ttlDays`
+  clock), silent (no fade, no warning), and expired entries are actually dropped from the
+  backing map on read, not just filtered — verified directly in
+  `test/privateStore.test.ts`, including that one player's entries never leak into
+  another's read. Generic on purpose: the diary's exact slot contents are still `[OPEN]`
+  in the design addendum, so this only builds the storage/expiry shape, not the diary
+  itself.
+- **`src/server/ws.ts`** — the actual fix for the leak described above. Two channels now:
+  `TickMessage` (`{type: 'tick', day, bakers, spread, wallPost}`) still broadcasts
+  identically to everyone; `rumours` was removed from it entirely. A new `RumourMessage`
+  (`{type: 'rumour', day, heardFrom, state, distorted, hop, clarity}` — no `heardBy`
+  field, because delivery itself is the addressing now) goes out only to the connection
+  that identified itself via `?player=<id>` on the WS URL as that rumour's `heardBy`.
+  Startup was refactored from top-level side effects into an exported `startServer(opts):
+  Promise<ServerHandle>` (port, tickIntervalMs, seed all overridable) so it's actually
+  importable in a test; a `pathToFileURL` guard keeps `npm run server`'s CLI behavior
+  identical to before.
+- **Verified, not just compiled** (`test/ws.integration.test.ts`): replays the exact same
+  seeded scenario independently of the server to get ground truth for which player should
+  receive which rumour, then spins up a real server and two real `ws` client connections
+  (`?player=wren`, `?player=sable`) and checks the counts match exactly — plus that no
+  `tick` message ever carries a `rumours` field and no `rumour` message ever carries
+  `heardBy`. A third connection with no `?player=` gets the shared broadcast and zero
+  targeted rumours, confirming unidentified connections degrade safely rather than
+  erroring. Stable across 5 repeated local runs before being trusted (timing-based
+  integration tests get exactly this scrutiny, not less, precisely because they're more
+  prone to being flaky-then-ignored than a pure-function test).
+- **`client/scripts/Main.gd`** updated to match: an `@export var player_id` connects as
+  `?player=<id>`, and message handling now branches on `type` (`tick` vs `rumour`)
+  instead of assuming everything is a tick. Still unverified in a real Godot editor, same
+  caveat as before — only the Node side and the wire protocol were tested end-to-end.
+- 58 tests total (was 46), all passing; `tsc --noEmit` clean.
 
 ## Open deviations from the brief
 
@@ -545,6 +701,10 @@ since they were unreachable) — 3 new tests, 46 total, all passing.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
-All of them — nothing past Phase 1 is built yet. Ruin Floor (`R(t)`), density numbers,
-binary-vs-gradual identity resolution, exact colour palette, ripple decay-weight variance,
-City Wall/ambient integration, and all of §5.2's legal specifics remain open per the brief.
+Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
+City Wall/ambient integration, and all of §5.2's legal specifics remain open per the
+brief — nothing past Phase 1 is built yet, so none of these have been forced to a
+decision. **Binary-vs-gradual identity resolution is the one exception:** scoped to
+binary for v1 in "Architecture scoped ahead of schedule" above, because the private
+diary's SUBJECT slot forced the question before Phase 4 identity work was going to reach
+it naturally. Scoped, not built — no identity resolution code exists yet either way.

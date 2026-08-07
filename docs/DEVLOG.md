@@ -6,6 +6,69 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Identity & targeted-networking primitive: scoped, then built
+
+**Context.** User: "the addendum addresses core mechanics that can't be so easily
+bolted on later. we need to scope those out now." Traced every not-yet-built addendum
+mechanic (private diary, proximity conversation, the Oracle, exit ticket) against a real
+architectural gap: `src/server/ws.ts` broadcasts one identical payload to every connected
+socket, no per-connection identity anywhere in the stack. Not hypothetical — the MVP's
+`TickMessage` already sent every player's `heardBy`/`heardFrom` rumour pair to every
+connected client regardless of who they were, defeating the entire point of the rumour
+mill's information asymmetry (§0/§3.2). It hadn't mattered yet only because no real
+client parsed it selectively.
+
+**Scoped first, in writing, before touching code.** Wrote up the analysis as a new
+BLUEPRINT.md section rather than jumping straight to implementation — four decisions:
+player as a first-class server concept, per-connection targeted send alongside the
+existing broadcast, binary identity resolution for v1 (closing one of brief §7's open
+questions — the diary's SUBJECT slot forced the question), and server-authoritative
+private state for the diary's enforced expiry. Explicitly scoped OUT what didn't need
+deciding yet (Oracle's odds curve, proximity conversation's spatial model, passport
+tiers) so the write-up didn't overreach into things that genuinely can wait. User: "go
+ahead and build it."
+
+**Built.** `src/engine/player.ts` — `PlayerId`, `isKnown()` (pure, binary in/out, doesn't
+decide *when* a player becomes known — that's still Phase 4 fog-of-recognition design).
+`src/engine/privateStore.ts` — generic per-player store with rolling per-entry silent TTL
+expiry, deliberately not diary-specific since the diary's exact slot contents are still
+`[OPEN]` in the design addendum. `src/server/ws.ts` — the actual fix: split the wire
+protocol into a broadcast `TickMessage` (bakers/spread/wallPost, unchanged shape minus
+`rumours`) and a targeted `RumourMessage` sent only to the connection that identified
+itself via `?player=<id>` as that rumour's `heardBy`. Refactored server startup out of
+top-level side effects into an exported `startServer(options): Promise<ServerHandle>` so
+it's actually importable in a test, keeping `npm run server`'s behavior identical via a
+`pathToFileURL` entry-point guard. `client/scripts/Main.gd` updated to match — connects
+with `?player=<id>`, branches on message `type` instead of assuming everything's a tick.
+
+**Verified with a real server and real sockets, not just type-checked.**
+`test/ws.integration.test.ts` replays the identical seeded scenario independently of the
+server to compute ground truth for which player should receive which rumour, then spins
+up an actual `startServer()` instance and two real `ws` client connections and checks the
+delivered counts match exactly — plus that no `tick` message ever carries a `rumours`
+field and no `rumour` message ever carries `heardBy` (delivery itself is the addressing
+now). A third, unidentified connection is checked to get the shared broadcast and zero
+targeted rumours, so the fallback degrades safely rather than erroring.
+
+**One real bug caught during verification, not before.** First version of the test
+failed (`expected 37 to be 36`) — not a logic bug in the server, but a race in the test
+itself: the tick interval keeps firing regardless of when the test's poll loop notices
+the target day was reached, so a few extra ticks could already be in flight by the time
+sockets closed. Fixed by filtering received rumours to the exact day-window the ground
+truth covers, rather than racing to close sockets in time. Re-ran 5x locally before
+trusting a timing-based integration test — same scrutiny as a flaky test deserves,
+arguably more, since it's the one test file in the repo that talks over an actual socket.
+
+**Verified the smoke path manually too**, outside the test harness: a throwaway script
+with two live connections (`?player=wren`, unidentified) confirmed wren received both
+broadcasts and 15 targeted rumours over ~80 ticks while the unidentified connection
+received zero rumour messages. `npm run server` still starts and logs correctly under
+the refactored entry-point guard.
+
+58 tests total (was 46), all passing, `tsc --noEmit` clean.
+
+---
+
 ## 2026-08-07 — VACANT-phase gap resolved: a proven bound, then a joint (beta, t_hard) recalibration
 
 **Context.** Direct follow-up to the previous entry's "not fully resolved" note: Miller
