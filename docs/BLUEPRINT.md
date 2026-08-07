@@ -340,6 +340,98 @@ who heard what (faithful or distorted, how many hops out). The trigger rule itse
 mechanic — don't treat it as a spec for when Bakers "should" post once real player input
 exists.
 
+## Architecture scoped ahead of schedule — identity & targeted networking (2026-08-07)
+
+**[DESIGN — not yet built, decisions locked, implementation not started]**
+
+`docs/DESIGN_ADDENDUM_2026-08-06.md` describes several not-yet-built mechanics (private
+diary/private maps, proximity conversation, the Oracle, the exit ticket). Most of that
+doc is safely deferrable — build order (§0/§8) already says single-shard core before
+player-facing polish, and nothing breaks by designing the Oracle's odds curve or
+proximity conversation's room model later. User flagged a real exception: "the addendum
+addresses core mechanics that can't be so easily bolted on later. we need to scope those
+out now." This section is that scoping pass — decisions to lock before more scaffolding
+gets built on assumptions that would be expensive to unwind.
+
+### The concrete problem, not a hypothetical one
+
+`src/server/ws.ts` broadcasts one identical JSON payload to every connected socket (see
+"Client/server scaffold" above) — there is no per-connection identity anywhere in the
+stack, and the sim layer's own concept of a "player" doesn't extend past an anonymous
+role-slot index. This is already live, not a future risk: the MVP's `TickMessage`
+includes a `rumours` array with every `heardBy`/`heardFrom` pair for the tick, sent to
+every client regardless of who they are. The rumour mill's entire premise (§3.2,
+information asymmetry per §0) is that different players know different things — the
+current wire protocol already leaks the full omniscient rumour graph to whoever connects.
+It hasn't mattered yet only because no real client parses it selectively. It will matter
+the moment any addendum mechanic ships real per-player state on top of this.
+
+### What depends on it
+
+Traced every addendum mechanic against "does this need a real player identity and a
+private per-recipient channel, or does it just need more scaffolding on things that
+already exist":
+
+- **Private diary / private per-player maps** — the addendum itself already flags this as
+  "a materially bigger client build" than fog-of-recognition as scoped. Its SUBJECT slot
+  requires "someone actually resolved" — directly brief §7's still-open **identity
+  resolution mode** (binary vs. gradual). The diary doesn't just sit on top of that
+  open question, it forces an answer: you cannot implement "only known players can be a
+  SUBJECT" without deciding what "known" means first.
+- **Proximity conversation's REFERENT slot** — "a specific *present* player," same
+  resolved-identity dependency, plus needs per-recipient degraded state (§ spatial
+  clarity decay is different per listener, by design — that's incompatible with a single
+  broadcast payload by construction, not just by convention).
+- **The Oracle** — odds are deliberately flat/identity-agnostic, but "has this player
+  drawn today" is inherently per-account state that has to live somewhere server-side.
+- **Exit ticket** — "individual accrual only, non-transferable" (the addendum's own
+  anti-exploit requirement) is meaningless without a real account concept to attach
+  progress to.
+
+All four route through the same missing primitive. None of them need to be built now —
+the primitive they'll all eventually sit on does need to be decided now, because every
+tick of scaffolding added to the current broadcast model makes the eventual rework more
+expensive, not less.
+
+### Decisions locked now
+
+1. **A player is a first-class server-side concept**, distinct from the sim layer's
+   anonymous role-slots. Doesn't require real auth yet — a session-scoped identity is
+   enough to unblock everything above — but it has to exist as a concept the network
+   layer and any future private-state store can both reference.
+2. **The WS layer gets per-connection targeted send**, not only broadcast. Broadcast stays
+   for genuinely shared state (Baker prices, Wall posts — anything every player is
+   supposed to see identically); anything private (diary entries, degraded proximity
+   audio, a player's own Oracle-draw status) goes out addressed to one connection, never
+   folded into the shared tick payload the way rumours currently are.
+3. **Identity resolution is binary, not gradual, for v1.** Closes brief §7's open
+   question, scoped narrowly: a player is either "known" (diary SUBJECT-eligible, real
+   name/identity resolved) or "unknown" (silhouette per fog-of-recognition, cannot be a
+   SUBJECT or a proximity REFERENT). Chosen over gradual resolution because every
+   consumer of "known-ness" so far (diary SUBJECT, proximity REFERENT) treats it as a
+   gate, not a spectrum — a gradual model would need to be invented to serve mechanics
+   that don't actually ask for one. Revisit if a future mechanic genuinely needs partial
+   resolution; none identified yet.
+4. **Private per-player state (diary entries first) is server-authoritative, not
+   client-trusted.** The diary's 30-day silent expiry (design addendum) has to be
+   enforced somewhere a client can't just refuse to forget — that requires the server to
+   hold the canonical copy and apply expiry itself, even though the data is otherwise
+   never surfaced to anyone but its owner.
+
+### Explicitly not scoped now
+
+The Oracle's economic-health→odds mapping (needs Phase 2 wired into the market first,
+already tracked as its own roadmap item), proximity conversation's spatial/room model
+(needs real client movement — Phase 4, hasn't started), and multi-shard passport tiers
+(addendum's own words: "looser... not yet reduced to a concrete mechanic," and the
+brief's build order puts this well past single-shard core). None of these are blocked by
+anything above; they're just not urgent in the way the identity/networking primitive is.
+
+**[OPEN]** Exact shape of the per-player targeted-send API (a `sendTo(playerId, payload)`
+alongside the existing broadcast, vs. a full pub/sub-per-connection redesign) — an
+implementation decision, not a design one; deferred to whenever this primitive actually
+gets built rather than locked here.
+
 ## Open deviations from the brief
 
 **Baker price mean-reversion (2026-08-06) — the one real deviation so far.** The brief's
@@ -545,6 +637,10 @@ since they were unreachable) — 3 new tests, 46 total, all passing.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
-All of them — nothing past Phase 1 is built yet. Ruin Floor (`R(t)`), density numbers,
-binary-vs-gradual identity resolution, exact colour palette, ripple decay-weight variance,
-City Wall/ambient integration, and all of §5.2's legal specifics remain open per the brief.
+Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
+City Wall/ambient integration, and all of §5.2's legal specifics remain open per the
+brief — nothing past Phase 1 is built yet, so none of these have been forced to a
+decision. **Binary-vs-gradual identity resolution is the one exception:** scoped to
+binary for v1 in "Architecture scoped ahead of schedule" above, because the private
+diary's SUBJECT slot forced the question before Phase 4 identity work was going to reach
+it naturally. Scoped, not built — no identity resolution code exists yet either way.
