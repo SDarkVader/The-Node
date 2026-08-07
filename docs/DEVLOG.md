@@ -6,6 +6,53 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Miller conscription: user's mechanic resolves the recovery-hazard tradeoff
+
+**Context.** Following up directly on the previous entry's finding: closing the Phase 2
+ratio gap fully required BACKSTOPPED recovery to be very slow (~2000-day mean), which
+meant Miller sat NPC-run 79-86% of the time — presented as a real design fork, not
+picked unilaterally. User's response: NPC coverage of a scarce role like Miller should
+only ever be temporary; past a fixed delay, a random player gets mandatorily drafted
+into the role — from the non-role-holding "gossip layer," or from an existing holder of
+a *different* role, which then leaves that role vacant in turn ("one day you're Courier,
+then next the Miller... like it or not").
+
+**Built and verified, not just designed.** New module `src/sim/conscriptionHarness.ts` —
+kept the cross-role coupling logic out of `engine/vacancy.ts`'s `stepSlot` deliberately,
+since drafting a Courier away and creating a new Courier vacancy is inherently a
+multi-slot concern that belongs at the orchestration layer, not inside the tested
+single-slot primitive. Reused `stepSlot`/`fillHazard` for the "other role" pool and
+Miller's own pre-backstop phase; only Miller's BACKSTOPPED phase got new logic —
+deterministic conscription after a delay, replacing the probabilistic recovery hazard
+from the previous entry entirely.
+
+Swept conscription delay (3/7/14/30 days) across N=50/60/80 before trusting it resolved
+anything (`npm run conscription-sim`). It does: the genuine-fill:backstop ratio lands
+close to the brief's §2.4 targets at *every* delay tested, and delay barely moves the
+ratio at all (it only governs what happens after backstop already fired) — but it's the
+dominant lever on how much time Miller actually spends NPC-run, which stays under 8%
+even at a generous 30-day delay. That's the key result: unlike the pure-recovery-hazard
+version, hitting the brief's numbers no longer requires sacrificing "the community runs
+the economy." The other-role cascade is real (6-13% of conscriptions) but checked to
+stay smaller than that role's own organic backstop rate, not left as an assumption.
+
+**What this doesn't fix, stated plainly rather than folded into the win:** the
+pre-backstop VACANT-phase fraction is untouched by conscription (still ~6-7% vs. the
+brief's 1-2%) — a separate, smaller, still-open gap. Conscription resolves the
+NPC-dominance problem; it was never going to touch the earlier phase of the process.
+
+**Verified:** 5 new tests (`test/conscription.regression.test.ts`) — BACKSTOPPED time
+stays low, the ratio-vs-N trend holds, delay length moves BACKSTOPPED time far more than
+it moves the ratio, every conscription is accounted for as gossip or cascade, and the
+cascade stays subordinate to organic churn. 43 tests total, all passing, `tsc --noEmit`
+clean.
+
+**Still open:** exact conscription delay (every value tried keeps the ratio on target —
+this is a pacing/feel question, not something the simulation resolves on its own), the
+residual VACANT-phase gap, and whether any role besides Miller ever needs this.
+
+---
+
 ## 2026-08-07 — Found the real driver of the Phase 2 ratio mismatch
 
 **Context.** Yesterday's session flagged that Phase 2's §2.4 targets don't reproduce
