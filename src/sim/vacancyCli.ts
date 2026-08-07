@@ -42,8 +42,8 @@ function sweep(backstoppedRecoveryHazard?: number) {
   }
 }
 
-console.log('Default recovery hazard (fillHazard frozen at tau=t_hard, ~9-day mean recovery):');
+console.log('Default (beta=0.03, t_hard=3, recalibrated 2026-08-07 — hits the brief\'s §2.4 targets directly, see BLUEPRINT.md):');
 sweep();
 
-console.log('\nLow recovery hazard (0.0005, ~2000-day mean recovery — closer to brief\'s §2.4 numbers, but see the tradeoff in BLUEPRINT.md):');
+console.log('\nArtificially low recovery hazard (0.0005, ~2000-day mean recovery) for comparison — this is the OLD failure mode: throttling recovery instead of recalibrating t_hard/beta pushes BACKSTOPPED time to 80%+, the NPC-dominance tradeoff Miller conscription exists to avoid:');
 sweep(0.0005);

@@ -44,7 +44,20 @@ export interface VacancyRunResult {
   gapDays: number[];
 }
 
-const DEFAULTS = { beta: 0.0008, tPain: 14, vBoost: 3.0, tFlag: 3, tHard: 14 };
+/**
+ * beta and tHard were recalibrated 2026-08-07 from the brief's literal provisional
+ * values (beta=0.0008, tHard=14) after proving those two targets are structurally
+ * incompatible at tHard=14 — see docs/BLUEPRINT.md "Open deviations" for the bound
+ * (starved_fraction >= backstopShare(ratio) * tHard * pDaily) and the grid search that
+ * found this pair. Verified across N=50/60/80 and 12 seeds to hit both the ratio target
+ * (~1.2:1 at N=50, ~2.8:1 at N=80) and the starved-fraction target (1-2%) simultaneously,
+ * with BACKSTOPPED time landing lower than before (0.2-0.4%), not the NPC-dominance
+ * tradeoff the recovery-hazard-only fix required. tPain/vBoost/tFlag left at the brief's
+ * literal values — tPain's plateau is now largely moot pre-backstop since tau caps at
+ * tHard=3 before it ramps far, which is an emergent consequence of the fit, not a
+ * separate deviation.
+ */
+export const DEFAULTS = { beta: 0.03, tPain: 14, vBoost: 3.0, tFlag: 3, tHard: 3 };
 
 /** Runs R independent role-slots through the vacancy semi-Markov process for `days` days. */
 export function runVacancySim(config: VacancyRunConfig): VacancyRunResult {

@@ -1,5 +1,6 @@
 import { mulberry32 } from './rng.js';
 import { dailyChurnFromMonthly, fillHazard, stepSlot, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
+import { DEFAULTS } from './vacancyHarness.js';
 
 /**
  * Miller conscription (2026-08-07 design, not in the original brief): NPCs backstop a
@@ -50,8 +51,6 @@ export interface ConscriptionRunResult {
   totalMillerSlotDays: number;
   totalOtherSlotDays: number;
 }
-
-const DEFAULTS = { beta: 0.0008, tPain: 14, vBoost: 3.0, tFlag: 3, tHard: 14 };
 
 export function runConscriptionSim(config: ConscriptionRunConfig): ConscriptionRunResult {
   const rng = mulberry32(config.seed);
