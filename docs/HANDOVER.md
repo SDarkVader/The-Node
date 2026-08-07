@@ -46,11 +46,12 @@ architecture detail.
 
 ## What's next
 
-**Two things still need your input, carried over from earlier — neither blocks other work:**
+**One thing still needs your input, carried over from earlier — doesn't block other work:**
 
 1. **Verify the Godot client actually runs.**
-2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
-   top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
+
+(The other carried-over item — confirming the exit-ticket gamble's stake-formula fix —
+is moot now: that whole mechanic is superseded, see below.)
 
 **Identity & targeted networking are now built** (2026-08-07, see
 `docs/BLUEPRINT.md`'s "Architecture scoped ahead of schedule" — scoped first in writing,
@@ -89,11 +90,19 @@ vacancy-sim` / `npm run conscription-sim` to reproduce.
 target, so it's a pacing/feel decision, not a number the simulation resolves for you),
 and whether any role besides Miller needs conscription.
 
-**Also still needs your input, carried over from earlier:**
-
-1. **Verify the Godot client actually runs.**
-2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
-   top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
+**The exit-ticket gamble is superseded (2026-08-07) — postcard/tier system.**
+`docs/DESIGN_ADDENDUM_2026-08-06.md`'s single-variable stake formula (and its unresolved
+stake-direction bug) no longer needs fixing — it's replaced entirely by
+`docs/DESIGN_ADDENDUM_2026-08-07.md`'s tiered postcard-fusion mechanic (5 tiers,
+War-and-Order-style fusion with a Rise-of-Kingdoms-style passive accrual floor).
+Independently verified, not just simulated once and trusted: the deterministic safe-path
+baseline checks out by closed-form math (39.06 days at the illustrative 2.0/hr rate,
+matching the addendum's stated "40"), and the gambling-strategy population table was
+re-run with a fresh Monte Carlo (`design/postcard_tier_verify.py`) that reproduces every
+reported number within normal sampling noise across multiple seeds. Still `[DESIGN — not
+yet built]` — this is a design addendum, not code, same as the diary/Oracle/proximity
+conversation. `design/exit_ticket_gamble_sim.py` (the old, buggy model) is kept for the
+record, not deleted.
 
 Roughly in order from here:
 
@@ -115,9 +124,12 @@ Roughly in order from here:
   never captures audio at all.
 
 Also worth reading before any of the above: `docs/ECOSYSTEM_VISION_2026-08-06.md` (what
-NODE looks like as many shards, not one — shape-only, no mechanics to build yet) and the
-private diary refinement in the design addendum (composed slots, unprompted, ~30-day
-rolling silent expiry — locked design, not yet built in code).
+NODE looks like as many shards, not one — shape-only, no mechanics to build yet), the
+private diary refinement in `DESIGN_ADDENDUM_2026-08-06.md` (composed slots, unprompted,
+~30-day rolling silent expiry — locked design, not yet built in code), and
+`DESIGN_ADDENDUM_2026-08-07.md`'s organic shard-opening (§7) — notes it reuses the
+existing vacancy-backstop pattern at the shard level rather than needing a new primitive,
+worth reading before the market-wiring or multi-shard work above.
 
 ## Things to know before you touch this
 
