@@ -5,8 +5,20 @@ extends Control
 ## Baker prices, Wall posts, rumours as they're heard. Not the real Phase 4 renderer;
 ## that needs an isometric scene, ambient colour layers, and the fog-of-recognition
 ## system, none of which exist yet. See docs/BLUEPRINT.md.
+##
+## Two message types now, not one (2026-08-07, see docs/BLUEPRINT.md "Architecture
+## scoped ahead of schedule"): "tick" is shared broadcast state (Baker prices, spread,
+## Wall posts) identical for every connection; "rumour" is targeted, sent only to the
+## connection identified by `player_id` below — the server no longer broadcasts every
+## player's heardBy/heardFrom to everyone. Set player_id in the editor to see this
+## client "be" a specific gossip-layer identity (wren/sable/idris) or a Baker.
 
-const SERVER_URL := "ws://127.0.0.1:8080"
+const SERVER_HOST := "ws://127.0.0.1:8080"
+
+## Which in-scenario identity this client connects as. Rumours are only ever delivered
+## to the connection that identified itself as their intended recipient — see
+## src/mvp/scenario.ts's GOSSIP_PLAYERS for the available gossip-layer identities.
+@export var player_id: String = "wren"
 
 var socket := WebSocketPeer.new()
 var was_connected := false
@@ -17,11 +29,12 @@ var was_connected := false
 
 
 func _ready() -> void:
-	var err := socket.connect_to_url(SERVER_URL)
+	var server_url := "%s?player=%s" % [SERVER_HOST, player_id]
+	var err := socket.connect_to_url(server_url)
 	if err != OK:
 		status_label.text = "Failed to start connection (error %d)" % err
 		return
-	status_label.text = "Connecting to %s..." % SERVER_URL
+	status_label.text = "Connecting to %s as %s..." % [SERVER_HOST, player_id]
 
 
 func _process(_delta: float) -> void:
@@ -31,7 +44,7 @@ func _process(_delta: float) -> void:
 	if state == WebSocketPeer.STATE_OPEN:
 		if not was_connected:
 			was_connected = true
-			status_label.text = "Connected to %s" % SERVER_URL
+			status_label.text = "Connected to %s as %s" % [SERVER_HOST, player_id]
 		while socket.get_available_packet_count() > 0:
 			var packet := socket.get_packet().get_string_from_utf8()
 			_handle_message(packet)
@@ -45,9 +58,15 @@ func _handle_message(raw: String) -> void:
 	var parsed = JSON.parse_string(raw)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
-	if parsed.get("type") != "tick":
-		return
 
+	match parsed.get("type"):
+		"tick":
+			_handle_tick(parsed)
+		"rumour":
+			_handle_rumour(parsed)
+
+
+func _handle_tick(parsed: Dictionary) -> void:
 	# JSON numbers always parse as float in GDScript, so int-typed fields need an
 	# explicit cast — assigning a float straight into a declared `int` var throws
 	# a runtime type error.
@@ -65,9 +84,12 @@ func _handle_message(raw: String) -> void:
 			"[color=gold]Day %d — [Wall] %s: \"%s\"[/color]\n" % [day, wall_post["authorId"], wall_post["state"]]
 		)
 
-	var rumours: Array = parsed.get("rumours", [])
-	for r in rumours:
-		var tag := "distorted -> \"%s\"" % r["state"] if r["distorted"] else "faithful"
-		log_label.append_text(
-			"    %s hears it via %s (hop %d, %s)\n" % [r["heardBy"], r["heardFrom"], int(r["hop"]), tag]
-		)
+
+## Only ever arrives addressed to this client's own player_id — the server never sends
+## another player's rumour here, so there's no heardBy field to check on this side.
+func _handle_rumour(parsed: Dictionary) -> void:
+	var day: int = int(parsed.get("day", 0))
+	var tag := "distorted -> \"%s\"" % parsed["state"] if parsed["distorted"] else "faithful"
+	log_label.append_text(
+		"    Day %d — you hear via %s (hop %d, %s)\n" % [day, parsed["heardFrom"], int(parsed["hop"]), tag]
+	)
