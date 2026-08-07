@@ -29,7 +29,11 @@ var was_connected := false
 
 
 func _ready() -> void:
-	var server_url := "%s?player=%s" % [SERVER_HOST, player_id]
+	# Godot's WebSocketPeer.connect_to_url() rejects a bare "host:port?query" URL as
+	# invalid — it requires an explicit path before the query string, unlike most
+	# WebSocket clients (including the `ws` package the Node server/tests use, and the
+	# throwaway client this was tested against before a real Godot run caught it).
+	var server_url := "%s/?player=%s" % [SERVER_HOST, player_id]
 	var err := socket.connect_to_url(server_url)
 	if err != OK:
 		status_label.text = "Failed to start connection (error %d)" % err

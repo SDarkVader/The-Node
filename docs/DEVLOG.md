@@ -6,6 +6,49 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Godot client verified for real; found a genuine bug this way
+
+**Context.** User: "Verify the Godot client actually runs." This has been the longest-
+carried "still needs your input" item in HANDOVER.md — every prior session flagged the
+client as unverified because the build environment had no Godot binary/GUI, so it had
+never actually been opened, only written by hand against Godot 4 syntax.
+
+**Worked around the missing binary rather than reporting it as blocking again.** Checked
+for Godot on disk first (only found generic desktop mime-type registrations, not the
+engine), then tried downloading it — the session's outbound proxy allowed a direct pull
+of the official Godot 4.3 Linux release from GitHub. No GUI/display in this environment
+either, but Godot supports `--headless` mode: the real engine, real script parsing, real
+scene loading, real `WebSocketPeer` — just no rendering. That's enough to verify
+everything except the visual editor experience, which is now the one narrower thing
+still genuinely unverified (flagged explicitly as such, not glossed over).
+
+**First run failed immediately** — `ERROR: Invalid URL: ws://127.0.0.1:8080?player=wren`
+from `WebSocketPeer.connect_to_url()`. A real bug, not a fluke: Godot's WebSocket client
+rejects a bare `host:port?query` URL, unlike the `ws` package used server-side and in
+every throwaway test client this had been checked against before (`ws.integration.test.ts`
+included) — it requires an explicit path before the query string. This is exactly the
+class of bug the "unverified" caveat existed to warn about: the server-side protocol and
+its tests were correct the entire time, but the client's own connection string was
+silently broken until an actual Godot engine parsed it. Fixed with one added `/` in
+`client/scripts/Main.gd`.
+
+**Didn't stop at "it starts."** Started the real `npm run server`, ran the client
+headless against it with temporary debug prints, and watched real events arrive: a
+`tick` message with real data, then — waiting a bit longer for the mill to actually
+fire — a targeted `rumour` message addressed correctly to `wren` with the right fields
+(`heardFrom`, `state`, `distorted`, `hop`, `clarity`) and no `heardBy` leaking through,
+exactly as the 2026-08-07 targeted-networking work intended. No errors or warnings
+anywhere in the run, including the previously-fixed `int()` cast gotcha, re-exercised
+live this time instead of just reasoned about. Removed the debug prints once confirmed —
+`git diff` showed nothing left behind before committing.
+
+**Result:** the client is genuinely verified now, not just "written correctly by hand
+and hoped." `docs/BLUEPRINT.md`'s "Client/server scaffold" section rewritten to say so
+plainly, including the narrower remaining gap (GUI editor experience, not covered by a
+headless run). `docs/HANDOVER.md`'s longest-standing open item is closed.
+
+---
+
 ## 2026-08-07 — Postcard/tier exit-ticket addendum: verified independently, not just trusted
 
 **Context.** User pasted a full new design addendum — a tiered postcard-fusion exit

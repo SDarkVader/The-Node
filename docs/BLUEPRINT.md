@@ -180,14 +180,34 @@ on the WS URL) as that rumour's `heardBy`. `TickMessage`/`RumourMessage` types l
 `JSON.parse_string` returns an untyped Dictionary) — if the message shape changes, update
 both sides by hand, there's no shared schema yet.
 
-**Not verified in the Godot editor** — this environment has no Godot binary/GUI. The
-project/scene/script files were written by hand against Godot 4 syntax and the Node
-server side was tested end-to-end against a throwaway WebSocket client, but the Godot
-client itself has never actually been opened or run. One known GDScript gotcha already
-fixed: `JSON.parse_string` returns all JSON numbers as `float`, so fields typed `int` in
-GDScript (`day`, `hop`) need an explicit `int(...)` cast or Godot throws a runtime type
-error — see the comment in `client/scripts/Main.gd`. Treat the client as unverified until
-someone opens it locally and reports back.
+**Verified end-to-end, 2026-08-07.** This environment normally has no Godot binary/GUI —
+worked around by downloading the official Godot 4.3 Linux release directly (via the
+session's proxy) and running the actual client project against a real `npm run server`
+instance in `--headless` mode (no display, but the full engine — script parsing, scene
+loading, the real `WebSocketPeer`, not a stub). Not just "it starts": confirmed the
+client connects, receives broadcast `tick` messages, and receives targeted `rumour`
+messages addressed to its own `player_id` with correct fields and no runtime errors, by
+temporarily adding debug prints, watching them fire for real ticks and a real rumour, then
+removing them once confirmed (`git diff` showed nothing left behind).
+
+**Found and fixed one real bug this way** — `WebSocketPeer.connect_to_url()` rejects a
+bare `ws://host:port?query` URL as invalid; it requires an explicit path before the query
+string (`ws://host:port/?query`), unlike the `ws` package used server-side and in the
+throwaway client the server itself was tested against. This is exactly the class of bug
+the "unverified" caveat existed to catch — the server-side protocol and tests were
+correct throughout, but the client's own connection string was silently wrong until a
+real Godot engine parsed it. Fixed in `client/scripts/Main.gd`.
+
+One known GDScript gotcha, already fixed and re-confirmed live: `JSON.parse_string`
+returns all JSON numbers as `float`, so fields typed `int` in GDScript (`day`, `hop`)
+need an explicit `int(...)` cast or Godot throws a runtime type error — see the comment
+in `client/scripts/Main.gd`. No other errors or warnings appeared in the run.
+
+**Still not verified: the actual visual editor experience.** This was a headless run —
+confirms the wire protocol and script logic are correct, but not that the scene opens
+cleanly in the GUI editor, that `project.godot` has no editor-only issues, or what it
+looks like rendered. That needs someone with a real desktop/editor to open it and report
+back, same caveat as before, just narrower in scope now.
 
 ## Phase 1 — Economic Core
 
@@ -492,8 +512,9 @@ no pub/sub redesign needed at this scale, revisit if connection count ever makes
   prone to being flaky-then-ignored than a pure-function test).
 - **`client/scripts/Main.gd`** updated to match: an `@export var player_id` connects as
   `?player=<id>`, and message handling now branches on `type` (`tick` vs `rumour`)
-  instead of assuming everything is a tick. Still unverified in a real Godot editor, same
-  caveat as before — only the Node side and the wire protocol were tested end-to-end.
+  instead of assuming everything is a tick. Verified against a real Godot engine
+  (2026-08-07, see "Client/server scaffold" above) — this exact URL-with-query connection
+  string is what surfaced the `connect_to_url` bug fixed there.
 - 58 tests total (was 46), all passing; `tsc --noEmit` clean.
 
 ## Open deviations from the brief
