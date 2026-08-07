@@ -27,11 +27,11 @@ This section is the current-state snapshot; for detail see:
 - `src/mvp/` — the §8 scenario (real engine, hardcoded flour price), shared by the CLI runner and the WebSocket server.
 - `src/server/` — WebSocket server broadcasting the MVP scenario live (`npm run server`).
 - `client/` — Godot 4 scaffold client. See `client/README.md` to run it against the server.
-- `test/` — 35 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 (structural guarantees, not the unreproduced §2.4 numeric targets), the grammar template table, rumour mill, and the decay primitive.
+- `test/` — 38 tests across Phase 1 (§1.4 + price-drift fix), Phase 2 (structural guarantees, not the unreproduced §2.4 numeric targets), the grammar template table, rumour mill, and the decay primitive.
 
 ```
 npm install
-npm test          # 35 tests
+npm test          # 38 tests
 npm run sim        # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim # Phase 2 vacancy sweep to stdout
 npm run mvp        # two-Baker + rumour-mill scenario, CLI, day-by-day output
