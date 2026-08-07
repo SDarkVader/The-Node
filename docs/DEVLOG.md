@@ -6,6 +6,63 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-07 — Found the real driver of the Phase 2 ratio mismatch
+
+**Context.** Yesterday's session flagged that Phase 2's §2.4 targets don't reproduce
+under a faithful implementation, and offered the full numeric trail on request. User
+asked to try tweaking the BACKSTOPPED recovery hazard specifically and rerun the sweep.
+
+**Checked a structural hypothesis before touching the hazard at all.** Every
+`backstopFires` event in this model eventually produces exactly one recovery
+(`voluntaryFill` with `fromBackstopped: true`) later — recovery isn't permanently
+blocked. But the original `voluntaryFills` counter summed genuine pre-backstop fills
+*and* these later recoveries together. That inflates the ratio by roughly
+`(genuine/backstop) + 1` compared to what "voluntary fills outnumber backstop fires"
+almost certainly means (resolved instead of backstop, not resolved after it).
+
+Split the counters (`genuineVoluntaryFills`, `backstopRecoveries`, both now exposed from
+`runVacancySim`). That alone, no other change: N=50 ratio moved from 2.48 to 1.48
+against the brief's stated 1.2 target — confirming most of yesterday's mismatch was this
+counting bug, not beta, not the recovery hazard nobody had touched yet.
+
+**Then did what was actually asked: made the recovery hazard overridable and swept it.**
+Added `VacancyParams.backstoppedRecoveryHazard` (optional override, defaults to the
+original interpretive choice — fillHazard frozen at tau=t_hard — when omitted, so no
+default behavior changed). Swept it from 0.001 to 1.0 at N=50: the corrected ratio
+barely moves (1.14-1.51 across a 1000x range) — it's a downstream consequence of how
+long a slot sits BACKSTOPPED, not a cause of the genuine-fill-vs-backstop-fire balance.
+But it's the dominant lever on BACKSTOPPED *duration*, and at a very low rate
+(0.0005, ~2000-day mean recovery time), both of the brief's headline numbers land close
+to target simultaneously:
+
+```
+N=50: correctedRatio=1.44  vacantOnly=1.18%  (brief: 1.2, 1-2%)
+N=80: correctedRatio=2.89  vacantOnly=1.52%  (brief: 2.8)
+```
+
+**Did not adopt this as the new default.** The catch: hitting both targets this way
+requires role-slots to spend 79-86% of all time BACKSTOPPED (NPC-run) rather than
+player-run. That's not really "matching the brief" so much as relocating the problem —
+it surfaces a bigger, unaddressed design question (how often should an automated role
+realistically return to a real player?) that sits in real tension with the brief's core
+premise of an economy driven by actual Cournot/Bertrand competition. Presented this
+clearly rather than quietly picking the parameterization that makes two numbers match
+while changing the system's character.
+
+**Verified, not assumed.** 3 new tests: the split always sums back to the original
+`voluntaryFills` total, the corrected ratio is measurably closer to the brief's target
+than the inflated one, and recovery hazard changes BACKSTOPPED duration by 3x+ while
+moving the ratio by less than 0.5. 38 tests total, all passing, `tsc --noEmit` clean.
+`npm run vacancy-sim` now prints the corrected/inflated ratio at both the default and
+low-recovery-hazard settings side by side.
+
+**State at end of entry.** The recovery-hazard trade-off is now the concrete open
+question for Phase 2, not "does the implementation have a bug" — the ratio mismatch is
+understood, the remaining gap is a genuine design decision about NPC-vs-player role
+occupancy over time.
+
+---
+
 ## 2026-08-06 — Phase 2 vacancy engine built; §2.4 targets found not to reproduce
 
 **Context.** User: "let's start building what we can." Phase 2 (vacancy/churn/backstop)
