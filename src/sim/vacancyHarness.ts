@@ -13,10 +13,24 @@ export interface VacancyRunConfig {
   vBoost?: number;
   tFlag?: number;
   tHard?: number;
+  /** Override for the BACKSTOPPED -> FILLED ambient recovery hazard; see VacancyParams. */
+  backstoppedRecoveryHazard?: number;
 }
 
 export interface VacancyRunResult {
+  /** genuineVoluntaryFills + backstopRecoveries. Kept for backward compatibility; prefer
+   *  the split fields below for anything comparing against the brief's §2.4 ratio, since
+   *  that ratio almost certainly means "resolved voluntarily instead of via backstop,"
+   *  not "resolved voluntarily instead of OR after backstop." */
   voluntaryFills: number;
+  /** Fills straight out of VACANT — resolved before the hard backstop ever fired. This is
+   *  what §2.4's "voluntary fills outnumber backstop fires" almost certainly means. */
+  genuineVoluntaryFills: number;
+  /** Fills that displaced an NPC out of BACKSTOPPED — happen strictly *after* a backstop
+   *  already fired, not instead of it. Every backstopFires eventually produces exactly
+   *  one of these in this model (recovery is not permanently blocked), so including them
+   *  in the same ratio as backstopFires inflates it by roughly +1 systematically. */
+  backstopRecoveries: number;
   backstopFires: number;
   /** Slot-days spent in VACANT specifically (not FILLED, not BACKSTOPPED) — genuinely
    *  unserved, before the safety net catches it. */
@@ -44,11 +58,13 @@ export function runVacancySim(config: VacancyRunConfig): VacancyRunResult {
     vBoost: config.vBoost ?? DEFAULTS.vBoost,
     tFlag: config.tFlag ?? DEFAULTS.tFlag,
     tHard: config.tHard ?? DEFAULTS.tHard,
+    backstoppedRecoveryHazard: config.backstoppedRecoveryHazard,
   };
 
   let slots: RoleSlot[] = Array.from({ length: config.R }, () => ({ state: 'FILLED', vacantSince: null }));
 
-  let voluntaryFills = 0;
+  let genuineVoluntaryFills = 0;
+  let backstopRecoveries = 0;
   let backstopFires = 0;
   let vacantSlotDays = 0;
   let backstoppedSlotDays = 0;
@@ -60,12 +76,12 @@ export function runVacancySim(config: VacancyRunConfig): VacancyRunResult {
       else if (slot.state === 'BACKSTOPPED') backstoppedSlotDays += 1;
       const { slot: nextSlot, event } = stepSlot(slot, day, params, rng);
       if (event?.type === 'voluntaryFill') {
-        voluntaryFills += 1;
-        // Only push a "gap" for fills straight out of VACANT. A fill that displaces an
-        // NPC (fromBackstopped) isn't a longer vacancy gap — the role was continuously
-        // covered by the backstop; its gap was already recorded, capped at tHard, when
-        // backstopFires originally fired.
-        if (!event.fromBackstopped) {
+        if (event.fromBackstopped) {
+          backstopRecoveries += 1;
+          // No gap push: the gap was already recorded, capped at tHard, when
+          // backstopFires originally fired. This isn't a second vacancy gap.
+        } else {
+          genuineVoluntaryFills += 1;
           gapDays.push(event.gapDays);
         }
       } else if (event?.type === 'backstopFires') {
@@ -77,7 +93,9 @@ export function runVacancySim(config: VacancyRunConfig): VacancyRunResult {
   }
 
   return {
-    voluntaryFills,
+    voluntaryFills: genuineVoluntaryFills + backstopRecoveries,
+    genuineVoluntaryFills,
+    backstopRecoveries,
     backstopFires,
     vacantSlotDays,
     backstoppedSlotDays,

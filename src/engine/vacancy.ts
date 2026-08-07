@@ -31,6 +31,13 @@ export interface VacancyParams {
   tFlag: number;
   /** t_hard — day a vacancy is force-filled (hard backstop). [CALIBRATED — provisional] */
   tHard: number;
+  /**
+   * Ambient per-day hazard that a real player displaces the NPC once BACKSTOPPED.
+   * Optional override for experimentation — defaults to fillHazard(tHard, params) (the
+   * pressure-plateau value) when omitted, matching the original interpretive gap-fill.
+   * Unspecified by the brief either way; see docs/BLUEPRINT.md.
+   */
+  backstoppedRecoveryHazard?: number;
 }
 
 /** p_d = 1 - (1 - p_m)^(1/30) — daily churn probability derived from monthly (§1's notation table). */
@@ -107,7 +114,7 @@ export function stepSlot(
   }
 
   // BACKSTOPPED
-  const ambientHazard = fillHazard(params.tHard, params);
+  const ambientHazard = params.backstoppedRecoveryHazard ?? fillHazard(params.tHard, params);
   if (rng() < ambientHazard) {
     return {
       slot: { state: 'FILLED', vacantSince: null },

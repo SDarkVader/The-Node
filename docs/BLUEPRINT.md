@@ -396,6 +396,51 @@ guarantees and the qualitative N-dependence trend) rather than the exact numeric
 consistent with the brief's own §1.4/§2.4 framing that these figures are hypotheses to be
 checked against a real implementation, not assumed to hold.
 
+**Follow-up (2026-08-07) — found the ratio bug; recovery hazard barely matters to it.**
+User asked to tweak the BACKSTOPPED recovery hazard and rerun the sweep. Before doing
+that, checked a structural hypothesis first: every `backstopFires` in this model
+eventually produces exactly one `voluntaryFill(fromBackstopped=true)` later (recovery
+isn't permanently blocked), and the original `voluntaryFills` counter summed *both*
+genuine pre-backstop fills and these later recoveries. That inflates the ratio by
+roughly `(genuine/backstop) + 1` versus what the brief's "voluntary fills outnumber
+backstop fires" almost certainly means — resolved *instead of* backstop, not *after* it.
+
+Split the metric (`genuineVoluntaryFills` and `backstopRecoveries` now both exposed
+alongside the original `voluntaryFills` sum, in `src/sim/vacancyHarness.ts`). Effect
+alone, no other change: N=50 ratio moves from 2.48 -> 1.48 (brief target 1.2) — most of
+the original ratio mismatch was this bug, not beta, not the recovery hazard.
+
+Then swept the recovery hazard directly (now overridable via
+`VacancyParams.backstoppedRecoveryHazard` / `VacancyRunConfig`, optional, defaults to the
+original fillHazard(t_hard) interpretive choice when omitted — nothing about the default
+behavior changed). Finding: recovery hazard barely moves the corrected ratio at all
+(1.14-1.51 across a 1000x sweep from 0.001 to 1.0) — it's a downstream consequence of
+BACKSTOPPED duration, not a cause of the genuine-fill-vs-backstop-fire balance. But it's
+the dominant lever on how much slot-time is spent BACKSTOPPED at all:
+
+```
+recoveryHazard=0.0005 (mean recovery ~2000 days):
+  N=50: correctedRatio=1.44  vacantOnly=1.18%  vacant+backstopped=86.08%
+  N=60: correctedRatio=1.84  vacantOnly=1.28%  vacant+backstopped=83.32%
+  N=80: correctedRatio=2.89  vacantOnly=1.52%  vacant+backstopped=79.38%
+```
+
+Both of the brief's headline numbers (ratio, and starved-as-VACANT-only) land close to
+its stated targets simultaneously at this recovery rate. **Not adopted as the new
+default** — it comes with a real tradeoff the brief doesn't address: at this rate, role
+slots spend 79-86% of all time BACKSTOPPED (NPC-run), only 14-21% with a real player in
+the seat. That's a genuinely different picture of "the shard" than a system mostly
+driven by real Cournot/Bertrand competition, which is the whole economic premise
+elsewhere in the brief. Reproducing §2.4's two headline numbers this way surfaces a
+bigger, unaddressed question (how often should an automated role realistically return
+to a real player?) rather than resolving the original one — flagged, not decided.
+Default behavior (`backstoppedRecoveryHazard` unset) is unchanged; `npm run vacancy-sim`
+now prints both the corrected and inflated ratio, and a second sweep at the low recovery
+hazard, so this is easy to re-inspect. 3 new tests added
+(`test/vacancy.regression.test.ts`) locking in the split-metric invariant and that
+recovery hazard changes BACKSTOPPED time without materially moving the ratio. 38 tests
+total, all passing.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 All of them — nothing past Phase 1 is built yet. Ruin Floor (`R(t)`), density numbers,
