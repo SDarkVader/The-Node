@@ -59,6 +59,68 @@ gets the stabilizing benefit with none of the risk a "smarter" fallback would ca
 does it visibly react to flag-stage vs. hard-backstop-stage? Current leaning is static —
 nothing underneath it should ever imply state it doesn't actually have.
 
+### Refinement — Miller conscription (developed 2026-08-07, simulation-verified)
+
+**[DESIGN — not yet built, mechanic locked, delay length still open]**
+
+Motivated directly by a real problem found simulating Phase 2 (see
+`docs/BLUEPRINT.md`'s "Open deviations"): a Baker/Courier-style role can sit
+NPC-covered indefinitely without breaking anything, but Miller can't — its scarcity is
+the entire structural tension lever (§1.4: "keep Miller count deliberately low... this is
+the real tension lever"), and a persistently NPC-run Miller quietly removes that lever
+from the game. Stated principle: **NPC coverage of Miller is temporary only — past a
+fixed delay, the community is forced to cover it, mandatory, no opt-out** ("keeps roles
+open to anyone, like it or not").
+
+**Mechanic.** Once a Miller slot has been NPC-BACKSTOPPED for a fixed delay
+(`[CALIBRATED — provisional]`, simulated at 3/7/14/30 days — see below), a random player
+is conscripted into the role. The draft pool is everyone not already Miller: the
+non-role-holding "gossip layer," or an existing holder of a different role (e.g. a
+Courier). Drafting a gossip-layer player has no further consequence. Drafting an
+existing role-holder pulls them out of that role — "one day you're Courier, then next
+the Miller" — creating a real cascading vacancy there, which re-enters the ordinary
+vacancy/backstop cycle for that role (no conscription for non-Miller roles; only Miller
+is scarce enough to need it).
+
+**Simulation-verified, not just designed.** A prior attempt to close the gap between
+this and the brief's §2.4 targets by lowering the probabilistic BACKSTOPPED-recovery
+hazard worked numerically but required Miller to sit NPC-run 79-86% of the time — in
+direct conflict with the principle above. Conscription resolves both problems at once
+(`src/sim/conscriptionHarness.ts`, `npm run conscription-sim`):
+
+```
+R_miller=2, R_other=4, brief targets: ratio ~1.2-2.8, starved ~1-2%
+
+conscriptionDelay=7 days after backstop:
+  N=50: ratio=1.49  Miller-backstopped=1.98%  conscriptions=207 (6% from other-role)
+  N=80: ratio=2.94  Miller-backstopped=1.18%  conscriptions=123 (7% from other-role)
+
+conscriptionDelay=30 days after backstop:
+  N=50: ratio=1.47  Miller-backstopped=7.41%  conscriptions=180 (13% from other-role)
+  N=80: ratio=3.33  Miller-backstopped=4.68%  conscriptions=114 (10% from other-role)
+```
+
+The genuine-fill:backstop ratio lands close to the brief's stated targets at every delay
+tested — delay length barely moves the ratio (it's set before conscription is ever
+relevant), it mainly controls how much time Miller actually spends NPC-run, which stays
+under 8% even at a generous 30-day delay. The other-role cascade is real but modest
+(6-13% of conscriptions, and consistently smaller than that role's own organic backstop
+rate — verified, not assumed, in `test/conscription.regression.test.ts`).
+
+**What conscription does *not* fix**, worth being explicit about: the pre-backstop
+VACANT phase itself still runs around 6-7% of Miller slot-time versus the brief's stated
+1-2% "starved" target — conscription only acts after backstop already fired, so this is
+a separate, smaller, still-open residual gap (see `docs/BLUEPRINT.md`).
+
+**[OPEN]**
+- Exact conscription delay — 3/7/14/30 days all keep the ratio close to target; the
+  choice is really about *feel* (how present should the NPC be before the community gets
+  forced to respond) more than a number the simulation can settle on its own.
+- Whether "other roles" ever need their own version of this, or whether Miller is
+  genuinely the only role scarce enough to warrant mandatory conscription.
+- The residual pre-backstop VACANT-phase gap noted above — unrelated to conscription,
+  not resolved by it.
+
 ---
 
 ## Shard exit ticket
