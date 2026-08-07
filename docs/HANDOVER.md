@@ -14,7 +14,7 @@ constraints" — five binding rules (simulate before trusting, no permanent zero
 any scale, minimize what's modelable, nothing gets recorded ever, let outcomes be real)
 that apply to everything built from here on.
 
-## Current state (as of 2026-08-06)
+## Current state (as of 2026-08-07)
 
 **Phase 1 (economic core) and Phase 2 (vacancy engine core) are built and tested. The
 §8 MVP mechanic (two Bakers + rumour mill) is built and tested. A client/server scaffold
@@ -23,7 +23,7 @@ binary in this environment, so it's never actually been opened.
 
 ```
 npm install
-npm test          # 35 tests, all passing
+npm test          # 38 tests, all passing
 npm run sim        # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run mvp        # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
@@ -46,15 +46,19 @@ configured. See `docs/BLUEPRINT.md` for full architecture detail.
 2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
    top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
 
-**New, from this session — Phase 2's §2.4 targets don't reproduce.** A faithful
-implementation of the brief's literal vacancy equations and stated calibrated constants
-gives a voluntary:backstop ratio and starved fraction meaningfully different from what
-§2.4 claims (checked with real statistical power, not a small sample — see
-`docs/BLUEPRINT.md`'s "Open deviations" and this date's `DEVLOG.md` entry for the full
-numeric trace and the beta-sweep that ruled out a simple retune). Not blocking — the
-engine works and is regression-tested against what's actually verified — but worth a
-look whenever there's appetite to either retune the constants together or investigate
-the BACKSTOPPED-recovery interpretive gap more carefully.
+**Phase 2's §2.4 ratio mismatch is now understood, not just flagged.** It was mostly a
+metric-definition bug (backstop-recovery fills were being counted as if they were
+alternatives to backstop, when they're consequences of it) — fixing that alone moved the
+N=50 ratio from 2.48 to 1.48 against a brief target of 1.2. The remaining gap is a real
+design question, not a bug: closing it fully requires the BACKSTOPPED recovery hazard to
+be very low (~2000-day mean recovery), which reproduces the brief's two headline numbers
+but means role-slots spend 79-86% of all time NPC-run rather than player-run — in real
+tension with the brief's premise of a player-driven economy. **This needs your call**:
+either accept a slower/rarer recovery rate (and the NPC-dominance that implies), or
+decide the brief's exact §2.4 numbers aren't the target to hit and keep the current
+faster-recovery default. See `docs/BLUEPRINT.md`'s "Open deviations" (2026-08-07
+follow-up) and this date's `DEVLOG.md` entry for the full numeric trail — `npm run
+vacancy-sim` reproduces it directly, both settings side by side.
 
 Roughly in order from here:
 
