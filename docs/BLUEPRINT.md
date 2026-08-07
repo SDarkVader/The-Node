@@ -71,6 +71,12 @@ src/engine/     Pure market simulation functions. No I/O, no randomness source o
   vacancy.ts    Phase 2 vacancy semi-Markov process (§2.1-2.3): FILLED/VACANT/BACKSTOPPED
                 state machine, fillHazard() (§2.2), stepSlot() for one day's transition.
                 Not yet wired into market.ts — see "Open deviations."
+  player.ts     PlayerId + isKnown() — the binary identity-resolution primitive scoped
+                in "Architecture scoped ahead of schedule" below. Doesn't decide *when*
+                a player becomes known (Phase 4), only the shape of the answer.
+  privateStore.ts  Generic per-player private state store with silent, rolling per-entry
+                TTL expiry — the storage primitive the diary (not yet built) will use.
+                Not diary-specific; see "Architecture scoped ahead of schedule."
 
 src/sim/        Everything that needs randomness or orchestrates the engine over time.
   rng.ts        Seeded PRNG (mulberry32) + gaussian sampler. All simulation randomness
@@ -119,8 +125,10 @@ src/mvp/        §8's "two Bakers plus a working rumour mill" scenario.
 src/server/     ws.ts — WebSocket server broadcasting the MVP scenario live
                 (`npm run server`). Scaffolding to prove client/server wire-up: no auth,
                 no persistence, one shared scenario for every connection, ticks on a
-                fixed interval rather than real player input. See "Client/server
-                scaffold" below for the wire protocol.
+                fixed interval rather than real player input. Two channels, not pure
+                broadcast — shared state broadcasts to everyone, rumours are targeted
+                per-connection via `?player=<id>`. See "Client/server scaffold" below
+                for the wire protocol.
 
 client/         Godot 4 project — thin renderer, not the real Phase 4 client. See
                 "Client/server scaffold" below and client/README.md.
@@ -132,10 +140,15 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 propagation, decay, distortion-sometimes-not-always, and hop caps.
                 decay.test.ts tests stepClarity/applyDistortion directly, independent of
                 the rumour mill. vacancy.regression.test.ts encodes what's genuinely
-                verified about the Phase 2 engine — NOT the brief's §2.4 numeric targets,
-                see "Open deviations." conscription.regression.test.ts covers Miller
-                conscription — BACKSTOPPED time stays low, ratio trend holds, the
-                gossip/other-role cascade split is accounted for and stays bounded.
+                verified about the Phase 2 engine — the brief's §2.4 numeric targets
+                are now among them, see "Open deviations." conscription.regression.test.ts
+                covers Miller conscription — BACKSTOPPED time stays low, ratio trend
+                holds, the gossip/other-role cascade split is accounted for and stays
+                bounded. player.test.ts and privateStore.test.ts cover the identity/
+                private-state primitives. ws.integration.test.ts spins up a real server
+                and real ws clients to verify targeted rumour delivery against an
+                independently-computed ground truth — the one test file in this repo
+                that talks over an actual socket rather than calling pure functions.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
                 DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
@@ -157,11 +170,15 @@ client/scripts/Main.gd — Godot's built-in WebSocketPeer (no addon), connects t
                          Baker prices/spread/Wall posts/rumours as plain Labels/RichTextLabel.
 ```
 
-Wire protocol: one message shape, `{ type: 'tick', day, bakers: [{id, price}], spread,
-wallPost: {authorId, state} | null, rumours: [{heardBy, heardFrom, state, distorted, hop,
-clarity}] }`. `TickMessage` type lives in `src/server/ws.ts`; the Godot side has no typed
-counterpart (GDScript's `JSON.parse_string` returns an untyped Dictionary) — if the
-message shape changes, update both sides by hand, there's no shared schema yet.
+Wire protocol: two message shapes, not one (2026-08-07, see "Architecture scoped ahead
+of schedule" below). `{ type: 'tick', day, bakers: [{id, price}], spread, wallPost:
+{authorId, state} | null }` still broadcasts identically to every connection. Rumours no
+longer ride along in that payload — `{ type: 'rumour', day, heardFrom, state, distorted,
+hop, clarity }` is sent only to the connection that identified itself (via `?player=<id>`
+on the WS URL) as that rumour's `heardBy`. `TickMessage`/`RumourMessage` types live in
+`src/server/ws.ts`; the Godot side has no typed counterpart (GDScript's
+`JSON.parse_string` returns an untyped Dictionary) — if the message shape changes, update
+both sides by hand, there's no shared schema yet.
 
 **Not verified in the Godot editor** — this environment has no Godot binary/GUI. The
 project/scene/script files were written by hand against Godot 4 syntax and the Node
@@ -342,7 +359,9 @@ exists.
 
 ## Architecture scoped ahead of schedule — identity & targeted networking (2026-08-07)
 
-**[DESIGN — not yet built, decisions locked, implementation not started]**
+**[Built and tested, 2026-08-07 — see "Built" below.]** Scoping section below kept as
+written (the decisions and reasoning still stand); the build itself is documented after
+it rather than folded in, so the "why" and the "what shipped" stay separable.
 
 `docs/DESIGN_ADDENDUM_2026-08-06.md` describes several not-yet-built mechanics (private
 diary/private maps, proximity conversation, the Oracle, the exit ticket). Most of that
@@ -431,6 +450,51 @@ anything above; they're just not urgent in the way the identity/networking primi
 alongside the existing broadcast, vs. a full pub/sub-per-connection redesign) — an
 implementation decision, not a design one; deferred to whenever this primitive actually
 gets built rather than locked here.
+
+### Built (2026-08-07)
+
+The `[OPEN]` question above resolved to a plain `sendTo(playerId, payload)` map lookup —
+no pub/sub redesign needed at this scale, revisit if connection count ever makes a
+`Map<PlayerId, WebSocket>` lookup the wrong tool.
+
+- **`src/engine/player.ts`** — `PlayerId` (a bare string alias, no auth implied) and
+  `isKnown(subject, knownByObserver)`, the binary resolution decision as a pure function:
+  a `ReadonlySet<PlayerId>` in, `'known' | 'unknown'` out. Deliberately doesn't decide
+  *when* a player becomes known — that's still Phase 4 fog-of-recognition design: this
+  only fixes the shape of the answer.
+- **`src/engine/privateStore.ts`** — generic `PrivateStore<T>`, `addEntry`, `getAlive`.
+  Rolling per-entry expiry (each entry ages out on its own `createdOnDay + ttlDays`
+  clock), silent (no fade, no warning), and expired entries are actually dropped from the
+  backing map on read, not just filtered — verified directly in
+  `test/privateStore.test.ts`, including that one player's entries never leak into
+  another's read. Generic on purpose: the diary's exact slot contents are still `[OPEN]`
+  in the design addendum, so this only builds the storage/expiry shape, not the diary
+  itself.
+- **`src/server/ws.ts`** — the actual fix for the leak described above. Two channels now:
+  `TickMessage` (`{type: 'tick', day, bakers, spread, wallPost}`) still broadcasts
+  identically to everyone; `rumours` was removed from it entirely. A new `RumourMessage`
+  (`{type: 'rumour', day, heardFrom, state, distorted, hop, clarity}` — no `heardBy`
+  field, because delivery itself is the addressing now) goes out only to the connection
+  that identified itself via `?player=<id>` on the WS URL as that rumour's `heardBy`.
+  Startup was refactored from top-level side effects into an exported `startServer(opts):
+  Promise<ServerHandle>` (port, tickIntervalMs, seed all overridable) so it's actually
+  importable in a test; a `pathToFileURL` guard keeps `npm run server`'s CLI behavior
+  identical to before.
+- **Verified, not just compiled** (`test/ws.integration.test.ts`): replays the exact same
+  seeded scenario independently of the server to get ground truth for which player should
+  receive which rumour, then spins up a real server and two real `ws` client connections
+  (`?player=wren`, `?player=sable`) and checks the counts match exactly — plus that no
+  `tick` message ever carries a `rumours` field and no `rumour` message ever carries
+  `heardBy`. A third connection with no `?player=` gets the shared broadcast and zero
+  targeted rumours, confirming unidentified connections degrade safely rather than
+  erroring. Stable across 5 repeated local runs before being trusted (timing-based
+  integration tests get exactly this scrutiny, not less, precisely because they're more
+  prone to being flaky-then-ignored than a pure-function test).
+- **`client/scripts/Main.gd`** updated to match: an `@export var player_id` connects as
+  `?player=<id>`, and message handling now branches on `type` (`tick` vs `rumour`)
+  instead of assuming everything is a tick. Still unverified in a real Godot editor, same
+  caveat as before — only the Node side and the wire protocol were tested end-to-end.
+- 58 tests total (was 46), all passing; `tsc --noEmit` clean.
 
 ## Open deviations from the brief
 
