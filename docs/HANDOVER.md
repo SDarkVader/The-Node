@@ -16,18 +16,19 @@ that apply to everything built from here on.
 
 ## Current state (as of 2026-08-07)
 
-**Phase 1 (economic core) and Phase 2 (vacancy engine core) are built and tested. The
-§8 MVP mechanic (two Bakers + rumour mill) is built and tested. A client/server scaffold
-exists and proves the wire-up, but the Godot client itself is unverified** — no Godot
-binary in this environment, so it's never actually been opened.
+**Phase 1 (economic core) and Phase 2 (vacancy engine core, plus Miller conscription) are
+built and tested. The §8 MVP mechanic (two Bakers + rumour mill) is built and tested. A
+client/server scaffold exists and proves the wire-up, but the Godot client itself is
+unverified** — no Godot binary in this environment, so it's never actually been opened.
 
 ```
 npm install
-npm test          # 38 tests, all passing
-npm run sim        # Phase 1 stability-curve sweep to stdout
-npm run vacancy-sim # Phase 2 vacancy sweep to stdout (N=50/60/80)
-npm run mvp        # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
-npm run server     # WebSocket server broadcasting the MVP scenario live
+npm test              # 43 tests, all passing
+npm run sim            # Phase 1 stability-curve sweep to stdout
+npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
+npm run conscription-sim # Miller conscription sweep (delay x N)
+npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
+npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
 ```
 
@@ -46,26 +47,35 @@ configured. See `docs/BLUEPRINT.md` for full architecture detail.
 2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
    top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
 
-**Phase 2's §2.4 ratio mismatch is now understood, not just flagged.** It was mostly a
-metric-definition bug (backstop-recovery fills were being counted as if they were
-alternatives to backstop, when they're consequences of it) — fixing that alone moved the
-N=50 ratio from 2.48 to 1.48 against a brief target of 1.2. The remaining gap is a real
-design question, not a bug: closing it fully requires the BACKSTOPPED recovery hazard to
-be very low (~2000-day mean recovery), which reproduces the brief's two headline numbers
-but means role-slots spend 79-86% of all time NPC-run rather than player-run — in real
-tension with the brief's premise of a player-driven economy. **This needs your call**:
-either accept a slower/rarer recovery rate (and the NPC-dominance that implies), or
-decide the brief's exact §2.4 numbers aren't the target to hit and keep the current
-faster-recovery default. See `docs/BLUEPRINT.md`'s "Open deviations" (2026-08-07
-follow-up) and this date's `DEVLOG.md` entry for the full numeric trail — `npm run
-vacancy-sim` reproduces it directly, both settings side by side.
+**Phase 2's §2.4 ratio mismatch is resolved — Miller conscription.** Yesterday's
+NPC-recovery-hazard tradeoff (matching the brief's numbers required Miller to be
+NPC-run 79-86% of the time) is gone: past a fixed delay, a real player is now
+mandatorily conscripted into a BACKSTOPPED Miller slot — from the non-role-holding
+"gossip layer," or from an existing holder of a different role (which cascades a real
+vacancy there). Verified across a delay sweep (3/7/14/30 days): the ratio lands close
+to the brief's targets at every delay, and BACKSTOPPED time stays under 8% even at the
+longest delay tested. See `docs/DESIGN_ADDENDUM_2026-08-06.md`'s "Refinement — Miller
+conscription" for the full design, `docs/BLUEPRINT.md`'s "Open deviations" for the
+numeric trail, `npm run conscription-sim` to reproduce it.
+
+**Still open from this:** exact conscription delay (every value tried keeps the ratio on
+target, so it's a pacing/feel decision, not a number the simulation resolves for you),
+whether any role besides Miller needs this, and a separate smaller residual — the
+pre-backstop VACANT-phase fraction is still ~6-7% vs. the brief's 1-2%, untouched by
+conscription since it only acts after backstop already fires.
+
+**Also still needs your input, carried over from earlier:**
+
+1. **Verify the Godot client actually runs.**
+2. **Confirm the exit-ticket gamble stake-formula fix** (`docs/DESIGN_ADDENDUM_2026-08-06.md`'s
+   top note) — verified numerically, not applied to `design/exit_ticket_gamble_sim.py` yet.
 
 Roughly in order from here:
 
-- **Wire Phase 2 into the Phase 1 market.** Right now `src/engine/vacancy.ts` and the
-  Baker/Miller engine are separate, unconnected systems — a BACKSTOPPED slot doesn't
-  actually participate in pricing yet. Needs a real player/NPC-agent concept in the
-  market layer that doesn't exist yet.
+- **Wire Phase 2 (vacancy + conscription) into the Phase 1 market.** Right now
+  `src/engine/vacancy.ts`/`conscriptionHarness.ts` and the Baker/Miller engine are
+  separate, unconnected systems — a BACKSTOPPED or conscripted Miller doesn't actually
+  participate in pricing yet. Needs a real player/NPC-agent concept in the market layer.
 - **§2.6 Shift Cover** (offline players' pre-set prices) — needs a player-session/
   online-state concept this headless engine doesn't have. Natural to build alongside
   whatever session/auth layer comes with a real client.
@@ -89,11 +99,15 @@ rolling silent expiry — locked design, not yet built in code).
   drift bug (`src/engine/bakers.ts`, explained there and in `BLUEPRINT.md`'s "Open
   deviations") — mean-reversion toward a flour-cost anchor instead of the brief's
   unconditional additive term. Verified not to change the §1.4 spread findings.
-- **Phase 2's calibrated constants (`beta=0.0008` etc.) don't reproduce the brief's §2.4
-  targets** — see "What's next" above. The equations are implemented verbatim; the
-  discrepancy is in the aggregate outcome, not a transcription error (checked).
-  `src/engine/vacancy.ts` also has a genuine interpretive gap-fill (BACKSTOPPED->FILLED
-  recovery rate) the brief never specifies — documented inline and in BLUEPRINT.md.
+- **The Phase 2 §2.4 ratio mismatch was mostly a metric bug, not a calibration
+  problem.** `voluntaryFills` originally summed genuine pre-backstop fills together with
+  backstop-recovery fills, which inflated the ratio by roughly +1. Now split into
+  `genuineVoluntaryFills`/`backstopRecoveries` (`src/sim/vacancyHarness.ts`) — use the
+  genuine count when comparing against the brief's ratio. Miller conscription
+  (`src/sim/conscriptionHarness.ts`) closes the remaining gap; see "What's next" above.
+  `src/engine/vacancy.ts` still has an interpretive gap-fill for non-Miller roles'
+  BACKSTOPPED->FILLED recovery (the brief never specifies it) — documented inline and in
+  BLUEPRINT.md, unaffected by conscription since conscription only applies to Miller.
 - **Noise magnitude in the Phase 1 market equations is a filled-in gap, not a brief
   spec.** Gaussian, sigma=0.01 by default (`DEFAULT_NOISE_SIGMA` in `src/sim/harness.ts`).
 - **`stepMillers`/`stepBakers` throw below n=2** — intentional, not a bug to guard away.
