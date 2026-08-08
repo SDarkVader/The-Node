@@ -22,11 +22,14 @@ targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (t
 targeted delivery, not pure broadcast, and the Godot client is now genuinely verified**
 (2026-08-07, headless against a real Godot 4.3 engine and a real running server — see
 "Things to know" below) — the one narrower gap left is the GUI editor experience
-specifically, since a headless run can't confirm that.
+specifically, since a headless run can't confirm that. **A new ecosystem-scale mechanics
+layer is also built and tested** (economic floor, migration valve, sabotage, experience,
+districting — `src/engine/ecosystem.ts`, ported from a parallel design session, see
+"What's next" below), not yet wired into anything else.
 
 ```
 npm install
-npm test              # 58 tests, all passing
+npm test              # 68 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -82,6 +85,32 @@ fraction.** Two separate fixes stacked to get here:
    repeat of the NPC-dominance tradeoff. Now the default in `src/sim/vacancyHarness.ts`
    (`DEFAULTS`, shared by `conscriptionHarness.ts`).
 
+**Ecosystem-scale mechanics are now built** (2026-08-07, `src/engine/ecosystem.ts`,
+ported from a parallel design session — see `docs/BLUEPRINT.md`'s "Ecosystem-scale
+mechanics" for the full trail). Economic floor (`economicHealth()`, generalizing
+Ecosystem Vision's ruin/rejuvenation finding into a real number — floors at exactly 0.4,
+never zero), a migration valve (population-level emigration pressure, self-stabilizing),
+sabotage (adversarial slot-eviction, suppresses but never zeroes a shard under sustained
+attack), experience/travel-decay, and core/periphery districting. Wired against
+`vacancy.ts`'s existing slot states, not a duplicate system. **Three real gaps flagged,
+not resolved — need your call:**
+
+1. Whether `TRAVEL_DAYS_TARGET=168` (~6 months) is the same clock as the postcard/tier
+   exit ticket's revised 4-8 week target (in which case it's stale) or a genuinely
+   separate post-departure window.
+2. What happens to a saboteur who gets caught — `sabotageAttempt()` only tracks who
+   succeeds undetected, no consequence defined for the rest.
+3. The two economic-health formulas (`economicHealth()` vs.
+   `economicHealthWithExperience()`) were validated independently and never run together
+   — the source material's own admitted gap, carried forward as-is.
+
+**Also still open:** the specific expanded role roster ("role increase" — you've said
+the brief's own 1/3-role-holder split is rejected, "each role produces a resource
+someone else needs," but the actual role list is deliberately not designed yet, your
+call to build as nuance on top of this foundation). None of the eight roles named in
+`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` (Farmer, Miller, Baker, Smith, Miner,
+Healer, Courier, Watchman) are locked — "the roles are arbitrary."
+
 Both mechanisms compose: conscription still governs Miller's post-backstop phase; the
 recalibration fixed the pre-backstop VACANT phase conscription never touched. See
 `docs/BLUEPRINT.md`'s "Open deviations" for the full numeric trail on both, `npm run
@@ -123,11 +152,17 @@ Roughly in order from here:
   caution. Consider building proximity conversation (`docs/DESIGN_ADDENDUM_2026-08-06.md`)
   alongside this — it may substantially shrink what Phase 5 even needs to cover, since it
   never captures audio at all.
+- **Wire `src/engine/ecosystem.ts` into the vacancy/market layers**, and answer the three
+  flagged gaps above first — building further on top of `TRAVEL_DAYS_TARGET` or sabotage
+  before those are resolved risks having to unwind it later.
 
 Also worth reading before any of the above: `docs/ECOSYSTEM_VISION_2026-08-06.md` (what
-NODE looks like as many shards, not one — shape-only, no mechanics to build yet), the
-private diary refinement in `DESIGN_ADDENDUM_2026-08-06.md` (composed slots, unprompted,
-~30-day rolling silent expiry — locked design, not yet built in code), and
+NODE looks like as many shards, not one — shape-only, no mechanics to build yet),
+`docs/NODE_BUILD_SPEC_2026-08-07.md` and `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`
+(the ecosystem mechanics' source spec and the visual data contract it needs to stay
+consistent with), the private diary refinement in `DESIGN_ADDENDUM_2026-08-06.md`
+(composed slots, unprompted, ~30-day rolling silent expiry — locked design, not yet
+built in code), and
 `DESIGN_ADDENDUM_2026-08-07.md`'s organic shard-opening (§7) — notes it reuses the
 existing vacancy-backstop pattern at the shard level rather than needing a new primitive,
 worth reading before the market-wiring or multi-shard work above.
@@ -185,6 +220,20 @@ worth reading before the market-wiring or multi-shard work above.
   sent only to the connection that identified itself via `?player=<id>` as that rumour's
   `heardBy`. If you're touching the server or the Godot client, read both message shapes
   in `src/server/ws.ts` before assuming the old single-message protocol still holds.
+- **`src/engine/ecosystem.ts` is ported from a different session's design work, not
+  originated here.** Re-verified independently before porting (both the Python and TS
+  originals were actually run and reproduced every claimed result), but it carries three
+  real gaps forward unresolved — see "What's next" above before building on top of it,
+  especially `TRAVEL_DAYS_TARGET` and sabotage. It's also the data model
+  `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`'s visual mapping depends on — every
+  export's doc comment says which row it feeds; keep that annotation current if the
+  functions change shape.
+- **The brief's own §1.5 role-slot mix (~1/3 role-holding, ~2/3 gossip-layer) is
+  superseded (2026-08-07).** "We can't have a population with 2/3 with nothing to
+  stake" — the correction is recorded, the actual expanded role content isn't designed
+  yet. Don't treat `vacancy.ts`/`vacancyHarness.ts`'s existing test defaults (R=2-4 out
+  of N=50-80) as still reflecting the intended ratio; they haven't been revisited since
+  this correction.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 
