@@ -12,6 +12,7 @@ import {
   migrationValveStep,
   applySabotageDamage,
 } from '../src/engine/ecosystem.js';
+import { runCombinedEconomySim, tailMean } from '../src/sim/ecosystemHarness.js';
 
 /**
  * Regression tests for the ecosystem-scale mechanics (economic floor, detection,
@@ -22,11 +23,12 @@ import {
  * was written — same discipline as every other validated finding in this repo, not
  * trusted on the source material's claim alone.
  *
- * See `src/engine/ecosystem.ts`'s header for the known gaps carried forward
- * unresolved: the two economic-health formulas were never run together; the
+ * See `src/engine/ecosystem.ts`'s header for the remaining known gaps: the
  * relationship between TRAVEL_DAYS_TARGET and the postcard/tier exit ticket's revised
  * 4-8 week target is unresolved; sabotage has no defined consequence for a caught
- * saboteur; nothing here yet models a district as persistent state.
+ * saboteur; nothing here yet models a district as persistent state. The "two
+ * economic-health formulas never run together" gap is now closed — see the "run
+ * together" describe block below and `src/sim/ecosystemHarness.ts`.
  */
 
 describe('economicHealth — the NPC floor never actually reaches zero', () => {
@@ -147,6 +149,74 @@ describe('tick order — sabotage before vs. after arrival makes negligible diff
     const before = run(true, 1);
     const after = run(false, 1);
     expect(Math.abs(before - after)).toBeLessThan(0.01);
+  });
+});
+
+describe('the two economic-health formulas, run together on one real trajectory (2026-08-08)', () => {
+  // Closes the "known gap" flagged in ecosystem.ts's header: economicHealth() and
+  // economicHealthWithExperience() were validated independently and never run
+  // together. User: "run the economies together. we won't know otherwise." Uses
+  // vacancy.ts's real per-slot dynamics via runCombinedEconomySim, not the toy
+  // aggregate-count model this file's other describe blocks use.
+  const DAYS = 2000;
+  const BURN_IN = 400;
+  const SEEDS = [1, 2, 3, 4, 5];
+
+  it('under baseline churn (no sabotage), economicHealthWithExperience runs measurably below economicHealth', () => {
+    // Even with near-full occupancy, constant churn keeps average experience below
+    // the cap, so the experience-aware metric reads lower — the two formulas are not
+    // interchangeable even in the least adversarial case.
+    for (const seed of SEEDS) {
+      const r = runCombinedEconomySim({ seed, days: DAYS, sabotageMode: 'none' });
+      const eh = tailMean(r.economicHealthSeries, BURN_IN);
+      const ehExp = tailMean(r.economicHealthWithExperienceSeries, BURN_IN);
+      expect(eh).toBeGreaterThan(0.95);
+      expect(ehExp).toBeLessThan(eh);
+      expect(eh - ehExp).toBeGreaterThan(0.03);
+      expect(eh - ehExp).toBeLessThan(0.1);
+    }
+  });
+
+  it('sustained sabotage widens the gap roughly 3x versus baseline — economicHealth alone understates the damage', () => {
+    // The real finding: a dashboard using only economicHealth() would see a shard
+    // "basically fine" (occupancy recovers fast under this repo's recalibrated
+    // vacancy defaults) while economicHealthWithExperience() reveals meaningfully
+    // suppressed output, because forced turnover keeps re-filled slots inexperienced.
+    for (const seed of SEEDS) {
+      const baseline = runCombinedEconomySim({ seed, days: DAYS, sabotageMode: 'none' });
+      const sabotaged = runCombinedEconomySim({ seed, days: DAYS, sabotageMode: 'fixed-success' });
+      const baselineGap =
+        tailMean(baseline.economicHealthSeries, BURN_IN) - tailMean(baseline.economicHealthWithExperienceSeries, BURN_IN);
+      const sabotagedGap =
+        tailMean(sabotaged.economicHealthSeries, BURN_IN) - tailMean(sabotaged.economicHealthWithExperienceSeries, BURN_IN);
+      expect(sabotagedGap).toBeGreaterThan(baselineGap * 2);
+    }
+  });
+
+  it('with real detection wired in, sabotage rarely succeeds at realistic (near-full) witness counts', () => {
+    // sabotageAttempt() existed in the source material but was never actually
+    // exercised — the original acceptance test hardcoded "3 successes" and bypassed
+    // detection entirely. Wiring it in for real: at the witness density this repo's
+    // recalibrated vacancy defaults maintain (~23-24 of 24 slots filled), per-witness
+    // detection compounds to near-certain, so successful sabotage rounds are rare.
+    for (const seed of SEEDS) {
+      const r = runCombinedEconomySim({ seed, days: DAYS, sabotageMode: 'detection-driven' });
+      const rounds = r.sabotageRounds.filter((round) => round.day >= BURN_IN);
+      const meanSuccess = rounds.reduce((a, b) => a + b.successCount, 0) / rounds.length;
+      expect(meanSuccess).toBeLessThan(0.5); // well under 1 of 3 saboteurs succeeding, on average
+    }
+  });
+
+  it('detection-driven sabotage barely dents economicHealthWithExperience, unlike the fixed-success assumption', () => {
+    // Direct comparison: the fixed-success model (matching the original acceptance
+    // test) shows real, sustained suppression; the detection-driven model, run under
+    // the exact same vacancy dynamics, does not — because it essentially never lands
+    // a hit. The two sabotage models diverge sharply once detection is real.
+    const fixedSuccess = runCombinedEconomySim({ seed: 1, days: DAYS, sabotageMode: 'fixed-success' });
+    const detectionDriven = runCombinedEconomySim({ seed: 1, days: DAYS, sabotageMode: 'detection-driven' });
+    const fixedEhExp = tailMean(fixedSuccess.economicHealthWithExperienceSeries, BURN_IN);
+    const detectionEhExp = tailMean(detectionDriven.economicHealthWithExperienceSeries, BURN_IN);
+    expect(detectionEhExp).toBeGreaterThan(fixedEhExp + 0.1);
   });
 });
 
