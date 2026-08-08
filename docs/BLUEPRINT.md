@@ -103,6 +103,13 @@ src/sim/        Everything that needs randomness or orchestrates the engine over
                 cascading vacancy. Deliberately not inside engine/vacancy.ts — the
                 cross-role coupling belongs at this orchestration layer.
   conscriptionCli.ts `npm run conscription-sim` — sweeps conscription delay x N.
+  ecosystemHarness.ts  runCombinedEconomySim() — runs vacancy.ts's real per-slot
+                dynamics with per-slot experience tracking, feeding both
+                economicHealth() and economicHealthWithExperience() from one
+                trajectory. Closes the "never run together" gap flagged in
+                ecosystem.ts. See "Ecosystem-scale mechanics" below.
+  ecosystemCli.ts `npm run ecosystem-sim` — reproduces the two-formula comparison
+                and the detection-driven-sabotage findings on demand.
 
 src/comms/      Phase 3 slice — communication layer, no I/O of its own.
   grammar.ts    Wall posts + Envelopes, both built from one curated SelfState template
@@ -156,8 +163,9 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 independently-computed ground truth — the one test file in this repo
                 that talks over an actual socket rather than calling pure functions.
                 ecosystem.regression.test.ts covers the economic floor, migration valve,
-                sabotage, districting, and tick-order robustness — see "Ecosystem-scale
-                mechanics" below.
+                sabotage, districting, tick-order robustness, and (2026-08-08) the two
+                economic-health formulas run together on one real trajectory — see
+                "Ecosystem-scale mechanics" below.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
                 DESIGN_ADDENDUM_2026-08-06.md, DESIGN_ADDENDUM_2026-08-07.md,
@@ -617,10 +625,6 @@ starts.
 
 ### Known gaps, carried forward unresolved — flagged, not silently decided
 
-- **Two economic-health formulas, never run together.** `economicHealth()` (no
-  experience) and `economicHealthWithExperience()` (experience-aware) use different
-  denominators and were validated independently, in separate simulations. The source
-  material flags this itself; carried forward as-is rather than silently unified.
 - **`TRAVEL_DAYS_TARGET=168` (~6 months) vs. the postcard/tier exit ticket's revised
   4-8 week target.** The *original* 2026-08-06 exit-ticket addendum used ~6 months as
   its illustrative baseline; the 2026-08-07 postcard/tier system explicitly revised
@@ -632,6 +636,55 @@ starts.
 - **Sabotage has no defined consequence for a caught saboteur.** `sabotageAttempt()`
   only returns who succeeds undetected; nothing models what happens to the ones who
   don't. A real gap in the mechanic as given, not something invented here to fill.
+
+**Resolved (2026-08-08) — the two economic-health formulas, run together.** User: "run
+the economies together. we won't know otherwise." Built
+`src/sim/ecosystemHarness.ts` — `runCombinedEconomySim()` runs `vacancy.ts`'s real
+per-slot semi-Markov dynamics (not the toy aggregate-count model `ecosystem.ts`'s own
+acceptance tests used) with per-slot experience tracking layered on top, feeding both
+`economicHealth()` and `economicHealthWithExperience()` from the same simulated
+trajectory. Two real findings, both locked into
+`test/ecosystem.regression.test.ts`:
+
+1. **`economicHealth()` alone understates sustained sabotage damage by roughly 3x**
+   versus `economicHealthWithExperience()`. Forced slot turnover keeps re-filled slots
+   perpetually inexperienced — an effect the occupancy-only formula literally cannot
+   see. A shard dashboard built on `economicHealth()` alone would report "basically
+   fine" (mean 0.96 across seeds) under sustained attack while the experience-aware
+   formula shows real, meaningfully suppressed output (mean 0.77). This is the
+   concrete answer to why the two formulas shouldn't be silently unified into one
+   number — they measure genuinely different things and diverge most exactly when it
+   matters most (under attack).
+2. **New mechanic wired in, per user directive**: `sabotageAttempt()`'s real detection
+   roll existed in the source material but was never actually exercised anywhere — the
+   original acceptance test bypassed it entirely, calling
+   `applySabotageDamage(filled, 3, 4)` directly with a hardcoded "3 successes." Once
+   real detection is wired in (witnesses = current filled-slot count driving
+   `detectionProbability()`, feeding `sabotageAttempt()`'s day-by-day roll), sabotage
+   turns out to be nearly non-viable at realistic populated-shard witness counts
+   (~23-24 of 24 slots, this repo's steady-state occupancy) under the given
+   `DETECTION_P_PER_WITNESS=0.05` — detection compounds to near-certain over any
+   reasonable acquisition window regardless of attempt cadence (checked at 1, 3, 5,
+   10, and 20-day cadences; mean successful-saboteurs-per-round stayed under 0.02 of 3
+   at every cadence tested). This also interacts with the Phase 2 VACANT-gap
+   recalibration from earlier this session (`beta=0.03, tHard=3`): a shard artificially
+   started as low as 3-of-24 filled heals back to ~23-of-24 within 20 days regardless
+   of starting point, so a sabotage mechanic slower than the vacancy engine's own
+   healing rate never even gets a genuinely low-witness shard to attack. Two design
+   decisions made independently — the earlier speed-focused vacancy recalibration and
+   the later detection-driven sabotage mechanic — compose to nearly cancel sabotage's
+   efficacy, a consequence neither decision could have predicted in isolation. Exactly
+   the kind of thing "run them together, we won't know otherwise" exists to catch.
+
+Per the user's explicit boundary — "people know, people see people talk, people
+react — the outcome is unknowable until players decide how to respond" — this only
+simulates the *mechanical* precondition (was an act witnessed, how many saboteurs
+succeeded). It does not model any consequence of being witnessed: no reputation score,
+no scripted retaliation, no NPC response. That's a boundary on what the harness
+simulates, stated explicitly in its own header comment, not an oversight to fix later.
+
+`npm run ecosystem-sim` reproduces the comparison table on demand. 4 new tests, 14 in
+this file, 72 total, all passing.
 
 ### Design correction: the brief's own role-slot mix is superseded
 
@@ -650,7 +703,7 @@ Healer, Courier, Watchman) are explicitly **not** treated as a locked roster —
 "the roles are arbitrary" (user, 2026-08-07).
 
 10 new tests (`test/ecosystem.regression.test.ts`), 68 total, all passing; `tsc --noEmit`
-clean.
+clean. (Since grown to 72 — see "Resolved (2026-08-08)" below.)
 
 ## Open deviations from the brief
 
