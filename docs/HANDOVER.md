@@ -14,7 +14,7 @@ constraints" — five binding rules (simulate before trusting, no permanent zero
 any scale, minimize what's modelable, nothing gets recorded ever, let outcomes be real)
 that apply to everything built from here on.
 
-## Current state (as of 2026-08-07)
+## Current state (as of 2026-08-08)
 
 **Phase 1 (economic core) and Phase 2 (vacancy engine, now hitting the brief's own §2.4
 targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (two Bakers
@@ -22,17 +22,20 @@ targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (t
 targeted delivery, not pure broadcast, and the Godot client is now genuinely verified**
 (2026-08-07, headless against a real Godot 4.3 engine and a real running server — see
 "Things to know" below) — the one narrower gap left is the GUI editor experience
-specifically, since a headless run can't confirm that. **A new ecosystem-scale mechanics
+specifically, since a headless run can't confirm that. **An ecosystem-scale mechanics
 layer is also built and tested** (economic floor, migration valve, sabotage, experience,
-districting — `src/engine/ecosystem.ts`, ported from a parallel design session, see
-"What's next" below), not yet wired into anything else.
+districting — `src/engine/ecosystem.ts`, ported 2026-08-07 from a parallel design
+session), still not wired into the market/vacancy layers, but two of its three flagged
+gaps are now resolved — see "What's next" below for the real findings from actually
+running the two economic-health formulas together.
 
 ```
 npm install
-npm test              # 68 tests, all passing
+npm test              # 72 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
+npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
@@ -85,24 +88,50 @@ fraction.** Two separate fixes stacked to get here:
    repeat of the NPC-dominance tradeoff. Now the default in `src/sim/vacancyHarness.ts`
    (`DEFAULTS`, shared by `conscriptionHarness.ts`).
 
-**Ecosystem-scale mechanics are now built** (2026-08-07, `src/engine/ecosystem.ts`,
-ported from a parallel design session — see `docs/BLUEPRINT.md`'s "Ecosystem-scale
-mechanics" for the full trail). Economic floor (`economicHealth()`, generalizing
-Ecosystem Vision's ruin/rejuvenation finding into a real number — floors at exactly 0.4,
-never zero), a migration valve (population-level emigration pressure, self-stabilizing),
-sabotage (adversarial slot-eviction, suppresses but never zeroes a shard under sustained
-attack), experience/travel-decay, and core/periphery districting. Wired against
-`vacancy.ts`'s existing slot states, not a duplicate system. **Three real gaps flagged,
-not resolved — need your call:**
+**Ecosystem-scale mechanics are built** (2026-08-07, `src/engine/ecosystem.ts`, ported
+from a parallel design session — see `docs/BLUEPRINT.md`'s "Ecosystem-scale mechanics"
+for the full trail). Economic floor (`economicHealth()`, generalizing Ecosystem Vision's
+ruin/rejuvenation finding into a real number — floors at exactly 0.4, never zero), a
+migration valve (population-level emigration pressure, self-stabilizing), sabotage
+(adversarial slot-eviction, suppresses but never zeroes a shard under sustained attack),
+experience/travel-decay, and core/periphery districting. Wired against `vacancy.ts`'s
+existing slot states, not a duplicate system.
+
+**2026-08-08: ran the two economic-health formulas together, per your instruction ("run
+the economies together. we won't know otherwise").** `src/sim/ecosystemHarness.ts`
+combines `vacancy.ts`'s real per-slot dynamics with per-slot experience tracking. Two
+real findings:
+
+1. **`economicHealth()` alone understates sustained sabotage damage by ~3x** versus
+   `economicHealthWithExperience()` — forced turnover keeps re-filled slots
+   perpetually inexperienced, an effect the occupancy-only metric can't see. Don't use
+   `economicHealth()` alone as a shard-health dashboard once sabotage is a real
+   mechanic — it will report "basically fine" under real, ongoing damage.
+2. **New mechanic wired in, per your directive** ("people know, people see people
+   talk, people react — the outcome is unknowable until players decide how to
+   respond"): `sabotageAttempt()`'s real detection roll was never actually exercised
+   before this — the original test hardcoded "3 successes." With real detection wired
+   in, sabotage turns out to be **nearly non-viable at realistic populated-shard
+   witness counts** under the given `DETECTION_P_PER_WITNESS=0.05` — this also
+   interacts with the Phase 2 recalibration (a depleted shard heals back to near-full
+   occupancy within 20 days regardless of starting point, so slow sabotage cadences
+   never get a low-witness shard to exploit). If sabotage is meant to be a real,
+   usable mechanic, this calibration needs revisiting — as given, it's not.
+
+Stopped deliberately at the mechanical fact of whether an act was witnessed — no
+reputation score, no scripted retaliation, no NPC response invented, matching your
+stated boundary. `npm run ecosystem-sim` reproduces both findings on demand.
+
+**One gap left flagged, not resolved — needs your call:**
 
 1. Whether `TRAVEL_DAYS_TARGET=168` (~6 months) is the same clock as the postcard/tier
    exit ticket's revised 4-8 week target (in which case it's stale) or a genuinely
    separate post-departure window.
-2. What happens to a saboteur who gets caught — `sabotageAttempt()` only tracks who
-   succeeds undetected, no consequence defined for the rest.
-3. The two economic-health formulas (`economicHealth()` vs.
-   `economicHealthWithExperience()`) were validated independently and never run together
-   — the source material's own admitted gap, carried forward as-is.
+
+(The "no consequence for a caught saboteur" gap is now less urgent given finding #2
+above — being caught is already rare at realistic witness counts under this
+calibration, so the missing consequence rule matters less until the detection
+probability itself gets revisited.)
 
 **Also still open:** the specific expanded role roster ("role increase" — you've said
 the brief's own 1/3-role-holder split is rejected, "each role produces a resource
@@ -152,9 +181,10 @@ Roughly in order from here:
   caution. Consider building proximity conversation (`docs/DESIGN_ADDENDUM_2026-08-06.md`)
   alongside this — it may substantially shrink what Phase 5 even needs to cover, since it
   never captures audio at all.
-- **Wire `src/engine/ecosystem.ts` into the vacancy/market layers**, and answer the three
-  flagged gaps above first — building further on top of `TRAVEL_DAYS_TARGET` or sabotage
-  before those are resolved risks having to unwind it later.
+- **Wire `src/engine/ecosystem.ts` into the vacancy/market layers**, and answer the
+  `TRAVEL_DAYS_TARGET` question first, and decide whether sabotage's detection
+  calibration needs revisiting given it's currently nearly toothless — building further
+  on top of either before that risks having to unwind it later.
 
 Also worth reading before any of the above: `docs/ECOSYSTEM_VISION_2026-08-06.md` (what
 NODE looks like as many shards, not one — shape-only, no mechanics to build yet),
@@ -222,12 +252,18 @@ worth reading before the market-wiring or multi-shard work above.
   in `src/server/ws.ts` before assuming the old single-message protocol still holds.
 - **`src/engine/ecosystem.ts` is ported from a different session's design work, not
   originated here.** Re-verified independently before porting (both the Python and TS
-  originals were actually run and reproduced every claimed result), but it carries three
-  real gaps forward unresolved — see "What's next" above before building on top of it,
-  especially `TRAVEL_DAYS_TARGET` and sabotage. It's also the data model
+  originals were actually run and reproduced every claimed result). Two of its three
+  flagged gaps are now resolved (2026-08-08, `src/sim/ecosystemHarness.ts`) — see
+  "What's next" above; `TRAVEL_DAYS_TARGET` is still open. It's also the data model
   `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`'s visual mapping depends on — every
   export's doc comment says which row it feeds; keep that annotation current if the
   functions change shape.
+- **Sabotage is calibrated to be nearly non-viable right now, verified not assumed.**
+  `DETECTION_P_PER_WITNESS=0.05` compounds to ~69% daily detection at a healthy shard's
+  ~23 witnesses — successful sabotage rounds are rare regardless of attempt cadence
+  (checked 1 to 20 days). If sabotage needs to actually threaten a healthy shard, the
+  detection rate (or witness-counting logic) needs deliberate retuning, not an
+  assumption that it already works — `npm run ecosystem-sim` shows the current numbers.
 - **The brief's own §1.5 role-slot mix (~1/3 role-holding, ~2/3 gossip-layer) is
   superseded (2026-08-07).** "We can't have a population with 2/3 with nothing to
   stake" — the correction is recorded, the actual expanded role content isn't designed
