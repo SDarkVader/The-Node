@@ -37,6 +37,12 @@ freedom to move it. A rumour heard in one plaza and repeated in another,
 shaded slightly by whoever's telling it this time, is worth more than most
 trades.
 
+A node isn't laid out evenly, either. There's a crowded, established core
+where most of the activity happens, and quieter edges where things are
+thinner and newer arrivals are more likely to end up building something
+from nothing. Both are real places to live — they just feel different, and
+most people can tell which one they're standing in without being told.
+
 ## The roles you can hold
 
 **Millers** control the flour supply. There are only ever two or three of
@@ -69,6 +75,12 @@ built; Courier and the rest are placeholders for a wider roster still
 being designed, deliberately. The specific list will grow — the principle
 that every role produces something someone else needs won't change.
 
+Staying in a role is its own kind of investment. The longer you hold one
+without interruption, the better you actually get at it — a real,
+noticeable edge, up to a ceiling. Step away for a long stretch and that
+edge fades while you're gone. Not a punishment, exactly — just not waiting
+for you when you get back. Coming home costs something too.
+
 ## When someone disappears
 
 A role left empty is a countdown, and the whole node can feel it. For the
@@ -89,6 +101,23 @@ non-player quietly runs it indefinitely. So past a certain point, the node
 drafts someone. At random. No opt-out. You might be a Courier one week and
 find yourself the Miller the next, because the community — not a system, not
 an NPC — has to be the one running the economy. It's disruptive on purpose.
+
+## Sabotage
+
+A role can also be broken on purpose, not just lost to circumstance.
+Someone patient enough could work to force a Miller or a Baker out of
+their own shop entirely — not by beating them at trade, but by moving
+against the slot itself, quietly, over days. The hard part is staying
+unnoticed the whole time. A node that's actually awake — people around,
+paying attention, talking — makes that close to impossible; enough
+witnesses and the attempt gets caught almost every time, on its own,
+without anyone having to be looking for it specifically. A node that's
+gone quiet and thin is a different story: fewer people watching means a
+real opening. A crowded node polices itself just by being crowded, not
+through any rule anyone wrote down.
+
+*Real, tested math — not yet wired into anything a player can actually
+attempt.*
 
 ## How the city talks
 
