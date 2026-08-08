@@ -203,8 +203,14 @@ real server — not just written by hand and hoped — and one real connection
 bug was found and fixed doing that. A separate ecosystem-scale mechanics
 layer (economic floor, migration pressure, sabotage, experience, districting)
 is also built and validated, ported from a parallel design session — not
-yet wired into the market or vacancy layers, and carrying three flagged
-open questions, see `docs/HANDOVER.md`. 68 automated tests cover all of it.
+yet wired into the market or vacancy layers. Running its two economic-health
+formulas together on one real trajectory surfaced two real findings: a
+sabotage attack does roughly 3x more damage than the simple occupancy metric
+shows, and — once real detection got wired into the sabotage mechanic for
+the first time — sabotage turns out to be nearly toothless against any
+reasonably healthy shard under its current calibration. See
+`docs/HANDOVER.md` for the trail and the one open question left. 72
+automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -215,10 +221,11 @@ playable form.
 
 ```
 npm install
-npm test               # 68 tests
+npm test               # 72 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
+npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
@@ -228,7 +235,7 @@ Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale
 primitives), `src/sim/` (deterministic seeded harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (68 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (72 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
