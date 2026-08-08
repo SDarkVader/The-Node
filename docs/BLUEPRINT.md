@@ -58,6 +58,7 @@ The Godot project (`client/`) is a **thin renderer** talking to it over WebSocke
 | 4 | Identity, camera, ambient visual system | Not started — a scaffold client exists (`client/`) that proves the network wire-up with a plain-text UI, not real Phase 4 rendering. Godot locked in as the engine (see above). |
 | 5 | Voice & safety architecture | Not started |
 | 6 | Stress-testing & balance harness | Partial — sweep utility exists (`src/sim/sweep.ts`), not yet the full §6 sweep surface (only covers Phase 1 params: nMillers, nBakers, gamma; doesn't yet cover N, R, vacancy params since those don't exist yet) |
+| — | Ecosystem-scale mechanics (economic floor, migration, sabotage, districting) — not one of the brief's numbered phases, a parallel design thread | **Core built, tested** (`src/engine/ecosystem.ts`) — see "Ecosystem-scale mechanics" below. Not wired into `vacancy.ts`/the market yet; the specific expanded role roster ("role increase") deliberately not designed yet, foundation-first per the user's own priority. |
 
 ## Repo layout
 
