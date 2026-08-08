@@ -5,6 +5,18 @@ NODE is a persistent multiplayer social-economic game. The design source of trut
 everything else in it is an explicitly revisable hypothesis. Read it before starting work
 if you haven't already.
 
+## Branch policy (2026-08-08, user directive — do not silently revert this)
+
+**Work directly on `main`. Do not stage work on a side/feature branch waiting for a
+separate merge approval.** Earlier sessions used a branch-then-PR-then-wait-for-approval
+workflow; the user ended it explicitly: staging everything on a branch until someone
+remembers to ask for a merge left `main` — the thing anyone actually looks at — silently
+stale, over and over, and put the burden of noticing that on the user instead of on the
+work itself. Commit and push to `main` as you go, the same discipline as pushing docs
+"one at a time, not batched." If a specific task's own instructions say otherwise for
+that run, that's a per-task override, not a reason to quietly resume the old default
+next time.
+
 ## Documentation rules (mandatory every session, not optional polish)
 
 This project carries four living documents. Update them as you go, not as an afterthought

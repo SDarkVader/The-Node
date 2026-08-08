@@ -49,8 +49,11 @@ protocol, connection string, and script logic are all correct, but says nothing 
 the actual GUI experience (does the scene open cleanly, any editor-only warnings, what it
 looks like).
 
-Working branch: `claude/new-project-setup-h5m6f8`, kept in sync with `main` via PR (most
-recently PR #5, merged 2026-08-07). No CI configured. See `docs/BLUEPRINT.md` for full
+**Working branch: `main`, directly (2026-08-08).** Earlier sessions staged work on
+`claude/new-project-setup-h5m6f8` and waited for a separate PR-merge approval before it
+reached `main` — that workflow is over, per explicit user instruction: it left `main`
+silently stale over and over and put the burden of noticing on the user. See
+`CLAUDE.md`'s "Branch policy." No CI configured. See `docs/BLUEPRINT.md` for full
 architecture detail.
 
 ## What's next
