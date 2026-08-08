@@ -6,6 +6,77 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-08 — Ran the two economic-health formulas together; wired real sabotage detection
+
+**Context.** Direct follow-up to yesterday's ecosystem-mechanics port, which carried
+forward an unresolved gap from the source material: `economicHealth()` and
+`economicHealthWithExperience()` were validated independently and never run on the same
+trajectory. User: "run the economies together. we won't know otherwise."
+
+**Built `src/sim/ecosystemHarness.ts`** — combines `vacancy.ts`'s real per-slot
+semi-Markov dynamics (FILLED/VACANT/BACKSTOPPED via `stepSlot`, not the toy
+aggregate-count model `ecosystem.ts`'s own acceptance tests used) with per-slot
+experience tracking, feeding both economic-health formulas from one simulated shard.
+Had to make three modeling decisions the source material didn't specify (flagged in the
+harness's header, not silently picked): experience resets to 0 on a fresh `FILLED`
+transition (new occupant), freezes while VACANT/BACKSTOPPED, and sabotage-evicted slots
+freeze rather than reset at eviction (the slot was forced empty, not handed to someone
+new — that reset happens later, on the actual re-fill).
+
+**First finding: `economicHealth()` alone understates sustained sabotage damage by
+roughly 3x.** Ran baseline churn (no sabotage) and sustained sabotage (12-of-24 evicted
+every 20 days, matching the original test's own scenario) side by side. Baseline:
+`economicHealth` ≈0.985, `economicHealthWithExperience` ≈0.928 (gap ≈-0.057) — even
+healthy churn keeps average experience below the cap, so the two formulas were never
+really interchangeable. Under sustained sabotage: `economicHealth` ≈0.960 (barely
+dented — the recalibrated vacancy engine from two days ago refills fast), but
+`economicHealthWithExperience` ≈0.768 (gap ≈-0.193, roughly 3x wider) — forced turnover
+keeps re-filled slots perpetually inexperienced, an effect the occupancy-only metric
+literally can't see. A shard dashboard built on `economicHealth()` alone would report
+"basically fine" under real, ongoing attack. Confirmed stable across 5 seeds before
+trusting it.
+
+**Second finding, from a new mechanic the user then asked for.** Mid-investigation:
+"1. same but with a new mechanic. 2. people know, people see people talk. people react.
+the outcome is unknowable until players decide how to respond." Realized while building
+this that `sabotageAttempt()` — the function that actually rolls for detection — was
+never exercised anywhere in the original source material at all; the acceptance test
+called `applySabotageDamage(filled, 3, 4)` directly, hardcoding "3 successes" and
+bypassing detection entirely. Wired it in for real: witnesses = current filled-slot
+count, driving `detectionProbability()`, driving `sabotageAttempt()`'s actual day-by-day
+detection roll. Result: sabotage becomes nearly non-viable at this repo's steady-state
+witness density (~23-24 of 24 slots filled) — mean successful saboteurs per round stayed
+under 0.02 of 3, checked across cadences from daily to every 20 days. Dug into why:
+`DETECTION_P_PER_WITNESS=0.05` compounds via `1-(1-p)^witnesses` to ~69% per-day
+detection at ~23 witnesses, so surviving even a 5-day acquisition window undetected is
+already unlikely, regardless of how often sabotage is attempted. Also tested whether a
+deliberately depleted starting shard (as low as 3-of-24 filled) gives sabotage a real
+opening — it doesn't, because the recalibrated vacancy engine (`beta=0.03, tHard=3`,
+from the VACANT-phase gap fix earlier this session) heals any starting point back to
+~23-of-24 within 20 days, faster than any sabotage cadence tested could exploit it. Two
+design decisions made independently and for unrelated reasons — the speed-focused
+vacancy recalibration and the later detection-driven sabotage mechanic — compose to
+nearly cancel sabotage's efficacy. Neither decision could have predicted this in
+isolation; exactly the kind of cross-system consequence "run them together, we won't
+know otherwise" exists to catch.
+
+**Respected the stated boundary explicitly, not just by omission.** The user's "people
+react — the outcome is unknowable until players decide how to respond" is a boundary on
+what gets simulated, not a request to model social response. The harness stops at the
+mechanical fact (was an act witnessed, how many saboteurs succeeded) and does not invent
+reputation scores, scripted retaliation, or NPC reactions — stated explicitly in the
+harness's own header comment so a future session doesn't quietly cross that line while
+extending it.
+
+**Formalized rather than left as a scratch script.** `src/sim/ecosystemCli.ts` (`npm run
+ecosystem-sim`) reproduces the comparison table on demand. 4 new regression tests lock
+in both findings — including a direct test that detection-driven sabotage barely dents
+`economicHealthWithExperience` while the old fixed-success model shows real suppression,
+so the two sabotage models can't silently drift back together undetected. 72 tests
+total, all passing; `tsc --noEmit` clean.
+
+---
+
 ## 2026-08-07 — Ecosystem-scale mechanics ported from a parallel design session
 
 **Context.** User had been working with Claude in a separate thread, doing the math and
