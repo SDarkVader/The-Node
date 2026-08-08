@@ -25,14 +25,17 @@ never will. Full identity, a real name and face, only resolves once a real
 relationship exists: you traded with them, spoke to them, or someone who
 already knows them vouched for you.
 
-Most people never take on an essential role. That's not a lesser way to
-play — roughly two out of three players in a healthy node are what the
-economy calls the *gossip layer*: no shop, no shift, nobody depending on
-them to show up. What they have instead is information, and the freedom to
-move it. A rumour heard in one plaza and repeated in another, shaded
-slightly by whoever's telling it this time, is worth more than most trades.
+Almost nobody in a node is truly without a stake. Every role — however
+small, however unglamorous — produces something somebody else genuinely
+needs, and the design leans hard against the idea of a player with nothing
+riding on anything. Exactly how many roles exist, and what each one
+produces, is still being actively worked out; what's settled is the
+principle, not the final roster.
 
-The other third hold the roles the node actually runs on. Somebody has to.
+What everybody has, whatever role they hold, is information, and the
+freedom to move it. A rumour heard in one plaza and repeated in another,
+shaded slightly by whoever's telling it this time, is worth more than most
+trades.
 
 ## The roles you can hold
 
@@ -60,6 +63,11 @@ shift is a Baker running short on flour by evening.
 None of these roles are permanent. Anyone can quit, log off for good,
 disappear. The node doesn't stop for them, but it doesn't pretend nothing
 happened either.
+
+None of these roles are fixed, either. Miller and Baker are real and
+built; Courier and the rest are placeholders for a wider roster still
+being designed, deliberately. The specific list will grow — the principle
+that every role produces something someone else needs won't change.
 
 ## When someone disappears
 
@@ -144,15 +152,19 @@ touch in the game:
 
 ## Beyond one shard
 
-*Vision, not yet built.* A node isn't the whole world — it's one shard
+*Vision, not yet playable.* A node isn't the whole world — it's one shard
 among many. Shards aren't authored to succeed or fail; they're allowed to
 actually live or die, on their own, from whatever the players in them
 actually do. A shard that empties out can genuinely collapse to nearly
-nothing. Whether it slowly rebuilds, stabilizes small, or stays a ghost
-town is never decided in advance — the system's whole job is to make every
-outcome real, then get out of the way. New shards open the same way a
-vacant role gets covered: not by announcement, but automatically, once
-there's genuinely enough pressure to need one.
+nothing — never all the way to nothing, though; there's always a floor.
+Whether it slowly rebuilds, stabilizes small, or stays a ghost town is
+never decided in advance — the system's whole job is to make every outcome
+real, then get out of the way. New shards open the same way a vacant role
+gets covered: not by announcement, but automatically, once there's
+genuinely enough pressure to need one. The pressure that drives people to
+leave a crowded, roleless shard and the floor that keeps a struggling one
+alive are both real, tested math now — just not yet wired into anything a
+player can actually walk into.
 
 ## The rules behind the rules
 
@@ -188,17 +200,22 @@ decay and distortion, and a client/server scaffold with real per-player
 targeted delivery (a rumour only ever reaches the player it was meant for,
 not everyone connected). The Godot client has been run end-to-end against a
 real server — not just written by hand and hoped — and one real connection
-bug was found and fixed doing that. 58 automated tests cover all of it.
+bug was found and fixed doing that. A separate ecosystem-scale mechanics
+layer (economic floor, migration pressure, sabotage, experience, districting)
+is also built and validated, ported from a parallel design session — not
+yet wired into the market or vacancy layers, and carrying three flagged
+open questions, see `docs/HANDOVER.md`. 68 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
 diary, face-to-face conversation, real Phase 4 visual rendering (today's
 client is plain text — it proves the wiring works, not what the world looks
-like), the voice/safety architecture, and the multi-shard ecosystem.
+like), the voice/safety architecture, and the multi-shard ecosystem's actual
+playable form.
 
 ```
 npm install
-npm test               # 58 tests
+npm test               # 68 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -207,12 +224,12 @@ npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
 ```
 
-Repo layout: `src/engine/` (pure market + vacancy + identity primitives),
-`src/sim/` (deterministic seeded harnesses and sweeps), `src/comms/`
-(grammar, rumour mill, the shared decay primitive), `src/mvp/` and
-`src/server/` (the playable-today slice and its WebSocket server), `client/`
-(the Godot scaffold), `test/` (58 tests), `design/` (standalone verification
-scripts for not-yet-built mechanics).
+Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale
+primitives), `src/sim/` (deterministic seeded harnesses and sweeps),
+`src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
+and `src/server/` (the playable-today slice and its WebSocket server),
+`client/` (the Godot scaffold), `test/` (68 tests), `design/` (standalone
+verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
 
@@ -222,3 +239,5 @@ Full docs:
 - [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pdf) — the original design brief. §0 (design intent) is load-bearing; the specific numbers are hypotheses.
 - [`docs/DESIGN_ADDENDUM_2026-08-06.md`](docs/DESIGN_ADDENDUM_2026-08-06.md) and [`docs/DESIGN_ADDENDUM_2026-08-07.md`](docs/DESIGN_ADDENDUM_2026-08-07.md) — the Oracle, the private diary, face-to-face conversation, and the postcard/tier exit ticket, none built yet.
 - [`docs/ECOSYSTEM_VISION_2026-08-06.md`](docs/ECOSYSTEM_VISION_2026-08-06.md) — what NODE looks like as many shards, not one; its five standing design constraints are binding rules in `CLAUDE.md`.
+- [`docs/NODE_BUILD_SPEC_2026-08-07.md`](docs/NODE_BUILD_SPEC_2026-08-07.md) — the ecosystem-scale mechanics spec built into `src/engine/ecosystem.ts`.
+- [`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`](docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md) — the isometric city's data-to-visual contract, written for a downstream generator; the mechanics above are built to stay consistent with it.
