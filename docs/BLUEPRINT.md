@@ -77,6 +77,11 @@ src/engine/     Pure market simulation functions. No I/O, no randomness source o
   privateStore.ts  Generic per-player private state store with silent, rolling per-entry
                 TTL expiry — the storage primitive the diary (not yet built) will use.
                 Not diary-specific; see "Architecture scoped ahead of schedule."
+  ecosystem.ts  Ecosystem-scale mechanics ported 2026-08-07 from a parallel design
+                session: economic floor, detection probability, experience growth/
+                decay, migration valve, sabotage, districting. Wired against
+                vacancy.ts's slot states, not a duplicate of them. See "Ecosystem-scale
+                mechanics" below.
 
 src/sim/        Everything that needs randomness or orchestrates the engine over time.
   rng.ts        Seeded PRNG (mulberry32) + gaussian sampler. All simulation randomness
@@ -149,9 +154,17 @@ test/           Regression/behavior tests. market.regression.test.ts encodes §1
                 and real ws clients to verify targeted rumour delivery against an
                 independently-computed ground truth — the one test file in this repo
                 that talks over an actual socket rather than calling pure functions.
+                ecosystem.regression.test.ts covers the economic floor, migration valve,
+                sabotage, districting, and tick-order robustness — see "Ecosystem-scale
+                mechanics" below.
 
 docs/           This file, DEVLOG.md, HANDOVER.md, NODE_Build_Brief_v1.pdf,
-                DESIGN_ADDENDUM_2026-08-06.md, ECOSYSTEM_VISION_2026-08-06.md.
+                DESIGN_ADDENDUM_2026-08-06.md, DESIGN_ADDENDUM_2026-08-07.md,
+                ECOSYSTEM_VISION_2026-08-06.md, NODE_BUILD_SPEC_2026-08-07.md,
+                NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md.
+
+design/         Standalone verification/reference scripts, not wired into the engine —
+                see design/README.md.
 ```
 
 ## Client/server scaffold
@@ -516,6 +529,127 @@ no pub/sub redesign needed at this scale, revisit if connection count ever makes
   (2026-08-07, see "Client/server scaffold" above) — this exact URL-with-query connection
   string is what surfaced the `connect_to_url` bug fixed there.
 - 58 tests total (was 46), all passing; `tsc --noEmit` clean.
+
+## Ecosystem-scale mechanics — economic floor, migration, sabotage, districting (2026-08-07)
+
+**Built and tested.** A second design thread — run in parallel to this repo's own
+session history, by the user working directly with Claude — produced a validated
+reference implementation for a set of ecosystem-scale mechanics that go beyond anything
+in the brief or in `docs/ECOSYSTEM_VISION_2026-08-06.md`'s vision-only sketch.
+`docs/NODE_BUILD_SPEC_2026-08-07.md` is the handoff document; `design/node_core_reference.py`
+and `design/node_core.ts` are the validated source (kept as provenance, not imported
+from); `src/engine/ecosystem.ts` is the ported, repo-integrated version.
+
+**Independently re-verified before porting**, per this repo's standing "simulate before
+trusting" rule — both the Python reference and its TypeScript port were actually run in
+this environment and reproduced every claimed result exactly (all 6 acceptance tests in
+both languages; the tick-order claim at 0.424 vs. 0.423 reproduced to three decimal
+places) before a line of `ecosystem.ts` was written.
+
+### What this actually is
+
+Not a competing design — the same one, made concrete. `docs/ECOSYSTEM_VISION_2026-08-06.md`
+§2 already worked out qualitatively that shard ruin/rejuvenation falls out of pushing the
+existing vacancy backstop to its limit: every role-slot BACKSTOPPED simultaneously,
+floor never zero. `economicHealth(0, S)` is exactly that state, given a real number:
+floors at exactly `NPC_PRODUCTIVITY` (0.4), because a vacated slot always reverts to
+NPC-run output, never to nothing. The integration point is deliberate, not incidental —
+`filledByPlayerCount()` reads `vacancy.ts`'s existing `RoleSlot[]` state directly rather
+than duplicating a second notion of "is this slot filled."
+
+Beyond that, four genuinely new mechanics, none previously specified anywhere in this
+repo:
+
+- **Migration valve** (`migrationValveStep`) — population-level emigration pressure
+  driven by the roleless fraction (non-role-holders / total population) crossing a
+  threshold (`MIGRATION_THETA=0.30`), with negative feedback above it so the system
+  self-stabilizes rather than diverging. Validated: equilibrium roleless fraction
+  converges to `[0.55, 0.68]` under saturating arrival pressure, never higher, for any
+  arrival rate tested. This is a real mechanism for what Ecosystem Vision left as
+  vision-only ("migration patterns... none of it gets authored") — checked against
+  `CLAUDE.md`'s constraint #5 ("let outcomes be real, don't script them") and it fits:
+  nothing here decides who migrates or where, only the aggregate pressure.
+- **Sabotage** (`sabotageAttempt`, `applySabotageDamage`) — a new adversarial mechanic.
+  Saboteurs attempt to evict player-held slots to BACKSTOPPED over an acquisition
+  window, with a flat per-day detection probability; on eviction, slots revert to NPC-run
+  the same way any vacancy backstop does. Validated: sustained forced damage (12-of-24
+  slots evicted every 20 days, indefinitely) settles to a long-run *average* economic
+  health of `[0.35, 0.50]` — suppressed, never fully recovering, but never zero either,
+  satisfying `CLAUDE.md`'s constraint #2 directly. **Must be measured as an average over
+  many post-transient ticks, never a single snapshot** — the source material found this
+  the hard way (a snapshot timed between attacks can misleadingly show near-full
+  health); `test/ecosystem.regression.test.ts` locks in both the average *and* that the
+  underlying series genuinely oscillates (so the average test can't pass vacuously
+  against a flat series).
+- **Experience** (`growExperience`, `decayExperienceTraveling`) — role-holders gain up
+  to +50% output over time in-role, and lose it while "traveling." Validated: a
+  6-month (`TRAVEL_DAYS_TARGET=168` days) migration costs a maxed veteran 25-60% of
+  their experience cap.
+- **Districting** (`districtArrivalChoice`) — new arrivals choose between "core" and
+  "periphery" districts with a configurable bias (validated range 2.0-3.0 → 60-75% core
+  share without emptying periphery). Checked by closed-form arithmetic rather than
+  simulation (it's a single weighted coin flip, not a stochastic process needing a
+  Monte Carlo) — the source material didn't have an actual test for this one either,
+  despite the claim; verified directly before trusting it.
+
+### The visual design brief is a data contract, not mood-board material
+
+`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` — written for a downstream image/video
+generator, not for direct implementation here — has a §3 table mapping game mechanics to
+visual encoding. Checked line by line against what's now built: role type → hue (not yet
+buildable, see "role increase" below), local economic health → glow (`economicHealth()`,
+directly), player-held vs. NPC-backstopped slot → outline style (`vacancy.ts`'s
+FILLED/BACKSTOPPED, directly — a sabotage-evicted slot renders identically to any other
+BACKSTOPPED slot, no separate visual state needed), roleless population → loose
+unattached figures (`n - filled` in the migration valve, directly), detection risk →
+ambient light density (`detectionProbability()`, directly). Every export in
+`ecosystem.ts` is annotated in its own doc comment with which row it feeds, so a future
+renderer doesn't have to rediscover this mapping from two separate documents.
+
+**One row the brief needs that nothing here provides: persistent per-district state.**
+"A warm front rolling through one district while another stays cool" and "the oldest
+cluster reads denser" both require a district to exist as an ongoing, accumulating
+entity — `districtArrivalChoice()` only decides where one new arrival lands, once. No
+district data structure exists yet. Flagged in `ecosystem.ts`'s header comment, not
+silently routed around; real, unstarted work for whenever Phase 4 rendering actually
+starts.
+
+### Known gaps, carried forward unresolved — flagged, not silently decided
+
+- **Two economic-health formulas, never run together.** `economicHealth()` (no
+  experience) and `economicHealthWithExperience()` (experience-aware) use different
+  denominators and were validated independently, in separate simulations. The source
+  material flags this itself; carried forward as-is rather than silently unified.
+- **`TRAVEL_DAYS_TARGET=168` (~6 months) vs. the postcard/tier exit ticket's revised
+  4-8 week target.** The *original* 2026-08-06 exit-ticket addendum used ~6 months as
+  its illustrative baseline; the 2026-08-07 postcard/tier system explicitly revised
+  that down to 4-8 weeks, deliberately, because "weeks, not months." `168` is close
+  enough to the old, superseded number to be suspicious. Whether this constant
+  describes the *same* clock (in which case it's stale) or a genuinely separate
+  post-departure/in-transit window (a different mechanic entirely) is unresolved —
+  asked directly, not yet answered as of this entry.
+- **Sabotage has no defined consequence for a caught saboteur.** `sabotageAttempt()`
+  only returns who succeeds undetected; nothing models what happens to the ones who
+  don't. A real gap in the mechanic as given, not something invented here to fill.
+
+### Design correction: the brief's own role-slot mix is superseded
+
+The brief's §1.5 recommendation — roughly 1/3 of players role-holding, 2/3 pure
+gossip-layer with no essential role — is explicitly rejected by the user: **"we can't
+have a population with 2/3 with nothing to stake. each role produces a resource someone
+else needs."** The specific expanded role roster ("role increase" — more distinct role
+types, each producing something another role needs, covering most or all of the
+population) is deliberately not designed in this entry; the user's own priority order is
+foundation first (this section), nuance on top (the actual role content) after. Nothing
+in `ecosystem.ts` hardcodes the old ratio — `S` (role slots per shard) and `N`
+(population) are independent parameters throughout, so raising the role-holding fraction
+is a calibration change at whatever call site eventually wires this in, not a structural
+one here. The visual brief's eight named roles (Farmer, Miller, Baker, Smith, Miner,
+Healer, Courier, Watchman) are explicitly **not** treated as a locked roster —
+"the roles are arbitrary" (user, 2026-08-07).
+
+10 new tests (`test/ecosystem.regression.test.ts`), 68 total, all passing; `tsc --noEmit`
+clean.
 
 ## Open deviations from the brief
 
