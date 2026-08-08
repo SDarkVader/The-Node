@@ -273,7 +273,7 @@ Full docs:
 - [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) — system architecture as actually implemented.
 - [`docs/DEVLOG.md`](docs/DEVLOG.md) — chronological build log, including failures and dead ends.
 - [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pdf) — the original design brief. §0 (design intent) is load-bearing; the specific numbers are hypotheses.
-- [`docs/DESIGN_ADDENDUM_2026-08-06.md`](docs/DESIGN_ADDENDUM_2026-08-06.md) and [`docs/DESIGN_ADDENDUM_2026-08-07.md`](docs/DESIGN_ADDENDUM_2026-08-07.md) — the Oracle, the private diary, face-to-face conversation, and the postcard/tier exit ticket, none built yet.
+- [`docs/DESIGN_ADDENDUM_2026-08-06.md`](docs/DESIGN_ADDENDUM_2026-08-06.md), [`docs/DESIGN_ADDENDUM_2026-08-07.md`](docs/DESIGN_ADDENDUM_2026-08-07.md), and [`docs/DESIGN_ADDENDUM_2026-08-08.md`](docs/DESIGN_ADDENDUM_2026-08-08.md) — the Oracle, the private diary, face-to-face conversation, the postcard/tier exit ticket, and District Weather / the Wall's Emissive Soul, none built yet.
 - [`docs/ECOSYSTEM_VISION_2026-08-06.md`](docs/ECOSYSTEM_VISION_2026-08-06.md) — what NODE looks like as many shards, not one; its five standing design constraints are binding rules in `CLAUDE.md`.
 - [`docs/NODE_BUILD_SPEC_2026-08-07.md`](docs/NODE_BUILD_SPEC_2026-08-07.md) — the ecosystem-scale mechanics spec built into `src/engine/ecosystem.ts`.
 - [`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`](docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md) — the isometric city's data-to-visual contract, written for a downstream generator; the mechanics above are built to stay consistent with it.

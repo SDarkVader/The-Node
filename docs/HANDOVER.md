@@ -198,7 +198,10 @@ consistent with), the private diary refinement in `DESIGN_ADDENDUM_2026-08-06.md
 built in code), and
 `DESIGN_ADDENDUM_2026-08-07.md`'s organic shard-opening (§7) — notes it reuses the
 existing vacancy-backstop pattern at the shard level rather than needing a new primitive,
-worth reading before the market-wiring or multi-shard work above.
+worth reading before the market-wiring or multi-shard work above. `DESIGN_ADDENDUM_2026-08-08.md`
+(District Weather, the Wall's Emissive Soul, the Visual Contrast Contract) extends the
+visual brief's ambient colour system — worth reading before any Phase 4 rendering work,
+alongside a real open question it inherits: no persistent per-district state exists yet.
 
 ## Things to know before you touch this
 
