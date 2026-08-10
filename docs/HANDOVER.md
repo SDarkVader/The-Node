@@ -44,14 +44,31 @@ as pattern-based — a proposal, simulated but explicitly not adopted as the def
 below and `docs/BLUEPRINT.md`. Full writeups: `docs/BLUEPRINT.md`'s "Open deviations,"
 `docs/DEVLOG.md`'s two 2026-08-10 entries.
 
+**2026-08-10, later the same day: Phase A of a new task started** —
+`docs/NODE_OBSERVATORY_BUILD_SPEC.pdf` (saved to the repo), a six-phase build to give
+NODE a spatial layer, a unified deterministic world kernel, and a local dual-camera
+observatory web app to actually watch the world run. **Phase A is done**: `src/engine/
+space.ts`, NODE's first spatial primitive (`Shard`→`District`→`Plot`→`Building`, real
+coordinates, real persistent per-district state), wired to `decay.ts`/`connections.ts`
+(`proximityCloseness()`) and `districtArrivalChoice()` (`placeArrival()`) without
+importing across engine modules. **Real finding, reported not silently retuned**: at
+any realistic local witnessing radius, real spatial witness counts are substantially
+*lower* than the flat ~23 both existing sabotage calibrations assumed — meaning the
+pattern-based proposal's ~146-220 days-per-success figure is itself an overestimate of
+attacker difficulty. Full numbers: `docs/BLUEPRINT.md`'s "Phase A" entry, `npm run
+spatial-witness-report` reproduces them. Phases B-F not started — stopping here to
+report back and check in before continuing, per explicit instruction not to do too much
+in one pass.
+
 ```
 npm install
-npm test              # 83 tests, all passing
+npm test              # 107 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
+npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck

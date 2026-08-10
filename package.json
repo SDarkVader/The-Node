@@ -13,6 +13,7 @@
     "conscription-sim": "tsx src/sim/conscriptionCli.ts",
     "ecosystem-sim": "tsx src/sim/ecosystemCli.ts",
     "sabotage-pattern-sim": "tsx src/sim/sabotagePatternCli.ts",
+    "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },

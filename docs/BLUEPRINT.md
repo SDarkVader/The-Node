@@ -1082,6 +1082,113 @@ a single step stays near-undetectable at a healthy witness count, a Detective ra
 catch rate, the floor holds under stress) without asserting these specific numbers are
 final. 83 tests total, all passing.
 
+**Phase A (2026-08-10) — `src/engine/space.ts`, NODE's first spatial primitive.** Per
+`docs/NODE_OBSERVATORY_BUILD_SPEC.pdf`'s Phase A: everything in `src/engine/` was
+aspatial — `districtArrivalChoice()` resolved core-vs-periphery as a coin flip with
+nothing persisting, `detectionProbability()`/`patternSabotageAttempt()` took a witness
+count as a bare parameter, `decay.ts` degraded signals by an abstract hop count, and
+District Weather / the Wall's Emissive Soul had nowhere to keep persistent per-district
+state. `space.ts` gives NODE real coordinates: `Shard` → `District` (persistent,
+classified core/periphery, its own population/economicHealth/detection/weather history)
+→ `Plot` (integer grid coordinate, street/plaza/building) → `Building` (bound to an
+opaque `roleSlotRef`, resolved against real `vacancy.ts` state by whoever composes them
+— Phase B, not this module).
+
+**Kept dependency-free**, matching `vacancy.ts`/`ecosystem.ts`/`market.ts`'s own style —
+zero imports from other `src/engine/` modules, so composing this with them later is
+additive, not entangling. The one deliberate exception: `mulberry32` from `sim/rng.ts`
+(a seeding utility, not a game mechanic), imported because the spec's
+`generateShardLayout(seed, config)` signature takes a raw seed rather than the
+`rand: () => number` callback every other engine module takes.
+
+**Two implementation liberties taken, flagged rather than silently decided:**
+1. `distance(a, b)` — "walking distance, not euclidean-through-walls" implemented as
+   Manhattan/grid distance (`|dx| + |dy|`), not full pathfinding around
+   buildings-as-obstacles. The spec's own signature takes only two plots, no shard/graph
+   argument, so it cannot search a walkability graph; Manhattan distance is a proper
+   metric (satisfies the symmetry and triangle-inequality tests the spec itself
+   requires) without that added complexity. If buildings blocking sightlines turns out
+   to matter for a specific mechanic later, that's a real pathfinding feature to build
+   deliberately, not something to retrofit here silently.
+2. `plotsWithin`/`occupantsWithin` — the spec's abbreviated signatures omit the plot/
+   occupant universe to search (neither function can return anything without one). Both
+   take an explicit `shard: Shard` parameter here; `occupantsWithin` takes a plain
+   `PlayerPosition[]` list rather than Phase B's not-yet-built `World` type, so this
+   module stays usable before `world.ts` exists.
+
+**Wiring, without importing across modules:**
+- `proximityCloseness(dist, maxRange)` — a new pure function converting a real spatial
+  distance into a (0,1] closeness value, the real number `decay.ts`'s `stepClarity()` or
+  `connections.ts`'s `ConnectionGraph.connect()` can now be given in place of an
+  arbitrary hardcoded weight. `decay.ts`'s own decay curve is completely unchanged —
+  this only supplies where the distance value comes from, per the spec's explicit
+  instruction not to duplicate the mechanic.
+- `placeArrival(shard, classification)` — composes with `ecosystem.ts`'s
+  `districtArrivalChoice()` (called separately; `space.ts` still doesn't import
+  `ecosystem.ts`) to close the "nothing persists" gap: given a core/periphery decision,
+  places the arrival at that district's plaza and increments its `population`, returning
+  a new `Shard` (pure, not mutated) rather than letting the choice evaporate. District
+  selection is by lowest current population among same-classification districts —
+  spreads arrivals rather than piling onto district index 0; not specified by the brief,
+  a reasonable default, flagged rather than presented as settled.
+- Witness counts — see the finding below. Deliberately NOT done by having `space.ts`
+  import `ecosystem.ts`; `src/sim/spatialWitnessReport.ts` (`npm run
+  spatial-witness-report`) composes both from the sim layer, which is allowed to depend
+  on either.
+
+**Finding, not a recalibration: real spatial witness counts are dramatically lower than
+the flat ~23 both sabotage calibrations assumed, once witnessing is bounded to a
+realistic radius rather than "everyone in the shard sees everything."** Built a report
+shard matching `S_DEFAULT=24` role-slots exactly (1 core district, 14 buildings; 2
+periphery districts, 5 each) so the comparison is apples-to-apples, populated to a
+65-player target (24 role-holders + 41 gossip-layer, scattered deterministically), and
+measured real witness counts via `occupantsWithin()` around a core-district sabotage
+target at four illustrative radii (3 = immediate street, 6 = whole core district, 15 =
+most of the shard, 999 = everyone). Across 3 seeds:
+
+```
+radius  rawOccupants  roleHoldersOnly  actBased(assumed23)  actBased(real,raw)  actBased(real,roleHolders)
+3       4-11          2-6              69.3%                18.5-43.1%          9.8-26.5%
+6       12-21         6-10             69.3%                46.0-65.9%          26.5-40.1%
+15      35-40         13-14            69.3%                83.4-87.1%          48.7-51.2%
+999     64            23               69.3%                96.2%               69.3%
+```
+
+At radius=999 (everyone, regardless of location) the real number converges back to the
+original ~69.3% by construction — role-holder count matches the original S_DEFAULT-1
+assumption exactly. But at any realistic *local* radius, real detection is
+**substantially lower** than assumed: at radius=3 (immediate street), act-based
+detection with real role-holder-only witnesses is 9.8-26.5%, not 69.3% — a genuinely
+different mechanic once witnessing has to be physically local. The pattern-based
+proposal's numbers move the same direction (its full-pattern step-6 detection at
+radius=3, raw occupants: 3.9-10.5%, vs. 20.6% assumed) — meaning the ~146-220
+days-per-success figure reported for that proposal is itself an overestimate of
+attacker difficulty once real spatial witnessing replaces the flat assumption; the real
+number is almost certainly faster/easier for the attacker at any spatially-bounded
+witnessing radius.
+
+**Flagged, not resolved:** the witnessing radius itself is unspecified anywhere in the
+brief or the Observatory spec — the report above shows four illustrative radii rather
+than picking one and asserting it's correct. Also flagged: whether "witness" should mean
+anyone physically nearby (including the roleless gossip layer) or only other
+role-holders (matching the original calibration's own framing) is a real open design
+question, not resolved here — both are reported side by side. **Neither existing
+sabotage calibration (`DETECTION_P_PER_WITNESS=0.05`, `PATTERN_P_PER_WITNESS_
+DEFAULT=0.01`) has been retuned in response to this finding** — per the spec's explicit
+instruction, this phase reports the numbers, it does not silently re-calibrate. Real
+recalibration should happen once Phase B wires witness counts into the actual detection
+call sites inside `world.ts`'s tick, with a real witnessing-radius decision made first.
+
+24 new tests in `test/space.regression.test.ts` (layout determinism, distance
+symmetry/triangle-inequality, occupancy queries against hand-computed ground truth, the
+density gradient regression, `proximityCloseness`, `placeArrival`). One real bug caught
+and fixed during testing, not shipped silently: `generateDistrictPlots`'s original grid
+loop stepped from `-radius` by `spacing`, which — whenever `radius` is odd and `spacing`
+is even (periphery's own defaults: radius=5, spacing=2) — never lands on offset 0,
+silently dropping the plaza plot from every periphery district. Fixed by iterating every
+integer offset and filtering to the spacing lattice (aligned to zero) instead. 107 tests
+total, all passing; `npm run typecheck` clean.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

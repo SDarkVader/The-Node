@@ -6,6 +6,71 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Phase A complete: src/engine/space.ts, NODE's first spatial primitive
+
+**Context.** First phase of the Observatory build spec. NODE had no spatial primitive at
+all — `districtArrivalChoice()` was a coin flip with nothing persisting, witness counts
+were bare parameters with no derivation, `decay.ts` used abstract hop counts. Built in
+isolation and checked before moving to Phase B, per the user's explicit instruction not
+to do too much in one pass.
+
+**Built `src/engine/space.ts`** — `Shard` → `District` (persistent, core/periphery,
+its own history arrays) → `Plot` (grid coordinate) → `Building` (opaque `roleSlotRef`,
+resolved by whoever composes this with real `vacancy.ts` state later, not here). Kept
+dependency-free of every other `src/engine/` module, matching the existing style — the
+one exception is `mulberry32` from `sim/rng.ts`, needed because the spec's
+`generateShardLayout(seed, config)` signature takes a raw seed rather than the `rand`
+callback every other module takes.
+
+**Real bug found and fixed via testing, not shipped silently:** the district plot
+generator's grid loop stepped from `-radius` by `spacing`. Whenever `radius` is odd and
+`spacing` is even — periphery's own defaults, radius=5 spacing=2 — that stepping never
+lands on offset 0, so the plaza plot silently never got generated in any periphery
+district. Caught by the "every district has exactly one plaza" test failing on
+`plazaCount=0`; traced with a small debug script rather than guessing. Fixed by
+iterating every integer offset and filtering to the spacing lattice aligned to zero,
+instead of stepping from an arbitrary, radius-dependent start point.
+
+**Wired the three named mechanics, without importing across engine modules:**
+`proximityCloseness(dist, maxRange)` gives `decay.ts`/`connections.ts` a real
+distance-derived closeness number in place of an arbitrary hardcoded one (the decay
+curve itself is untouched); `placeArrival(shard, classification)` composes with
+`ecosystem.ts`'s `districtArrivalChoice()` from the outside to close its "nothing
+persists" gap, placing an arrival at an actual plaza and persisting population growth in
+a new (not mutated) `Shard`; witness counts got a full report, not a direct import (see
+below).
+
+**The witness-count finding, reported not silently retuned:** built
+`src/sim/spatialWitnessReport.ts` against a shard matching `S_DEFAULT=24` exactly, 65
+players (24 role-holders + 41 gossip-layer), and measured real witness counts around a
+core-district sabotage target at four radii. Headline: at any realistic *local* radius,
+real detection is substantially **lower** than the flat ~23-witness assumption both
+existing sabotage calibrations used — at radius=3 (immediate street), act-based
+detection with role-holders-only real witnesses is 9.8-26.5%, not 69.3%; the
+pattern-based proposal's full-pattern detection drops from an assumed 20.6% to
+3.9-10.5%. This means the ~146-220 days-per-success figure reported for the pattern
+proposal (2026-08-10, earlier this session) is itself an overestimate of attacker
+difficulty — real spatial witnessing is almost certainly easier for an attacker than
+that number suggested, at any spatially-bounded witnessing radius. Full numbers and two
+flagged open questions (what witnessing radius is realistic; does "witness" mean
+anyone-nearby or role-holders-only) are in `docs/BLUEPRINT.md`. Neither existing
+calibration constant was changed — this is a report, and the spec was explicit that
+Phase A should not silently re-tune.
+
+**Verification.** 24 new tests in `test/space.regression.test.ts` — layout determinism
+under a fixed seed, distance symmetry/triangle-inequality (Manhattan distance, a
+deliberate simplification over full pathfinding-around-obstacles — flagged in
+`BLUEPRINT.md`, not silently decided), occupancy queries against hand-computed ground
+truth, the density gradient regression (core measurably denser than periphery, holds
+across 5 seeds), and the two wiring helpers. 107 tests total, all passing; `npm run
+typecheck` clean.
+
+**Not started yet:** Phases B-F (unified world kernel, synthetic drivers, snapshot
+contract, the Observatory web app, civic-memory monuments) — stopping here to report
+findings and flags back before continuing, per the standing instruction on this task.
+
+---
+
 ## 2026-08-10 — New task started: Spatial Layer + Unified World Kernel + The Observatory
 
 **Context.** `docs/NODE_OBSERVATORY_BUILD_SPEC.pdf` (saved to the repo this entry) is a large

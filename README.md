@@ -266,7 +266,7 @@ playable form.
 
 ```
 npm install
-npm test               # 83 tests
+npm test               # 107 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -281,7 +281,7 @@ Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale
 primitives), `src/sim/` (deterministic seeded harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (83 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (107 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
