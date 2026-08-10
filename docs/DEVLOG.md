@@ -6,6 +6,39 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Strengthened two standing flags; end-of-session HANDOVER/README rewrite
+
+**Context.** Item 5 of "Resolve Standing Ambiguities" — explicitly flag, don't resolve.
+Both `TRAVEL_DAYS_TARGET=168` (vs. the postcard/tier exit ticket's 4-8 week target) and
+the stale vacancy defaults (`R=2-4` of `N=50-80`, unrevisited since the brief's §1.5
+role-slot mix was rejected) were already noted as open in `HANDOVER.md`, but only as bare
+flags — no statement of what they actually block.
+
+**Strengthened, not resolved.** `TRAVEL_DAYS_TARGET` now states concretely what's
+downstream of it: calibrating `decayExperienceTraveling()`/`TRAVEL_DECAY_PER_DAY` against
+a real player timeline, and any visual-brief work depending on how long a departed
+player's slot should visibly read as long-gone. The vacancy-defaults flag now states what
+a revised role roster needs to specify before recalibration is even possible: how many
+distinct roles exist per shard (none of the eight named in the visual design brief are
+locked), how many slots per role (only Miller has one, `R=2`), and what fraction of `N`
+role-holding is meant to occupy in total now that the brief's own ~1/3 figure is
+rejected. Neither constant was touched.
+
+**End-of-session documentation pass.** Rewrote `docs/HANDOVER.md`'s "Current state" and
+"What's next" sections to reflect all four of today's resolutions (permanence split,
+reputation constraint, backstop-framing/NPC audit, sabotage pattern-based proposal) in
+one place, corrected the "five standing constraints" references to six throughout
+(`HANDOVER.md`, `README.md`), and updated test counts (72 → 83) and the command list
+(`sabotage-pattern-sim`) in both `HANDOVER.md` and `README.md`. Removed a stale
+parenthetical in `HANDOVER.md` that had claimed the "no consequence for a caught
+saboteur" gap was "less urgent" — no longer true now that the pattern-based proposal
+makes repeated sabotage attempts genuinely low-cost to a caught attacker.
+
+**Verification.** 83 tests passing, `npm run typecheck` clean — documentation-only change,
+no logic touched.
+
+---
+
 ## 2026-08-10 — Sabotage re-specified as pattern-based (proposal, not shipped)
 
 **Context.** Item 4 of the "Resolve Standing Ambiguities" task. Diagnosis carried
