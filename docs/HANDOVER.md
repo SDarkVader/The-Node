@@ -104,12 +104,34 @@ role slots, `economicHealth` settles at exactly its 0.4 floor, a genuinely worse
 regime. Neither resolves the actual open question below (what the role roster should
 be) — still explicitly your call. Full numbers: `docs/BLUEPRINT.md`'s "Phase C" entry.
 
-**Phases D-F not started** — stopping here to report back and check in again before
-continuing, per explicit instruction not to do too much in one pass.
+**Also this session, outside the Observatory phase sequence: wealth tracking and the
+"90%/10%" concentration question, checked directly against real research.** New stock
+variable (`src/engine/wealth.ts`) on top of the market's existing flow variables —
+`RoleEconomicSlot.wealth`, a Gini coefficient and top-10%-share on `World`. Grounded in
+the "yard-sale model" literature (pairwise proportional zero-sum exchanges reliably
+condense to oligarchy — a real, established result) and the remediation literature
+(progressive taxation + redistribution as the established counter) — both cited in
+`wealth.ts`'s header. **The headline finding: NODE does NOT produce that dystopian
+concentration.** Gini plateaus around 0.49-0.53 and top-10%-share around 28-31% over a
+3000-day run (`npm run wealth-inequality-report`) — because NODE's market has no
+pairwise wealth transfers at all (Cournot/Bertrand best-response convergence toward a
+shared average, not zero-sum exchange), the yard-sale condensation mechanism simply isn't
+present. **But found a real, different problem**: Bakers earn 4-8x more than Millers on
+average, a structural gap traced to `BAKER_DAILY_VOLUME=1.0` (an explicitly
+`[ILLUSTRATIVE]` placeholder — no per-baker demand model exists) interacting with a
+usually-near-floor flour price. Two remediation proposals built and swept
+(`taxAndRedistributeIncome`, `applyWealthCap`), both off by default — flat taxation is
+weak against a structural gap, a wealth cap is much more effective but its current
+single-pass implementation loses value rather than fully conserving it, flagged as a
+real caveat, not hidden. Full numbers and citations: `docs/BLUEPRINT.md`'s "Wealth
+inequality" entry.
+
+**Phases D-F of the Observatory spec not started** — stopping here to report back and
+check in again before continuing, per explicit instruction not to do too much in one pass.
 
 ```
 npm install
-npm test              # 131 tests, all passing
+npm test              # 160 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -118,6 +140,7 @@ npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipp
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim       # unified kernel — market + vacancy + ecosystem, one running world
 npm run role-ratio-sweep # role-slot/population ratio outcomes — data, not a recommendation
+npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
@@ -395,6 +418,12 @@ alongside a real open question it inherits: no persistent per-district state exi
   produce once run through the real composed kernel (population/health/flour-price
   outcomes, not a recommendation) — data for whenever this gets decided, not a decision
   made in its place. See `docs/BLUEPRINT.md`'s "Phase C" entry for the numbers.
+- **`BAKER_DAILY_VOLUME=1.0` (`src/engine/wealth.ts`) is `[ILLUSTRATIVE]`, not a real
+  demand model — no per-baker sales-volume mechanic exists anywhere in this repo.** It's
+  a meaningful part of why the wealth-inequality baseline found Bakers earning 4-8x more
+  than Millers on average (`docs/BLUEPRINT.md`'s "Wealth inequality" entry) — that ratio
+  should be treated as provisional until a real Baker demand/volume model exists, not as
+  a validated economic prediction about the two roles.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 

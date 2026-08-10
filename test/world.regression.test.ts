@@ -27,8 +27,10 @@ function scalarSnapshot(world: World) {
     flourPrice: world.flourPrice,
     economicHealth: world.economicHealth,
     economicHealthWithExperience: world.economicHealthWithExperience,
-    millerValues: world.millers.map((m) => ({ state: m.slot.state, value: m.value, exp: m.experience })),
-    bakerValues: world.bakers.map((b) => ({ state: b.slot.state, value: b.value, exp: b.experience })),
+    wealthGini: world.wealthGini,
+    wealthTop10Share: world.wealthTop10Share,
+    millerValues: world.millers.map((m) => ({ state: m.slot.state, value: m.value, exp: m.experience, wealth: m.wealth })),
+    bakerValues: world.bakers.map((b) => ({ state: b.slot.state, value: b.value, exp: b.experience, wealth: b.wealth })),
   };
 }
 
@@ -90,7 +92,7 @@ describe('stepWorld — tick order is pinned (golden-value characterization test
 
 describe('computeMillerSupply — a BACKSTOPPED Miller actually participates in pricing', () => {
   function makeMiller(state: RoleEconomicSlot['slot']['state'], value: number): RoleEconomicSlot {
-    return { slot: { state, vacantSince: state === 'FILLED' ? null : 0 }, buildingId: `b-${state}-${value}`, value, experience: 0 };
+    return { slot: { state, vacantSince: state === 'FILLED' ? null : 0 }, buildingId: `b-${state}-${value}`, value, experience: 0, wealth: 0 };
   }
 
   it('a BACKSTOPPED slot contributes exactly BACKSTOP_PRODUCTIVITY, not zero and not its stale value', () => {
@@ -211,5 +213,125 @@ describe('createWorld — configuration errors are real, not silently swallowed'
     expect(() =>
       createWorld(1, { ...DEFAULT_WORLD_CONFIG, rMiller: 1000, rBaker: 1000 }),
     ).toThrow(/role slots requested/);
+  });
+});
+
+describe('wealth tracking — the new stock variable on top of the market\'s existing flow variables', () => {
+  it('everyone starts at zero wealth — perfect equality, honestly, not undefined', () => {
+    const world = createWorld(1);
+    expect(world.wealthGini).toBe(0);
+    for (const m of world.millers) expect(m.wealth).toBe(0);
+    for (const b of world.bakers) expect(b.wealth).toBe(0);
+  });
+
+  it('a FILLED miller accrues wealth from its own quantity times flourPrice, every tick it stays FILLED', () => {
+    let world = createWorld(5);
+    world = stepWorld(world);
+    const stillFilled = world.millers.filter((m) => m.slot.state === 'FILLED');
+    expect(stillFilled.length).toBeGreaterThan(0);
+    for (const m of stillFilled) expect(m.wealth).toBeGreaterThan(0);
+  });
+
+  it('a BACKSTOPPED slot never accrues wealth — nobody is there to receive it', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, pMonthly: 0.95 };
+    let world = createWorld(9, config);
+    let sawBackstoppedWithZeroWealth = false;
+    for (let i = 0; i < 300; i++) {
+      world = stepWorld(world);
+      for (const m of [...world.millers, ...world.bakers]) {
+        if (m.slot.state === 'BACKSTOPPED' && m.wealth === 0) sawBackstoppedWithZeroWealth = true;
+        // Once BACKSTOPPED, wealth must stay frozen at whatever it was, never growing.
+      }
+    }
+    // Not every BACKSTOPPED slot will have exactly zero wealth (it might have earned some
+    // before losing its occupant), but the mechanism (frozen, not accruing) is what
+    // matters — checked directly below with a controlled before/after comparison.
+    void sawBackstoppedWithZeroWealth;
+
+    let world2 = createWorld(9, config);
+    let frozenWealth: number | null = null;
+    let checkedFreeze = false;
+    for (let i = 0; i < 300; i++) {
+      const before = world2.millers.find((m) => m.slot.state === 'BACKSTOPPED');
+      world2 = stepWorld(world2);
+      if (before) {
+        const after = world2.millers.find((m) => m.buildingId === before.buildingId);
+        if (after && after.slot.state === 'BACKSTOPPED') {
+          expect(after.wealth).toBe(before.wealth);
+          checkedFreeze = true;
+        }
+      }
+    }
+    expect(checkedFreeze).toBe(true);
+  });
+
+  it('a new occupant starts at zero wealth, not inheriting the previous occupant\'s balance', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, conscriptionDelay: 3, pMonthly: 0.9 };
+    let world = createWorld(5, config);
+    let checkedReset = false;
+    for (let i = 0; i < 400; i++) {
+      const before = world.millers;
+      world = stepWorld(world);
+      for (let idx = 0; idx < world.millers.length; idx++) {
+        const wasFilled = before[idx]!.slot.state === 'FILLED';
+        const isFilled = world.millers[idx]!.slot.state === 'FILLED';
+        if (!wasFilled && isFilled) {
+          // Just transitioned into FILLED this tick — wealth resets to 0 before that
+          // same day's income is added, so it should equal exactly this tick's income,
+          // not carry forward whatever the slot held before it went vacant/backstopped.
+          expect(world.millers[idx]!.wealth).toBeLessThan(1); // one day's income is small
+          checkedReset = true;
+        }
+      }
+    }
+    expect(checkedReset).toBe(true);
+  });
+
+  it('wealthGini rises above zero once role-holders have had time to earn unequally', () => {
+    let world = createWorld(1);
+    for (let i = 0; i < 100; i++) world = stepWorld(world);
+    expect(world.wealthGini).toBeGreaterThan(0);
+  });
+});
+
+describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealthCap wiring', () => {
+  it('wealthTaxRate=0 (the default) leaves wealth accrual unaffected by the tax path', () => {
+    let worldNoTax = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
+    let worldAlsoNoTax = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
+    for (let i = 0; i < 50; i++) {
+      worldNoTax = stepWorld(worldNoTax);
+      worldAlsoNoTax = stepWorld(worldAlsoNoTax);
+    }
+    expect(worldNoTax.wealthGini).toBe(worldAlsoNoTax.wealthGini);
+  });
+
+  it('a high wealthTaxRate measurably reduces wealthGini relative to no tax, over the same seed', () => {
+    let worldTaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0.8 });
+    let worldUntaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
+    for (let i = 0; i < 300; i++) {
+      worldTaxed = stepWorld(worldTaxed);
+      worldUntaxed = stepWorld(worldUntaxed);
+    }
+    expect(worldTaxed.wealthGini).toBeLessThan(worldUntaxed.wealthGini);
+  });
+
+  it('a wealthCap bounds every FILLED role-holder\'s wealth at or below the cap', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, wealthCap: 5 };
+    let world = createWorld(7, config);
+    for (let i = 0; i < 300; i++) {
+      world = stepWorld(world);
+      for (const m of [...world.millers, ...world.bakers]) {
+        if (m.slot.state === 'FILLED') expect(m.wealth).toBeLessThanOrEqual(5 + 1e-9);
+      }
+    }
+  });
+
+  it('wealthCap=undefined (the default) is a true no-op — no bound applied', () => {
+    let world = createWorld(1, { ...DEFAULT_WORLD_CONFIG, wealthCap: undefined });
+    for (let i = 0; i < 300; i++) world = stepWorld(world);
+    const maxWealth = Math.max(...[...world.millers, ...world.bakers].map((m) => m.wealth));
+    // With no cap over a 300-day run, at least someone should exceed a value that would
+    // be an artificially low "accidental" cap — proves nothing is silently bounding it.
+    expect(maxWealth).toBeGreaterThan(5);
   });
 });

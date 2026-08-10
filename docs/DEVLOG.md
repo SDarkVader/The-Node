@@ -6,6 +6,80 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Wealth tracking, Gini coefficient, and checking the "90%/10%" concern directly
+
+**Context.** User request, outside the Observatory phase sequence: track wealth
+inequality per iterative simulation, since research into agent-based economic models
+shows dystopian concentration (90%+ held by 10%) is a real, documented phenomenon in some
+model families. Explicitly asked to research first, track, then remediate and tune —
+"I may be wrong" was the user's own hedge, which turned out to matter.
+
+**Researched before building anything.** The "yard-sale model" literature (Hayes;
+Boghosian, Devitt-Lee & Wang, SIAM J. Appl. Math. 2024) confirms this is real: *pairwise,
+proportional, zero-sum* wealth exchanges reliably condense toward oligarchy even under
+fair rules. The remediation literature (Guzmán-González et al. 2025, arXiv:2501.08573)
+confirms progressive taxation + redistribution as the established counter. Both cited in
+`src/engine/wealth.ts`'s header. Checked whether NODE's actual market structure is even
+the same *kind* of system before assuming the conclusion transfers — it wasn't (Cournot/
+Bertrand best-response convergence toward a shared average, not pairwise zero-sum
+transfers), which turned out to be the whole story.
+
+**Built `src/engine/wealth.ts`** — the first STOCK variable (accumulated wealth) NODE has
+ever tracked; `millers.ts`/`bakers.ts` only ever tracked FLOW variables (quantity, price).
+`giniCoefficient`/`topShare` verified against hand-computed analytical cases before
+trusting them (perfect equality = exactly 0, one holder with everything at n=5 = exactly
+0.8, scale-invariance). Two remediation proposals built to match what the user asked for
+by name: `taxAndRedistributeIncome` ("daily resource allocation") and `applyWealthCap`
+("limitations upon wealth") — both off by default, config-gated, following this repo's
+existing pattern for the pattern-based sabotage proposal.
+
+**Wired into `world.ts`**: `RoleEconomicSlot.wealth`, same reset-on-new-occupant/
+freeze-while-not-FILLED semantics already established for `experience`. Purely additive —
+consumes zero new RNG draws, so the existing golden-value tick-order snapshot needed no
+regeneration for the wiring itself (only for adding the new fields to what's snapshotted,
+a deliberate change).
+
+**The headline finding — checked, not assumed: NODE does NOT produce the dystopian
+concentration the user was worried about.** `npm run wealth-inequality-report`, 3000
+days, 3 seeds: Gini plateaus around 0.49-0.53 and top-10%-share plateaus around 28-31%
+from tick 100 through tick 3000 — it does not climb toward 90%+ oligarchy. Traced to the
+actual mechanism, not just the number: NODE's market has no pairwise wealth transfers at
+all (each role-holder earns independently from a shared market-clearing price), so the
+specific mathematical condensation mechanism the yard-sale literature describes simply
+isn't present. The user's hedge ("I may be wrong") was right to include, and turned out
+to matter — the literature's warning is real but doesn't mechanically transfer to a
+structurally different market.
+
+**But found a real, different problem instead: a large role-based earnings gap.** Bakers
+earn 4-8x more than Millers on average, consistently across seeds (within-role Gini
+breakdown in `docs/BLUEPRINT.md`'s "Wealth inequality" entry). Traced to the mechanism:
+Miller income is quantity times a flourPrice that sits near its own floor most of the
+time; Baker income is a *margin* over that same near-floor price, which stays
+comparatively large regardless. A meaningful share of this gap is plausibly an artifact
+of `BAKER_DAILY_VOLUME=1.0`, an explicitly `[ILLUSTRATIVE]` placeholder — no per-baker
+demand model exists anywhere in this repo — not a validated prediction. Flagged for
+review, not treated as settled.
+
+**Remediation sweep, neither shipped as default.** Flat income taxation is weak even at
+80% (Gini 0.531 -> 0.485) since it smooths variance around a gap that's mostly
+structural, not luck. A hard wealth cap is far more effective at bounding measured Gini
+(cap=5 -> Gini 0.083) but with a real caveat surfaced, not hidden: the cap's single-pass
+redistribution loses value rather than fully conserving it when overflow exceeds
+available headroom — `meanFinalWealth` visibly drops from 7.33 to 4.55 at that cap,
+meaning some of the apparent inequality reduction is wealth being destroyed, not
+redistributed the way the research describes as the actual goal. Flagged as a concrete
+future refinement (iterate redistribution to convergence), not built here.
+
+**Verification.** 20 new tests (`test/wealth.regression.test.ts`) plus 9 new integration
+tests (`test/world.regression.test.ts`). One test failure caught and fixed before
+trusting the cap function: an early test assumed near-full conservation in a case where
+overflow (900) vastly exceeded redistribution headroom (297) — the code was right, the
+test's numbers were wrong; fixed by using a case that actually matches what the test
+claims, plus a separate explicit test for the large-overflow bounded-loss behavior. 160
+tests total, all passing; `npm run typecheck` clean.
+
+---
+
 ## 2026-08-10 — Phase C complete: src/sim/drivers/, plus mapping the population/role-ratio imbalance
 
 **Context.** Third phase of the Observatory build spec, plus a follow-up request: map out

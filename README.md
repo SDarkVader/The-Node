@@ -245,21 +245,31 @@ decay and distortion, and a client/server scaffold with real per-player
 targeted delivery (a rumour only ever reaches the player it was meant for,
 not everyone connected). The Godot client has been run end-to-end against a
 real server — not just written by hand and hoped — and one real connection
-bug was found and fixed doing that. A separate ecosystem-scale mechanics
-layer (economic floor, migration pressure, sabotage, experience, districting)
-is also built and validated, ported from a parallel design session — not
-yet wired into the market or vacancy layers. Running its two economic-health
-formulas together on one real trajectory surfaced two real findings: a
-sabotage attack does roughly 3x more damage than the simple occupancy metric
-shows, and — once real detection got wired into the sabotage mechanic for
-the first time — sabotage turns out to be nearly toothless against any
-reasonably healthy shard under its current calibration. A pattern-based
+bug was found and fixed doing that. A pattern-based sabotage
 re-specification (many individually-innocuous steps, only the accumulated
-pattern incriminating) has since been designed and simulated as a proposal —
+pattern incriminating) has been designed and simulated as a proposal —
 genuinely achievable by a patient attacker, still hard, a Detective role
-structurally necessary as counter-play — but it is not the shipped default;
-see `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the numbers and the open
-questions left. 83 automated tests cover all of it.
+structurally necessary as counter-play — but it is not the shipped default.
+
+NODE now also has a real spatial layer (`src/engine/space.ts` — districts,
+plots, buildings, real coordinates) and a unified deterministic world kernel
+(`src/world/world.ts`) that actually composes the market, vacancy, and
+ecosystem layers into one running world for the first time — a BACKSTOPPED
+or conscripted Miller genuinely feeds the flour price, sabotage rolls
+against real spatial witness counts instead of an assumed number. Real
+witnessing turns out to be far more local (2-9 people, not the previously
+assumed 23), which makes sabotage meaningfully more viable than earlier
+numbers suggested. Harness-only synthetic drivers exist for load-testing
+the kernel (never shipped game content, structurally locked out of the
+real engine). And the economy now tracks wealth — checked directly against
+real research on wealth concentration in agent-based economic models: NODE's
+market structure does **not** produce runaway inequality (Gini plateaus
+around 0.5, not the 90%+ concentration some model families produce), but a
+real, different problem turned up instead — Bakers earning several times
+more than Millers on average, traced to a placeholder assumption, not a
+validated prediction. See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the
+full numbers, citations, and open questions left. 160 automated tests cover
+all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -270,7 +280,7 @@ playable form.
 
 ```
 npm install
-npm test               # 131 tests
+npm test               # 160 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -279,6 +289,7 @@ npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipp
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim        # the unified kernel — market + vacancy + ecosystem, one running world
 npm run role-ratio-sweep # role-slot/population ratio outcomes — data, not a recommendation
+npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
@@ -291,7 +302,7 @@ never shipped, structurally guarded), `src/sim/` (deterministic seeded
 harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (131 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (160 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

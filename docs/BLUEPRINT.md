@@ -1379,6 +1379,125 @@ kind of decision the Observatory (Phase E) is meant to make watchable rather tha
 tabular; once it exists, this same question can be answered by watching a shard run at
 different ratios rather than reading a table like the one above.
 
+**Wealth inequality (2026-08-10, user-requested) — tracked, simulated, and the "90%+ held
+by 10%" concern checked directly rather than assumed.** NODE's market layer
+(`millers.ts`/`bakers.ts`) had only ever tracked FLOW variables — Cournot quantity,
+Bertrand price — converging via smoothed best-response dynamics. It never tracked a STOCK
+variable (a player's accumulated personal wealth) before this.
+
+**Grounding, from real research, not intuition:** the "yard-sale model" literature
+(Hayes; Boghosian, Devitt-Lee & Wang, "Bounding the Approach to Oligarchy in a Variant of
+the Yard-Sale Model," *SIAM J. Appl. Math.*, 2024, https://doi.org/10.1137/23m161375x)
+shows that *pairwise, proportional, zero-sum* wealth exchanges — a transaction sized
+relative to the poorer party's own wealth — reliably condense toward oligarchy even under
+perfectly fair rules and equal starting wealth; this is a real, mathematically
+established result. The remediation literature (Guzmán-González et al., "Effects of
+taxes, redistribution actions and fiscal evasion on wealth inequality: an agent-based
+model approach," 2025, arXiv:2501.08573) finds well-designed progressive taxation and
+redistribution the mechanism that actually bounds concentration in these models. Both
+cited directly in `src/engine/wealth.ts`'s header, not just here.
+
+**Built `src/engine/wealth.ts`** (pure, dependency-free, matching every other engine
+module's style): `millerDailyIncome`/`bakerDailyIncome` (the missing stock-accrual
+primitive), `giniCoefficient`/`topShare` (verified against hand-computed analytical
+cases — perfect equality = exactly 0, one holder with everything at n=5 = exactly 0.8,
+scale-invariance, monotonicity under increasing concentration), and two remediation
+PROPOSALS matching what the user asked for by name: `taxAndRedistributeIncome` ("daily
+resource allocation" — flat tax on today's income, redistributed equally) and
+`applyWealthCap` ("limitations upon wealth" — a hard ceiling on the accumulated stock,
+overflow redistributed to those still under it). Wired into `world.ts`: `RoleEconomicSlot`
+gained a `wealth` field with the exact same reset-on-new-occupant/freeze-while-not-FILLED
+semantics already established for `experience`; `World` gained `wealthGini`/
+`wealthTop10Share`, computed over currently-FILLED Miller+Baker role-holders. **Scoped to
+role-holders only** — the gossip layer has no tracked individual identity in this model
+(Phase B's own documented scoping decision), so this measures inequality among the
+"employed" ~24 people, not the full ~35-65 population; flagged, not silently expanded.
+Remediation is off by default (`wealthTaxRate: 0`, `wealthCap: undefined`) — a config
+change, not a code change, needed to enable either.
+
+**The headline finding: NODE's actual structure does NOT produce the dystopian
+concentration the user was concerned about — checked over a long run, not assumed.**
+`npm run wealth-inequality-report`, 3000 days, 3 seeds, default config:
+
+```
+tick    meanGini  meanTop10Share  meanMillerWealth  meanBakerWealth
+100     0.492     25.7%           1.33              8.78
+300     0.497     28.1%           1.87              10.92
+600     0.493     31.9%           2.00              8.93
+1200    0.508     30.4%           1.35              9.66
+2000    0.531     31.4%           1.66              10.41
+3000    0.491     29.9%           1.79              8.66
+```
+
+Gini plateaus around 0.49-0.53 and the top-10%-share plateaus around 28-31% from tick 100
+through tick 3000 — it does not climb toward 1 / 90%+ the way the yard-sale literature's
+oligarchy result would predict. This makes structural sense once checked against the
+mechanism, not just the number: NODE's market is Cournot/Bertrand *best-response
+convergence toward each other's average* (`avgRivalQ`/`avgRivalP`, mean-reversion terms
+pulling toward a shared anchor) — nobody's income comes out of a rival's pocket the way a
+yard-sale transaction does. The specific mathematical mechanism that drives yard-sale
+condensation (proportional, pairwise, zero-sum transfer) simply isn't present in NODE's
+market as built. The user was right to ask the question and right to flag "I may be
+wrong" — the literature's warning is real, but it doesn't mechanically transfer to a
+market structured this differently, and now that's verified rather than assumed either way.
+
+**But a real, different problem was found instead: a large role-based earnings gap, not
+individual condensation.** `npm run wealth-inequality-report`'s within-role breakdown
+(2000 days, isolating Miller-only and Baker-only Gini from the combined figure):
+
+```
+seed  combinedGini  millerOnlyGini  bakerOnlyGini  meanMillerWealth  meanBakerWealth  ratio
+1     0.562         0.638           0.420          1.31              10.28            7.8x
+2     0.418         0.346           0.304          1.79              7.37             4.1x
+3     0.613         0.726           0.481          1.88              13.58            7.2x
+```
+
+Bakers earn 4-8x more than Millers on average, consistently across seeds — a real,
+structural asymmetry, not luck. Traced to the mechanism, not assumed: Miller income is
+`quantity × flourPrice`, and `flourPrice` sits near its own floor (0.05) most of the time
+(confirmed in the Phase B `world-sim` findings above); Baker income is
+`(price − flourPrice) × BAKER_DAILY_VOLUME`, a *margin* over that same near-floor price,
+which stays comparatively large regardless. `BAKER_DAILY_VOLUME=1.0` is explicitly
+`[ILLUSTRATIVE]` in `wealth.ts` — no per-baker demand/volume model exists anywhere in this
+repo — so a meaningful share of this 4-8x gap is plausibly an artifact of that one
+placeholder constant, not a validated prediction about how Miller vs. Baker income should
+actually compare. Flagged for review, not treated as settled. Within-role Gini
+(particularly among Millers, `n=8`, a small population where individual variance matters
+more) is also genuinely non-trivial on its own — this isn't purely a role-average effect.
+
+**Remediation sweep — both proposals simulated, neither shipped as a default:**
+
+```
+mechanism                       meanGini  meanTop10Share  meanFinalWealth(combined)
+baseline (no remediation)       0.531     31.4%           7.33
+daily tax 10%, redistributed    0.519     31.0%           7.31
+daily tax 30%, redistributed    0.501     30.0%           7.27
+daily tax 50%, redistributed    0.491     29.0%           7.22
+daily tax 80%, redistributed    0.485     27.5%           7.15
+wealth cap = 20                 0.466     23.7%           6.86
+wealth cap = 5                  0.083     9.6%            4.55
+tax 30% + cap 20 (combined)     0.449     23.2%           6.86
+```
+
+Flat income taxation is weak here even at aggressive rates (80% tax only moves Gini from
+0.531 to 0.485) — expected once you see it's smoothing *variance* around a gap that's
+mostly *structural* (the Baker/Miller asymmetry above), not luck a redistribution pool
+can equalize away. A hard wealth cap is far more effective at bounding measured Gini, but
+**with a real caveat, not hidden**: `applyWealthCap`'s single-pass redistribution (see
+its doc comment in `wealth.ts`) loses value rather than fully conserving it when overflow
+exceeds the redistribution headroom — `meanFinalWealth` visibly drops from 7.33 to 4.55
+at `cap=5`, meaning part of that Gini reduction is wealth being destroyed, not
+redistributed to the poorer players the research describes as the actual goal. A more
+faithful implementation would iterate the redistribution to convergence rather than a
+single pass — a real, concrete future refinement, not built here.
+
+**Verification.** 20 new tests in `test/wealth.regression.test.ts` (Gini against
+analytical cases, scale-invariance, monotonicity, tax/cap conservation properties, the
+cap's documented bounded-loss behavior under large overflow) plus 9 new integration tests
+in `test/world.regression.test.ts` (wealth resets on new occupancy, freezes while
+BACKSTOPPED, accrues correctly, remediation wiring). 160 tests total, all passing; `npm
+run typecheck` clean.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

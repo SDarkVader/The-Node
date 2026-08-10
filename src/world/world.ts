@@ -73,6 +73,14 @@ import {
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
+import {
+  millerDailyIncome,
+  bakerDailyIncome,
+  giniCoefficient,
+  topShare,
+  taxAndRedistributeIncome,
+  applyWealthCap,
+} from '../engine/wealth.js';
 
 export interface WorldConfig {
   shardConfig: ShardLayoutConfig;
@@ -98,6 +106,12 @@ export interface WorldConfig {
   migrationK: number;
   /** Radius used to build the proximity-based connection graph for Wall-post propagation. */
   commsProximityRange: number;
+  /** PROPOSAL, not shipped as default (0). Flat daily income tax, redistributed equally
+   *  across all currently-FILLED role-holders — see wealth.ts's taxAndRedistributeIncome(). */
+  wealthTaxRate: number;
+  /** PROPOSAL, not shipped as default (undefined = no cap). Hard ceiling on accumulated
+   *  wealth — see wealth.ts's applyWealthCap(). */
+  wealthCap?: number;
 }
 
 // rMiller + rBaker = 24, matching ecosystem.ts's own S_DEFAULT — not an arbitrary choice.
@@ -125,6 +139,8 @@ export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   migrationTheta: 0.3,
   migrationK: 0.08,
   commsProximityRange: 10,
+  wealthTaxRate: 0, // PROPOSAL disabled by default — see docs/BLUEPRINT.md's "Wealth inequality" entry
+  wealthCap: undefined,
 };
 
 export interface RoleEconomicSlot {
@@ -134,6 +150,10 @@ export interface RoleEconomicSlot {
   value: number;
   /** Resets to 0 the moment a slot transitions into FILLED; frozen while VACANT/BACKSTOPPED. */
   experience: number;
+  /** Accumulated personal earnings. Resets to 0 the moment a slot transitions into FILLED
+   *  (a new occupant starts with nothing — no inherited wealth from whoever held the slot
+   *  before); frozen while VACANT/BACKSTOPPED (nobody there to earn or lose anything). */
+  wealth: number;
 }
 
 export interface SabotageLogEntry {
@@ -164,6 +184,13 @@ export interface World {
   population: number;
   economicHealth: number;
   economicHealthWithExperience: number;
+  /** Gini coefficient over currently-FILLED role-holders' wealth only (Miller+Baker) —
+   *  the gossip layer has no tracked individual identity in this model, see wealth.ts's
+   *  header comment and docs/BLUEPRINT.md's "Wealth inequality" entry for the scoping
+   *  reasoning. 0 when fewer than 2 role-holders are FILLED (nothing meaningful to compare). */
+  wealthGini: number;
+  /** Share of total FILLED-role-holder wealth held by the richest 10% of them, same scope. */
+  wealthTop10Share: number;
   pendingWallPosts: WallPost[];
   lastRumourEvents: RumourEventLite[];
   lastSabotage: SabotageLogEntry | null;
@@ -218,12 +245,14 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     buildingId: b.id,
     value: 0.3 + rng() * 0.2, // matches initMarket's own initial-quantity draw
     experience: EXPERIENCE_CAP, // "start maxed, established shard" — matches ecosystemHarness's convention
+    wealth: 0,
   }));
   const bakers: RoleEconomicSlot[] = bakerBuildings.map((b) => ({
     slot: { state: 'FILLED', vacantSince: null },
     buildingId: b.id,
     value: 0.5 + rng() * 0.2, // matches initMarket's own initial-price draw
     experience: EXPERIENCE_CAP,
+    wealth: 0,
   }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
@@ -244,6 +273,8 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     population: config.targetPopulation,
     economicHealth: economicHealth(filled, s),
     economicHealthWithExperience: economicHealthWithExperience(filled, avgExp, s),
+    wealthGini: 0, // everyone starts at 0 wealth — perfect equality, honestly
+    wealthTop10Share: 0,
     pendingWallPosts: [],
     lastRumourEvents: [],
     lastSabotage: null,
@@ -274,13 +305,16 @@ function stepCompetitiveLayer(
   return slots.map((s, i) => {
     const wasJustFilled = justFilled.has(s.buildingId);
     if (wasJustFilled) {
-      return { ...s, value: freshDraw(), experience: 0 };
+      // wealth resets too — a new occupant inherits nothing from whoever held this slot
+      // before. Income for this same day still accrues afterward, in stepWorld's market
+      // stage, once flourPrice is known.
+      return { ...s, value: freshDraw(), experience: 0, wealth: 0 };
     }
     const filledPos = filledIndices.indexOf(i);
     if (filledPos >= 0) {
       return { ...s, value: nextFilledValues[filledPos]!, experience: growExperience(s.experience) };
     }
-    return s; // VACANT or BACKSTOPPED and not newly filled: value and experience both frozen
+    return s; // VACANT or BACKSTOPPED and not newly filled: value, experience, and wealth all frozen
   });
 }
 
@@ -383,6 +417,62 @@ export function stepWorld(world: World): World {
     () => 0.5 + rng() * 0.2,
   );
 
+  // Wealth accrual (2026-08-10, user-requested) — the new stock variable wealth.ts adds
+  // on top of the market's existing flow variables. A Miller sells its whole quantity at
+  // the market-clearing flour price; a Baker earns margin-over-flour-cost times an
+  // illustrative fixed daily volume (no per-baker demand model exists). BACKSTOPPED slots
+  // earn nothing — nobody is there to receive it. See wealth.ts's header for the full
+  // grounding and docs/BLUEPRINT.md's "Wealth inequality" entry for the baseline findings.
+  //
+  // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
+  // redistributed across the combined Miller+Baker FILLED pool (one shared pool, not two
+  // separate ones — matches "daily resource allocation" as untargeted and unconditional),
+  // THEN accrued onto wealth — so remediation (disabled by default) acts on what's earned
+  // today, not retroactively on the whole accumulated balance. The wealth cap, if enabled,
+  // then bounds the resulting stock. Both are PROPOSALS, simulated and reported in
+  // docs/BLUEPRINT.md, neither shipped as a default (wealthTaxRate=0, wealthCap=undefined).
+  const millerIncomes = millers.map((m) => (m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) : 0));
+  const bakerIncomes = bakers.map((b) => (b.slot.state === 'FILLED' ? bakerDailyIncome(b.value, flourPriceValue) : 0));
+
+  let finalMillerIncomes = millerIncomes;
+  let finalBakerIncomes = bakerIncomes;
+  if (config.wealthTaxRate > 0) {
+    const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+    const bakerFilledIdx = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+    const combinedIncomes = [...millerFilledIdx.map((i) => millerIncomes[i]!), ...bakerFilledIdx.map((i) => bakerIncomes[i]!)];
+    if (combinedIncomes.length > 0) {
+      const afterTax = taxAndRedistributeIncome(combinedIncomes, config.wealthTaxRate);
+      finalMillerIncomes = [...millerIncomes];
+      finalBakerIncomes = [...bakerIncomes];
+      millerFilledIdx.forEach((idx, k) => {
+        finalMillerIncomes[idx] = afterTax[k]!;
+      });
+      bakerFilledIdx.forEach((idx, k) => {
+        finalBakerIncomes[idx] = afterTax[millerFilledIdx.length + k]!;
+      });
+    }
+  }
+
+  millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]! } : m));
+  bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]! } : b));
+
+  if (config.wealthCap !== undefined) {
+    const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+    const bakerFilledIdx = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+    const combinedWealth = [...millerFilledIdx.map((i) => millers[i]!.wealth), ...bakerFilledIdx.map((i) => bakers[i]!.wealth)];
+    if (combinedWealth.length > 0) {
+      const capped = applyWealthCap(combinedWealth, config.wealthCap);
+      millers = millers.map((m, i) => {
+        const pos = millerFilledIdx.indexOf(i);
+        return pos >= 0 ? { ...m, wealth: capped[pos]! } : m;
+      });
+      bakers = bakers.map((b, i) => {
+        const pos = bakerFilledIdx.indexOf(i);
+        return pos >= 0 ? { ...b, wealth: capped[millerFilledIdx.length + pos]! } : b;
+      });
+    }
+  }
+
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
   // Sabotage-before-arrival order matches design/tick_order_check.py's own validated
   // finding — checked before choosing this order, not reinvented.
@@ -433,6 +523,7 @@ export function stepWorld(world: World): World {
   const s = config.rMiller + config.rBaker;
   const filledExpValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.experience);
   const avgExp = filledExpValues.length > 0 ? filledExpValues.reduce((a, b) => a + b, 0) / filledExpValues.length : 0;
+  const filledWealthValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.wealth);
 
   // ---- Stage 5: comms (rumour propagation) ------------------------------------------
   let lastRumourEvents: RumourEventLite[] = [];
@@ -477,6 +568,10 @@ export function stepWorld(world: World): World {
     population,
     economicHealth: economicHealth(combinedFilledCount, s),
     economicHealthWithExperience: economicHealthWithExperience(combinedFilledCount, avgExp, s),
+    // giniCoefficient/topShare both return 0 for an empty array — 0 FILLED role-holders
+    // reads as "no meaningful comparison," not an error.
+    wealthGini: giniCoefficient(filledWealthValues),
+    wealthTop10Share: topShare(filledWealthValues, 0.1),
     pendingWallPosts: [],
     lastRumourEvents,
     lastSabotage,
