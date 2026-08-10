@@ -6,6 +6,61 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Resolved three standing ambiguities: permanence split, additive-only reputation, mechanical-backstop framing
+
+**Context.** User task: "Resolve Standing Ambiguities in NODE" — five items. This entry
+covers the first three (documentation + terminology); items 4 (sabotage re-specification)
+and 5 (flagging TRAVEL_DAYS_TARGET/vacancy-default staleness) are separate, later pieces
+of the same task.
+
+**1. The permanence contradiction.** A live contradiction existed across the repo:
+README's "the past is immortal" vs. external design material's persistent per-player
+`trust_index` carried cross-session vs. `CLAUDE.md` constraint 4's old "nothing gets
+recorded, ever" vs. the diary's ~30-day TTL. Settled: personal memory (diary, rumours,
+private impressions) is mortal; civic memory (public, collectively-witnessed events —
+monuments, the Wall's Emissive Soul, Ghost Shard missives, shard ruin/rejuvenation) is
+immortal. Test to apply going forward: "does this record capture an event the node
+collectively witnessed, or an individual's private expression/judgement? The first may
+persist. The second must not." Rewrote `CLAUDE.md` constraint 4; corrected README's
+tagline to "what the node did together, it did for good" (unambiguously civic); recorded
+the decision and reasoning in `BLUEPRINT.md`. Explicitly: no cross-session/cross-shard
+`trust_index` is to be built under any name — any external spec implying one is
+superseded by this decision.
+
+**2. New standing constraint: reputation is additive-only.** No reputation system exists
+in code yet — prior sessions deliberately stopped sabotage-detection work at the
+mechanical fact of whether an act was witnessed, going no further. That restraint meant
+this constraint could be written before anything gets built on top of it. Added as
+`CLAUDE.md` constraint 6, verbatim per the task: every player holds an untouchable
+baseline of visibility and access; reputation sits on top, never below. Exclusion is the
+failure mode this design is most exposed to; a subtractive reputation system is
+structurally an exclusion engine. Composes with constraint 2 (no permanent zero-state)
+applied to social standing. Did not build a reputation system — constraint only.
+
+**3. The vacancy backstop vs. the "no agents" rule.** README/vacancy engine described
+the backstop as flat and mechanical; external material had drifted toward "NPC Millers"/
+"Ghost Couriers" — character-implying language conflicting with `CLAUDE.md` constraint 3.
+Settled framing: the simulation is always running the rules for every slot; an unoccupied
+slot isn't a character standing in, it's the world's own physics continuing to tick.
+Audited every "NPC" occurrence across `README.md`, `HANDOVER.md`, `BLUEPRINT.md`, code
+comments, and test descriptions in `src/` and `test/`, and replaced with this framing —
+including renaming the `NPC_PRODUCTIVITY` constant in `src/engine/ecosystem.ts` to
+`BACKSTOP_PRODUCTIVITY` (value unchanged, 0.4). Deliberately left this DEVLOG, the dated
+design addenda, and `design/node_core_reference.py`/`design/node_core.ts` untouched — this
+project's own practice (see the "diary fourth reinvention" entry below) is to append
+corrections rather than rewrite history, and those files are closed, dated, or explicitly
+preserved provenance. Also recorded in `BLUEPRINT.md`: a minimum of three real players is
+required for a live economy (generalizes the Phase 1 §1.4 n=2 instability cliff to social
+scheming needing a third party) — checked against existing calibration (Miller's `R=2` in
+the conscription harness matches the brief's own "2-3 thin rivalry roles" recommendation),
+no conflict found, no numbers changed.
+
+**Verification.** All 72 existing tests still pass; `npm run typecheck` clean. This was a
+naming/framing and documentation pass — no simulation logic changed, so no new tests were
+required for this piece.
+
+---
+
 ## 2026-08-08 — Ran the two economic-health formulas together; wired real sabotage detection
 
 **Context.** Direct follow-up to yesterday's ecosystem-mechanics port, which carried
