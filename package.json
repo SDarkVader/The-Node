@@ -15,6 +15,7 @@
     "sabotage-pattern-sim": "tsx src/sim/sabotagePatternCli.ts",
     "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "world-sim": "tsx src/sim/worldCli.ts",
+    "role-ratio-sweep": "tsx src/sim/roleRatioSweep.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },

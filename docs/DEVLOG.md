@@ -6,6 +6,63 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Phase C complete: src/sim/drivers/, plus mapping the population/role-ratio imbalance
+
+**Context.** Third phase of the Observatory build spec, plus a follow-up request: map out
+a solution to the population-imbalance finding from Phase B, without silently resolving
+the still-open role-roster question it's actually blocked on.
+
+**Built `src/sim/drivers/`** — four deterministic policy functions (`honest`,
+`opportunist`, `saboteur`, `idle`), resolving the tension the spec names directly:
+running a world needs occupants making decisions, which is in direct tension with
+constraint 3 ("does this need to be an agent"). Each driver is a pure function from a
+deliberately narrow `DriverVisibleState` (ambient counts and prices only, nothing
+requiring belief modelling) to one bounded `DriverAction`. Enforced structurally, not by
+convention: `test/drivers.importGuard.test.ts` scans `src/engine/`, `src/world/`, and
+`src/server/` for any import referencing `sim/drivers` and fails the build if it finds
+one — including a sanity check that the guard's own regex actually catches a real
+violation, so a passing test means something.
+
+**Verified the four strategies are behaviourally distinct, not four relabeled copies**:
+`honestDriver` reacts to `economicHealth`, `opportunistDriver` reacts to `flourPrice`
+instead — a test confirms opportunist's occupy-a-vacancy rate swings sharply with price
+while honest's stays flat regardless. `saboteurDriver` only attempts a sabotage step when
+the ambient `nearbyOccupantCount` is mechanically low, never otherwise, and blends in
+(an ordinary Wall post or nothing) the rest of the time — matching the pattern-based
+sabotage proposal's own premise that any single observed action should read as
+unremarkable.
+
+**Deliberately not wired into a live `stepWorld` tick this phase** — the spec's own
+deliverable list names only the drivers and the import-guard test. Wiring
+`occupySlot`/`vacateSlot` in particular raises a real design question (force a
+vacancy.ts transition, or influence its existing probabilistic model?) that doesn't
+belong buried inside this phase — deferred explicitly to Phase D, where `world-record`
+needs real driver activity to produce a non-trivial run.
+
+**Mapping the imbalance — data, not a decision.** Built `src/sim/roleRatioSweep.ts`
+(`npm run role-ratio-sweep`), which runs the real composed kernel across six candidate
+role-slot/population configurations rather than picking one. Two things worth carrying
+forward: (1) population settles to roughly the same equilibrium (~35) regardless of
+whether `targetPopulation` starts at 50, 65, or 80, as long as total role slots stay at
+24 — `migrationValveStep`'s long-run behavior seems driven primarily by role-slot count,
+not starting population, meaning `targetPopulation` currently functions more as an
+initial condition than a stable target. (2) The sweep confirms the Phase B population-
+drain finding wasn't a one-tick anomaly: at 8 role slots (this file's own original
+mistake, kept as a reference row), `economicHealth` bottoms out at exactly the 0.4 floor
+itself, not just near it — a genuinely different, worse equilibrium, not noise. Neither
+finding resolves the actual open question (what the real role roster should be) — that
+stays exactly where HANDOVER.md already flagged it, the user's own call. This just gives
+it real data to be made against, per the Observatory's whole stated purpose.
+
+**Verification.** 10 new tests (`test/drivers.regression.test.ts`,
+`test/drivers.importGuard.test.ts`). 131 tests total, all passing; `npm run typecheck`
+clean.
+
+**Not started yet:** Phases D-F (snapshot contract, the Observatory web app,
+civic-memory monuments).
+
+---
+
 ## 2026-08-10 — Phase B complete: src/world/world.ts, the unified deterministic kernel
 
 **Context.** Second phase of the Observatory build spec, built after checking in with

@@ -79,13 +79,37 @@ default (8 role slots against N=65, ~88% roleless) being inconsistent with
 match `S_DEFAULT`, population now settles into a stable range instead of collapsing.
 Confirms Phase A's spatial-witness finding inside an actual running kernel: `npm run
 world-sim` shows real witness counts of 2-7 at sabotage events, `economicHealth` staying
-well above its 0.4 floor across repeated attacks. **Phases C-F not started** — stopping
-here to report back and check in again before continuing, per explicit instruction not
-to do too much in one pass.
+well above its 0.4 floor across repeated attacks.
+
+**Phase C is also done, same session**: `src/sim/drivers/` — four deterministic policy
+functions (`honest`, `opportunist`, `saboteur`, `idle`), harness-only, structurally
+enforced (`test/drivers.importGuard.test.ts` fails the build if `src/engine/`,
+`src/world/`, or `src/server/` ever import from `sim/drivers`). Verified behaviourally
+distinct, not four relabeled copies: honest reacts to `economicHealth`, opportunist to
+`flourPrice`, saboteur only attempts a step when ambient witness count is mechanically
+low. Deliberately **not** wired into a live `stepWorld` tick this phase — that's Phase
+D's job, once `world-record` needs real driver activity to produce a non-trivial run,
+and once the real question ("does a driver's occupy/vacate action force a vacancy.ts
+transition or influence its existing probability?") gets an actual answer rather than a
+buried one.
+
+**Also this session: mapped the population/role-ratio imbalance from the Phase B entry
+above — data, not a decision.** `npm run role-ratio-sweep` runs the real kernel across
+six candidate role-slot/population configurations. Two findings worth carrying forward:
+population settles to roughly the same equilibrium (~35) regardless of whether
+`targetPopulation` starts at 50, 65, or 80, as long as total role slots stay at 24 — the
+migration valve's long-run behavior seems driven by role-slot count, not starting
+population; and the Phase B population-drain finding wasn't a one-tick anomaly — at 8
+role slots, `economicHealth` settles at exactly its 0.4 floor, a genuinely worse stable
+regime. Neither resolves the actual open question below (what the role roster should
+be) — still explicitly your call. Full numbers: `docs/BLUEPRINT.md`'s "Phase C" entry.
+
+**Phases D-F not started** — stopping here to report back and check in again before
+continuing, per explicit instruction not to do too much in one pass.
 
 ```
 npm install
-npm test              # 121 tests, all passing
+npm test              # 131 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -93,6 +117,7 @@ npm run ecosystem-sim   # combined economic-health / sabotage-detection comparis
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim       # unified kernel — market + vacancy + ecosystem, one running world
+npm run role-ratio-sweep # role-slot/population ratio outcomes — data, not a recommendation
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
@@ -365,7 +390,11 @@ alongside a real open question it inherits: no persistent per-district state exi
   and what fraction of `N` those slots are meant to occupy in total, now that the brief's
   own ~1/3 figure is rejected but no replacement ratio has been proposed. Until that
   exists, `R`/`N` in every harness stay illustrative test scaffolding, not a calibrated
-  target — do not adjust them speculatively in the meantime.
+  target — do not adjust them speculatively in the meantime. **2026-08-10: `npm run
+  role-ratio-sweep` now exists** to show what different candidate ratios actually
+  produce once run through the real composed kernel (population/health/flour-price
+  outcomes, not a recommendation) — data for whenever this gets decided, not a decision
+  made in its place. See `docs/BLUEPRINT.md`'s "Phase C" entry for the numbers.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 

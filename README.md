@@ -119,9 +119,10 @@ through any rule anyone wrote down.
 
 *Real, tested math, now actually running inside one composed world — a
 BACKSTOPPED or conscripted Miller genuinely feeds the flour price, sabotage
-rolls against real spatial witness counts, not an assumed number. Still not
-anything a real player can attempt, though — that needs the driver/action
-layer, not built yet.*
+rolls against real spatial witness counts, not an assumed number. A
+harness-only saboteur decision-maker exists for testing purposes, but
+nothing a real player can attempt yet — that needs actual decisions to
+reach the running world, which is a later, deliberate step, not this one.*
 
 ## How the city talks
 
@@ -269,7 +270,7 @@ playable form.
 
 ```
 npm install
-npm test               # 121 tests
+npm test               # 131 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -277,6 +278,7 @@ npm run ecosystem-sim   # combined economic-health / sabotage-detection comparis
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim        # the unified kernel — market + vacancy + ecosystem, one running world
+npm run role-ratio-sweep # role-slot/population ratio outcomes — data, not a recommendation
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
@@ -284,10 +286,12 @@ npm run typecheck
 
 Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale +
 spatial primitives), `src/world/` (the unified deterministic kernel composing
-all three), `src/sim/` (deterministic seeded harnesses and sweeps),
+all three), `src/sim/drivers/` (harness-only synthetic policy functions —
+never shipped, structurally guarded), `src/sim/` (deterministic seeded
+harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (121 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (131 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

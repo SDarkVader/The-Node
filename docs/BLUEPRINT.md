@@ -1291,6 +1291,94 @@ pin, `computeMillerSupply`'s BACKSTOPPED-participates-in-pricing behavior, the
 Cournot-minimum-2 never-throws property, comms proximity propagation, a real
 configuration-error check). 121 tests total, all passing; `npm run typecheck` clean.
 
+**Phase C (2026-08-10) — `src/sim/drivers/`, harness-only synthetic drivers.** The
+tension the spec names directly: running a world needs occupants making decisions, which
+is in direct tension with `CLAUDE.md` constraint 3 ("does this need to be an agent") and
+NODE's foundational no-AI-actor rule. Resolution: four deterministic policy functions
+(`honest`, `opportunist`, `saboteur`, `idle`), pure functions from a deliberately-limited
+`DriverVisibleState` (ambient counts and prices only — no detection probabilities, no
+other players' private state, nothing requiring belief modelling) to one bounded
+`DriverAction`. No learning, no personality, no memory across ticks beyond what's encoded
+in the visible-state snapshot itself.
+
+**Enforced structurally, not by convention**: `test/drivers.importGuard.test.ts` scans
+every file under `src/engine/`, `src/world/`, and `src/server/` for an import referencing
+`sim/drivers` and fails the build if it finds one — the guardrail against this test
+scaffolding quietly becoming a shipped NPC. Includes a sanity check that the guard's
+regex actually matches a real violation pattern, so a passing test means "genuinely
+clean," not "the pattern never matches anything." `src/sim/drivers/README.md` documents
+the boundary directly in the directory itself, not only here.
+
+**Behaviourally distinct, not four relabeled copies of one function** — verified, not
+assumed: `honestDriver` reacts to `economicHealth`, `opportunistDriver` reacts to
+`flourPrice` instead (a test confirms opportunist's occupy-a-vacancy rate swings sharply
+with price while honest's stays flat), `saboteurDriver` only ever attempts a sabotage
+step when the ambient `nearbyOccupantCount` is low — reading a mechanical fact, not
+reasoning about whether it's being watched — and blends in (an ordinary-looking Wall
+post or nothing) otherwise, matching the pattern-based sabotage proposal's own premise
+that any single observed action should read as unremarkable. `idleDriver` is the pure
+control case.
+
+**Deliberately not wired into a live `stepWorld` tick in this phase, flagged rather than
+silently deferred.** The spec's own Phase C deliverable list names only the drivers and
+the import-guard test — not a driver-run world. Actually connecting driver-produced
+actions to `stepWorld` raises a real design question this phase doesn't answer: does a
+driver's `occupySlot`/`vacateSlot` action *force* a `vacancy.ts` state transition, or
+does it instead *influence* the existing probabilistic churn/fill model (and if so, how)?
+That's a genuine architectural decision, not a detail to bury inside this phase — deferred
+to Phase D, where `npm run world-record` needs real driver-generated activity to produce
+a non-trivial recorded run, and where that question has to be answered explicitly to
+build the recording harness at all.
+
+10 new tests (`test/drivers.regression.test.ts`, `test/drivers.importGuard.test.ts`) —
+determinism per strategy, every produced action staying inside `DriverAction`'s bounded
+union across 500 random visible-state draws per strategy, the three behavioural-
+distinctness checks above, and `assignDriverStrategy`'s own determinism (same seed +
+player index always yields the same strategy; saboteur stays a genuine minority, under
+15% across 1000 synthetic players). 131 tests total, all passing; `npm run typecheck`
+clean.
+
+**Mapping the population/role-ratio imbalance (2026-08-10) — data, not a decision.** The
+Phase B population-drain finding was traced to this repo's own inconsistency (an
+un-cross-checked default), not a real module conflict, and fixed. But the deeper question
+it surfaced — what role-slot-to-population ratio the composed system should actually run
+at — remains exactly as open as HANDOVER.md already flagged it: blocked on a revised role
+roster that hasn't been designed yet, explicitly the user's own call, not something to
+silently pick a number for. What *can* be done without crossing that line: show what
+different ratios actually produce, so that decision has real data behind it instead of
+being made in the abstract. `src/sim/roleRatioSweep.ts` (`npm run role-ratio-sweep`) runs
+the real composed kernel across six candidate `(rMiller, rBaker, targetPopulation)`
+configurations, 3 seeds each, 2000 days:
+
+```
+S=24, N=65 (current default, ~63% roleless):        meanPop=35.0  range=29-41   meanHealth=0.944  minHealth=0.650
+S=8,  N=65 (this file's own first-draft mistake):    meanPop=11.9  range=6-19    meanHealth=0.864  minHealth=0.400
+S=22, N=65 (brief's literal ~1/3, rejected 08-07):    meanPop=31.6  range=26-38   meanHealth=0.938  minHealth=0.564
+S=32, N=65 (denser role-holding):                     meanPop=45.8  range=40-52   meanHealth=0.946  minHealth=0.719
+S=24, N=50 (brief's lower population bound):          meanPop=34.8  range=30-42   meanHealth=0.941  minHealth=0.625
+S=24, N=80 (brief's upper population bound):          meanPop=35.3  range=28-42   meanHealth=0.948  minHealth=0.625
+```
+
+**One structural pattern worth flagging on its own**: population settles to roughly the
+*same* equilibrium (~35) whether `targetPopulation` starts at 50, 65, or 80, as long as
+`S` (total role slots) stays at 24 — `migrationValveStep`'s long-run equilibrium appears
+to be driven primarily by `S`, not by the starting `N`. That means `targetPopulation` as
+currently modeled functions more as an *initial condition* than a stable target; the real
+lever for where population actually settles is the role-slot count. Worth knowing before
+treating `targetPopulation=65` as "the population" rather than "the starting population."
+
+Also worth flagging: the S=8 row (this file's own original mistake, kept in the sweep
+deliberately as a reference point, not a live default) shows a genuinely different, worse
+regime — `economicHealth` bottoming at exactly 0.400 (the floor itself, not just near
+it) and `flourPrice` averaging 0.799 rather than sitting near its own floor, because
+supply collapses when so few slots exist. Confirms the population-drain finding wasn't a
+one-tick anomaly; it's a stable, bad equilibrium at that ratio.
+
+**Not a recommendation, and no default changed by this entry** — this is exactly the
+kind of decision the Observatory (Phase E) is meant to make watchable rather than
+tabular; once it exists, this same question can be answered by watching a shard run at
+different ratios rather than reading a table like the one above.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
