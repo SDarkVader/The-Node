@@ -51,7 +51,19 @@ import type { RoleSlot } from './vacancy.js';
  *
  * KNOWN GAP: `sabotageAttempt()` has no defined consequence for a *caught* saboteur —
  * it only tracks who succeeds undetected. A real gap in the mechanic as given, not
- * something invented here to fill silently.
+ * something invented here to fill silently. Still true of `patternSabotageAttempt()`
+ * below.
+ *
+ * PROPOSAL, not shipped (2026-08-10): `patternSabotageAttempt()` and its supporting
+ * functions below re-specify sabotage as a sequence of individually-innocuous steps
+ * rather than one witnessed act — see docs/BLUEPRINT.md's "Sabotage re-specification
+ * proposal" for the full rationale and simulation results. This is additive: the
+ * original `sabotageAttempt()`/`applySabotageDamage()` pair above is untouched, still
+ * exercised by `test/ecosystem.regression.test.ts`, and remains what
+ * `ecosystemHarness.ts`/`ecosystemCli.ts` actually run by default. The pattern-based
+ * functions are not wired into any default config or existing test — per the user's
+ * explicit instruction, this is a calibration proposal for review, not a silent
+ * recalibration.
  *
  * DESIGN CORRECTION (2026-08-07, user directive, supersedes brief §1.5): the brief's
  * own role-slot mix recommendation (~1/3 of players role-holding, ~2/3 pure gossip-layer
@@ -254,4 +266,95 @@ export function applySabotageDamage(
   damagePerSuccess: number,
 ): number {
   return Math.max(0, filledByPlayer - successfulSaboteurs * damagePerSuccess);
+}
+
+// ---- Sabotage, pattern-based re-specification (PROPOSAL — 2026-08-10, not shipped) ------
+
+/**
+ * Diagnosis this responds to: `sabotageAttempt()` above rolls detection every day of the
+ * whole acquisition window against `detectionProbability(witnesses)`, which saturates
+ * near-certain well before a realistic healthy-shard witness count (~23) is reached
+ * (~69% per acquisition window at DETECTION_P_PER_WITNESS=0.05, compounding across
+ * ~5 days to near-100%) — see docs/BLUEPRINT.md and the 2026-08-08 combined-economy
+ * findings. That models sabotage as one witnessed act, caught or not. Real successful
+ * betrayal typically doesn't work that way: many individually-innocuous steps, and only
+ * the accumulated pattern across them is incriminating.
+ *
+ * Re-specified here as `stepsRequired` sequential steps, one roughly every
+ * `PATTERN_STEP_CADENCE_DAYS_DEFAULT` days. Each step's own detection hazard is scaled by
+ * `patternLegibility()`, which starts near zero and grows only as more steps accumulate —
+ * a single step is deliberately near-undetectable regardless of witness count; the
+ * *pattern* becomes progressively legible as it lengthens, not any individual step. This
+ * also makes a Detective-type role structurally necessary as counter-play: passive
+ * ambient witnessing (`pPerWitness`) alone stays weak even late in a campaign (it's still
+ * gated by the same slow-growing legibility ramp as the ambient term), but a Detective
+ * actively assembling observations into a pattern (`detectiveBonus`, gated by a *linear*
+ * ramp instead of the ambient term's quadratic one) closes far faster — modeling
+ * deliberately piecing together individually-fine observations, not another passive
+ * witness.
+ */
+
+/** Steps a sabotage campaign requires to complete, if never caught first. */
+export const PATTERN_STEPS_DEFAULT = 6;
+/** Days between successive steps of one campaign. */
+export const PATTERN_STEP_CADENCE_DAYS_DEFAULT = 15;
+/** Per-witness, per-step ambient detection contribution — an order of magnitude below
+ *  DETECTION_P_PER_WITNESS, reflecting that any single step reads as innocuous on its own. */
+export const PATTERN_P_PER_WITNESS_DEFAULT = 0.01;
+/** Flat additional per-step detection contribution when a Detective is actively
+ *  investigating this campaign, ramped linearly (not quadratically) with steps completed. */
+export const PATTERN_DETECTIVE_BONUS_DEFAULT = 0.15;
+
+/**
+ * 0..1, how legible the accumulated pattern is after `stepsCompleted` of `stepsRequired`.
+ * Quadratic on purpose: early steps contribute almost nothing (a single step stays near
+ * (1/stepsRequired)^2, i.e. ~2.8% of full legibility at stepsRequired=6), late steps
+ * contribute a lot more — the pattern "clicks into focus," it doesn't accumulate linearly.
+ */
+export function patternLegibility(stepsCompleted: number, stepsRequired: number): number {
+  const frac = Math.min(1, Math.max(0, stepsCompleted / stepsRequired));
+  return frac * frac;
+}
+
+/**
+ * Detection probability for the step that just brought the campaign to `stepsCompleted`.
+ * Two independent channels combined: ambient witnessing (ramped by the quadratic
+ * `patternLegibility`) and, if a Detective is actively investigating, a flat bonus ramped
+ * linearly by steps completed instead — see the header note above for why the two ramps
+ * differ.
+ */
+export function patternStepDetectionProbability(
+  stepsCompleted: number,
+  stepsRequired: number,
+  witnesses: number,
+  detectiveActive: boolean,
+  pPerWitness: number = PATTERN_P_PER_WITNESS_DEFAULT,
+  detectiveBonus: number = PATTERN_DETECTIVE_BONUS_DEFAULT,
+): number {
+  const ambient = detectionProbability(witnesses, pPerWitness) * patternLegibility(stepsCompleted, stepsRequired);
+  const detectiveFrac = Math.min(1, Math.max(0, stepsCompleted / stepsRequired));
+  const detective = detectiveActive ? detectiveBonus * detectiveFrac : 0;
+  return 1 - (1 - ambient) * (1 - detective);
+}
+
+/**
+ * Runs one pattern-based sabotage campaign step-by-step to completion or discovery.
+ * `caughtAtStep` is null on success. No consequence for being caught is modeled here —
+ * see the "PROPOSAL" note above.
+ */
+export function patternSabotageAttempt(
+  stepsRequired: number,
+  witnesses: number,
+  detectiveActive: boolean,
+  rand: () => number,
+  pPerWitness: number = PATTERN_P_PER_WITNESS_DEFAULT,
+  detectiveBonus: number = PATTERN_DETECTIVE_BONUS_DEFAULT,
+): { succeeded: boolean; caughtAtStep: number | null } {
+  for (let k = 1; k <= stepsRequired; k++) {
+    const p = patternStepDetectionProbability(k, stepsRequired, witnesses, detectiveActive, pPerWitness, detectiveBonus);
+    if (rand() < p) {
+      return { succeeded: false, caughtAtStep: k };
+    }
+  }
+  return { succeeded: true, caughtAtStep: null };
 }

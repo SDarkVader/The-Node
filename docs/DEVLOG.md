@@ -6,6 +6,52 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Sabotage re-specified as pattern-based (proposal, not shipped)
+
+**Context.** Item 4 of the "Resolve Standing Ambiguities" task. Diagnosis carried
+forward from 2026-08-08: the act-based sabotage mechanic rolls detection every day of
+the acquisition window against `detectionProbability(witnesses)`, which saturates
+near-certain at a healthy shard's ~23 witnesses — sabotage was documented as nearly
+non-viable. Task asked for a re-specification where sabotage is a sequence of
+individually-innocuous steps, only the accumulated pattern incriminating, detection
+rolling against the pattern rather than each step, and explicitly said not to ship a
+final calibration without review.
+
+**Built, additively.** `patternLegibility()`, `patternStepDetectionProbability()`,
+`patternSabotageAttempt()` added to `src/engine/ecosystem.ts` alongside (not replacing)
+the original `sabotageAttempt()`/`applySabotageDamage()`, which remain what
+`ecosystemHarness.ts` actually runs by default. A campaign is 6 steps, one every 15
+days; each step's detection hazard combines an ambient channel (ramped quadratically by
+steps completed — a single step stays near-undetectable regardless of witness count) and
+a Detective channel (ramped linearly instead, and only active when a Detective-type role
+is investigating) — the different ramps are what make a Detective structurally necessary
+as counter-play rather than optional. New harness (`src/sim/sabotagePatternHarness.ts`,
+`npm run sabotage-pattern-sim`) runs this against the same real vacancy-driven shard
+dynamics used for the act-based mechanic.
+
+**Simulated before trusting.** 8 seeds, 20,000 days, both single-attacker and a
+4-concurrent-attacker stress case for the constraint-2 check specifically (not just
+assuming the single-attacker case generalizes):
+
+- Attacker time investment: ~146 days/success without a Detective, ~220 with one
+  actively investigating (1 attacker) — genuinely achievable, not guaranteed (44.8-68%
+  of campaigns caught first).
+- Constraint 2 (never zeroes a shard): holds — `economicHealth` tail minimum stayed at
+  0.775-0.800 across all four configurations tested, well above the 0.4 floor, even
+  under 4 concurrent campaigns.
+- Consequence for a caught saboteur: still unspecified, same gap as the act-based
+  mechanic — flagged, not invented. Matters more now that repeated attempts carry no
+  cost beyond lost time.
+
+**Not adopted as the new default** — explicitly a proposal per the task's instruction.
+Full numbers and design rationale in `docs/BLUEPRINT.md`. 11 new tests
+(`test/sabotagePattern.proposal.test.ts`) validate the mechanism itself (legibility
+grows correctly, single steps stay near-undetectable, Detective raises catch rate, floor
+holds under stress) without locking in these specific numbers as final. 83 tests total,
+all passing; typecheck clean.
+
+---
+
 ## 2026-08-10 — Resolved three standing ambiguities: permanence split, additive-only reputation, mechanical-backstop framing
 
 **Context.** User task: "Resolve Standing Ambiguities in NODE" — five items. This entry

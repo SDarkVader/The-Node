@@ -1007,6 +1007,81 @@ headcount, so this generalization doesn't conflict with anything built; it expla
 *why* the existing finding matters at a scale beyond one role-slot. No calibration
 numbers changed by this entry.
 
+**Proposal (2026-08-10) — sabotage re-specified as pattern-based, not shipped as the new
+default; numbers below are for review.** Diagnosis this responds to: the existing
+act-based mechanic (`sabotageAttempt()`, `applySabotageDamage()` in `src/engine/
+ecosystem.ts`, unchanged) rolls detection every day of the acquisition window against
+`detectionProbability(witnesses)`, which the 2026-08-08 combined-economy findings showed
+saturates near-certain at a healthy shard's ~23 witnesses (~69% per acquisition window at
+`DETECTION_P_PER_WITNESS=0.05`, compounding across a ~5-day window to near-100%) — sabotage
+is nearly non-viable as specified. That models sabotage as a single witnessed act. The
+task asked for a re-specification where sabotage is a sequence of individually-innocuous
+steps, only the accumulated pattern incriminating, with detection rolling against the
+pattern rather than each step.
+
+**Design.** Added `patternLegibility()`, `patternStepDetectionProbability()`, and
+`patternSabotageAttempt()` to `ecosystem.ts` (additive — the original functions are
+untouched and still what `ecosystemHarness.ts`/`ecosystemCli.ts` run by default). A
+campaign is `PATTERN_STEPS_DEFAULT=6` steps, one every `PATTERN_STEP_CADENCE_DAYS_
+DEFAULT=15` days (~90 days for a full uninterrupted campaign). Each step's detection
+hazard has two independent channels: an *ambient* one (`PATTERN_P_PER_WITNESS_
+DEFAULT=0.01`, an order of magnitude below the act-based mechanic's per-witness rate)
+scaled by `patternLegibility(stepsCompleted, stepsRequired) = (stepsCompleted/
+stepsRequired)^2` — quadratic on purpose, so a single step contributes almost nothing
+(step 1 of 6 carries ~2.8% of full legibility) and the pattern "clicks into focus" only
+as it lengthens; and a *Detective* channel (`PATTERN_DETECTIVE_BONUS_DEFAULT=0.15`,
+active only when a Detective-type role is investigating this specific campaign) scaled
+*linearly* instead — a dedicated investigator assembling observations closes the gap
+faster than ambient population witnessing ever does, which is what makes a Detective role
+structurally necessary as counter-play rather than optional flavor.
+
+**Simulated, not just derived** (`src/sim/sabotagePatternHarness.ts`, `npm run
+sabotage-pattern-sim`), against the same real vacancy-driven shard dynamics
+(`vacancy.ts`'s `stepSlot`, N=50, S=24) used for the act-based mechanic, 8 seeds, 20,000
+days, 2,000-day burn-in:
+
+```
+No Detective, 1 attacker:        caught=44.8%  succeeded=55.2%  mean days/success=146
+With a Detective, 1 attacker:    caught=68.0%  succeeded=32.0%  mean days/success=220
+No Detective, 4 concurrent:      caught=43.2%  succeeded=56.8%  mean days/success=36
+With a Detective, 4 concurrent:  caught=67.9%  succeeded=32.1%  mean days/success=56
+```
+
+**(a) Attacker time investment:** a single patient attacker succeeds roughly once every
+146 days (~5 months) without a Detective present, 220 days (~7 months) with one actively
+investigating — genuinely achievable, not guaranteed (44.8-68% of campaigns are caught
+first), matching the brief's ask that this be "hard but achievable," a real change from
+the act-based mechanic's near-total non-viability.
+
+**(b) Constraint 2 (never zeroes a shard):** holds, both structurally and empirically.
+Structurally, `applySabotageDamage()`'s floor and `economicHealth()`'s `BACKSTOP_
+PRODUCTIVITY` floor are unchanged by this proposal — nothing about pattern-based
+detection touches them. Empirically, checked under a deliberately heavier stress case (4
+concurrent independent campaigns, not just one) rather than assuming the single-attacker
+case generalizes: `economicHealth` in the tail never dropped below 0.775-0.800 across all
+four configurations above, comfortably above the 0.4 floor — successes are frequent
+enough to matter (a real, felt event) but not frequent enough to threaten the floor at
+these defaults. `test/sabotagePattern.proposal.test.ts` locks in `min > 0.6` under the
+4-concurrent-attacker case as a regression check on this specific claim.
+
+**(c) Consequence for a caught saboteur:** still unspecified, same gap as the act-based
+mechanic (see the "KNOWN GAP" note in `ecosystem.ts`'s header) — `patternSabotageAttempt()`
+only reports `caughtAtStep`, nothing is invented here to fill that gap. It matters more
+now that sabotage is viable enough to be attempted repeatedly (a caught attacker who faces
+zero cost can simply retry indefinitely at no risk beyond lost time) — flagged for a
+decision, not resolved here.
+
+**Explicitly not adopted as the new default.** `stepsRequired=6`, `cadence=15 days`,
+`pPerWitness=0.01`, and `detectiveBonus=0.15` are this session's proposal numbers, not a
+recalibration — the task instructed against shipping a final calibration without review.
+`sabotageAttempt()`/`applySabotageDamage()` remain what's actually wired into
+`ecosystemHarness.ts` and exercised by `test/ecosystem.regression.test.ts`; nothing about
+the existing default sabotage path changed. 11 new tests in
+`test/sabotagePattern.proposal.test.ts` cover the mechanism (legibility grows correctly,
+a single step stays near-undetectable at a healthy witness count, a Detective raises the
+catch rate, the floor holds under stress) without asserting these specific numbers are
+final. 83 tests total, all passing.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

@@ -12,6 +12,7 @@
     "vacancy-sim": "tsx src/sim/vacancyCli.ts",
     "conscription-sim": "tsx src/sim/conscriptionCli.ts",
     "ecosystem-sim": "tsx src/sim/ecosystemCli.ts",
+    "sabotage-pattern-sim": "tsx src/sim/sabotagePatternCli.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },
