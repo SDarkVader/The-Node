@@ -56,19 +56,43 @@ any realistic local witnessing radius, real spatial witness counts are substanti
 *lower* than the flat ~23 both existing sabotage calibrations assumed — meaning the
 pattern-based proposal's ~146-220 days-per-success figure is itself an overestimate of
 attacker difficulty. Full numbers: `docs/BLUEPRINT.md`'s "Phase A" entry, `npm run
-spatial-witness-report` reproduces them. Phases B-F not started — stopping here to
-report back and check in before continuing, per explicit instruction not to do too much
-in one pass.
+spatial-witness-report` reproduces them.
+
+**Phase B is also done, same session**: `src/world/world.ts`, the unified deterministic
+world kernel — composes Phase 1 market, Phase 2 vacancy/conscription, and the ecosystem
+layer into one `World`/`stepWorld()` for the first time ever, with a pinned tick order
+(space/occupancy → vacancy+conscription → market → ecosystem → comms; golden-value-tested
+so an accidental reorder fails a test rather than silently changing every downstream
+number). **Closes the specific named gap**: a BACKSTOPPED or conscripted Miller now
+actually participates in pricing (`computeMillerSupply()`, mechanical output at
+`BACKSTOP_PRODUCTIVITY` while backstopped, real Cournot competition once conscripted).
+`sim/conscriptionHarness.ts` was refactored to expose its per-day logic so `world.ts`
+could reuse it rather than duplicate it — existing conscription tests pass unchanged, the
+regression check on that claim. **Two real contradictions found, documented in
+`docs/BLUEPRINT.md`'s "Phase B" entry**: (1) `stepMillers`/`stepBakers` require >= 2
+FILLED slots, which vacancy.ts can easily produce fewer than — resolved by freezing
+values on a <2-FILLED day rather than crashing, verified never to throw across 500-tick
+extreme-churn runs. (2) `migrationValveStep`, run for the first time in a real tick,
+immediately drained population toward zero — traced to this file's own first-draft
+default (8 role slots against N=65, ~88% roleless) being inconsistent with
+`ecosystem.ts`'s own `S_DEFAULT=24`, not a real module conflict; fixed the default to
+match `S_DEFAULT`, population now settles into a stable range instead of collapsing.
+Confirms Phase A's spatial-witness finding inside an actual running kernel: `npm run
+world-sim` shows real witness counts of 2-7 at sabotage events, `economicHealth` staying
+well above its 0.4 floor across repeated attacks. **Phases C-F not started** — stopping
+here to report back and check in again before continuing, per explicit instruction not
+to do too much in one pass.
 
 ```
 npm install
-npm test              # 107 tests, all passing
+npm test              # 121 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
+npm run world-sim       # unified kernel — market + vacancy + ecosystem, one running world
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck

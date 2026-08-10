@@ -1189,6 +1189,108 @@ silently dropping the plaza plot from every periphery district. Fixed by iterati
 integer offset and filtering to the spacing lattice (aligned to zero) instead. 107 tests
 total, all passing; `npm run typecheck` clean.
 
+**Phase B (2026-08-10) — `src/world/world.ts`, the unified deterministic world kernel.**
+Composes Phase 1 market (`millers.ts`/`bakers.ts`), Phase 2 vacancy/conscription
+(`vacancy.ts`, `sim/conscriptionHarness.ts`), and the ecosystem layer (`ecosystem.ts`)
+into one `World` object and one `stepWorld()` tick, sited on Phase A's real geography.
+`createWorld(seed, config)` / `stepWorld(world)`, fully deterministic (same seed + config
+= byte-identical scalar-state sequence, tested directly) via one `mulberry32` closure
+threaded through `World` itself, matching how every existing harness in this repo already
+threads one `rng` through a whole run.
+
+**Existing modules called, not reimplemented** — `sim/conscriptionHarness.ts` was
+refactored first (same commit) to extract `stepConscriptionDay()` from
+`runConscriptionSim()`'s inline day-loop body, so `world.ts` could call the exact same
+Miller-conscription logic instead of duplicating it. Verified byte-for-byte behavior
+preserved: `test/conscription.regression.test.ts`'s existing 5 tests pass unchanged
+against the refactored code, with no test edits.
+
+**Pinned tick order** (space/occupancy → vacancy and conscription → market, Miller then
+Baker → ecosystem: sabotage → arrivals → migration, then health/experience → comms),
+matching the spec's given order exactly. Within the ecosystem stage, sabotage runs
+*before* arrivals specifically because `design/tick_order_check.py` — the prior art the
+spec named to check before choosing an order — already proved "shock before arrival"
+empirically distinct from the reverse via a hazard-function-independent bound; checked,
+not reinvented. Pinned by `test/world.regression.test.ts`'s golden-value characterization
+test (`toMatchSnapshot()` against an actual captured run at tick 25, seed 99) — any
+accidental reordering or logic change inside `stepWorld` changes these numbers and fails
+the test, exactly the enforcement the spec asked for ("ordering changes will silently
+change every downstream number").
+
+**The named unwired gap, closed: a BACKSTOPPED or conscripted Miller actually
+participates in pricing.** `computeMillerSupply()` (exported standalone, directly
+tested): FILLED slots contribute their own competed-for Cournot quantity; BACKSTOPPED
+slots contribute `BACKSTOP_PRODUCTIVITY` (0.4) mechanically — reusing ecosystem.ts's own
+constant rather than inventing a second "mechanical Miller output" number, since both
+`millers.ts`'s quantity units and `ecosystem.ts`'s productivity fraction are already
+normalized to roughly the same 0..1 range; VACANT slots contribute nothing. A conscripted
+Miller is just a BACKSTOPPED slot forced back to FILLED by `stepConscriptionDay` — once
+conscripted, it's indistinguishable from any other FILLED slot and competes normally the
+next tick. Tested directly: an all-BACKSTOPPED miller layer still produces a real,
+non-zero flour price; a full `stepWorld` run at short conscription delay confirms a
+Miller layer visits both BACKSTOPPED and post-conscription-FILLED states within the same
+run.
+
+**Two genuine contradictions surfaced by composing all three models for the first time —
+found, resolved with a documented interpretive choice, and flagged for review, per the
+standing instruction not to paper over them silently:**
+
+1. **`stepMillers`/`stepBakers` both require at least 2 array entries; vacancy.ts's
+   semi-Markov process makes 0 or 1 currently-FILLED slots a perfectly ordinary outcome**,
+   especially at small role counts — there is no natural "who do they compete against"
+   answer below 2 real competitors. Resolved: fewer than 2 FILLED slots means no
+   competitive step runs that day (every value freezes, exactly like an already-VACANT/
+   BACKSTOPPED slot does) — reads as "no rival, no Cournot/Bertrand step," not an error,
+   and `stepWorld` never throws regardless of configuration. Verified directly: 500-tick
+   runs at `rMiller=2, rBaker=2` under 95%-monthly churn (deliberately extreme, to force
+   this case often), across 3 seeds, never throw; `flourPrice` stays finite and in its
+   `[0.05, 2.0]` range throughout. This is an interpretive gap-fill in the same category
+   as `vacancy.ts`'s own BACKSTOPPED→FILLED ambient recovery hazard — not a brief-specified
+   number, flagged rather than silently picked.
+2. **`migrationValveStep`, run for the first time inside a real composed tick (it was
+   validated standalone in `ecosystem.ts`'s own acceptance tests and never actually wired
+   into a per-tick simulation before this), immediately exposed that this file's own
+   first-draft `DEFAULT_WORLD_CONFIG` (rMiller=3, rBaker=5 — 8 total role slots) was badly
+   inconsistent with `ecosystem.ts`'s own established `S_DEFAULT=24`.** Against
+   `targetPopulation=65`, 8 role slots put the roleless fraction at ~88% — far outside
+   `migrationValveStep`'s own validated equilibrium band of 55-68% — and drained
+   population from 65 toward ~27 within 25 ticks, continuing toward zero. This was this
+   file's own inconsistency (an un-cross-checked default), not a genuine conflict between
+   modules: switching `DEFAULT_WORLD_CONFIG` to `rMiller=8, rBaker=16` (24 total, matching
+   `S_DEFAULT`) puts the roleless fraction at ~63%, squarely inside the already-validated
+   band, and population now settles into a stable 33-51 range over a 365-day run (`npm
+   run world-sim`) instead of collapsing. **This does not resolve the separately-flagged,
+   still-open "vacancy defaults are provisional, blocked on a real role roster" question**
+   (see HANDOVER.md) — `S_DEFAULT=24` is itself still a provisional total, not a decided
+   one; this fix only makes Phase B's own default internally consistent with the *existing*
+   provisional number instead of contradicting it with a second, worse one.
+
+**Other findings from actually running the composed kernel** (`npm run world-sim`, 365
+days, seed 42, defaults): real spatial witness counts at sabotage events ranged 2-7 in
+this run — consistent with Phase A's spatial-witness-report finding that real local
+witnessing is far below the previously-assumed flat 23, now confirmed inside an actual
+running kernel rather than a standalone report. `economicHealth` fluctuated 0.775-1.0
+across repeated sabotage waves, never approaching the 0.4 floor — the floor guarantee
+holds end-to-end through the full composition, not just in each module's own isolated
+tests.
+
+**Explicitly not attempted in Phase B, flagged rather than half-built:** district
+population tracks role-holders only (Miller/Baker buildings' occupancy), not a full
+gossip-layer-per-district population ledger — `placeArrival()` (Phase A) remains
+available but unused by `stepWorld`'s automatic tick, since Phase B's population model
+only tracks a global N. `weatherHistory` stays empty on every district — computing a real
+District Weather tension value isn't a named deliverable of any phase A-F, only "give it
+somewhere to live" was (Phase A did that). Comms only propagates `pendingWallPosts`,
+which nothing in Phase B populates autonomously (posting to the Wall is a player action —
+Phase C's synthetic drivers' job); the mechanism itself is real and directly tested (a
+manually-seeded pending post propagates through a real proximity graph built from
+`proximityCloseness()`), not just unexercised plumbing.
+
+14 new tests in `test/world.regression.test.ts` (determinism, the golden-value tick-order
+pin, `computeMillerSupply`'s BACKSTOPPED-participates-in-pricing behavior, the
+Cournot-minimum-2 never-throws property, comms proximity propagation, a real
+configuration-error check). 121 tests total, all passing; `npm run typecheck` clean.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

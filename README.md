@@ -117,8 +117,11 @@ gone quiet and thin is a different story: fewer people watching means a
 real opening. A crowded node polices itself just by being crowded, not
 through any rule anyone wrote down.
 
-*Real, tested math — not yet wired into anything a player can actually
-attempt.*
+*Real, tested math, now actually running inside one composed world — a
+BACKSTOPPED or conscripted Miller genuinely feeds the flour price, sabotage
+rolls against real spatial witness counts, not an assumed number. Still not
+anything a real player can attempt, though — that needs the driver/action
+layer, not built yet.*
 
 ## How the city talks
 
@@ -266,22 +269,25 @@ playable form.
 
 ```
 npm install
-npm test               # 107 tests
+npm test               # 121 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
+npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
+npm run world-sim        # the unified kernel — market + vacancy + ecosystem, one running world
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
 ```
 
-Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale
-primitives), `src/sim/` (deterministic seeded harnesses and sweeps),
+Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale +
+spatial primitives), `src/world/` (the unified deterministic kernel composing
+all three), `src/sim/` (deterministic seeded harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (107 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (121 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

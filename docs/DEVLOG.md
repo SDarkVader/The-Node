@@ -6,6 +6,81 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — Phase B complete: src/world/world.ts, the unified deterministic kernel
+
+**Context.** Second phase of the Observatory build spec, built after checking in with
+findings from Phase A. Composes Phase 1 market, Phase 2 vacancy/conscription, and the
+ecosystem layer — three models that had never run together before — into one `World` and
+one `stepWorld()` tick, sited on Phase A's real geography.
+
+**Refactored `sim/conscriptionHarness.ts` first**, extracting `stepConscriptionDay()`
+from `runConscriptionSim()`'s inline day loop, so `world.ts` could reuse the exact Miller
+conscription logic instead of duplicating it — per the spec's explicit "existing engine
+modules are called, not reimplemented" instruction. Verified the refactor changed nothing:
+`test/conscription.regression.test.ts`'s existing 5 tests pass unchanged.
+
+**Pinned the tick order** — space/occupancy, vacancy+conscription, market (Miller then
+Baker), ecosystem (sabotage before arrivals before migration, then health/experience),
+comms — matching the spec exactly. Checked `design/tick_order_check.py` (the prior art
+the spec named) before choosing the sabotage-before-arrivals sub-order within the
+ecosystem stage, rather than picking one arbitrarily; that script already proved the two
+orderings produce measurably different results. Pinned with a golden-value snapshot test
+(`test/world.regression.test.ts`, `toMatchSnapshot()`), so an accidental reorder inside
+`stepWorld` will fail the test rather than silently changing every downstream number.
+
+**Closed the named gap: a BACKSTOPPED or conscripted Miller now actually participates in
+pricing.** `computeMillerSupply()` — FILLED slots compete via Cournot as before,
+BACKSTOPPED slots contribute `BACKSTOP_PRODUCTIVITY` (reusing ecosystem.ts's own
+constant, not inventing a second one), VACANT contribute nothing. Tested directly,
+including that an all-BACKSTOPPED miller layer still produces a real flour price.
+
+**Two genuine contradictions found by composing all three models for the first time —
+documented in `docs/BLUEPRINT.md`'s "Phase B" entry, not papered over:**
+
+1. `stepMillers`/`stepBakers` require >= 2 array entries; vacancy.ts permits 0 or 1
+   FILLED slots as an ordinary outcome, especially at small role counts. Resolved: fewer
+   than 2 FILLED means no competitive step that day (frozen values, same as any other
+   non-FILLED slot) — never throws, verified across 500-tick runs at extreme churn.
+2. **Caught before it became a false "contradiction" report**: `migrationValveStep`, run
+   for the first time in a real composed tick, immediately drained population from 65
+   toward ~27 within 25 ticks. Traced it to this file's own first-draft default
+   (`rMiller=3, rBaker=5` — 8 total role slots against `targetPopulation=65`, an ~88%
+   roleless fraction, far outside `migrationValveStep`'s own validated 55-68% equilibrium
+   band) rather than a real module conflict — an oversight of not cross-checking against
+   `ecosystem.ts`'s own `S_DEFAULT=24` before picking illustrative numbers. Fixed the
+   default to `rMiller=8, rBaker=16` (24 total, matching `S_DEFAULT`), which lands at
+   ~63% roleless — inside the already-validated band — and population now settles into a
+   stable 33-51 range over a 365-day run instead of collapsing. This does **not** resolve
+   the separately-flagged, still-open "vacancy defaults are provisional, blocked on a
+   real role roster" question (HANDOVER.md) — it only makes this file's own default
+   internally consistent with the existing provisional number instead of contradicting it
+   with a worse one.
+
+**Confirms Phase A's spatial-witness finding inside a real running kernel**, not just a
+standalone report: `npm run world-sim` (365 days, seed 42) shows real witness counts of
+2-7 at actual sabotage events — far below the previously-assumed flat 23 — and
+`economicHealth` fluctuating 0.775-1.0 across repeated sabotage waves, never near the 0.4
+floor even under sustained attack through the full composition.
+
+**Explicitly not attempted, flagged not half-built:** district population tracks
+role-holders only, not a full gossip-layer-per-district ledger (`placeArrival()` stays
+available, unused by the automatic tick); `weatherHistory` stays empty (computing a real
+District Weather value isn't a named deliverable of any phase); comms only propagates
+`pendingWallPosts`, which nothing autonomously populates yet (that's a driver action —
+Phase C) — the mechanism itself is real and directly tested even though it's a practical
+no-op until Phase C exists.
+
+**Verification.** 14 new tests (`test/world.regression.test.ts`) — determinism, the
+tick-order golden-value pin, BACKSTOPPED-participates-in-pricing, the
+Cournot-minimum-2 never-throws property across seeds, comms proximity propagation, a
+real config-error check. 121 tests total, all passing; `npm run typecheck` clean.
+
+**Not started yet:** Phases C-F (synthetic drivers, snapshot contract, the Observatory
+web app, civic-memory monuments) — stopping here to report back and check in again before
+continuing, per the standing instruction on this task.
+
+---
+
 ## 2026-08-10 — Phase A complete: src/engine/space.ts, NODE's first spatial primitive
 
 **Context.** First phase of the Observatory build spec. NODE had no spatial primitive at

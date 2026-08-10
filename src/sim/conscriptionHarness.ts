@@ -53,6 +53,108 @@ export interface ConscriptionRunResult {
   totalOtherSlotDays: number;
 }
 
+export type ConscriptionDayEvent =
+  | { type: 'millerVacantSlotDay' }
+  | { type: 'millerBackstoppedSlotDay' }
+  | { type: 'millerGenuineFill' }
+  | { type: 'millerBackstopFires' }
+  | { type: 'millerConscriptionFromGossip' }
+  | { type: 'millerConscriptionFromOther' }
+  | { type: 'otherVacantSlotDay' }
+  | { type: 'otherBackstoppedSlotDay' }
+  | { type: 'otherVoluntaryFill' }
+  | { type: 'otherBackstopFires' };
+
+export interface ConscriptionDayResult {
+  millerSlots: RoleSlot[];
+  otherSlots: RoleSlot[];
+  events: ConscriptionDayEvent[];
+}
+
+/**
+ * One day's update for a Miller role-slot array (deterministic conscription past
+ * `conscriptionDelay`) and its coupled "other roles" array (plain `stepSlot`, no
+ * conscription — the draft pool a conscription can pull from). Extracted from
+ * `runConscriptionSim`'s day loop 2026-08-10 so `src/world/world.ts`'s unified kernel can
+ * call the exact same logic instead of reimplementing it — per the Observatory build
+ * spec's explicit "existing engine modules are called, not reimplemented" instruction.
+ * Behavior is byte-for-byte identical to the pre-refactor inline loop; `runConscriptionSim`
+ * below now just calls this and tallies its events, and every existing test in
+ * `test/conscription.regression.test.ts` still passes unchanged as the regression check
+ * on that claim.
+ */
+export function stepConscriptionDay(
+  millerSlots: RoleSlot[],
+  otherSlots: RoleSlot[],
+  day: number,
+  millerParams: VacancyParams,
+  otherParams: VacancyParams,
+  conscriptionDelay: number,
+  gossipSize: number,
+  rng: () => number,
+): ConscriptionDayResult {
+  const events: ConscriptionDayEvent[] = [];
+
+  // Other roles: unchanged existing mechanic (probabilistic BACKSTOPPED recovery, no conscription).
+  const nextOtherSlots = otherSlots.map((slot) => {
+    if (slot.state === 'VACANT') events.push({ type: 'otherVacantSlotDay' });
+    else if (slot.state === 'BACKSTOPPED') events.push({ type: 'otherBackstoppedSlotDay' });
+    const { slot: next, event } = stepSlot(slot, day, otherParams, rng);
+    if (event?.type === 'voluntaryFill') events.push({ type: 'otherVoluntaryFill' });
+    else if (event?.type === 'backstopFires') events.push({ type: 'otherBackstopFires' });
+    return next;
+  });
+
+  // Miller roles: custom step — deterministic conscription instead of probabilistic recovery.
+  // Mutated in place within this closure (mirroring the pre-refactor loop's `otherSlots =
+  // otherSlots.map(...)` reassignment inside the miller step) since a conscription-from-other
+  // event needs to evict from whichever "other" array state the miller step is currently
+  // looking at, not the pre-this-day snapshot.
+  let workingOtherSlots = nextOtherSlots;
+  const nextMillerSlots = millerSlots.map((slot) => {
+    if (slot.state === 'FILLED') {
+      if (rng() < millerParams.pDaily) {
+        return { state: 'VACANT' as const, vacantSince: day };
+      }
+      return slot;
+    }
+
+    const tau = day - (slot.vacantSince ?? day);
+
+    if (slot.state === 'VACANT') {
+      events.push({ type: 'millerVacantSlotDay' });
+      if (tau >= millerParams.tHard) {
+        events.push({ type: 'millerBackstopFires' });
+        return { state: 'BACKSTOPPED' as const, vacantSince: slot.vacantSince };
+      }
+      if (rng() < fillHazard(tau, millerParams)) {
+        events.push({ type: 'millerGenuineFill' });
+        return { state: 'FILLED' as const, vacantSince: null };
+      }
+      return slot;
+    }
+
+    // BACKSTOPPED
+    events.push({ type: 'millerBackstoppedSlotDay' });
+    if (tau - millerParams.tHard >= conscriptionDelay) {
+      const filledOtherCount = workingOtherSlots.filter((s) => s.state === 'FILLED').length;
+      const draftFromOther = rng() < filledOtherCount / (gossipSize + filledOtherCount);
+      if (draftFromOther) {
+        events.push({ type: 'millerConscriptionFromOther' });
+        const filledIndices = workingOtherSlots.map((s, i) => (s.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+        const pick = filledIndices[Math.floor(rng() * filledIndices.length)]!;
+        workingOtherSlots = workingOtherSlots.map((s, i) => (i === pick ? { state: 'VACANT' as const, vacantSince: day } : s));
+      } else {
+        events.push({ type: 'millerConscriptionFromGossip' });
+      }
+      return { state: 'FILLED' as const, vacantSince: null };
+    }
+    return slot;
+  });
+
+  return { millerSlots: nextMillerSlots, otherSlots: workingOtherSlots, events };
+}
+
 export function runConscriptionSim(config: ConscriptionRunConfig): ConscriptionRunResult {
   const rng = mulberry32(config.seed);
   const pDaily = dailyChurnFromMonthly(config.pMonthly);
@@ -76,85 +178,38 @@ export function runConscriptionSim(config: ConscriptionRunConfig): ConscriptionR
   let millerSlots: RoleSlot[] = Array.from({ length: config.rMiller }, () => ({ state: 'FILLED', vacantSince: null }));
   let otherSlots: RoleSlot[] = Array.from({ length: config.rOther }, () => ({ state: 'FILLED', vacantSince: null }));
 
-  let millerGenuineFills = 0;
-  let millerConscriptions = 0;
-  let millerBackstopFires = 0;
-  let millerVacantSlotDays = 0;
-  let millerBackstoppedSlotDays = 0;
-  let conscriptionsFromGossip = 0;
-  let conscriptionsFromOtherRole = 0;
-  let otherVoluntaryFills = 0;
-  let otherBackstopFires = 0;
-  let otherVacantSlotDays = 0;
-  let otherBackstoppedSlotDays = 0;
+  const tally: Record<ConscriptionDayEvent['type'], number> = {
+    millerVacantSlotDay: 0,
+    millerBackstoppedSlotDay: 0,
+    millerGenuineFill: 0,
+    millerBackstopFires: 0,
+    millerConscriptionFromGossip: 0,
+    millerConscriptionFromOther: 0,
+    otherVacantSlotDay: 0,
+    otherBackstoppedSlotDay: 0,
+    otherVoluntaryFill: 0,
+    otherBackstopFires: 0,
+  };
 
   for (let day = 0; day < config.days; day++) {
-    // Other roles: unchanged existing mechanic (probabilistic BACKSTOPPED recovery, no conscription).
-    otherSlots = otherSlots.map((slot) => {
-      if (slot.state === 'VACANT') otherVacantSlotDays += 1;
-      else if (slot.state === 'BACKSTOPPED') otherBackstoppedSlotDays += 1;
-      const { slot: next, event } = stepSlot(slot, day, otherParams, rng);
-      if (event?.type === 'voluntaryFill') otherVoluntaryFills += 1;
-      else if (event?.type === 'backstopFires') otherBackstopFires += 1;
-      return next;
-    });
-
-    // Miller roles: custom step — deterministic conscription instead of probabilistic recovery.
-    millerSlots = millerSlots.map((slot) => {
-      if (slot.state === 'FILLED') {
-        if (rng() < millerParams.pDaily) {
-          return { state: 'VACANT', vacantSince: day };
-        }
-        return slot;
-      }
-
-      const tau = day - (slot.vacantSince ?? day);
-
-      if (slot.state === 'VACANT') {
-        millerVacantSlotDays += 1;
-        if (tau >= millerParams.tHard) {
-          millerBackstopFires += 1;
-          return { state: 'BACKSTOPPED', vacantSince: slot.vacantSince };
-        }
-        if (rng() < fillHazard(tau, millerParams)) {
-          millerGenuineFills += 1;
-          return { state: 'FILLED', vacantSince: null };
-        }
-        return slot;
-      }
-
-      // BACKSTOPPED
-      millerBackstoppedSlotDays += 1;
-      if (tau - millerParams.tHard >= config.conscriptionDelay) {
-        millerConscriptions += 1;
-        const filledOtherCount = otherSlots.filter((s) => s.state === 'FILLED').length;
-        const draftFromOther = rng() < filledOtherCount / (gossipSize + filledOtherCount);
-        if (draftFromOther) {
-          conscriptionsFromOtherRole += 1;
-          const filledIndices = otherSlots.map((s, i) => (s.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
-          const pick = filledIndices[Math.floor(rng() * filledIndices.length)]!;
-          otherSlots = otherSlots.map((s, i) => (i === pick ? { state: 'VACANT', vacantSince: day } : s));
-        } else {
-          conscriptionsFromGossip += 1;
-        }
-        return { state: 'FILLED', vacantSince: null };
-      }
-      return slot;
-    });
+    const result = stepConscriptionDay(millerSlots, otherSlots, day, millerParams, otherParams, config.conscriptionDelay, gossipSize, rng);
+    millerSlots = result.millerSlots;
+    otherSlots = result.otherSlots;
+    for (const event of result.events) tally[event.type] += 1;
   }
 
   return {
-    millerGenuineFills,
-    millerConscriptions,
-    millerBackstopFires,
-    millerVacantSlotDays,
-    millerBackstoppedSlotDays,
-    conscriptionsFromGossip,
-    conscriptionsFromOtherRole,
-    otherVoluntaryFills,
-    otherBackstopFires,
-    otherVacantSlotDays,
-    otherBackstoppedSlotDays,
+    millerGenuineFills: tally.millerGenuineFill,
+    millerConscriptions: tally.millerConscriptionFromGossip + tally.millerConscriptionFromOther,
+    millerBackstopFires: tally.millerBackstopFires,
+    millerVacantSlotDays: tally.millerVacantSlotDay,
+    millerBackstoppedSlotDays: tally.millerBackstoppedSlotDay,
+    conscriptionsFromGossip: tally.millerConscriptionFromGossip,
+    conscriptionsFromOtherRole: tally.millerConscriptionFromOther,
+    otherVoluntaryFills: tally.otherVoluntaryFill,
+    otherBackstopFires: tally.otherBackstopFires,
+    otherVacantSlotDays: tally.otherVacantSlotDay,
+    otherBackstoppedSlotDays: tally.otherBackstoppedSlotDay,
     totalMillerSlotDays: config.rMiller * config.days,
     totalOtherSlotDays: config.rOther * config.days,
   };
