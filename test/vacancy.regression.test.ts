@@ -12,8 +12,9 @@ import { runVacancySim, DEFAULTS } from '../src/sim/vacancyHarness.js';
  * independently (neither alone can hit both). Recalibrated 2026-08-07 via a joint
  * (beta, t_hard) grid search to beta=0.03, t_hard=3 (see DEFAULTS in vacancyHarness.ts) —
  * this pair hits both targets simultaneously across N=50/60/80, with BACKSTOPPED time
- * landing lower than before, not the NPC-dominance tradeoff a recovery-hazard-only fix
- * required. See docs/BLUEPRINT.md "Open deviations" for the full numeric trail.
+ * landing lower than before, not the mechanical-backstop-dominance tradeoff a
+ * recovery-hazard-only fix required. See docs/BLUEPRINT.md "Open deviations" for the full
+ * numeric trail.
  */
 
 const DAYS_PER_YEAR = 365;
@@ -132,7 +133,7 @@ describe('§2.4 — recalibrated (beta=0.03, t_hard=3) hits the brief\'s own num
     expect(starved80).toBeLessThan(0.03);
   });
 
-  it('BACKSTOPPED time stays low — recalibration did not reintroduce NPC dominance', () => {
+  it('BACKSTOPPED time stays low — recalibration did not reintroduce mechanical-backstop dominance', () => {
     // The failure mode this must NOT reproduce: closing the ratio gap via recovery hazard
     // alone previously required 79-86% BACKSTOPPED time. This should stay near the low
     // single digits, well under the 10% conscription already guarantees for Miller.
@@ -142,7 +143,7 @@ describe('§2.4 — recalibrated (beta=0.03, t_hard=3) hits the brief\'s own num
   });
 });
 
-describe('§2.5 — NPC fallback (BACKSTOPPED) is a real, distinct state', () => {
+describe('§2.5 — mechanical fallback (BACKSTOPPED) is a real, distinct state', () => {
   it('a slot spends measurable time in BACKSTOPPED, separate from VACANT', () => {
     const { backstoppedSlotDays } = longRun(50);
     expect(backstoppedSlotDays).toBeGreaterThan(0);

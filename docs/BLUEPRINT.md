@@ -53,7 +53,7 @@ The Godot project (`client/`) is a **thin renderer** talking to it over WebSocke
 | Phase | Contents | Status |
 |---|---|---|
 | 1 | Economic core (Miller/Baker reaction engine) | **Built, tested.** One deviation from the brief's literal equations — see "Open deviations" below. |
-| 2 | Vacancy, churn, backstop system | **Core built, tested** (§2.1-2.5: semi-Markov engine, hazard function, NPC-backstop state). Not integrated with the Phase 1 market yet (a BACKSTOPPED Baker doesn't yet participate in pricing) — see "Open deviations." §2.6 (Shift Cover) not started — needs a player-session concept that doesn't exist in this headless engine yet. |
+| 2 | Vacancy, churn, backstop system | **Core built, tested** (§2.1-2.5: semi-Markov engine, hazard function, mechanical-backstop state). Not integrated with the Phase 1 market yet (a BACKSTOPPED Baker doesn't yet participate in pricing) — see "Open deviations." §2.6 (Shift Cover) not started — needs a player-session concept that doesn't exist in this headless engine yet. |
 | 3 | Communication layer (Wall, Envelopes, rumour mill) | **MVP slice built, tested** — grammar-constrained Wall/Envelope + rumour mill. No moderation pipeline (that's Phase 5), no persistence. |
 | 4 | Identity, camera, ambient visual system | Not started — a scaffold client exists (`client/`) that proves the network wire-up with a plain-text UI, not real Phase 4 rendering. Godot locked in as the engine (see above). |
 | 5 | Voice & safety architecture | Not started |
@@ -313,8 +313,8 @@ stepSlot(slot, day, params, rng):
 
 Three states, not two — the brief's own notation table (§1) lists FILLED, VACANT,
 BACKSTOPPED, even though §2.1's shorthand diagram collapses the hard-backstop transition
-into "FILLED" for brevity. BACKSTOPPED is real and distinct: an NPC-run slot (§2.5), not
-a synonym for player-filled.
+into "FILLED" for brevity. BACKSTOPPED is real and distinct: a mechanically-run slot
+(§2.5), not a synonym for player-filled.
 
 ### Key equations (as implemented, matches brief §2.2/§2.3 verbatim except where noted)
 
@@ -326,8 +326,8 @@ a synonym for player-filled.
 ### The gap the brief leaves open: BACKSTOPPED -> FILLED
 
 The brief's §2.4 findings describe the pre-backstop VACANT phase only — there's no
-specified rate for a real player later displacing the NPC and returning a BACKSTOPPED
-slot to FILLED. Left unmodeled, every slot would eventually ratchet into BACKSTOPPED
+specified rate for a real player later taking a BACKSTOPPED slot back over and returning
+it to FILLED. Left unmodeled, every slot would eventually ratchet into BACKSTOPPED
 permanently over a long run, which can't be right — it would contradict "starved
 fraction stays near 1-2% of the year" ever being a stable figure rather than one that
 monotonically grows toward 100%.
@@ -561,8 +561,8 @@ Not a competing design — the same one, made concrete. `docs/ECOSYSTEM_VISION_2
 §2 already worked out qualitatively that shard ruin/rejuvenation falls out of pushing the
 existing vacancy backstop to its limit: every role-slot BACKSTOPPED simultaneously,
 floor never zero. `economicHealth(0, S)` is exactly that state, given a real number:
-floors at exactly `NPC_PRODUCTIVITY` (0.4), because a vacated slot always reverts to
-NPC-run output, never to nothing. The integration point is deliberate, not incidental —
+floors at exactly `BACKSTOP_PRODUCTIVITY` (0.4), because a vacated slot always reverts to
+mechanically-run output, never to nothing. The integration point is deliberate, not incidental —
 `filledByPlayerCount()` reads `vacancy.ts`'s existing `RoleSlot[]` state directly rather
 than duplicating a second notion of "is this slot filled."
 
@@ -580,8 +580,8 @@ repo:
   nothing here decides who migrates or where, only the aggregate pressure.
 - **Sabotage** (`sabotageAttempt`, `applySabotageDamage`) — a new adversarial mechanic.
   Saboteurs attempt to evict player-held slots to BACKSTOPPED over an acquisition
-  window, with a flat per-day detection probability; on eviction, slots revert to NPC-run
-  the same way any vacancy backstop does. Validated: sustained forced damage (12-of-24
+  window, with a flat per-day detection probability; on eviction, slots revert to
+  mechanically-run output the same way any vacancy backstop does. Validated: sustained forced damage (12-of-24
   slots evicted every 20 days, indefinitely) settles to a long-run *average* economic
   health of `[0.35, 0.50]` — suppressed, never fully recovering, but never zero either,
   satisfying `CLAUDE.md`'s constraint #2 directly. **Must be measured as an average over
@@ -607,7 +607,7 @@ repo:
 generator, not for direct implementation here — has a §3 table mapping game mechanics to
 visual encoding. Checked line by line against what's now built: role type → hue (not yet
 buildable, see "role increase" below), local economic health → glow (`economicHealth()`,
-directly), player-held vs. NPC-backstopped slot → outline style (`vacancy.ts`'s
+directly), player-held vs. mechanically-backstopped slot → outline style (`vacancy.ts`'s
 FILLED/BACKSTOPPED, directly — a sabotage-evicted slot renders identically to any other
 BACKSTOPPED slot, no separate visual state needed), roleless population → loose
 unattached figures (`n - filled` in the migration valve, directly), detection risk →
@@ -680,7 +680,7 @@ Per the user's explicit boundary — "people know, people see people talk, peopl
 react — the outcome is unknowable until players decide how to respond" — this only
 simulates the *mechanical* precondition (was an act witnessed, how many saboteurs
 succeeded). It does not model any consequence of being witnessed: no reputation score,
-no scripted retaliation, no NPC response. That's a boundary on what the harness
+no scripted retaliation, no invented automated response. That's a boundary on what the harness
 simulates, stated explicitly in its own header comment, not an oversight to fix later.
 
 `npm run ecosystem-sim` reproduces the comparison table on demand. 4 new tests, 14 in
@@ -802,7 +802,7 @@ recoveryHazard=0.0005 (mean recovery ~2000 days):
 Both of the brief's headline numbers (ratio, and starved-as-VACANT-only) land close to
 its stated targets simultaneously at this recovery rate. **Not adopted as the new
 default** — it comes with a real tradeoff the brief doesn't address: at this rate, role
-slots spend 79-86% of all time BACKSTOPPED (NPC-run), only 14-21% with a real player in
+slots spend 79-86% of all time BACKSTOPPED (mechanically-run), only 14-21% with a real player in
 the seat. That's a genuinely different picture of "the shard" than a system mostly
 driven by real Cournot/Bertrand competition, which is the whole economic premise
 elsewhere in the brief. Reproducing §2.4's two headline numbers this way surfaces a
@@ -816,8 +816,8 @@ recovery hazard changes BACKSTOPPED time without materially moving the ratio. 38
 total, all passing.
 
 **Resolved (2026-08-07) — Miller conscription replaces the recovery-hazard tradeoff
-entirely.** User proposed a new mechanic in response to the tradeoff above: NPC coverage
-of Miller is temporary only; past a fixed delay, a random player is mandatorily
+entirely.** User proposed a new mechanic in response to the tradeoff above: mechanical
+coverage of Miller is temporary only; past a fixed delay, a random player is mandatorily
 conscripted (from the non-role-holding "gossip layer," or from an existing holder of a
 different role — the latter creates a real cascading vacancy in the role they're pulled
 from). Full design writeup in `DESIGN_ADDENDUM_2026-08-06.md`'s "Refinement — Miller
@@ -837,15 +837,15 @@ genuine-fill:backstop ratio lands close to the brief's §2.4 targets at *every* 
 tested (1.47-1.62 at N=50 vs. target 1.2; 2.52-3.33 at N=80 vs. target 2.8) — delay
 length barely affects the ratio at all, since it only governs what happens *after*
 backstop already fired. What delay controls is how much time Miller spends
-NPC-BACKSTOPPED, and even at a generous 30-day delay that stays under 8% — nothing like
+mechanically BACKSTOPPED, and even at a generous 30-day delay that stays under 8% — nothing like
 the 79-86% the pure-recovery-hazard approach needed to hit the same ratio. The
 other-role cascade is real but bounded: 6-13% of conscriptions pull from another role,
 consistently fewer than that role's own organic backstop-fire count (checked directly,
 not assumed).
 
 Conscription delay itself is still open — every value tested keeps the ratio on target,
-so the choice is about pacing/feel (how present should the NPC be before the community's
-forced to respond), not something the simulation alone can settle.
+so the choice is about pacing/feel (how present should the mechanical backstop be before
+the community's forced to respond), not something the simulation alone can settle.
 `test/conscription.regression.test.ts` (5 tests) locks in: BACKSTOPPED time stays low,
 the ratio trend with N holds, delay moves BACKSTOPPED time much more than it moves the
 ratio, the gossip/other-role split accounts for every conscription, and the cascade stays
@@ -893,8 +893,8 @@ for comparison, brief-literal beta=0.0008, t_hard=14:
 ```
 
 Both targets land within range at every N tested, and BACKSTOPPED time is *lower* than
-before (0.2-0.4% vs. 1-3%) — not a repeat of the recovery-hazard NPC-dominance tradeoff
-from the earlier attempt. This is a genuine second-order effect: shrinking `t_hard` alone
+before (0.2-0.4% vs. 1-3%) — not a repeat of the recovery-hazard mechanical-backstop-dominance
+tradeoff from the earlier attempt. This is a genuine second-order effect: shrinking `t_hard` alone
 would crash the ratio, but raising `beta` in tandem keeps enough voluntary fills
 happening inside the now-shorter window to hold the ratio up, while the shorter window
 itself caps how long any single vacancy can run — both levers doing real work together,
@@ -907,6 +907,105 @@ of its plateau before the hard cap fires, which is an emergent consequence of th
 not a separate deviation needing its own justification. `test/vacancy.regression.test.ts`
 now asserts the brief's actual §2.4 numeric bands (previously it deliberately didn't,
 since they were unreachable) — 3 new tests, 46 total, all passing.
+
+**Resolved (2026-08-08) — the permanence contradiction: personal memory is mortal,
+civic memory is immortal.** A real, live contradiction had accumulated across the repo
+without ever being named: `README.md` opened with "the past is immortal"; the private
+diary (`docs/DESIGN_ADDENDUM_2026-08-06.md`) is explicitly a hard ~30-day silent TTL,
+nothing accumulating forever; `CLAUDE.md`'s old constraint 4 said "nothing gets
+recorded, ever"; and external design material (not in this repo) described a
+persistent per-player `trust_index` carried across sessions via merged social graphs.
+These cannot all be true at once, and nobody had stopped to reconcile them.
+
+**The resolution:** a split between personal and civic memory, not a single blanket
+rule either way. The test to apply, now written into `CLAUDE.md` constraint 4 itself:
+does a given record capture an event the node *collectively witnessed*, or does it
+capture an individual's *private expression or judgement*? The first may persist —
+public events, monuments, the Wall's Emissive Soul, Ghost Shard missives are civic
+memory, and the city is allowed to remember what it did. The second must not — diary
+entries, overheard rumours, private impressions, proximity conversation all decay or
+expire; no private dossier ever persists.
+
+**Explicitly ruled out by this decision: no cross-session or cross-shard per-player
+`trust_index` is to be built, anywhere, under any name.** Any external spec implying
+one is superseded by this decision and by the new reputation constraint below — a
+persistent per-player trust score is exactly the kind of private, individual-judgement
+record the mortal side of this line forbids, regardless of whether it's framed as
+"trust" rather than "diary."
+
+`CLAUDE.md`'s constraint 4 rewritten in place to state the split explicitly (previously
+read, and was starting to be silently misread, as "nothing whatsoever persists," which
+was never actually true of civic-scale systems like Ecosystem Vision's ruin/rejuvenation
+or the Wall's Emissive Soul). `README.md`'s opening line and "Nothing gets recorded"
+rule both corrected to match — "the past is immortal" (ambiguous) became "what the node
+did together, it did for good" (unambiguously civic).
+
+**Resolved (2026-08-08) — added a sixth standing constraint: reputation is
+additive-only.** No reputation system exists in code yet — prior sessions deliberately
+stopped sabotage-detection work at the mechanical fact of whether an act was witnessed,
+going no further. That restraint turned out to be exactly right, and it means this
+constraint could be written *before* anything gets built on top of it, not retrofitted
+after. `CLAUDE.md` constraint 6: reputation may only ever grant, never remove — every
+player holds an untouchable baseline of visibility and access earned by being present
+and doing their role; reputation sits on top of that floor, never below it. Exclusion is
+the failure mode this design is most exposed to (small bounded population, real social
+consequence, no combat valve to bleed tension off elsewhere) and a subtractive
+reputation system is structurally an exclusion engine — this constraint composes
+directly with constraint 2 (no permanent zero-state), applied specifically to social
+standing, and with constraint 3 (minimize what's modelable/exclude what can be gamed).
+
+**Resolved (2026-08-08) — the vacancy backstop is the simulation continuing to run, not
+an NPC standing in.** External material had started describing backstop coverage as
+"NPC Millers" and "Ghost Couriers" — character-implying language that reads against
+`CLAUDE.md` constraint 3 ("ask does this need to be an agent") even though the
+underlying mechanic was always correctly mechanical (flat pricing, no negotiation, no
+personality — see `vacancy.ts`'s own header comment, unchanged since Phase 2).
+
+**Reframing, not a mechanics change:** the simulation is always running the rules for
+every slot. An unoccupied slot was never a character standing in for a missing player —
+it's the world's own physics continuing to tick, the same formulas that would run
+regardless of who's present. When a real player occupies a slot, they take over that
+slot's decisions from the simulation; when they leave, the simulation resumes making
+that slot's decisions exactly as it would for any slot, occupied or not. Nothing in
+NODE ever pretends to be a person — this was always true of the code, "NPC" language
+just described it in a way that implied otherwise. Every occurrence of "NPC" across
+`README.md`, `HANDOVER.md`, `BLUEPRINT.md` (this file, throughout — not just this entry),
+code comments, and test descriptions (`src/engine/`, `src/sim/`, `test/`) audited and
+replaced with this framing, including the `NPC_PRODUCTIVITY` constant in
+`src/engine/ecosystem.ts`, renamed to `BACKSTOP_PRODUCTIVITY` (value unchanged) — see each
+file's own history for the specific wording; behaviour is byte-for-byte unchanged, this
+was a naming/framing pass only.
+
+**Deliberately left untouched:** `docs/DEVLOG.md` and the dated design documents
+(`docs/DESIGN_ADDENDUM_2026-08-06.md`, `-07.md`, `-08.md`, `docs/ECOSYSTEM_VISION_2026-08-06.md`,
+`docs/NODE_BUILD_SPEC_2026-08-07.md`, `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`), plus
+`design/node_core_reference.py` and `design/node_core.ts`. DEVLOG.md is a chronological,
+append-only journal — this project's own established practice (see the "diary fourth
+reinvention" entry) is to correct the record by appending a correction, never by rewriting
+history, so old entries keep whatever terminology was in use when they were written. The
+dated design documents and `design/node_core*` files are closed, dated artifacts kept as
+exact provenance — `design/README.md` states outright they're "the exact artifact that was
+actually run and confirmed... provenance, not the thing to import from." Rewriting "NPC"
+inside any of these would misrepresent what was actually written or run at the time. This
+naming pass applies going forward, to everything actively read and maintained; it does not
+retroactively edit the historical record.
+
+**Also recorded here: a minimum of three real players is required for a live economy.**
+Not a new finding — this generalizes the already-validated Phase 1 §1.4 result (a role
+slot at exactly n=2 players is the known instability cliff; γ approaching/exceeding 2
+makes price spread blow up sharply at n=2, but the system self-averages the shock away
+at n≥3) to the scale of "does this shard have a real economy or not." Two real
+role-holders in a market is a duopoly with no third party to play them against each
+other — structurally the same instability, just described socially instead of
+numerically. Three is the smallest population where genuine social scheming (forming
+and breaking alliances, having someone to play against someone else) is actually
+possible. Checked against existing calibration: no test or default in this repo ever
+configures fewer than 2 players in a rivalry role-slot (Miller sits at `R=2` in the
+conscription harness's default, matching the brief's own "2-3 thin rivalry roles"
+recommendation) — the n=2 cliff is already the documented reason to avoid that
+headcount, so this generalization doesn't conflict with anything built; it explains
+*why* the existing finding matters at a scale beyond one role-slot. No calibration
+numbers changed by this entry.
 
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 

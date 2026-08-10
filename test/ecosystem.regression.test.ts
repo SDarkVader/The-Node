@@ -31,8 +31,8 @@ import { runCombinedEconomySim, tailMean } from '../src/sim/ecosystemHarness.js'
  * together" describe block below and `src/sim/ecosystemHarness.ts`.
  */
 
-describe('economicHealth — the NPC floor never actually reaches zero', () => {
-  it('zero player-held slots floors economic health at exactly NPC_PRODUCTIVITY (0.4)', () => {
+describe('economicHealth — the mechanical backstop floor never actually reaches zero', () => {
+  it('zero player-held slots floors economic health at exactly BACKSTOP_PRODUCTIVITY (0.4)', () => {
     expect(economicHealth(0, S_DEFAULT)).toBeCloseTo(0.4, 9);
   });
 

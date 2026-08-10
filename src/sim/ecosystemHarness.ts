@@ -41,7 +41,7 @@ import {
  * Per the user's explicit boundary: this only simulates the *mechanical* precondition
  * (was an act witnessed — `sabotageRounds[].successCount`/`witnesses`). It does not
  * model any consequence of being witnessed — no reputation, no scripted retaliation, no
- * NPC response. "People react — the outcome is unknowable until players decide how to
+ * invented automated response. "People react — the outcome is unknowable until players decide how to
  * respond" is a boundary on what this file simulates, not an oversight.
  *
  * Modeling assumptions this combination required that neither `vacancy.ts` nor

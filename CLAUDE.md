@@ -61,16 +61,40 @@ checked every session:
    in this design — whether that's a player, a role-slot, or eventually a whole shard.
 3. **Ask "does this need to be an agent" before building anything new.** Anything with
    behavior, motivation, or belief to infer is a deception surface. Minimize what's
-   modelable, at every scale, by default — this is why the vacancy NPC and the Oracle are
-   both mechanical, not behavioral.
-4. **Nothing gets recorded, ever, regardless of how big this gets.** Any future system
-   touching player expression should be built so there's nothing to capture in the first
-   place, not something captured and then handled responsibly. This is why voice is a
-   constrained grammar, not real audio.
+   modelable, at every scale, by default — this is why the vacancy backstop and the Oracle
+   are both mechanical, not behavioral.
+4. **Personal memory is mortal; civic memory is immortal — and nothing in between gets
+   invented.** (Rewritten 2026-08-08 to resolve a real contradiction — see
+   `docs/BLUEPRINT.md`'s "Open deviations" for the full reasoning; do not silently
+   re-read this as "nothing whatsoever persists," that reading is now wrong.) The test
+   to apply: does this record capture an event the node collectively witnessed, or does
+   it capture an individual's private expression or judgement? The first may persist —
+   public, collectively-witnessed events (what happened in a node, monuments, the
+   Wall's Emissive Soul, Ghost Shard missives) are civic memory, and the city is
+   allowed to remember what it did. The second must not — anything one player privately
+   holds about another (diary entries, what they heard, private impressions, proximity
+   conversation) decays or expires; no private dossier ever persists, and no
+   cross-session or cross-shard per-player trust score is ever built, full stop. Any
+   future system touching player expression should be built so there's nothing captured
+   in the first place where the *private* side of this line applies — this is why voice
+   is a constrained grammar, not real audio, and why the diary uses a hard TTL rather
+   than accumulating forever.
 5. **Let outcomes be real, don't script them.** Shard death, rejuvenation, migration
    patterns, which shards thrive and which stay thin — none of it gets authored. The
    system's job is to make every outcome genuinely possible and consequence-bearing, then
    get out of the way.
+6. **Reputation may only ever grant, never remove.** Every player holds an untouchable
+   baseline of visibility and access earned simply by being present and doing their
+   role day to day. Reputation sits *on top of* that baseline: it can unlock deeper
+   visibility, standing, and access, but no accumulation of negative signal may ever
+   push a player below the floor. The worst any group can do to a player is decline to
+   elevate them — never bury them, never make them invisible, never lock them out. Any
+   mechanic that subtracts from the baseline is out of scope by default, at any scale.
+   (Added 2026-08-08 — no reputation system exists in code yet; this constrains it
+   before anything gets built, not after. Composes directly with constraint 2 above [no
+   permanent zero-state] — this is that principle applied specifically to social
+   standing — and with constraint 3: exclusion is the failure mode this design is most
+   exposed to, and a subtractive reputation system is structurally an exclusion engine.)
 
 ## Commands
 

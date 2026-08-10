@@ -78,17 +78,18 @@ verifies the fix against an independently-computed ground truth, not just a type
 **Phase 2's §2.4 targets are fully resolved — both the ratio and the starved
 fraction.** Two separate fixes stacked to get here:
 
-1. **Miller conscription** (2026-08-07) — NPC coverage of a BACKSTOPPED Miller slot is
-   temporary only; past a fixed delay, a real player is mandatorily conscripted, from the
-   gossip layer or from an existing holder of a different role (cascading a real vacancy
-   there). Fixed the earlier NPC-dominance tradeoff (recovery-hazard-only would have
-   needed Miller NPC-run 79-86% of the time to hit the ratio target).
+1. **Miller conscription** (2026-08-07) — mechanical-backstop coverage of a BACKSTOPPED
+   Miller slot is temporary only; past a fixed delay, a real player is mandatorily
+   conscripted, from the gossip layer or from an existing holder of a different role
+   (cascading a real vacancy there). Fixed the earlier mechanical-backstop-dominance
+   tradeoff (recovery-hazard-only would have needed Miller mechanically-backstopped
+   79-86% of the time to hit the ratio target).
 2. **Joint (beta, t_hard) recalibration** (2026-08-07) — proved the brief's own two §2.4
    numbers (ratio ~1.2:1 at N=50, starved fraction 1-2%) are mathematically incompatible
    at the brief's literal `t_hard=14`, for any beta — a hazard-function-independent bound,
    not a guess. A joint grid search found `beta=0.03, t_hard=3` hits both simultaneously
    across N=50/60/80, with BACKSTOPPED time landing *lower* than before (0.2-0.4%), not a
-   repeat of the NPC-dominance tradeoff. Now the default in `src/sim/vacancyHarness.ts`
+   repeat of the mechanical-backstop-dominance tradeoff. Now the default in `src/sim/vacancyHarness.ts`
    (`DEFAULTS`, shared by `conscriptionHarness.ts`).
 
 **Ecosystem-scale mechanics are built** (2026-08-07, `src/engine/ecosystem.ts`, ported
@@ -122,7 +123,7 @@ real findings:
    usable mechanic, this calibration needs revisiting — as given, it's not.
 
 Stopped deliberately at the mechanical fact of whether an act was witnessed — no
-reputation score, no scripted retaliation, no NPC response invented, matching your
+reputation score, no scripted retaliation, no invented automated response, matching your
 stated boundary. `npm run ecosystem-sim` reproduces both findings on demand.
 
 **One gap left flagged, not resolved — needs your call:**

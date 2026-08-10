@@ -4,9 +4,9 @@ import { runConscriptionSim } from '../src/sim/conscriptionHarness.js';
 /**
  * Regression tests for Miller conscription (2026-08-07 design — not in the original
  * brief, added because a passive BACKSTOPPED-recovery hazard low enough to hit the
- * brief's §2.4 ratio target required role-slots to sit NPC-run 79-86% of the time,
- * conflicting with the brief's premise of a player-driven economy. Conscription: NPC
- * backstops a vacant Miller slot only temporarily; past a fixed delay, a random player
+ * brief's §2.4 ratio target required role-slots to sit mechanically-backstopped 79-86% of
+ * the time, conflicting with the brief's premise of a player-driven economy. Conscription:
+ * the mechanical backstop covers a vacant Miller slot only temporarily; past a fixed delay, a random player
  * is mandatorily drafted — from the gossip layer, or from an existing other-role holder
  * (creating a real cascading vacancy there). See docs/BLUEPRINT.md.
  */
@@ -50,7 +50,7 @@ function longRun(N: number, conscriptionDelay: number, days = DAYS_PER_YEAR * 20
   };
 }
 
-describe('Miller conscription — resolves the NPC-dominance tradeoff', () => {
+describe('Miller conscription — resolves the mechanical-backstop-dominance tradeoff', () => {
   it('Miller spends only a small fraction of time BACKSTOPPED, unlike the pure-recovery-hazard version', () => {
     // The version without conscription needed vacant+backstopped ~80%+ to hit the
     // brief's ratio target. Conscription should keep BACKSTOPPED time far below that at
@@ -70,7 +70,7 @@ describe('Miller conscription — resolves the NPC-dominance tradeoff', () => {
 
   it('longer conscription delay increases BACKSTOPPED time but barely moves the ratio', () => {
     // Matches the finding that recovery/conscription timing is a downstream consequence
-    // of how long NPC coverage lasts, not a cause of the genuine-fill-vs-backstop balance.
+    // of how long mechanical-backstop coverage lasts, not a cause of the genuine-fill-vs-backstop balance.
     const short = longRun(50, 3);
     const long = longRun(50, 30);
     expect(long.millerBackstoppedSlotDays).toBeGreaterThan(short.millerBackstoppedSlotDays * 3);

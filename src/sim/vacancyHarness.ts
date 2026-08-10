@@ -26,7 +26,7 @@ export interface VacancyRunResult {
   /** Fills straight out of VACANT — resolved before the hard backstop ever fired. This is
    *  what §2.4's "voluntary fills outnumber backstop fires" almost certainly means. */
   genuineVoluntaryFills: number;
-  /** Fills that displaced an NPC out of BACKSTOPPED — happen strictly *after* a backstop
+  /** Fills that take a slot back out of BACKSTOPPED — happen strictly *after* a backstop
    *  already fired, not instead of it. Every backstopFires eventually produces exactly
    *  one of these in this model (recovery is not permanently blocked), so including them
    *  in the same ratio as backstopFires inflates it by roughly +1 systematically. */
@@ -35,7 +35,7 @@ export interface VacancyRunResult {
   /** Slot-days spent in VACANT specifically (not FILLED, not BACKSTOPPED) — genuinely
    *  unserved, before the safety net catches it. */
   vacantSlotDays: number;
-  /** Slot-days spent in BACKSTOPPED — covered by the NPC, not "starved" in the sense the
+  /** Slot-days spent in BACKSTOPPED — covered mechanically, not "starved" in the sense the
    *  backstop exists to prevent, but also not a real player. Tracked separately so
    *  "starved fraction" can be defined either way. */
   backstoppedSlotDays: number;
@@ -51,7 +51,7 @@ export interface VacancyRunResult {
  * (starved_fraction >= backstopShare(ratio) * tHard * pDaily) and the grid search that
  * found this pair. Verified across N=50/60/80 and 12 seeds to hit both the ratio target
  * (~1.2:1 at N=50, ~2.8:1 at N=80) and the starved-fraction target (1-2%) simultaneously,
- * with BACKSTOPPED time landing lower than before (0.2-0.4%), not the NPC-dominance
+ * with BACKSTOPPED time landing lower than before (0.2-0.4%), not the mechanical-backstop-dominance
  * tradeoff the recovery-hazard-only fix required. tPain/vBoost/tFlag left at the brief's
  * literal values — tPain's plateau is now largely moot pre-backstop since tau caps at
  * tHard=3 before it ramps far, which is an emergent consequence of the fit, not a

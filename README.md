@@ -2,7 +2,7 @@
 
 *Nobody is fully anonymous here. Nobody is fully known either. Everyone knows
 something; nobody knows everything. There's always another shard to run to —
-but the past is immortal.*
+but what the node did together, it did for good.*
 
 There's no combat in NODE. Nobody swings a sword at anybody. The tension
 comes from somewhere quieter: you can never be sure who knows what about you,
@@ -99,8 +99,9 @@ Miller is the one role that can't be allowed to sit in that mechanical
 state forever — the whole point of Miller being scarce falls apart if a
 non-player quietly runs it indefinitely. So past a certain point, the node
 drafts someone. At random. No opt-out. You might be a Courier one week and
-find yourself the Miller the next, because the community — not a system, not
-an NPC — has to be the one running the economy. It's disruptive on purpose.
+find yourself the Miller the next, because the community — not the
+simulation continuing to tick — has to be the one running the economy. It's
+disruptive on purpose.
 
 ## Sabotage
 
@@ -207,13 +208,24 @@ you'd ever notice them from inside the game:
   the Oracle, is deliberately mechanical: flat pricing, cold probability,
   nothing to read intentions into, because anything with a mind to model is
   a surface someone can eventually deceive or be deceived by.
-- **Nothing gets recorded, ever.** Not voice, not private conversation,
-  not conclusively. Where a system could capture something and handle it
-  responsibly later, NODE is built instead so there's nothing captured in
-  the first place.
+- **Personal memory is mortal; civic memory is immortal.** What you privately
+  think of someone — a diary entry, a rumour you heard, a private read on
+  them — decays and is gone. No dossier survives you, and nobody's
+  reputation is ever built by quietly accumulating other people's private
+  judgements of them across sessions. What the node did together — as an
+  event, witnessed, public — is a different thing, and that's allowed to
+  last. Voice and private conversation follow the mortal side of that line:
+  where a system could capture something and handle it responsibly later,
+  NODE is built instead so there's nothing captured in the first place.
 - **Outcomes are real, not scripted.** Nobody decides in advance which
   shards thrive, who ends up trusted, or what a rumour eventually becomes.
   The system sets the rules and then actually lets them play out.
+- **Standing can only ever be added to, never taken away.** Every player
+  starts with a real, untouchable floor of visibility and access, earned
+  just by showing up and doing their role. Reputation is what sits on top
+  of that — it can open doors, never close ones that were already open.
+  However badly a player is regarded, the worst the node can actually do
+  is decline to lift them further. It can't erase them.
 
 ## Under the hood
 

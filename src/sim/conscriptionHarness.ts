@@ -3,8 +3,9 @@ import { dailyChurnFromMonthly, fillHazard, stepSlot, type RoleSlot, type Vacanc
 import { DEFAULTS } from './vacancyHarness.js';
 
 /**
- * Miller conscription (2026-08-07 design, not in the original brief): NPCs backstop a
- * vacant Miller slot only temporarily. Past a fixed delay, the community is forced to
+ * Miller conscription (2026-08-07 design, not in the original brief): the mechanical
+ * backstop covers a vacant Miller slot only temporarily. Past a fixed delay, the
+ * community is forced to
  * cover it — a random player is conscripted, mandatory, no opt-out ("like it or not").
  * The draft pool is everyone not already Miller: the non-role-holding "gossip layer"
  * AND existing holders of other roles. Drafting a gossip-layer player has no further

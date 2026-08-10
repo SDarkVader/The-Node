@@ -12,9 +12,18 @@ import type { RoleSlot } from './vacancy.js';
  * This generalizes the same idea `docs/ECOSYSTEM_VISION_2026-08-06.md` §2 already
  * worked out qualitatively — shard ruin/rejuvenation falls out of pushing the existing
  * vacancy backstop to its limit — into real numbers: `economicHealth(0, S)` is exactly
- * that "every slot BACKSTOPPED simultaneously" ruin state, floored at NPC_PRODUCTIVITY,
- * never zero. Same guarantee `vacancy.ts` already gives one slot, now aggregated to
- * shard scale.
+ * that "every slot BACKSTOPPED simultaneously" ruin state, floored at
+ * BACKSTOP_PRODUCTIVITY, never zero. Same guarantee `vacancy.ts` already gives one slot,
+ * now aggregated to shard scale.
+ *
+ * Naming note (2026-08-08, see `docs/BLUEPRINT.md`'s "Open deviations" for the full
+ * reasoning): renamed `NPC_PRODUCTIVITY` to `BACKSTOP_PRODUCTIVITY` and reworded every
+ * comment below away from "NPC" language. Behaviour is byte-for-byte unchanged — this
+ * was a framing fix, not a mechanics change. A BACKSTOPPED slot was never a character
+ * standing in for a missing player; it's the simulation continuing to run that slot's
+ * rules exactly as it always does, whether or not a real player currently occupies it.
+ * "NPC" implies a person to model, which is exactly what `CLAUDE.md` constraint 3 says
+ * to avoid.
  *
  * This is also the data model the visual design brief's §3 mapping table depends on —
  * every export below is annotated with which row it feeds, so a future renderer can
@@ -61,7 +70,7 @@ import type { RoleSlot } from './vacancy.js';
 /** Role slots per shard. Visual brief §3: sets the scale a district's tile count implies. */
 export const S_DEFAULT = 24;
 /** BACKSTOPPED slot output multiplier — the proven floor, never lower than this. */
-export const NPC_PRODUCTIVITY = 0.4;
+export const BACKSTOP_PRODUCTIVITY = 0.4;
 /** Player-held slot base output multiplier. */
 export const PLAYER_PRODUCTIVITY_BASE = 1.0;
 /** Max experience bonus — a maxed veteran outputs at 1.5x base. */
@@ -92,15 +101,16 @@ export function filledByPlayerCount(slots: RoleSlot[]): number {
 
 /**
  * Baseline shard economic health, 0..1, no experience factored in. Floors at exactly
- * NPC_PRODUCTIVITY when filledByPlayer=0 — a shard can never actually reach zero
- * output, because a vacated slot always reverts to NPC-run (BACKSTOPPED) output, never
- * to nothing. This is the number behind the visual brief's §3 row "local
- * activity/economic health → glow radius and brightness" — call this per shard/district
- * and drive the heatmap glow from its output directly, not a separate derived stat.
+ * BACKSTOP_PRODUCTIVITY when filledByPlayer=0 — a shard can never actually reach zero
+ * output, because a vacated slot always reverts to the simulation's own mechanical
+ * (BACKSTOPPED) output, never to nothing. This is the number behind the visual brief's
+ * §3 row "local activity/economic health → glow radius and brightness" — call this per
+ * shard/district and drive the heatmap glow from its output directly, not a separate
+ * derived stat.
  */
 export function economicHealth(filledByPlayer: number, s: number = S_DEFAULT): number {
-  const npcSlots = s - filledByPlayer;
-  const total = filledByPlayer * PLAYER_PRODUCTIVITY_BASE + npcSlots * NPC_PRODUCTIVITY;
+  const backstoppedSlots = s - filledByPlayer;
+  const total = filledByPlayer * PLAYER_PRODUCTIVITY_BASE + backstoppedSlots * BACKSTOP_PRODUCTIVITY;
   return total / (s * PLAYER_PRODUCTIVITY_BASE);
 }
 
@@ -115,11 +125,11 @@ export function economicHealthWithExperience(
   avgExperience: number,
   s: number = S_DEFAULT,
 ): number {
-  const npcSlots = s - filledByPlayer;
+  const backstoppedSlots = s - filledByPlayer;
   const playerOutput = filledByPlayer * (PLAYER_PRODUCTIVITY_BASE + avgExperience);
-  const npcOutput = npcSlots * NPC_PRODUCTIVITY;
+  const backstoppedOutput = backstoppedSlots * BACKSTOP_PRODUCTIVITY;
   const maxPossible = s * (PLAYER_PRODUCTIVITY_BASE + EXPERIENCE_CAP);
-  return (playerOutput + npcOutput) / maxPossible;
+  return (playerOutput + backstoppedOutput) / maxPossible;
 }
 
 // ---- Occupancy: detection, experience, districting ----------------------------------
@@ -232,10 +242,11 @@ export function sabotageAttempt(
 }
 
 /**
- * Slots evicted revert to NPC (BACKSTOPPED), never to zero — see `economicHealth()`
- * above. Visual brief §3: "player-held vs. NPC-backstopped slot → solid saturated
- * outline vs. dashed/desaturated outline, quieter never broken" — a sabotage-evicted
- * slot should render exactly like any other BACKSTOPPED slot, no separate visual state.
+ * Slots evicted revert to the mechanical backstop (BACKSTOPPED), never to zero — see
+ * `economicHealth()` above. Visual brief §3: "player-held vs. backstopped slot → solid
+ * saturated outline vs. dashed/desaturated outline, quieter never broken" — a
+ * sabotage-evicted slot should render exactly like any other BACKSTOPPED slot, no
+ * separate visual state.
  */
 export function applySabotageDamage(
   filledByPlayer: number,

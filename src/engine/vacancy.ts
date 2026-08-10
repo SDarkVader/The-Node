@@ -2,8 +2,12 @@
  * Vacancy as a semi-Markov process (Phase 2, §2.1-2.3). Three states per the brief's own
  * notation table (§1): FILLED, VACANT, BACKSTOPPED — not the two implied by §2.1's
  * shorthand diagram, which collapses "hard backstop fires" into "FILLED" for brevity.
- * BACKSTOPPED is a real, distinct, stable state (an NPC-run slot), not a synonym for
- * player-filled — see §2.5.
+ * BACKSTOPPED is a real, distinct, stable state — the simulation continuing to run that
+ * slot's rules mechanically, no player currently in the seat — not a synonym for
+ * player-filled — see §2.5. Not an "NPC" in the character sense; nothing here has
+ * behavior, motivation, or belief to infer (CLAUDE.md constraint 3) — see
+ * docs/BLUEPRINT.md's "Open deviations" for the 2026-08-08 naming/framing pass this
+ * comment reflects.
  */
 
 export type SlotState = 'FILLED' | 'VACANT' | 'BACKSTOPPED';
@@ -32,7 +36,7 @@ export interface VacancyParams {
   /** t_hard — day a vacancy is force-filled (hard backstop). [CALIBRATED — provisional] */
   tHard: number;
   /**
-   * Ambient per-day hazard that a real player displaces the NPC once BACKSTOPPED.
+   * Ambient per-day hazard that a real player takes the slot back over once BACKSTOPPED.
    * Optional override for experimentation — defaults to fillHazard(tHard, params) (the
    * pressure-plateau value) when omitted, matching the original interpretive gap-fill.
    * Unspecified by the brief either way; see docs/BLUEPRINT.md.
@@ -72,7 +76,7 @@ export interface SlotStepResult {
 /**
  * One day's transition for a single role-slot.
  *
- * BACKSTOPPED -> FILLED (a real player displacing the NPC) has no rate specified by the
+ * BACKSTOPPED -> FILLED (a real player taking the slot back over) has no rate specified by the
  * brief at all — §2.4's findings are entirely about the pre-backstop VACANT phase. Left
  * unmodeled, every slot would eventually ratchet into BACKSTOPPED permanently over a long
  * run, which contradicts "starved fraction stays near 1-2% of the year" being a stable
