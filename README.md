@@ -249,9 +249,13 @@ formulas together on one real trajectory surfaced two real findings: a
 sabotage attack does roughly 3x more damage than the simple occupancy metric
 shows, and — once real detection got wired into the sabotage mechanic for
 the first time — sabotage turns out to be nearly toothless against any
-reasonably healthy shard under its current calibration. See
-`docs/HANDOVER.md` for the trail and the one open question left. 72
-automated tests cover all of it.
+reasonably healthy shard under its current calibration. A pattern-based
+re-specification (many individually-innocuous steps, only the accumulated
+pattern incriminating) has since been designed and simulated as a proposal —
+genuinely achievable by a patient attacker, still hard, a Detective role
+structurally necessary as counter-play — but it is not the shipped default;
+see `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the numbers and the open
+questions left. 83 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -262,11 +266,12 @@ playable form.
 
 ```
 npm install
-npm test               # 72 tests
+npm test               # 83 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
+npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
@@ -276,7 +281,7 @@ Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale
 primitives), `src/sim/` (deterministic seeded harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (72 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (83 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
@@ -286,6 +291,6 @@ Full docs:
 - [`docs/DEVLOG.md`](docs/DEVLOG.md) — chronological build log, including failures and dead ends.
 - [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pdf) — the original design brief. §0 (design intent) is load-bearing; the specific numbers are hypotheses.
 - [`docs/DESIGN_ADDENDUM_2026-08-06.md`](docs/DESIGN_ADDENDUM_2026-08-06.md), [`docs/DESIGN_ADDENDUM_2026-08-07.md`](docs/DESIGN_ADDENDUM_2026-08-07.md), and [`docs/DESIGN_ADDENDUM_2026-08-08.md`](docs/DESIGN_ADDENDUM_2026-08-08.md) — the Oracle, the private diary, face-to-face conversation, the postcard/tier exit ticket, and District Weather / the Wall's Emissive Soul, none built yet.
-- [`docs/ECOSYSTEM_VISION_2026-08-06.md`](docs/ECOSYSTEM_VISION_2026-08-06.md) — what NODE looks like as many shards, not one; its five standing design constraints are binding rules in `CLAUDE.md`.
+- [`docs/ECOSYSTEM_VISION_2026-08-06.md`](docs/ECOSYSTEM_VISION_2026-08-06.md) — what NODE looks like as many shards, not one; its standing design constraints (now six, in `CLAUDE.md`) are binding rules.
 - [`docs/NODE_BUILD_SPEC_2026-08-07.md`](docs/NODE_BUILD_SPEC_2026-08-07.md) — the ecosystem-scale mechanics spec built into `src/engine/ecosystem.ts`.
 - [`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`](docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md) — the isometric city's data-to-visual contract, written for a downstream generator; the mechanics above are built to stay consistent with it.

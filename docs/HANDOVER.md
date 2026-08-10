@@ -10,11 +10,12 @@ from asymmetric information and structural economic pressure. Platform: **PC + m
 client in Godot 4**, server authoritative in TypeScript/Node (decided 2026-08-06). Full
 spec: `docs/NODE_Build_Brief_v1.pdf`. Read its §0 before doing anything; it's the one
 part of the brief that isn't up for revision. Also read `CLAUDE.md`'s "Standing design
-constraints" — five binding rules (simulate before trusting, no permanent zero-state at
-any scale, minimize what's modelable, nothing gets recorded ever, let outcomes be real)
-that apply to everything built from here on.
+constraints" — six binding rules (simulate before trusting; no permanent zero-state at
+any scale; minimize what's modelable — ask "does this need to be an agent"; personal
+memory is mortal, civic memory is immortal; let outcomes be real, don't script them;
+reputation may only ever grant, never remove) that apply to everything built from here on.
 
-## Current state (as of 2026-08-08)
+## Current state (as of 2026-08-10)
 
 **Phase 1 (economic core) and Phase 2 (vacancy engine, now hitting the brief's own §2.4
 targets, plus Miller conscription) are built and tested. The §8 MVP mechanic (two Bakers
@@ -29,13 +30,28 @@ session), still not wired into the market/vacancy layers, but two of its three f
 gaps are now resolved — see "What's next" below for the real findings from actually
 running the two economic-health formulas together.
 
+**2026-08-10: four standing ambiguities from prior sessions resolved or explicitly
+flagged, per a direct user task.** (1) The permanence contradiction — personal memory
+(diary, rumours, private impressions) is mortal, civic memory (public,
+collectively-witnessed events) is immortal; `CLAUDE.md` constraint 4 rewritten, README
+corrected. (2) New `CLAUDE.md` constraint 6 — reputation may only ever grant, never
+remove; no reputation system built, constraint only. (3) The vacancy backstop reframed as
+the simulation continuing to run mechanically, not an NPC standing in — "NPC" language
+audited and replaced across the actively-maintained docs and code (DEVLOG and dated
+design documents deliberately left as historical record, not rewritten); also recorded, a
+minimum of three real players is required for a live economy. (4) Sabotage re-specified
+as pattern-based — a proposal, simulated but explicitly not adopted as the default; see
+below and `docs/BLUEPRINT.md`. Full writeups: `docs/BLUEPRINT.md`'s "Open deviations,"
+`docs/DEVLOG.md`'s two 2026-08-10 entries.
+
 ```
 npm install
-npm test              # 72 tests, all passing
+npm test              # 83 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
+npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run mvp            # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server         # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
@@ -119,23 +135,42 @@ real findings:
    witness counts** under the given `DETECTION_P_PER_WITNESS=0.05` — this also
    interacts with the Phase 2 recalibration (a depleted shard heals back to near-full
    occupancy within 20 days regardless of starting point, so slow sabotage cadences
-   never get a low-witness shard to exploit). If sabotage is meant to be a real,
-   usable mechanic, this calibration needs revisiting — as given, it's not.
+   never get a low-witness shard to exploit). **2026-08-10 update:** a pattern-based
+   re-specification proposal now exists and has been simulated (see below) — genuinely
+   achievable at ~146-220 days per success, not "as given, not viable" anymore — but
+   it's a proposal, not yet adopted as the default; `sabotageAttempt()` above is still
+   what actually runs.
 
 Stopped deliberately at the mechanical fact of whether an act was witnessed — no
 reputation score, no scripted retaliation, no invented automated response, matching your
 stated boundary. `npm run ecosystem-sim` reproduces both findings on demand.
 
+**2026-08-10: sabotage re-specified as pattern-based — a proposal, simulated, not
+adopted.** A sequence of `PATTERN_STEPS_DEFAULT=6` individually-innocuous steps (one
+every 15 days) instead of one witnessed act; detection rolls against the accumulated
+pattern (quadratic ramp — a single step stays near-undetectable) rather than each step
+independently; a Detective-type role investigating a specific campaign closes the gap
+much faster (linear ramp) than ambient population witnessing ever does, making a
+Detective structurally necessary as counter-play. Simulated against real vacancy
+dynamics, 8 seeds, both single- and 4-concurrent-attacker cases: ~146 days per success
+without a Detective, ~220 with one, `economicHealth` floor never dropped below
+0.775-0.800 even under 4 concurrent campaigns (well above the 0.4 constraint-2 floor).
+Consequence for a caught saboteur is still unspecified — same gap as the act-based
+mechanic, matters more now. **Your call whether to adopt this, tune it, or keep the
+current calibration** — `patternSabotageAttempt()` in `ecosystem.ts`,
+`npm run sabotage-pattern-sim`, full numbers in `docs/BLUEPRINT.md`.
+
 **One gap left flagged, not resolved — needs your call:**
 
 1. Whether `TRAVEL_DAYS_TARGET=168` (~6 months) is the same clock as the postcard/tier
    exit ticket's revised 4-8 week target (in which case it's stale) or a genuinely
-   separate post-departure window.
-
-(The "no consequence for a caught saboteur" gap is now less urgent given finding #2
-above — being caught is already rare at realistic witness counts under this
-calibration, so the missing consequence rule matters less until the detection
-probability itself gets revisited.)
+   separate post-departure window. **This blocks:** any calibration of
+   `decayExperienceTraveling()`/`TRAVEL_DECAY_PER_DAY` against a real player timeline
+   (the current 25-60%-of-cap loss figure is validated only against the possibly-stale
+   168-day number, not the 4-8 week one), and any visual-brief work depending on "how
+   long does a departed player's slot visibly read as long-gone" — both are placeholder
+   until this clock is confirmed. Not touched this session; explicitly left for you per
+   the standing instruction not to silently resolve it.
 
 **Also still open:** the specific expanded role roster ("role increase" — you've said
 the brief's own 1/3-role-holder split is rejected, "each role produces a resource
@@ -186,9 +221,9 @@ Roughly in order from here:
   alongside this — it may substantially shrink what Phase 5 even needs to cover, since it
   never captures audio at all.
 - **Wire `src/engine/ecosystem.ts` into the vacancy/market layers**, and answer the
-  `TRAVEL_DAYS_TARGET` question first, and decide whether sabotage's detection
-  calibration needs revisiting given it's currently nearly toothless — building further
-  on top of either before that risks having to unwind it later.
+  `TRAVEL_DAYS_TARGET` question first, and decide whether to adopt the pattern-based
+  sabotage proposal (or tune it, or keep the current near-non-viable calibration) —
+  building further on top of either before that risks having to unwind it later.
 
 Also worth reading before any of the above: `docs/ECOSYSTEM_VISION_2026-08-06.md` (what
 NODE looks like as many shards, not one — shape-only, no mechanics to build yet),
@@ -265,24 +300,38 @@ alongside a real open question it inherits: no persistent per-district state exi
   `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`'s visual mapping depends on — every
   export's doc comment says which row it feeds; keep that annotation current if the
   functions change shape.
-- **Sabotage is calibrated to be nearly non-viable right now, verified not assumed.**
-  `DETECTION_P_PER_WITNESS=0.05` compounds to ~69% daily detection at a healthy shard's
-  ~23 witnesses — successful sabotage rounds are rare regardless of attempt cadence
-  (checked 1 to 20 days). If sabotage needs to actually threaten a healthy shard, the
-  detection rate (or witness-counting logic) needs deliberate retuning, not an
-  assumption that it already works — `npm run ecosystem-sim` shows the current numbers.
+- **Sabotage is calibrated to be nearly non-viable in the shipped act-based mechanic,
+  verified not assumed** — `DETECTION_P_PER_WITNESS=0.05` compounds to ~69% daily
+  detection at a healthy shard's ~23 witnesses. **A pattern-based re-specification
+  proposal exists (2026-08-10, `patternSabotageAttempt()` in `ecosystem.ts`,
+  `npm run sabotage-pattern-sim`)** — sequence of individually-innocuous steps, detection
+  rolls against the accumulated pattern, ~146-220 days per success depending on whether a
+  Detective is investigating — but it is explicitly NOT adopted as the default; the
+  original `sabotageAttempt()` is still what `ecosystemHarness.ts` actually runs. Full
+  numbers in `docs/BLUEPRINT.md`. Your call whether to adopt it, tune its numbers, or
+  keep the current near-non-viable calibration.
 - **The brief's own §1.5 role-slot mix (~1/3 role-holding, ~2/3 gossip-layer) is
   superseded (2026-08-07).** "We can't have a population with 2/3 with nothing to
   stake" — the correction is recorded, the actual expanded role content isn't designed
   yet. Don't treat `vacancy.ts`/`vacancyHarness.ts`'s existing test defaults (R=2-4 out
   of N=50-80) as still reflecting the intended ratio; they haven't been revisited since
-  this correction.
+  this correction. **Before these can be recalibrated, a revised role roster needs to
+  specify:** how many distinct roles exist per shard (the eight named in the visual
+  design brief — Farmer, Miller, Baker, Smith, Miner, Healer, Courier, Watchman — are
+  explicitly not locked); how many slots per role (Miller's `R=2` reflects the brief's
+  "2-3 thin rivalry roles" guidance and the now-recorded "minimum 3 real players for a
+  live economy" finding, but the other seven roles have no slot count assigned at all);
+  and what fraction of `N` those slots are meant to occupy in total, now that the brief's
+  own ~1/3 figure is rejected but no replacement ratio has been proposed. Until that
+  exists, `R`/`N` in every harness stay illustrative test scaffolding, not a calibrated
+  target — do not adjust them speculatively in the meantime.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 
 Every session: read this file first, log work in `DEVLOG.md` (successes and failures,
 chronologically), keep `BLUEPRINT.md` matching actual implemented architecture, rewrite
 this file at the end, keep the root `README.md`'s Status section current. Push doc
-updates one at a time, not batched. `CLAUDE.md` also carries five standing design
-constraints (from `docs/ECOSYSTEM_VISION_2026-08-06.md`) binding on all future work —
-check new work against them the same way, every session.
+updates one at a time, not batched. `CLAUDE.md` also carries six standing design
+constraints (from `docs/ECOSYSTEM_VISION_2026-08-06.md`, plus the 2026-08-08 reputation
+addition) binding on all future work — check new work against them the same way, every
+session.
