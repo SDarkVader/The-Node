@@ -6,6 +6,27 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-10 — New task started: Spatial Layer + Unified World Kernel + The Observatory
+
+**Context.** `docs/NODE_OBSERVATORY_BUILD_SPEC.pdf` (saved to the repo this entry) is a large
+six-phase task: give NODE its first spatial primitive (`src/engine/space.ts`), compose the
+three previously-separate models (market, vacancy/conscription, ecosystem) into one
+deterministic `src/world/world.ts` kernel, add harness-only synthetic drivers, define a
+versioned snapshot contract for replay/live-streaming, build a local dual-camera
+(top-down + first-person) observatory web app (Vite/React/Three.js) to actually *see* the
+world run, and give civic memory (constraint 4) somewhere to live via plaza monuments.
+
+**Plan, per the user's explicit instruction not to do too much in one pass:** build in the
+given phase order (A through F), each phase self-contained and testable before starting the
+next, checking in with findings/flags between phases rather than attempting all six in one
+session. Starting with Phase A (`space.ts`) now — it's the foundational primitive several
+already-built mechanics (decay, detection, districting) are currently standing on top of as
+placeholders, and the spec explicitly requires reporting what real spatial witness counts do
+to both existing sabotage calibrations rather than silently re-tuning them.
+
+Committed now, ahead of any code, so this direction is on `main` and durable rather than
+sitting only in the current session's context.
+
 ## 2026-08-10 — Strengthened two standing flags; end-of-session HANDOVER/README rewrite
 
 **Context.** Item 5 of "Resolve Standing Ambiguities" — explicitly flag, don't resolve.
