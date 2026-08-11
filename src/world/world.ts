@@ -170,38 +170,45 @@ export interface WorldConfig {
   purchaseCycleDays?: number;
 }
 
-// Six-role split, re-derived 2026-08-11 against the real multi-shard system AFTER
-// Import/Export landed (sim/multiShardRoleDistrictSweep.ts). Supersedes the earlier S=30
-// five-role conclusion, which predated this role.
+// Six-role split, from a JOINT grid search over allocation x district layout
+// (2026-08-11, sim/jointGridSearch.ts). Supersedes the hand-picked-candidates sweep.
+// Coarse-to-fine: 560 allocations screened, 154 (27.5%) discarded outright as INCOHERENT
+// (Bakers consuming more flour than Millers mill), then 8 finalists — top 2 per total, to
+// guard against a screening bias toward small totals — re-run jointly against 3/6/11
+// districts at full fidelity (1500 days, 2 seeds).
 //
-// This sweep judged allocations on population/health/equality AND on supply-chain
-// coherence together, because they are coupled: adding role slots dilutes staffing, which
-// lowers milled flour, which moves the break-even FLOUR_PER_BREAD. That coupling caught a
-// real defect — the previous default (M=4 B=8 C=8 J=7 D=3 IE=2) ran a flourRatio of 1.222,
-// i.e. Bakers baking flour nobody milled, invisible to any population-only metric.
+// What only a JOINT search could show: coherence depends on district count as well as
+// allocation. Three finalists coherent at 3-6 districts go incoherent at 11 (flourRatio
+// 1.000-1.027), because more districts means more consolidation and less milling. Separate
+// sweeps of each axis structurally cannot surface that interaction.
 //
-// Measured across 7 candidates (1500 days, 2 seeds), coherent ones only:
-//   M=6 B=8 C=6 J=6 D=3 IE=3  pop 58.7  health 0.870  gini 0.531  flour 0.808  shards 4.5
-//   M=5 B=6 C=6 J=6 D=5 IE=4  pop 57.8  health 0.864  gini 0.505  flour 0.921  shards 4.0  <- shipped
-//   M=7 B=6 C=7 J=6 D=3 IE=3  pop 58.4  health 0.869  gini 0.521  flour 0.704  shards 4.5
-// The shipped choice gives up ~1.5% population for the best equality of any coherent
-// candidate (0.505), the most bounded shard count, and the widest grain headroom
-// (grainCover 2.24 vs 1.32-1.47) — "cleanest and fairest" reads as staffed AND equitable,
-// and the population cost is inside noise. S=38 was rejected despite good numbers because
-// it drove shard count to 10 (the proliferation regime); S=26 was both thinner and
-// incoherent. Miller stays deliberately scarce at 5 of 32, per the brief's own intent.
-// [Evidence-derived; not an exhaustive search — see docs/BLUEPRINT.md]
+// Chosen: M5 B5 C5 J5 D5 IE3 at 6 districts. Full-fidelity numbers vs. the previous
+// shipped M5 B6 C6 J6 D5 IE4:
+//   equality   gini 0.486 (best of ANY allocation at 6 districts) vs 0.514
+//   grifters   22.0 mean days waiting vs 23.2
+//   shards     3.0, the most bounded in the grid, vs 4.0
+//   coherence  flourRatio 0.875 / 0.966 / 0.976 — the only near-even split that stays
+//              coherent at EVERY district count, so the choice is not layout-dependent
+//   cost       population 56.1 vs 59.3 and health 0.860 vs 0.873 — both real, both small,
+//              and 56.1 sits comfortably inside the brief's own 50-80 band
+// "Cleanest and fairest" is read as equitable AND coherent AND bounded, with population
+// anywhere in-band treated as in spec rather than maximized. Miller stays deliberately
+// scarce at 5 of 28. M7-based candidates scored well on coherence margin purely by adding
+// Millers, and were rejected for undermining that design pillar.
+//
+// 11 districts remains a live alternative, not a rejected one: it trades ~1.4% health for
+// ~6% better equality and shorter grifter waits. It was not taken because it thins flour
+// coherence margin markedly (three of eight finalists fail there outright).
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
   rMiller: 5,
-  rBaker: 6,
-  rCourier: 6,
-  rJournalist: 6,
+  rBaker: 5,
+  rCourier: 5,
+  rJournalist: 5,
   rDetective: 5,
-  // 4 slots, from the same six-role sweep: gives grainCover 2.24 (grain delivered vs.
-  // drawn), so Import/Export comfortably covers milling and grain binds only under real
-  // understaffing rather than as a standing tax.
-  rImportExport: 4,
+  // 3 slots — grainCover 1.72 at the chosen layout, so Import/Export still comfortably
+  // covers milling while grain binds under genuine understaffing.
+  rImportExport: 3,
   targetPopulation: 65,
   pMonthly: 0.2,
   conscriptionDelay: 14,

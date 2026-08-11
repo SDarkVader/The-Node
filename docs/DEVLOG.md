@@ -6,6 +6,41 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Joint grid search over allocation x district layout; found an axis interaction
+
+**Context.** "Now do the joint grid search." The previous pass tested allocations and
+district counts separately and said so; this closes it.
+
+**Coarse-to-fine, because a full joint grid at fidelity is unaffordable.** Phase 1 screened
+all 560 allocations at reduced fidelity — 154 (27.5%) discarded outright as incoherent,
+which says the flour-chain trap is systemic, not a one-off. Phase 2 re-ran 8 finalists
+against 3/6/11 districts at full fidelity. Only Phase 2 informs the decision.
+
+**Caught a screening bias before trusting it.** Every top-15 screen result showed 2 shards
+— at 500 days shard growth hasn't happened yet, so per-shard population is inflated for
+allocations that merely delay the first opening, systematically favouring small totals.
+Changed promotion to top-2-per-total so the bias couldn't pick the shortlist. Worth noting
+I only caught this by reading the screen output rather than trusting the ranking.
+
+**The finding that justifies doing it jointly at all**: coherence depends on district count,
+not just allocation. Three finalists coherent at 3-6 districts go incoherent at 11
+(flourRatio 1.000-1.027) — more districts, more consolidation, less milling. Separate
+sweeps of each axis cannot surface that, and an allocation picked at one layout can quietly
+break at another.
+
+**Chosen M5 B5 C5 J5 D5 IE3 (S=28) at 6 districts**, from M5 B6 C6 J6 D5 IE4 (S=32): gini
+0.486 (best of any allocation at that layout) vs 0.514, grifter wait 22.0 vs 23.2, shards
+3.0 (most bounded) vs 4.0, and coherent at every district count — the only near-even split
+that is. Costs: population 56.1 vs 59.3, health 0.860 vs 0.873, both real, both small, and
+56.1 is inside the brief's 50-80 band.
+
+**Rejected M7-based candidates** despite the best coherence margins in the grid (0.63-0.73)
+— they buy it purely by adding Millers, undermining the deliberate-scarcity pillar. A
+better number is not worth breaking a design intent.
+
+**Verification.** 262 tests, all passing; typecheck clean. Golden snapshot regenerated
+(deliberate — DEFAULT_WORLD_CONFIG changed). Flour margin verified after the change.
+
 ## 2026-08-11 — Re-ran the allocation sweep across all six roles; it caught an incoherent shipped default
 
 **Context.** "Re-run the sweep across all six roles." The S=30 five-role conclusion

@@ -2101,6 +2101,66 @@ districts give the best equality (0.470) and shortest waits but the worst health
 **Still not exhaustive**, flagged rather than overclaimed: 7 allocations and 3 district
 counts were tested, not a joint grid search over every combination.
 
+## Joint grid search: allocation x district layout (2026-08-11) — the interaction it found
+
+The previous sweep tested hand-picked allocations against district counts **separately**,
+and was flagged as not a joint search. This closes that gap, coarse-to-fine because a full
+joint grid at full fidelity is unaffordable:
+
+- **Phase 1 (screen)** — all **560** allocations (totals 28/30/32/34) at reduced fidelity,
+  default layout. **154 (27.5%) discarded outright as INCOHERENT** — Bakers consuming more
+  flour than Millers mill. Coherence is a hard filter, never a scored metric: no population
+  or equality number redeems baking flour nobody produced.
+- **Phase 2 (confirm)** — 8 finalists x 3 district layouts at full fidelity (1500 days,
+  2 seeds). Only Phase 2 numbers inform the decision.
+
+**A screening bias, caught by inspection rather than assumed away.** At the 500-day screen
+horizon shard count has not yet grown, so per-shard population is inflated for allocations
+that merely *delay* the first shard opening — which systematically favours small totals
+(every top-15 screen result showed 2 shards). Finalists were therefore promoted as **top 2
+per total**, not top N overall, so the bias could not decide the shortlist.
+
+**What only a joint search could show: coherence depends on district count too.** Three
+finalists coherent at 3-6 districts go incoherent at 11 (flourRatio 1.000, 1.007, 1.027) —
+more districts means more consolidation, less milling, and the flour chain tips. Sweeping
+each axis separately structurally cannot surface that interaction, and any allocation
+chosen at one layout can silently break at another.
+
+**The district axis is monotonic and robust across every allocation tested**: 3 districts
+give the best health (0.919-0.928) and the worst equality (0.555-0.611) with the longest
+grifter waits; 11 districts invert it exactly (health 0.840-0.854, gini 0.454-0.477,
+shortest waits); 6 sits between. That the ordering holds across all 8 allocations makes it
+an axis-level property, not an artifact of any one split.
+
+**Chosen: M5 B5 C5 J5 D5 IE3 (S=28) at 6 districts**, replacing M5 B6 C6 J6 D5 IE4 (S=32):
+
+| metric | chosen | previous |
+|---|---|---|
+| gini | **0.486** (best of any allocation at 6 districts) | 0.514 |
+| grifter mean wait | **22.0 days** | 23.2 |
+| shard count | **3.0** (most bounded in the grid) | 4.0 |
+| flourRatio @ 3/6/11 districts | **0.875 / 0.966 / 0.976** — coherent at every layout | — |
+| per-shard population | 56.1 | 59.3 |
+| health | 0.860 | 0.873 |
+
+The population and health costs are real and stated plainly; both are small, and 56.1 sits
+comfortably inside the brief's own 50-80 band, so it is in spec rather than a shortfall.
+This is the only near-even split that stays coherent at **every** district count, so the
+choice does not depend on the layout decision — which, given the interaction above, is
+worth more than a marginally better score at one layout.
+
+**Miller stays deliberately scarce at 5 of 28.** Several M7-based candidates scored well on
+coherence margin (flourRatio 0.63-0.73) purely by adding Millers, and were rejected for
+undermining a core design pillar rather than accepted for a better number.
+
+**11 districts is a live alternative, not a rejected one**: it trades ~1.4% health for ~6%
+better equality and shorter grifter waits. Not taken because it thins flour-coherence
+margin markedly — three of eight finalists fail there outright.
+
+**Still bounded**: totals above 34 were excluded (the equilibrium sweep already showed they
+drive shard proliferation) and Courier/Journalist were derived from the remainder rather
+than varied independently, so this is a large structured grid, not every conceivable split.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
