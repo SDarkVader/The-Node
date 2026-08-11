@@ -2301,3 +2301,56 @@ decision. **Binary-vs-gradual identity resolution is the one exception:** scoped
 binary for v1 in "Architecture scoped ahead of schedule" above, because the private
 diary's SUBJECT slot forced the question before Phase 4 identity work was going to reach
 it naturally. Scoped, not built — no identity resolution code exists yet either way.
+
+## Design Addendum 2026-08-11 — Social Layer, Closed Economy, and Role Completion
+
+Full text saved verbatim at `docs/DESIGN_ADDENDUM_2026-08-11.md`. 9 numbered items, build
+order 0/3 → 1-2 → 4-8, explicit scope discipline restated: role roster stays closed at six;
+nothing in the addendum adds a role, currency, or subsystem — every item is a rule on an
+existing primitive, a uniform layer across existing roles, or a rendering of state that
+already exists. Tracked here as each item lands; see the addendum doc for the full brief,
+including the "report back explicitly on" questions and the standing risks it does not claim
+to resolve.
+
+### Item 0/3 — District Weather: `space.ts`'s `weatherHistory` field, actually wired
+
+The addendum's own opening finding: `space.ts` has carried `District.weatherHistory:
+WeatherSample[]` (`{ tick, tension }`) since Phase A (2026-08-10), the persistent per-district
+state `docs/DESIGN_ADDENDUM_2026-08-08.md`'s District Weather concept needs — but `world.ts`
+never wrote to it. Not a design gap; an unwired field, permanently empty since Phase A.
+
+**`src/engine/districtWeather.ts` (new)** — `localDistrictTension(filledFraction,
+healthState, sabotagedToday)` composes tension from three signals `world.ts` already
+produces every tick, weighted and clamped to [0,1]:
+- **vacancy pressure** (`1 - filledFraction`) — the identical fraction
+  `districtConsolidation.ts` already computes for the same district on the same tick, not a
+  second measurement of the same thing.
+- **consolidation pressure** — `ACTIVE`→0, `CONSOLIDATING`→0.7, `MERGED`→1. An ongoing
+  structural condition, not a one-off event, so it contributes regardless of today's churn.
+- **sabotage spike** — 1 if a sabotage attempt targeted a building in this district THIS
+  tick, else 0. Same-day only; the accumulated record lives in `weatherHistory` itself.
+
+`districtTensionField(shard, localTensions, maxRange)` spreads every district's local reading
+to every other district by plaza-to-plaza distance, reusing `space.ts`'s own `distance()` and
+`proximityCloseness()` — deliberately no second decay system, per the addendum's explicit
+instruction. Takes the **strongest** signal reaching a destination, not a sum, so one tense
+neighbour reads as "trouble nearby" rather than an implausible shard-wide aggregate a naive
+sum would produce. `stepDistrictWeather(shard, tensionField, tick)` appends one bounded
+(`WEATHER_HISTORY_MAX_SAMPLES = 90`) sample per district, immutably, matching every other
+`space.ts` function's update convention.
+
+**Wired into `world.ts`** right after the sabotage stage resolves each tick (so today's spike
+is reflected same-day, not one tick late), replacing what had been a straight pass-through of
+`world.shard` in `stepWorld`'s return value. Adds no `rng()` calls, so the pinned
+tick-order/determinism test (`world.regression.test.ts`) is unaffected — only the `shard`
+field itself changes from static to a real per-tick update. Geography (plots, buildings,
+coordinates) is still static; only the weather layer on top of it now moves.
+
+**Verified, not just derived** (constraint 1): `test/districtWeather.test.ts`, 16 tests,
+including an integration check against a real `stepWorld` run on a deliberately shrunk,
+high-churn config — a district that actually crosses into CONSOLIDATING/MERGED reads
+measurably higher max-tension over the run than one that stays ACTIVE, the property the
+whole feature exists to produce, checked against simulation rather than asserted from the
+formula alone.
+
+Status: **done**. 310 tests total, typecheck clean.

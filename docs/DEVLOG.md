@@ -6,6 +6,57 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Design Addendum received; item 0/3 (District Weather) wired first, as instructed
+
+**Context.** A 9-item design addendum arrived mid-session (`NODE_DESIGN_ADDENDUM_2026-08-11`,
+saved to the repo — see BLUEPRINT.md's new entry). Explicit scope discipline: role roster
+stays closed at six; every item is a rule on existing primitives, a uniform layer, or a
+rendering of state that already exists — nothing here is a new role, currency, or subsystem.
+Build order matters: items 0/3 (District Weather) and 1-2 (Silhouette Shield, Economic Heat)
+land before 4-8, because 4-8 add flows to an economy items 2-3 make observable. Also folded
+in a user idea from the same conversation, not itself one of the 9 items: reputation-earned
+plaza statues, updating on real completion events. Logged as a forward note against item 4
+(role completion) rather than built now — the addendum's own instruction is to flag anything
+outside its numbered list, not quietly build it.
+
+**Item 0/3 — the addendum's own "verified gap found this session": `space.ts` defines
+`District.weatherHistory`/`WeatherSample` (`{ tick, tension }`) — the persistent per-district
+state District Weather and the Wall's Emissive Soul were both blocked on — but `world.ts`
+never wrote to it. The string `tension` didn't appear in `world.ts` at all. Not a design gap;
+an unwired field.**
+
+Built `src/engine/districtWeather.ts`: `tension` (0..1) is a deterministic function of events
+`world.ts` already tracks — vacancy pressure (the identical filled-fraction
+`districtConsolidation.ts` already computes, not measured twice), consolidation pressure
+(CONSOLIDATING/MERGED as ongoing structural stress, not a one-off), and a same-day sabotage
+spike. No invented mood variable, per the addendum's explicit instruction. Decays with
+distance using `space.ts`'s own `distance()`/`proximityCloseness()` — deliberately no second
+decay system — and takes the *strongest* signal reaching a district rather than summing, so
+one tense neighbour reads as "trouble nearby," not an implausible shard-wide aggregate.
+
+Wired into `world.ts` right after sabotage resolves each tick (so today's spike is reflected
+same-day), writing a new `shard` with bounded (90-sample) `weatherHistory` per district —
+replacing what had been a straight pass-through of `world.shard`. No `rng()` calls added, so
+the pinned tick-order/determinism test is untouched by this.
+
+**Verification, not just derivation** (constraint 1): 16 new tests, including an integration
+check on a deliberately shrunk/high-churn world that a district which actually goes through
+consolidation reads measurably more max-tension over a run than one that stays ACTIVE — the
+property the whole feature exists to produce, checked against a real `stepWorld` run rather
+than asserted from the formula alone.
+
+**One test bug caught by the test itself, not the implementation**: an early version of the
+"nothing propagates beyond max range" test set `maxRange=0` to prove far sources contribute
+nothing — but `proximityCloseness`'s existing contract returns `null` for `maxRange<=0`
+*including at distance 0*, so it killed self-tension too and the test failed for the wrong
+reason. Fixed by using `maxRange=1` (covers self, not the real inter-district distance this
+layout produces) rather than changing anything in `districtWeather.ts` — the implementation
+was right; the test's own edge case was wrong.
+
+310 tests total, typecheck clean. Next: items 1 (Silhouette Shield) and 2 (Economic Heat).
+
+---
+
 ## 2026-08-11 — Re-ran the joint grid on the fixed mechanic; the shipped allocation lost its rationale
 
 **Context.** "Rerun the joint grid search now the defect is fixed." Correct call — the
