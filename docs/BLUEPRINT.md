@@ -2001,6 +2001,63 @@ than papered over. ~2562 units over 2000 days on one shard at the shipped defaul
 **Reported, not enforced.** No stockpile is simulated, so a flour imbalance cannot starve
 anyone — enforcing it would need a real stock and a real answer to constraint 2 first.
 
+## Import/Export + nodules (2026-08-11) — the 6th role, and Millers finally get an input
+
+User-specified. The role does two jobs the economy already had holes shaped for.
+
+**1. Supply.** "They receive nodules every day to trade with the Miller." Nodules arrive
+daily and automatically — not a player action ("automated to the miller if offline") — and
+convert to grain, which Millers consume to mill flour. Millers have never had a raw-material
+input in this codebase; now they do, and it binds. Deliberate split: the grain factor
+constrains **realized** output, not the Cournot best-response dynamics themselves, so
+`millers.ts`'s validated convergence is untouched while grain becomes a real dependency.
+`rImportExport=2`.
+
+**2. Movement.** "They also control human movement across shards with legal and illegal
+routes." This **replaces** `multiShardHarness.ts`'s flat `MIGRATION_FAILURE_RATE=0.15`
+placeholder with a real mechanism, mapped onto the EXISTING postcard/tier exit-ticket system
+rather than inventing a second currency: a **complete ticket** ("gambled or not" — how it was
+completed is irrelevant) is the legal route, passage without friction; **partial progress**
+("half a postcard full") opens the illegal route, subject to interception.
+
+**Detection is not an agent.** Interception runs continuously with "behaviour randomised so
+you can't figure out any pattern" — modelled as a per-attempt probability drawn fresh from
+the shard RNG with NO state between attempts. That is stronger than a patrol schedule that
+merely looks random: there is literally no pattern to learn because nothing persistent
+generates one, and nothing with behaviour, memory or intent to model or deceive
+(constraint 3 — same reasoning as the vacancy backstop and the Oracle).
+
+**Calibration preserved, not silently moved.** `COMPLETE_TICKET_FRACTION=0.57` against
+`INTERCEPT_BASE_P=0.35` makes the emergent failure rate ~0.149 — reproducing the 0.15 all
+prior multi-shard calibration was validated against, so the mechanism swaps in without
+shifting the equilibrium underneath everything already measured. Verified over 200k trials.
+
+**Constraint 2 is load-bearing here** in a way it was not for other roles: grain is an INPUT,
+so an unstaffed Import/Export could otherwise starve flour and through it the whole shard,
+with no way back. `BACKSTOPPED_NODULE_FRACTION=0.4` keeps a mechanically-covered slot
+delivering reduced-but-real supply — squeezed, never killed, mirroring `BACKSTOP_PRODUCTIVITY`.
+
+### A circular-measurement error, caught and corrected
+
+`NODULES_PER_DAY` was first set to 4.0 against grain demand of ~1.28/day/shard measured
+*before* the supply gate existed. That figure was **circular**: `resources.ts` derives
+`grainConsumed` from flour actually milled, so once milling became grain-limited the
+"demand" it reported was itself already suppressed — the constant looked adequate while
+permanently throttling Millers to ~68% capacity. Measuring UNCONSTRAINED demand instead
+(intended Cournot supply x activity x `GRAIN_PER_FLOUR`) gives ~1.68/day, against which 4.0
+delivered only ~1.14. Corrected to **6.0**, giving real headroom at typical staffing
+(~1.85/day) so grain binds only when Import/Export is genuinely understaffed — the intended
+pressure, not a constant tax. Milled flour recovered from 1026 to 1292 over 1500 days.
+
+**Knock-on, handled honestly**: adding 2 slots (S=30 -> 32) diluted staffing enough that
+`FLOUR_PER_BREAD` went ~13% short in turn, so it moved 0.25 -> **0.22** to restore chain
+coherence (ratio now 0.95-1.02). That constant and the role allocation are **coupled** and
+should be re-derived together once the 6-role split is swept — re-tuning it alone each time
+a role count moves is a stopgap, flagged as such, not the eventual answer.
+
+**Total role slots is now 32**, so the S=30 sweep that set the other five predates this role
+and needs re-running — flagged in `docs/HANDOVER.md`, not quietly ignored.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

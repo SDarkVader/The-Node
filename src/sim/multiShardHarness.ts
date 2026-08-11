@@ -1,5 +1,6 @@
 import { mulberry32 } from './rng.js';
 import { createWorld, stepWorld, createDormantWorld, receiveMigrants, type World, type WorldConfig } from '../world/world.js';
+import { attemptCrossing, drawTicketProgress } from '../engine/importExport.js';
 import {
   createShardRegistry,
   canOpenNewShard,
@@ -55,16 +56,24 @@ export interface MultiShardState {
    * source. Defaults to `MIGRATION_FAILURE_RATE` when not supplied.
    */
   migrationFailureRate: number;
+  /** Use the pre-Import/Export flat failure constant instead of real route resolution —
+   *  for A/B comparison only; the route mechanism is the default. */
+  useLegacyFlatFailureRate: boolean;
 }
 
-export function createMultiShardState(seed: number, config: WorldConfig, migrationFailureRate: number = MIGRATION_FAILURE_RATE): MultiShardState {
+export function createMultiShardState(
+  seed: number,
+  config: WorldConfig,
+  migrationFailureRate: number = MIGRATION_FAILURE_RATE,
+  useLegacyFlatFailureRate = false,
+): MultiShardState {
   const rng = mulberry32(seed);
   const registry = createShardRegistry(config.targetPopulation);
   const worlds = new Map<number, World>();
   for (const shard of registry.shards) {
     worlds.set(shard.id, createWorld(seed * 1000 + shard.id + 1, config));
   }
-  return { registry, worlds, day: 0, rng, seed, config, totalFailedMigrations: 0, migrationFailureRate };
+  return { registry, worlds, day: 0, rng, seed, config, totalFailedMigrations: 0, migrationFailureRate, useLegacyFlatFailureRate };
 }
 
 /**
@@ -92,9 +101,19 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
       if (destId === null) continue; // only one shard exists — nowhere else to go, an honest edge case
 
       // The source shard already lost this person (stepWorld's own emigration accounting
-      // happened before lastEmigrants was reported). A failed migration means they simply
+      // happened before lastEmigrants was reported). A failed crossing means they simply
       // never arrive anywhere — a real cost, not redirected or refunded.
-      if (state.rng() < state.migrationFailureRate) {
+      //
+      // Route resolution (2026-08-11) now comes from Import/Export's real mechanism rather
+      // than a flat rate: a complete exit ticket travels the legal route without friction,
+      // partial postcard progress opens the illegal route and is rolled against a freshly
+      // drawn, stateless interception probability. `useLegacyFlatFailureRate` keeps the old
+      // constant available for A/B comparison; the emergent rate reproduces it (~0.149 vs
+      // 0.15), so existing multi-shard calibration is preserved, not silently moved.
+      const crossed = state.useLegacyFlatFailureRate
+        ? state.rng() >= state.migrationFailureRate
+        : attemptCrossing(drawTicketProgress(state.rng), state.rng);
+      if (!crossed) {
         totalFailedMigrations += 1;
         continue;
       }

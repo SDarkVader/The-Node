@@ -35,6 +35,7 @@ function scalarSnapshot(world: World) {
     courierValues: world.couriers.map((c) => ({ state: c.slot.state, wealth: c.wealth })),
     journalistValues: world.journalists.map((j) => ({ state: j.slot.state, wealth: j.wealth })),
     detectiveValues: world.detectives.map((d) => ({ state: d.slot.state, wealth: d.wealth })),
+    importExportValues: world.importExporters.map((x) => ({ state: x.slot.state, wealth: x.wealth })),
     grifterCount: world.grifters.length,
     grifterTotalWealth: world.grifters.reduce((a, g) => a + g.wealth, 0),
     grifterMaxDaysWaiting: world.grifters.reduce((max, g) => Math.max(max, g.daysAsGrifter), 0),
@@ -182,6 +183,7 @@ describe('stepWorld — comms propagation uses real spatial proximity', () => {
       rCourier: 0,
       rJournalist: 0,
       rDetective: 0,
+      rImportExport: 0,
     };
     let world = createWorld(3, config);
     const author = world.millers[0]!.buildingId;
@@ -402,14 +404,15 @@ function totalFilledAcrossRoles(world: World): number {
     world.bakers.filter((b) => b.slot.state === 'FILLED').length +
     world.couriers.filter((c) => c.slot.state === 'FILLED').length +
     world.journalists.filter((j) => j.slot.state === 'FILLED').length +
-    world.detectives.filter((d) => d.slot.state === 'FILLED').length
+    world.detectives.filter((d) => d.slot.state === 'FILLED').length +
+    world.importExporters.filter((x) => x.slot.state === 'FILLED').length
   );
 }
 
 describe('createWorld — 5-role roster + grifter pool', () => {
   it('the default role split sums to 30, re-derived against the real multi-shard system (see world.ts\'s own comment)', () => {
     const { rMiller, rBaker, rCourier, rJournalist, rDetective } = DEFAULT_WORLD_CONFIG;
-    expect(rMiller + rBaker + rCourier + rJournalist + rDetective).toBe(30);
+    expect(rMiller + rBaker + rCourier + rJournalist + rDetective + DEFAULT_WORLD_CONFIG.rImportExport).toBe(32);
   });
 
   it('grifters.length + total FILLED across all 5 roles equals population at creation', () => {
@@ -419,7 +422,7 @@ describe('createWorld — 5-role roster + grifter pool', () => {
 
   it('every role starts fully FILLED, and every grifter starts at 0 wealth / 0 daysAsGrifter', () => {
     const world = createWorld(1);
-    for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives]) {
+    for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives, world.importExporters]) {
       for (const s of arr) expect(s.slot.state).toBe('FILLED');
     }
     for (const g of world.grifters) {
@@ -437,6 +440,7 @@ describe('createWorld — 5-role roster + grifter pool', () => {
       ...ids(world.couriers),
       ...ids(world.journalists),
       ...ids(world.detectives),
+      ...ids(world.importExporters),
     ];
     expect(new Set(allIds).size).toBe(allIds.length); // no building double-assigned
     expect(world.millers.length).toBe(DEFAULT_WORLD_CONFIG.rMiller);

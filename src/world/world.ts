@@ -97,7 +97,8 @@ import {
   BACKSTOP_PRODUCTIVITY,
   EXPERIENCE_CAP,
 } from '../engine/ecosystem.js';
-import { emptyLedger, accumulate, stepResourceFlows, type ResourceLedger } from '../engine/resources.js';
+import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
+import { grainDeliveredToday, millingCapacityFactor } from '../engine/importExport.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -115,8 +116,8 @@ import {
   GRIFTER_DAILY_INCOME,
 } from '../engine/wealth.js';
 
-export type RoleType = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective';
-export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'journalist', 'detective'];
+export type RoleType = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective' | 'importExport';
+export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'journalist', 'detective', 'importExport'];
 
 export interface WorldConfig {
   shardConfig: ShardLayoutConfig;
@@ -128,6 +129,9 @@ export interface WorldConfig {
   rJournalist: number;
   /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
   rDetective: number;
+  /** Import/Export — receives nodules daily, converts to grain for Millers, and controls
+   *  cross-shard movement. See engine/importExport.ts. */
+  rImportExport: number;
   targetPopulation: number;
   pMonthly: number;
   conscriptionDelay: number;
@@ -189,6 +193,11 @@ export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   rCourier: 8,
   rJournalist: 7,
   rDetective: 3,
+  // 2 slots deliver ~1.40 grain/day against a MEASURED demand of ~1.28/day/shard (from
+  // resources.ts's accumulated grainConsumed) — sized from the real number, not guessed.
+  // NOTE: total role slots is now 32, so the S=30 sweep that set the other five predates
+  // this role and should be re-run — flagged in docs/HANDOVER.md, not silently ignored.
+  rImportExport: 2,
   targetPopulation: 65,
   pMonthly: 0.2,
   conscriptionDelay: 14,
@@ -275,6 +284,8 @@ export interface World {
   couriers: SupportRoleSlot[];
   journalists: SupportRoleSlot[];
   detectives: SupportRoleSlot[];
+  /** Import/Export role-holders — nodule intake and grain supply. See engine/importExport.ts. */
+  importExporters: SupportRoleSlot[];
   grifters: GrifterSlot[];
   /** Monotonic counter for grifter ids — deterministic, not time-based. */
   nextGrifterId: number;
@@ -322,7 +333,7 @@ export interface World {
  */
 /** Total role slots across all 5 roles — the shard's full staffing capacity. */
 function totalRoleSlotsFor(config: WorldConfig): number {
-  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective + config.rImportExport;
 }
 
 function vacancyParamsFor(R: number, population: number, pMonthly: number, config: WorldConfig): VacancyParams {
@@ -359,7 +370,7 @@ function assignRoleBuildings(shard: Shard, roleCounts: Record<RoleType, number>)
   }
 
   const remaining: Record<RoleType, number> = { ...roleCounts };
-  const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], journalist: [], detective: [] };
+  const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], journalist: [], detective: [], importExport: [] };
 
   let cursor = 0;
   let assigned = 0;
@@ -393,6 +404,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     courier: config.rCourier,
     journalist: config.rJournalist,
     detective: config.rDetective,
+    importExport: config.rImportExport,
   };
   const assigned = assignRoleBuildings(shard, roleCounts);
 
@@ -426,10 +438,11 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
   const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
   const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
   const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
+  const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
   const flourPriceValue = computeFlourPrice(supply);
-  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+  const totalRoleSlots = totalRoleSlotsFor(config);
   const avgExp = EXPERIENCE_CAP;
 
   const grifterCount = Math.max(0, config.targetPopulation - totalRoleSlots);
@@ -453,6 +466,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     couriers,
     journalists,
     detectives,
+    importExporters,
     grifters,
     nextGrifterId: grifterCount,
     flourPrice: flourPriceValue,
@@ -591,9 +605,10 @@ interface RoleArrays {
   couriers: SupportRoleSlot[];
   journalists: SupportRoleSlot[];
   detectives: SupportRoleSlot[];
+  importExporters: SupportRoleSlot[];
 }
 
-/** Every currently-FILLED slot across all 5 roles, with enough to identify and evict it. */
+/** Every currently-FILLED slot across all roles, with enough to identify and evict it. */
 function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; buildingId: string }[] {
   const out: { role: RoleType; index: number; buildingId: string }[] = [];
   arrays.millers.forEach((s, i) => {
@@ -610,6 +625,9 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
   });
   arrays.detectives.forEach((s, i) => {
     if (s.slot.state === 'FILLED') out.push({ role: 'detective', index: i, buildingId: s.buildingId });
+  });
+  arrays.importExporters.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'importExport', index: i, buildingId: s.buildingId });
   });
   return out;
 }
@@ -666,6 +684,7 @@ export function stepWorld(world: World): World {
   let couriers = world.couriers;
   let journalists = world.journalists;
   let detectives = world.detectives;
+  let importExporters = world.importExporters;
   let grifters = world.grifters;
   let nextGrifterId = world.nextGrifterId;
 
@@ -689,6 +708,7 @@ export function stepWorld(world: World): World {
         }
         return s;
       });
+    importExporters = evictWithDeadline(importExporters);
     millers = evictWithDeadline(millers);
     bakers = evictWithDeadline(bakers);
     couriers = evictWithDeadline(couriers);
@@ -722,6 +742,7 @@ export function stepWorld(world: World): World {
     { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config) },
     { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config) },
     { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config) },
+    { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config) },
   ];
   const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, grifters.length, day, config.conscriptionDelay, rng);
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
@@ -731,6 +752,7 @@ export function stepWorld(world: World): World {
   const courierJustFilled = justFilledSet(couriers, byRole.get('courier')!);
   const journalistJustFilled = justFilledSet(journalists, byRole.get('journalist')!);
   const detectiveJustFilled = justFilledSet(detectives, byRole.get('detective')!);
+  const importExportJustFilled = justFilledSet(importExporters, byRole.get('importExport')!);
 
   millers = millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
   bakers = bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
@@ -745,6 +767,10 @@ export function stepWorld(world: World): World {
   detectives = detectives.map((d, i) => {
     const slot = byRole.get('detective')![i]!;
     return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0 } : { ...d, slot };
+  });
+  importExporters = importExporters.map((x, i) => {
+    const slot = byRole.get('importExport')![i]!;
+    return importExportJustFilled.has(x.buildingId) ? { ...x, slot, wealth: 0 } : { ...x, slot };
   });
 
   // Grifter pool bookkeeping: age everyone still waiting by one day, then apply today's
@@ -797,6 +823,9 @@ export function stepWorld(world: World): World {
     detectives.forEach((d, i) => {
       if (d.slot.state === 'VACANT') openSlots.push({ role: 'detective', index: i });
     });
+    importExporters.forEach((x, i) => {
+      if (x.slot.state === 'VACANT') openSlots.push({ role: 'importExport', index: i });
+    });
 
     const placedGrifterIds = new Set<string>();
     const placeCount = Math.min(overdue.length, openSlots.length);
@@ -813,8 +842,10 @@ export function stepWorld(world: World): World {
         couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0 } : c));
       } else if (target.role === 'journalist') {
         journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0 } : j));
-      } else {
+      } else if (target.role === 'detective') {
         detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0 } : d));
+      } else {
+        importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0 } : x));
       }
     }
     if (placedGrifterIds.size > 0) grifters = grifters.filter((g) => !placedGrifterIds.has(g.id));
@@ -831,7 +862,22 @@ export function stepWorld(world: World): World {
 
   // BACKSTOPPED millers participate mechanically, not competitively — this is the
   // specific unwired gap the spec named. See computeMillerSupply()'s doc comment.
-  const millerSupply = computeMillerSupply(millers);
+  // ---- Grain supply gate (2026-08-11) — Millers finally have a raw-material input -----
+  // Import/Export receives nodules daily and automatically (no player action required —
+  // "automated to the miller if offline"), converting them to grain. Millers can only
+  // realize as much flour as grain allows. Deliberate split: the grain factor constrains
+  // REALIZED output, not the Cournot best-response dynamics themselves, so millers.ts's
+  // validated convergence behaviour is untouched while grain becomes a real bite. A
+  // BACKSTOPPED Import/Export still supplies a reduced-but-real share (constraint 2 — an
+  // unstaffed Import/Export squeezes the shard, it can never mill it to a dead stop).
+  const ieFilled = importExporters.filter((x) => x.slot.state === 'FILLED').length;
+  const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED').length;
+  const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
+  const intendedMillerSupply = computeMillerSupply(millers);
+  const grainDemanded = intendedMillerSupply * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR;
+  const grainFactor = millingCapacityFactor(grainAvailable, grainDemanded);
+
+  const millerSupply = intendedMillerSupply * grainFactor;
   const flourPriceValue = computeFlourPrice(millerSupply);
 
   bakers = stepCompetitiveLayer(
@@ -867,7 +913,9 @@ export function stepWorld(world: World): World {
   };
 
   const millerIncomes = millers.map((m) =>
-    m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(m.buildingId) : 0,
+    m.slot.state === 'FILLED'
+      ? millerDailyIncome(m.value * grainFactor, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(m.buildingId)
+      : 0,
   );
 
   const bakerFilledForDemand = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
@@ -937,6 +985,7 @@ export function stepWorld(world: World): World {
   couriers = couriers.map((c) => (c.slot.state === 'FILLED' ? { ...c, wealth: c.wealth + supportDaily * frictionFor(c.buildingId) } : c));
   journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId) } : j));
   detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
+  importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId) } : x));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
 
   // Named per-role resource flows (2026-08-11). Miller/Baker figures are the quantities
@@ -949,12 +998,13 @@ export function stepWorld(world: World): World {
   const resources = accumulate(
     world.resources,
     stepResourceFlows(
-      millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.value),
+      millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.value * grainFactor),
       servedCustomers,
       supportFriction(couriers),
       supportFriction(journalists),
       supportFriction(detectives),
       DAILY_ACTIVITY_MULTIPLIER,
+      grainAvailable,
     ),
   );
 
@@ -965,7 +1015,7 @@ export function stepWorld(world: World): World {
   let lastSabotage: SabotageLogEntry | null = null;
 
   if (day > 0 && day % config.sabotageCadenceDays === 0) {
-    const filled = filledEntries({ millers, bakers, couriers, journalists, detectives });
+    const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters });
     if (filled.length > 0) {
       const targetIdx = Math.floor(rng() * filled.length);
       const target = filled[targetIdx]!;
@@ -998,7 +1048,8 @@ export function stepWorld(world: World): World {
           else if (chosen.role === 'baker') bakers = bakers.map((b, i) => (i === chosen.index ? { ...b, slot: evict } : b));
           else if (chosen.role === 'courier') couriers = couriers.map((c, i) => (i === chosen.index ? { ...c, slot: evict } : c));
           else if (chosen.role === 'journalist') journalists = journalists.map((j, i) => (i === chosen.index ? { ...j, slot: evict } : j));
-          else detectives = detectives.map((d, i) => (i === chosen.index ? { ...d, slot: evict } : d));
+          else if (chosen.role === 'detective') detectives = detectives.map((d, i) => (i === chosen.index ? { ...d, slot: evict } : d));
+          else importExporters = importExporters.map((x, i) => (i === chosen.index ? { ...x, slot: evict } : x));
         }
       }
 
@@ -1014,7 +1065,7 @@ export function stepWorld(world: World): World {
     nextGrifterId += 1;
   }
 
-  const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives }).length;
+  const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).length;
   // Opportunity-adjusted (2026-08-11): open role-slots damp emigration, so a thinning
   // shard becomes genuinely worth staying in and recovers — the negative feedback the
   // plain roleless-fraction valve never had. See ecosystem.ts's own doc comment.
@@ -1036,7 +1087,7 @@ export function stepWorld(world: World): World {
       const idx = Math.floor(rng() * grifters.length);
       grifters = grifters.filter((_, i) => i !== idx);
     } else {
-      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives });
+      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters });
       if (filled.length > 0) {
         const pick = filled[Math.floor(rng() * filled.length)]!;
         const vacate = { state: 'VACANT' as const, vacantSince: day };
@@ -1044,14 +1095,15 @@ export function stepWorld(world: World): World {
         else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? { ...b, slot: vacate } : b));
         else if (pick.role === 'courier') couriers = couriers.map((c, i) => (i === pick.index ? { ...c, slot: vacate } : c));
         else if (pick.role === 'journalist') journalists = journalists.map((j, i) => (i === pick.index ? { ...j, slot: vacate } : j));
-        else detectives = detectives.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
+        else if (pick.role === 'detective') detectives = detectives.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
+        else importExporters = importExporters.map((x, i) => (i === pick.index ? { ...x, slot: vacate } : x));
       }
     }
   }
   population = Math.max(0, population - actualEmigrants);
 
-  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
-  const finalFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives }).length;
+  const totalRoleSlots = totalRoleSlotsFor(config);
+  const finalFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).length;
   const filledExpValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.experience);
   const avgExp = filledExpValues.length > 0 ? filledExpValues.reduce((a, b) => a + b, 0) / filledExpValues.length : 0;
 
@@ -1062,6 +1114,7 @@ export function stepWorld(world: World): World {
     ...couriers.filter((c) => c.slot.state === 'FILLED').map((c) => c.wealth),
     ...journalists.filter((j) => j.slot.state === 'FILLED').map((j) => j.wealth),
     ...detectives.filter((d) => d.slot.state === 'FILLED').map((d) => d.wealth),
+    ...importExporters.filter((x) => x.slot.state === 'FILLED').map((x) => x.wealth),
     ...grifters.map((g) => g.wealth),
   ];
 
@@ -1074,6 +1127,7 @@ export function stepWorld(world: World): World {
       ...occupantsOf(couriers),
       ...occupantsOf(journalists),
       ...occupantsOf(detectives),
+      ...occupantsOf(importExporters),
     ];
     const graph = buildProximityGraph(occupants, config.commsProximityRange);
     for (const post of world.pendingWallPosts) {
@@ -1113,6 +1167,7 @@ export function stepWorld(world: World): World {
     couriers,
     journalists,
     detectives,
+    importExporters,
     grifters,
     nextGrifterId,
     flourPrice: flourPriceValue,

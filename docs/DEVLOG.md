@@ -6,6 +6,43 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Import/Export + nodules: the 6th role, and a circular measurement caught
+
+**Context.** "Now build the Import/Export role and nodules." The design had been discussed
+earlier and parked; `resources.ts` had been accumulating `grainConsumed` as demand with no
+supply specifically so this could be sized from a measured number.
+
+**Built `engine/importExport.ts`** — nodules -> grain (daily, automated, no player action
+required), and cross-shard route resolution replacing the flat `MIGRATION_FAILURE_RATE`
+placeholder. Complete exit ticket = legal route, frictionless. Partial postcard progress =
+illegal route, subject to stateless per-attempt interception. Detection carries no state
+at all, so "no learnable pattern" is structural rather than merely apparent.
+
+**Calibration deliberately preserved**: `COMPLETE_TICKET_FRACTION=0.57` x
+`INTERCEPT_BASE_P=0.35` reproduces the 0.15 failure rate everything was validated against
+(measured 0.1489 over 200k trials), so the mechanism replaces the constant without moving
+the equilibrium under previously-measured results.
+
+**A real error, and the kind worth recording.** `NODULES_PER_DAY=4.0` was sized against
+grain demand of ~1.28/day measured BEFORE the gate existed — which was circular, because
+`grainConsumed` derives from flour actually milled, so once milling became grain-limited
+the reported "demand" was itself suppressed. The constant looked fine while permanently
+throttling Millers to ~68%. Only caught by checking whether grain was actually binding
+rather than trusting the surplus figure, which looked healthy precisely because of the
+constraint. Corrected to 6.0 against unconstrained demand (~1.68/day); milled flour
+recovered 1026 -> 1292 over 1500 days.
+
+**Knock-on handled rather than hidden**: 2 extra slots (S=30 -> 32) diluted staffing, so
+`FLOUR_PER_BREAD` went short again and moved 0.25 -> 0.22. Noted explicitly that this
+constant and the role allocation are coupled and should be re-derived together when the
+6-role split is swept — repeatedly re-tuning one constant is a stopgap, not the answer.
+
+**Verification.** 13 new tests (routes, stateless interception with no repeats across 5000
+draws, emergent rate matching the calibrated one, BACKSTOPPED supply floor, milling
+capacity, an unstaffed Import/Export squeezing but never stopping the shard, and fewer
+slots genuinely reducing flour). 262 total, all passing; typecheck clean. Golden snapshot
+regenerated (deliberate — a 6th role changes the pinned trajectory).
+
 ## 2026-08-11 — Named per-role resources; tracking them immediately exposed an incoherent supply chain
 
 **Context.** "We need to create arbitrary resources as named variables. Make them suitable

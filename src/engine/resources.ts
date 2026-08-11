@@ -59,12 +59,18 @@ export const GRAIN_PER_FLOUR = 1.2;
  * nothing behind it — so the invented constant yields to the derived role split, not the
  * reverse. Measured break-even flour-per-bread by Miller count (1500 days, burn-in 300):
  *   rMiller 3 -> 0.193 | 4 -> 0.274 | 5 -> 0.318 | 6 -> 0.381 | 7 -> 0.426 | 8 -> 0.477
- * Break-even is also seed- and horizon-dependent: 0.27 still left a consistent 3-8% deficit
- * across 5 seeds at 1500 days, so the shipped value is 0.25, which holds a small structural
- * SURPLUS — the correct side to err on, since no stockpile is simulated and a chronic
+ * Break-even is also seed- and horizon-dependent (0.27 still left a 3-8% deficit across 5
+ * seeds at 1500 days), AND it moves whenever the role allocation moves: adding the 2
+ * Import/Export slots (S=30 -> 32) diluted staffing enough that average milled flour fell
+ * and 0.25 went ~13% short in turn. Shipped value is now **0.22**, holding a small
+ * structural SURPLUS — the correct side to err on, since no stockpile is simulated and a chronic
  * deficit would be an unbacked claim that Bakers can bake flour that was never milled.
+ *
+ * This constant and the role allocation are coupled and should be re-derived TOGETHER once
+ * the 6-role split is swept (flagged in docs/HANDOVER.md) — re-tuning it alone each time a
+ * role count moves is a stopgap, not the eventual answer.
  */
-export const FLOUR_PER_BREAD = 0.25;
+export const FLOUR_PER_BREAD = 0.22;
 /** Parcels one Courier moves in a full active day. [ILLUSTRATIVE] */
 export const PARCELS_PER_COURIER_DAY = 14;
 /** Stories one Journalist files in a full active day. [ILLUSTRATIVE] */
@@ -74,6 +80,8 @@ export const LEADS_PER_DETECTIVE_DAY = 2.5;
 
 /** One day's resource flows for a whole shard. All values are per-day, not cumulative. */
 export interface ResourceFlows {
+  /** Grain delivered by Import/Export — the supply side, real since 2026-08-11. */
+  grainDelivered: number;
   grainConsumed: number;
   flourProduced: number;
   flourConsumed: number;
@@ -91,6 +99,7 @@ export interface ResourceLedger {
 
 export function emptyFlows(): ResourceFlows {
   return {
+    grainDelivered: 0,
     grainConsumed: 0,
     flourProduced: 0,
     flourConsumed: 0,
@@ -123,6 +132,7 @@ export function stepResourceFlows(
   journalistFrictions: readonly number[],
   detectiveFrictions: readonly number[],
   activityMultiplier: number,
+  grainDelivered = 0,
 ): ResourceFlows {
   const sum = (a: readonly number[]) => a.reduce((x, y) => x + y, 0);
 
@@ -130,6 +140,7 @@ export function stepResourceFlows(
   const breadProduced = sum(bakerServedCustomers) * activityMultiplier;
 
   return {
+    grainDelivered,
     flourProduced,
     grainConsumed: flourProduced * GRAIN_PER_FLOUR,
     breadProduced,
@@ -145,6 +156,7 @@ export function accumulate(ledger: ResourceLedger, today: ResourceFlows): Resour
   return {
     today,
     cumulative: {
+      grainDelivered: c.grainDelivered + today.grainDelivered,
       grainConsumed: c.grainConsumed + today.grainConsumed,
       flourProduced: c.flourProduced + today.flourProduced,
       flourConsumed: c.flourConsumed + today.flourConsumed,
@@ -166,4 +178,9 @@ export function accumulate(ledger: ResourceLedger, today: ResourceFlows): Resour
  */
 export function flourBalance(flows: ResourceFlows): number {
   return flows.flourProduced - flows.flourConsumed;
+}
+
+/** Grain delivered by Import/Export minus grain Millers drew. Positive = supply covers milling. */
+export function grainBalance(flows: ResourceFlows): number {
+  return flows.grainDelivered - flows.grainConsumed;
 }
