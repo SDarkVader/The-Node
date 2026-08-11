@@ -184,6 +184,14 @@ reference. Tapping every private channel yields a distribution of moods, never i
 Adding free text or a subject slot for "expressiveness" would convert direct channels into an
 information-brokering vector; treat that request as a containment change, not a UX one.
 
+**The untouchable floor protects the powerful player as much as everyone else** — read
+`docs/ADVERSARIAL_CONTAINMENT.md`'s closing section before ever weakening constraint 2 or 6
+"for stakes". Destructive power is self-consuming: zeroing someone destroys years of their
+investment *and* removes them as audience, rival and witness, leaving a dominator running an
+empty town. The floor is what keeps people in the room, which is what makes being known worth
+anything. The design does not ask ambitious players to want less; it removes the one move
+that would cost them what they actually want.
+
 **Containment of adversarial players rests on properties that are easy to remove by
 accident.** See `docs/ADVERSARIAL_CONTAINMENT.md`. In short: wealth is currently a scoreboard
 that buys nothing, sabotage is uniform-random and cannot be aimed at a person, roles are

@@ -425,6 +425,47 @@ tested against real adversarial players, not against the harness.
 
 ---
 
+## Why the floor serves the powerful player too
+
+Closing statement from the same user, and the thesis the rest of this document is really
+about (2026-08-11): *"Everyone in the war game knew I could kill them. But killing them took
+away five years of work. Just knowing I can't take everything from you is the security you
+don't have in other games — but you still know who I am, and that's enough. You don't have to
+zero someone into quitting to get into their heads about who's actually running town."*
+
+Three things follow, and they reframe every constraint above.
+
+**1. Destructive power is self-consuming.** Exercising it destroys the thing that made it
+worth having. Zeroing a player removes years of their investment — and simultaneously removes
+them as an audience, a rival, a counterparty, and a witness. A dominator who succeeds
+completely ends up running an empty town. Destruction is not merely harmful to the victim; it
+is *strategically incoherent* for the dominator, and games that permit it force ambitious
+players into a move that undoes their own position.
+
+**2. The untouchable floor is what keeps the audience in the room.** Constraint 2 (no
+permanent zero-state) and constraint 6 (reputation may only grant, never remove) are usually
+read as protections *against* the powerful player. They are equally protections *for* them.
+Because nobody can be zeroed, nobody has to flee — so the quiet shard stays populated, the
+rivalries stay live, and there remains a town to be known in. **The floor is what makes
+long-term dominance sustainable instead of terminal.**
+
+**3. Being known is sufficient. It was always the actual goal.** "You still know who I am, and
+that's enough" is the whole design in one line. What the ambitious player wants is not other
+people's assets — it is to be the person everyone accounts for when they make plans. That is
+achieved by presence and reputation, and it is achieved *better* when the town is full,
+prosperous, and still watching.
+
+So NODE does not remove the power fantasy; it removes the one expression of it that would
+destroy the conditions for its own continuation. What is left — everyone knowing who is
+actually running town, without anyone being driven out to prove it — is both the more
+sustainable version and, by the user's own account, the more satisfying one.
+
+This is why the design can be genuinely welcoming to the most adversarial player it can
+imagine, rather than defending against them. **It is not asking them to want less. It is
+removing the move that would cost them everything they actually want.**
+
+---
+
 ## Summary
 
 | Requirement | Status |
@@ -437,6 +478,7 @@ tested against real adversarial players, not against the harness.
 | Reach is reputational, not destructive | **Half-met** — destructive reach is genuinely absent; reputational reach does not exist yet |
 | Remembered | **Unbuilt** — civic memory is specified (constraint 4) but no monuments/legacy system exists |
 | Self-limiting rather than capped | **Specified, unbuilt** — visibility as both payoff and exposure means containment is intrinsic to the power, needing no punishment mechanic |
+| Dominance without destruction | **Holds** — the floor keeps the town populated, so being known has somewhere to matter; zeroing people was never the win condition |
 
 The containment is real. Some of it is deliberate and some of it is a happy consequence of
 what remains unbuilt — which means it is fragile in a specific way: it degrades the moment
