@@ -323,21 +323,34 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
     expect(worldNoTax.wealthGini).toBe(worldAlsoNoTax.wealthGini);
   });
 
-  it('a high wealthTaxRate measurably reduces Miller+Baker wealth Gini relative to no tax, over the same seed', () => {
+  it('a high wealthTaxRate measurably reduces mean Miller+Baker wealth Gini relative to no tax, across several seeds', () => {
     // world.wealthGini now spans all 5 roles + grifters (widened 2026-08-11 — see
     // world.ts's header note), but wealthTaxRate stays deliberately scoped to Miller+Baker
     // only. Taxing ~10 of ~62 tracked players may not move the population-wide figure
     // measurably, so this checks the mechanism directly on the pool it actually acts on.
+    // Averaged across several seeds, not a single run: with live-N vacancy dynamics and
+    // district-consolidation friction now both touching Miller/Baker income too, a single
+    // seed's exact fill composition at one tick is noisy at this small a role count (10
+    // Miller+Baker slots) — the tax's effect is real but needs averaging to see reliably,
+    // same discipline as every sweep script in this repo.
     const millerBakerWealth = (w: World) =>
       [...w.millers, ...w.bakers].filter((s) => s.slot.state === 'FILLED').map((s) => s.wealth);
 
-    let worldTaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0.8 });
-    let worldUntaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
-    for (let i = 0; i < 300; i++) {
-      worldTaxed = stepWorld(worldTaxed);
-      worldUntaxed = stepWorld(worldUntaxed);
+    const SEEDS = [1, 2, 3, 4, 5];
+    const taxedGinis: number[] = [];
+    const untaxedGinis: number[] = [];
+    for (const seed of SEEDS) {
+      let worldTaxed = createWorld(seed, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0.8 });
+      let worldUntaxed = createWorld(seed, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
+      for (let i = 0; i < 300; i++) {
+        worldTaxed = stepWorld(worldTaxed);
+        worldUntaxed = stepWorld(worldUntaxed);
+      }
+      taxedGinis.push(giniCoefficient(millerBakerWealth(worldTaxed)));
+      untaxedGinis.push(giniCoefficient(millerBakerWealth(worldUntaxed)));
     }
-    expect(giniCoefficient(millerBakerWealth(worldTaxed))).toBeLessThan(giniCoefficient(millerBakerWealth(worldUntaxed)));
+    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    expect(mean(taxedGinis)).toBeLessThan(mean(untaxedGinis));
   });
 
   it('a wealthCap bounds every FILLED role-holder\'s wealth at or below the cap', () => {

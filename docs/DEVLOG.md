@@ -6,6 +6,102 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — District consolidation + shard registry: the population-collapse fix, derived from the user's own district-merge design
+
+**Context.** Direct follow-up to the previous entry's population-collapse finding. User
+specified the fix's shape unprompted, in two passes: first a shard-level "fracture into 2
+when density requires new players" sketch, then a correction — it's UNDERpopulation that
+triggers consolidation (not overcrowding, which was my own initial misreading), and the
+real mechanism is a **district**-level merge within a shard, escalating to shard-level
+active/dormant splits: districts combine when population drops past an irreversible
+tipping point, displaced players get a visible notice and 2 weeks to pick a role or be
+drafted, decline is felt via degraded trade-route access before it's forced, and shard
+count only ever grows (2 initial, cooldown+stability-gated growth after that, new shards
+dormant/"automated economic stability" until a real arrival wakes them). User chose
+"everything in one pass" (district mechanic + trade-route friction + full shard registry
+together) over a narrower first cut, then added mid-build: "well test it thoroughly during
+and after, so it's still not really a single pass — we always find issues to resolve."
+That turned out to be exactly right — see below.
+
+**Built in the same pure-primitive-first layering as everything else this session.**
+1. `engine/districtConsolidation.ts` (new): `DistrictHealth` as an irreversible ratchet
+   (ACTIVE → CONSOLIDATING → MERGED), triggered when a district's own FILLED-role fraction
+   drops below a tipping point; 14-day grace period (deliberately mirrors
+   `conscriptionDelay`'s own default); `consolidationFrictionMultiplier` ramps service
+   access down across that same window and floors above zero (constraint 2). 10 tests.
+2. `engine/shardRegistry.ts` (new): the multi-shard lifecycle at the population-count
+   level — 2 initial ACTIVE shards, monotonic shard ids, migration destinations always
+   bounded to shards that actually exist (preferring a DORMANT one so a real arrival wakes
+   it), new-shard eligibility gated on population + stability + cooldown together. 17 tests.
+3. `world.ts` wired in: a district crossing into MERGED evicts its role-holders into the
+   grifter pool with a hard `consolidationDeadline` (self-select or get force-drafted in 2
+   weeks — bypasses the ordinary probabilistic machinery once overdue); friction scales
+   Miller/Baker/support-role income by the building's district health.
+4. `sim/multiShardHarness.ts` (new): composes the registry with real `World` instances —
+   the piece that finally gives `stepWorld`'s emigrants (newly exposed as `lastEmigrants`)
+   a real destination instead of vanishing into `migrationValveStep`'s abstract pool. 6 tests.
+
+**Bug #1, caught by the user's own "test thoroughly during and after" instruction, before
+it shipped**: an earlier version permanently excluded a MERGED district's buildings from
+ever being refilled ("logically removed"). Two long-run world tests caught this collapsing
+Miller+Baker FILLED counts toward zero with nowhere for that capacity to go — every
+district eventually merges under enough noise, and deleted capacity never comes back.
+Contradicts the user's own framing ("combine into half the shard" concentrates capacity,
+it doesn't delete it) and constraint 2 applied at the whole-shard-economy scale, not just
+one player. **Fixed**: a MERGED district's buildings stay in the ordinary vacancy pool
+going forward; the lasting consequence is the one-time eviction plus the permanent
+friction floor, not a capacity cliff. Physically relocating buildings between districts at
+runtime is a bigger change, deliberately deferred and flagged, not silently done partway.
+
+**User mid-flight correction: "N shouldn't be flat given illegal migration failure
+rates."** Two real things folded into this. First, an already-flagged pre-existing
+simplification finally fixed: `vacancyParamsFor`'s `N` used the *static*
+`config.targetPopulation`, not live `world.population` — now uses the live figure, so
+`fillHazard`'s candidate-pool math honestly reflects a shard's actual current headcount
+instead of staying artificially optimistic while population is collapsed or recovering.
+Second, a new placeholder: cross-shard migration is not guaranteed to succeed —
+`multiShardHarness.ts`'s `MIGRATION_FAILURE_RATE` (0.15, `[ILLUSTRATIVE]`) models some
+fraction of attempted moves simply failing and never arriving anywhere, standing in for
+the not-yet-designed Import/Export legal/illegal route-detection mechanic until that
+system actually exists.
+
+**Bug #2, caught by `multi-shard-validation`'s own numbers, not assumed away**: the first
+working version of `canOpenNewShard`'s population gate used a flat total-population floor
+(120). Once 2-3 shards are healthy, a flat total trivially clears itself forever, so every
+subsequent shard opened the moment its cooldown expired regardless of real pressure —
+**102 shards after 3000 days** in the first validation run. Root cause: a flat total grows
+automatically as shards fill, so it can never re-trip. **Fixed**: gate on the MEAN
+population across currently-populated shards instead — existing shards must be genuinely
+near-full before another one is justified, and opening one immediately dilutes the mean
+again, so growth self-paces instead of running away. Formalized as its own regression test
+(`shardRegistry.test.ts`'s "gates on the MEAN... not the flat total").
+
+**Final validation (`npm run multi-shard-validation`, 3000 days, 3 seeds, after both
+fixes)**: single-shard baseline collapses to **8.1/65** mean population (worse than the
+27.4/65 seen before the live-N fix — an honest consequence of removing the old model's
+optimistic bias, not a regression from this session's own work). Multi-shard registry
+settles at **3 shards, 44.5/65 mean population per shard** — real, substantial
+improvement, not fully healthy yet (44.5/65 ≈ 68%), reported plainly rather than rounded
+up. Further tuning (fillHazard's beta/tPain, the migration failure rate, or the stability
+threshold) is still open, flagged in `HANDOVER.md`, not treated as finished.
+
+**Verification.** 33 new tests (10 districtConsolidation, 17 shardRegistry, 6
+multiShardHarness) plus 2 existing world.ts tests fixed to stay robust to two new,
+legitimate sources of run-to-run variation (trade-route friction touching an exact-value
+assertion; live-N/friction touching a single-seed Gini snapshot, now averaged across 5
+seeds instead). 233 tests total, all passing; `npm run typecheck` clean. Golden-value
+snapshot unchanged (no district crosses its tipping point within the pinned test's short,
+fully-staffed 25-tick window, so nothing to regenerate this time).
+
+**Still not built**: Import/Export (nodules, grain conversion, legal/illegal shard
+movement) — parked behind this rebalancing work per the user's own sequencing, and now has
+a natural home for its route-detection math (replacing `MIGRATION_FAILURE_RATE`'s
+placeholder). Physical building relocation between districts on MERGE. A "cleanest and
+fairest" role/district allocation still can't be honestly derived from `districtRoleSweep`
+until this rebalancing work is itself re-swept against — noted, not done in this pass.
+
+---
+
 ## 2026-08-11 — 5-role roster + individually-tracked grifter pool; found the vacancy model's candidate-pool assumption breaks under a real, finite pool
 
 **Context.** User specified the target roster directly: Miller, Baker, Courier,

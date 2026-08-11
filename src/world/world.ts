@@ -295,9 +295,18 @@ export interface World {
   lastSabotage: SabotageLogEntry | null;
 }
 
-function vacancyParamsFor(R: number, targetPopulation: number, pMonthly: number, config: WorldConfig): VacancyParams {
+/**
+ * `population` here is intentionally the LIVE `world.population`, not the static
+ * `config.targetPopulation` — a real, previously-flagged simplification (see HANDOVER.md's
+ * "Things to know" history) fixed as part of this session's population-collapse work:
+ * `fillHazard`'s `N-R` candidate-pool exponent should track how many people are actually
+ * in the shard right now, not a fixed target that stays wrong for as long as real
+ * population sits away from it (which is precisely the collapsed/recovering state this
+ * whole mechanism now spends most of its time in).
+ */
+function vacancyParamsFor(R: number, population: number, pMonthly: number, config: WorldConfig): VacancyParams {
   return {
-    N: targetPopulation,
+    N: population,
     R,
     pDaily: dailyChurnFromMonthly(pMonthly),
     beta: config.vacancy?.beta ?? VACANCY_DEFAULTS.beta,
@@ -686,11 +695,11 @@ export function stepWorld(world: World): World {
   }
 
   const roleGroupsIn: RoleGroupState[] = [
-    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config) },
+    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config) },
+    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config) },
+    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config) },
+    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config) },
   ];
   const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, grifters.length, day, config.conscriptionDelay, rng);
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));

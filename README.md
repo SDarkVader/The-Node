@@ -196,19 +196,39 @@ touch in the game:
 
 ## Beyond one shard
 
-*Vision, not yet playable.* A node isn't the whole world — it's one shard
-among many. Shards aren't authored to succeed or fail; they're allowed to
-actually live or die, on their own, from whatever the players in them
-actually do. A shard that empties out can genuinely collapse to nearly
-nothing — never all the way to nothing, though; there's always a floor.
-Whether it slowly rebuilds, stabilizes small, or stays a ghost town is
-never decided in advance — the system's whole job is to make every outcome
-real, then get out of the way. New shards open the same way a vacant role
-gets covered: not by announcement, but automatically, once there's
-genuinely enough pressure to need one. The pressure that drives people to
-leave a crowded, roleless shard and the floor that keeps a struggling one
-alive are both real, tested math now — just not yet wired into anything a
-player can actually walk into.
+*Vision, mostly still not playable — but the mechanics behind it are real,
+tested, and running now, not just described.* A node isn't the whole world
+— it's one shard among many. Shards aren't authored to succeed or fail;
+they're allowed to actually live or die, on their own, from whatever the
+players in them actually do. The world starts with two shards; the number
+only ever grows, never shrinks — a shard that empties out doesn't get
+deleted, it goes dormant, mechanically stable, nobody there, until a real
+arrival wakes it back up. A new shard doesn't open just because population
+is high — the *existing* shards have to be genuinely full and healthy
+first, and there's a real cooldown after each one opens, so growth paces
+itself instead of running away (an early version of this didn't, and
+opened over a hundred shards in a simulated few years before that got
+caught and fixed).
+
+Within a single shard, decline is visible before it's forced: a district
+that's been genuinely emptying out for a while starts showing real cracks
+— it gets measurably harder to get served there, a felt cost, not a
+warning label — and if nobody's turned that around within two weeks, the
+decline becomes permanent. Whoever was still working there gets a notice
+and two weeks of their own to pick up a new role somewhere else in the
+shard before the system places them into one. Nothing about this is a
+punishment dressed up as mechanics — it's the same principle as a role
+going unfilled: the node doesn't stop for anyone, and it doesn't pretend
+nothing happened either.
+
+Moving between shards is real now too, and it isn't guaranteed to
+succeed — some attempts simply fail, a placeholder for the real
+legal-versus-illegal route system that isn't designed yet. Simulated
+side-by-side against a single, isolated shard: a shard with nowhere for
+its departing players to actually go slowly empties out no matter what;
+one that's part of a real network of shards stays meaningfully healthier,
+because leaving somewhere doesn't mean leaving the game — it means
+landing somewhere else, for real.
 
 ## The rules behind the rules
 
@@ -299,20 +319,39 @@ grifter pool is now a real, finite, shared resource for the first time —
 exposing that the migration system's calibration assumed an effectively
 infinite one. Not silently patched with a guessed number; the actual
 role/district allocation stays a working default, not a final answer,
-until that's resolved. See `docs/HANDOVER.md` and `docs/BLUEPRINT.md`
-for the full numbers, citations, and open questions left. 200 automated
-tests cover all of it.
+until that's resolved.
+
+That finding directly drove the next piece: **district consolidation and
+a real multi-shard registry**, both built and tested. A district's health
+is now tracked as a one-way ratchet — once it tips into genuine decline it
+cannot recover, a 14-day grace period follows, and service access degrades
+visibly and economically across that window before the decline becomes
+permanent and displaced role-holders get drafted elsewhere. The shard
+registry starts at two shards, grows only when existing shards are
+genuinely full and healthy (gated on real population, health, and a
+cooldown — an early version of that gate let shard count run away
+unbounded before it was caught and fixed), and migration between shards
+is now real and bounded to shards that actually exist, never guaranteed
+to succeed. Simulated side-by-side against a single isolated shard: the
+single shard collapses toward near-emptiness with nowhere for departing
+players to go; the multi-shard version stays meaningfully healthier,
+though not yet fully healthy either — reported honestly, not rounded up.
+See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
+citations, and open questions left. 233 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
-in the docs: the exit-ticket/postcard system, the Oracle, the private
+in the docs: the exit-ticket/postcard system (though district decline now
+uses the same "visible before forced" principle), the Oracle, the private
 diary, face-to-face conversation, real Phase 4 visual rendering (today's
 client is plain text — it proves the wiring works, not what the world looks
-like), the voice/safety architecture, and the multi-shard ecosystem's actual
-playable form.
+like), the voice/safety architecture, the Import/Export role (moving goods
+and people between shards, mid-design, not started), and the multi-shard
+ecosystem's actual playable form — the mechanics above are real and tested,
+but nothing about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 200 tests
+npm test               # 233 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -321,21 +360,22 @@ npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipp
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim        # the unified kernel — market + vacancy + ecosystem, one running world
 npm run role-ratio-sweep # old 2-role Miller/Baker ratio sweep — superseded by the one below
-npm run district-role-sweep # 5-role + grifter-pool allocation/district sweep
+npm run district-role-sweep # 5-role + grifter-pool allocation/district sweep — predates the fixes below, needs re-running
 npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
+npm run multi-shard-validation # single-shard collapse vs. multi-shard registry, side by side
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
 npm run typecheck
 ```
 
 Repo layout: `src/engine/` (pure market + vacancy + identity + ecosystem-scale +
-spatial primitives), `src/world/` (the unified deterministic kernel composing
-all three), `src/sim/drivers/` (harness-only synthetic policy functions —
-never shipped, structurally guarded), `src/sim/` (deterministic seeded
-harnesses and sweeps),
+spatial + district-consolidation primitives), `src/world/` (the unified
+deterministic kernel composing all of them), `src/sim/drivers/` (harness-only
+synthetic policy functions — never shipped, structurally guarded), `src/sim/`
+(deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (174 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (233 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
