@@ -167,6 +167,31 @@ export function topShare(wealths: readonly number[], fraction: number): number {
 }
 
 /**
+ * Support-role and grifter income (2026-08-11, user-specified 5-role roster + community-
+ * player population). Courier, Journalist, and Detective have no competitive market
+ * mechanic anywhere in this codebase — no lore or brief section specifies one — so unlike
+ * Miller (Cournot) and Baker (Bertrand), their income can't be *derived* from a market
+ * clearing process; it's a flat daily wage, explicitly flagged as an undifferentiated
+ * placeholder standing in for three genuinely different unbuilt economies, same as every
+ * other filled-in gap in this codebase.
+ *
+ * Calibrated off the current baseline (`docs/BLUEPRINT.md`'s purchase-cycle-tightening
+ * sweep, `cycleDays=7`, the active default): meanMillerWealth ≈ 1.16/day, meanBakerWealth
+ * ≈ 2.20/day. `SUPPORT_ROLE_DAILY_WAGE` is set between the two roles' current earnings, not
+ * above or below both — a support role should be a genuine economic option, not strictly
+ * dominant or dominated by either existing role. [ILLUSTRATIVE]
+ *
+ * `GRIFTER_DAILY_INCOME` is the "minimum income floor" the user specified for roleless
+ * community players — deliberately below every role's wage (grifters haven't earned a
+ * role slot yet) but strictly positive, because the user was explicit that grifters "still
+ * must contribute to the economy," i.e. this is a floor a present, participating player
+ * receives, not a zero-income holding state (constraint 2: no permanent zero-state).
+ * [ILLUSTRATIVE]
+ */
+export const SUPPORT_ROLE_DAILY_WAGE = 1.5;
+export const GRIFTER_DAILY_INCOME = 0.5;
+
+/**
  * PROPOSAL, not shipped as default. Flat proportional tax on each player's daily INCOME
  * (the flow, not their accumulated stock), pooled and redistributed equally across every
  * tracked player the same day — an untargeted, unconditional daily allocation, matching

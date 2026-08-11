@@ -11,6 +11,8 @@ import {
   DAILY_ACTIVITY_MULTIPLIER,
   BAKER_MAX_DAILY_CUSTOMERS,
   PURCHASE_CYCLE_DAYS,
+  SUPPORT_ROLE_DAILY_WAGE,
+  GRIFTER_DAILY_INCOME,
 } from '../src/engine/wealth.js';
 
 /**
@@ -109,6 +111,28 @@ describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the 8-hour downtime w
   it('is strictly less than 1 — the window genuinely reduces daily totals, not a no-op', () => {
     expect(DAILY_ACTIVITY_MULTIPLIER).toBeLessThan(1);
     expect(DAILY_ACTIVITY_MULTIPLIER).toBeGreaterThan(0);
+  });
+});
+
+describe('SUPPORT_ROLE_DAILY_WAGE / GRIFTER_DAILY_INCOME — the 5-role roster + grifter floor', () => {
+  // Baseline reference point from docs/BLUEPRINT.md's purchase-cycle sweep at the active
+  // default (cycleDays=7): meanMillerWealth ≈ 1.16/day, meanBakerWealth ≈ 2.20/day.
+  const BASELINE_MEAN_MILLER_INCOME = 1.16;
+  const BASELINE_MEAN_BAKER_INCOME = 2.2;
+
+  it('the support wage sits strictly between current Miller and Baker earnings — a genuine option, not dominant or dominated', () => {
+    expect(SUPPORT_ROLE_DAILY_WAGE).toBeGreaterThan(BASELINE_MEAN_MILLER_INCOME);
+    expect(SUPPORT_ROLE_DAILY_WAGE).toBeLessThan(BASELINE_MEAN_BAKER_INCOME);
+  });
+
+  it('the grifter floor is strictly positive — no permanent zero-state for roleless players', () => {
+    expect(GRIFTER_DAILY_INCOME).toBeGreaterThan(0);
+  });
+
+  it('the grifter floor is strictly below every role wage — an incentive to obtain a role remains', () => {
+    expect(GRIFTER_DAILY_INCOME).toBeLessThan(SUPPORT_ROLE_DAILY_WAGE);
+    expect(GRIFTER_DAILY_INCOME).toBeLessThan(BASELINE_MEAN_MILLER_INCOME);
+    expect(GRIFTER_DAILY_INCOME).toBeLessThan(BASELINE_MEAN_BAKER_INCOME);
   });
 });
 
