@@ -219,9 +219,22 @@ pushing anyone below their floor) and constraint 4 fixes where legacy may live (
 collectively-witnessed events persist; private judgements never do). The design is specified
 and unbuilt.
 
+**Purpose now specified (2026-08-11).** Reputation is not a reward or a scoreboard — it is
+the **coordination substrate**. A player cannot execute anything ambitious alone (one role
+each, wealth buys nothing, the grammar cannot carry a plan), so they need allies who are
+strangers with imperfect information. The only basis for a stranger to act with you is what
+they have witnessed you do. That makes reputation the thing that *prices* ambition: it takes
+time, it is visible while being built, and it cannot be bought or faked.
+
+**The hard constraint on any design:** built on **actions, not superiority** — derived from
+publicly witnessed events, never from wealth, rank, or role held. Constraint 4 supplies the
+source (civic memory: collectively-witnessed events may persist, private judgement may not);
+constraint 6 supplies the limit (additive only, never subtractive).
+
 **What would answer it:** research on prestige and legacy systems that confer standing
 without conferring power over others — the distinction is the whole difficulty, and most
-existing games collapse it.
+existing games collapse it. Also: how coordination forms between strangers under enforced
+communication limits, since that is the loop this has to support.
 
 ---
 

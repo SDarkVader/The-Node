@@ -7,11 +7,28 @@ loose, I'll find a way to take everything you have, no matter how long it takes.
 has to contain me but still accept I'm always there. My reach is reputational, not
 destructive. I'd be remembered for a different reason."*
 
-Four requirements, in tension with each other:
+**Refined by the same user shortly after** (2026-08-11), and the refinement matters more
+than the original: *"If there's a constant pattern to detect, the other roles have to make
+following that pattern exciting but not guaranteed and a calculated risk. I know I'll do it,
+I know it'll work at some point, but at what cost — and how do I make plans with strangers
+who have imperfect information? It's a puzzle you can only solve with reputation built on
+actions, not on superiority."*
+
+That changes the target. "Damn near impossible" as an absolute was the wrong reading:
+
+**The goal is not to make domination impossible. It is to make it expensive, uncertain, and
+impossible to do alone.**
+
+Six requirements, in tension with each other:
 1. A quiet place cannot be steamrolled by a determined outsider.
 2. The determined player is **contained**, not excluded — they belong here.
 3. Their reach is **reputational**, not destructive.
 4. They are **remembered** — the point is legacy, not erasure.
+5. Exploiting a pattern must be a **calculated risk with a real price**, not a free win and
+   not a blocked door. It should work *eventually*; the question the player must face is
+   *at what cost*.
+6. Ambition must require **coordination with strangers under imperfect information** — which
+   is only solvable by building reputation through witnessed action.
 
 This document audits what the code actually does about that today. It is deliberately
 evidence-based: claims below cite the mechanism, because "the constraints cover it" is not
@@ -127,6 +144,74 @@ judgements do not. **The design is specified and unbuilt** — that is the hones
 
 ---
 
+## Patterns should be contestable, not merely absent
+
+The sabotage-clock fix above removes a *world-generated* schedule, and that stands: a covert
+system event on a public timetable is a free win with no counter-play, which fails
+requirement 5 from the other direction (no cost, no risk, nothing to calculate).
+
+But it would be a mistake to generalise that into "eliminate every pattern with RNG." The
+stated principle is sharper: **where a pattern exists, the counter-play should come from
+other roles, not from denying that the pattern is there.** Randomness that merely hides
+information produces a game of dice; a pattern that other players can *contest* produces a
+game of judgement.
+
+This is what the Detective and Journalist roles are structurally for, and it is worth
+recording that neither currently does it — both are flat-wage placeholders producing
+resources (`leads`, `stories`) that nothing consumes. When those roles are given real
+mechanics, the design target is not "detect the cheater" but **make acting on a pattern a
+priced, uncertain bet**: the attacker knows it will work eventually, and cannot know whether
+this attempt is the one that gets seen.
+
+The unshipped pattern-based sabotage proposal is the right shape for this — many
+individually-innocuous steps, only the accumulated pattern incriminating, a Detective
+structurally necessary as counter-play. Its risk was never the patience it requires; it was
+that it could be *aimed*. Priced-and-uncertain is the goal; aimed-and-reliable is not.
+
+---
+
+## The actual puzzle: coordination with strangers
+
+*"How do I make plans with strangers who have imperfect information?"*
+
+This is the load-bearing question, and the design answers it structurally rather than by
+choice. A determined player **cannot execute anything ambitious alone**:
+
+- No player can hold more than one role, so no individual controls a supply chain.
+- Roles rotate by churn and conscription regardless of merit, so position cannot be held.
+- Wealth buys nothing, so allies cannot simply be purchased.
+- The grammar cannot express a plan, so allies cannot be *briefed* — only felt out.
+
+Every one of those pushes toward the same requirement: **you need other people, and you
+cannot instruct them.** That is the puzzle, and it is the game.
+
+## Reputation is the coordination substrate, not a scoreboard
+
+The stated solution — *"a puzzle you can only solve with reputation built on actions, not on
+superiority"* — resolves what reputation is actually *for* in this design, which was
+previously unspecified even though constraint 6 fixed its shape.
+
+**Reputation is not a reward for winning. It is the mechanism that makes coordination with
+strangers possible at all.** Under imperfect information and a grammar that cannot carry a
+plan, the only basis for a stranger to act with you is what they have *witnessed you do*.
+
+Two consequences follow directly, and both are already constraints:
+
+- **Built on actions, not superiority.** Reputation must derive from publicly witnessed
+  events — never from wealth, never from role held, never from rank. This is constraint 4's
+  civic-memory line (public collectively-witnessed events may persist; private judgement may
+  not) doing double duty as the *source* of reputation, and constraint 6's additive-only rule
+  ensuring it cannot become a weapon.
+- **It prices ambition rather than blocking it.** A player who needs allies must accumulate
+  witnessed, verifiable action — which takes time, is visible while it happens, and cannot be
+  faked or bought. That *is* the cost in "at what cost". It is also exactly the legacy the
+  player asked to be remembered by.
+
+**Status: specified, unbuilt.** Constraints 4 and 6 fix the shape and the limits; this fixes
+the purpose. What remains is a mechanic. See `docs/RESEARCH_QUESTIONS.md` question 11.
+
+---
+
 ## Tripwires — the specific changes that would break containment
 
 Containment currently rests on properties that are easy to remove by accident while building
@@ -139,6 +224,8 @@ something else. Each of these is individually reasonable-sounding and collective
 | **Allowing multiple role slots**, or tenure that resists churn/conscription | Lets positional power be hoarded instead of redistributed by time. |
 | **Any subtractive reputation** — downvotes, blacklists, standing that can fall | Violates constraint 6, and hands the most persistent player a tool to bury others. |
 | **Cross-shard persistent per-player scores** | Violates constraint 4 and lets a reputation built by grinding one shard be imported as power into a quiet one — the exact "outsider imposes their will" scenario. |
+| **Reputation derived from wealth, rank, or role held** rather than witnessed action | Turns reputation into superiority, which is the specific thing requirement 6 excludes. Coordination would then be purchasable, and the puzzle disappears. |
+| **Removing every pattern with randomness** | Overcorrection. Produces a game of dice instead of judgement, and leaves the Detective/Journalist roles nothing to contest. Patterns should be priced by counter-play, not erased. |
 
 **Recommended standing rule:** treat containment as a property to be *re-verified* whenever
 any of the above is touched, in the same way supply-chain coherence is re-verified after any
@@ -165,6 +252,8 @@ tested against real adversarial players, not against the harness.
 | Requirement | Status |
 |---|---|
 | Quiet places can't be steamrolled | **Holds** — wealth is inert, sabotage is undirected, roles rotate |
+| Exploits are priced, not blocked | **Partial** — no free wins remain, but nothing yet makes an attempt a *calculated* bet, because Detective/Journalist have no mechanics |
+| Ambition requires coordination | **Holds structurally** — one role each, no purchasable allies, no grammar for briefing them |
 | Contained, not excluded | **Holds** — no bans, no exclusion; the floor is untouchable |
 | Reach is reputational, not destructive | **Half-met** — destructive reach is genuinely absent; reputational reach does not exist yet |
 | Remembered | **Unbuilt** — civic memory is specified (constraint 4) but no monuments/legacy system exists |
