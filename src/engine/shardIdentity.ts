@@ -26,6 +26,20 @@
  * spine — flour and bread are the same everywhere — so their local names stay close to
  * recognisable. Courier, Journalist, Detective and Import/Export are framed much more freely
  * by local conditions, because what they *mean* in a place varies more than what they do.
+ *
+ * THE RULE FOR PREMISES (2026-08-11, user-specified: "relate social economics within
+ * different communities that produce the same outcomes socially without changing the
+ * logic"). A premise must give a *social explanation* for behaviour every shard already
+ * shares — it must never imply a rate the code does not have. An earlier draft got this
+ * wrong: premises described physical conditions ("nobody stays long enough to be missed",
+ * "your neighbours hear most of what you do") that read as higher churn or tighter rumour
+ * proximity, writing a promissory note the identical mechanics do not honour. Rewritten so
+ * all twelve explain the SAME turnover, the SAME word-of-mouth and the SAME decline through
+ * twelve different local self-understandings: debt in Threadneedle, shift rotation in
+ * Underhill, transience in Highcross, affordability in Fairweather.
+ *
+ * When adding a character, the test is: could this sentence be true of a place whose numbers
+ * are identical to every other place? If it implies different numbers, rewrite it.
  */
 
 export type RoleKey = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective' | 'importExport';
@@ -51,7 +65,7 @@ export interface ShardCharacter {
 export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   {
     name: 'Longwater',
-    premise: 'Built along a slow river; everything arrives late and everyone knows it.',
+    premise: 'Nothing here is urgent, so nothing here is permanent — people hold a trade until they don\'t.',
     roleTitles: {
       miller: 'Miller',
       baker: 'Baker',
@@ -63,7 +77,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'The Foundry',
-    premise: 'An old industrial quarter that never quite stopped working.',
+    premise: 'The work defines you until the shift changes, and then it defines someone else.',
     roleTitles: {
       miller: 'Grinder',
       baker: 'Oven-keeper',
@@ -75,7 +89,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Saltmarket',
-    premise: 'A trading town with long memories and short contracts.',
+    premise: 'Long memories, short contracts: everyone has held everyone else\'s job at some point.',
     roleTitles: {
       miller: 'Miller',
       baker: 'Breadwright',
@@ -87,7 +101,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Ashgate',
-    premise: 'Rebuilt twice already; nobody here assumes anything is permanent.',
+    premise: 'Rebuilt twice already — nobody assumes a post is theirs to keep.',
     roleTitles: {
       miller: 'Mill-hand',
       baker: 'Baker',
@@ -99,7 +113,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'The Terraces',
-    premise: 'Stacked and crowded; your neighbours hear most of what you do.',
+    premise: 'Stacked close enough that every trade is everyone\'s business, and nobody stays a stranger.',
     roleTitles: {
       miller: 'Miller',
       baker: 'Oven-keeper',
@@ -111,7 +125,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Underhill',
-    premise: 'Half of it is below ground; the day starts and ends by lamplight.',
+    premise: 'Below ground the shifts rotate by lamp; the work continues, the hands change.',
     roleTitles: {
       miller: 'Millwright',
       baker: 'Oven-keeper',
@@ -123,7 +137,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Fairweather',
-    premise: 'Prosperous, pleased with itself, and quietly certain nothing here can go wrong.',
+    premise: 'Comfortable enough that people move on simply because they can afford to.',
     roleTitles: {
       miller: 'Miller',
       baker: 'Baker',
@@ -135,7 +149,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Threadneedle',
-    premise: 'Everyone owes someone here, and the ledgers are older than the buildings.',
+    premise: 'Everyone owes someone, and a debt moves you into whatever work settles it.',
     roleTitles: {
       miller: 'Grindmaster',
       baker: 'Bakehouse',
@@ -147,7 +161,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Ninefold',
-    premise: 'Nine old villages that grew together and still refuse to agree on anything.',
+    premise: 'Nine villages that never agreed on anything — a post is always somebody else\'s turn.',
     roleTitles: {
       miller: 'Miller',
       baker: 'Breadwright',
@@ -159,7 +173,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'The Sump',
-    premise: 'Low, wet, and cheap to live in — which is why people end up here.',
+    premise: 'Cheap to land in and easy to leave; nobody here is holding on to much.',
     roleTitles: {
       miller: 'Mill-hand',
       baker: 'Oven-keeper',
@@ -171,7 +185,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Highcross',
-    premise: 'Four roads meet here; nobody stays long enough to be missed.',
+    premise: 'Four roads meet — a trade is something you do while you are passing through.',
     roleTitles: {
       miller: 'Grinder',
       baker: 'Baker',
@@ -183,7 +197,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
   },
   {
     name: 'Coldharbour',
-    premise: 'The last stop before nowhere; people arrive here on purpose or not at all.',
+    premise: 'The last stop: people take what work there is until they decide to go.',
     roleTitles: {
       miller: 'Grinder',
       baker: 'Baker',

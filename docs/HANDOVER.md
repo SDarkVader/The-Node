@@ -171,6 +171,18 @@ which is the only reason it keeps getting caught — 151 of 560 allocations fail
 `FLOUR_PER_BREAD` is the free parameter that absorbs adjustment; the role allocation is
 chosen on design grounds and should not be bent to fix the chain.
 
+**Stability is the floor, not the goal.** Most of this session optimised for stability, and
+that work is necessary — but a perfectly stable shard is a placid idle game. Time and
+migration are the antagonists; the pressure is supposed to bite. Do not treat "more stable"
+as automatically better: a change that calms the equilibrium by removing pressure (longer
+tenure, softer consolidation, cheaper migration) may improve every metric here while making
+the game worse. Nothing in this repo measures whether anything is still at stake.
+
+**Shard premises explain shared behaviour socially; they never imply different mechanics.**
+All shards run identical constants. A premise gives a local *reason* for the same turnover
+and decline (debt, shift rotation, transience, affordability), not a different rate. Test for
+any new one: could this be true of a place whose numbers are identical to everywhere else?
+
 **Miller scarcity is a design pillar, not a tunable.** Several candidates score better on
 coherence margin purely by adding Millers. Those were rejected repeatedly and deliberately —
 including one that was otherwise identical to the incumbent on every outcome metric.

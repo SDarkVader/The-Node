@@ -2253,6 +2253,45 @@ legible. Without it the grid would have reported a "winner" with no way to see t
 the live configuration only on a metric the live configuration had just lost for an
 unrelated reason.
 
+## Stability is the floor, not the goal (2026-08-11) — and what premises may claim
+
+Two related design positions, both user-stated, both worth recording because they cut
+against the direction a lot of this session's work naturally pulls.
+
+**1. "Migration flips the script on any stability remaining Farmville — because time is a
+bitch."** Nearly everything built this session optimised for stability: the opportunity
+valve, the shard registry, the consolidation fix, the coherence filter. That work is
+necessary but it is not the objective. A perfectly stable shard is a placid idle game.
+Stability is the **floor** — the guarantee that the world does not collapse or ossify — while
+**time and migration are the antagonists** that keep it from settling. The exit ticket taking
+weeks, roles churning underneath you, districts consolidating irreversibly, people leaving
+for other shards: those are the pressure, and they are supposed to bite.
+
+Practical consequence for future tuning: do **not** treat "more stable" as automatically
+better. If a change makes the equilibrium calmer by removing pressure — longer role tenure,
+softer consolidation, cheaper migration — it may be making the game worse while making the
+numbers look nicer. The metrics in this repo can measure stability; none of them can measure
+whether anything is still at stake.
+
+**2. Shard premises describe social explanation, never mechanical difference.** User's
+framing: "relate social economics within different communities that produce the same
+outcomes socially without changing the logic." Every shard runs identical constants, so a
+premise's job is to explain shared behaviour through a *local self-understanding*, not to
+imply a rate the code does not have.
+
+An earlier draft of the twelve characters failed this. Premises described physical conditions
+— "nobody stays long enough to be missed" (Highcross), "your neighbours hear most of what you
+do" (The Terraces) — which read as higher churn and tighter rumour proximity respectively.
+Identical mechanics do not honour that, so the flavour was writing a promissory note the
+simulation would not pay. Rewritten so all twelve explain the *same* turnover, word-of-mouth
+and decline through different community logic: debt (Threadneedle), shift rotation
+(Underhill), transience (Highcross), affordability (Fairweather), disputed jurisdiction
+(Ninefold).
+
+**The test for any new character**: could this sentence be true of a place whose numbers are
+identical to every other place? If it implies different numbers, rewrite it — or accept that
+you are proposing Tier 2, which is blocked on research question 10.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
