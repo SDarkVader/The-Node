@@ -140,10 +140,19 @@ existing roles*, not expanding the roster — but it is also the easiest place t
 over-build, so keep it to whatever makes them distinct and fun to hold, not a full economy
 each.
 
-**4. Physical building relocation on MERGE.** A merged district's buildings stay in place,
+**4. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ
+in name and local role framing (`engine/shardIdentity.ts`, `npm run shard-identity-report`) —
+Miller and Baker keep recognisable titles as the economic spine, the other four are reframed
+locally so a migrant's knowledge is partially wrong. Mechanics are identical everywhere, and
+that is enforced structurally: `world.ts` cannot import the module, and a test proves it.
+**Tier 2 (per-shard mechanical differences) is blocked** on research question 10 —
+`chooseMigrationDestination` assumes shards are interchangeable, so the moment they differ in
+quality the simulation would report a stability it is no longer testing.
+
+**5. Physical building relocation on MERGE.** A merged district's buildings stay in place,
 permanently friction-penalised, rather than relocating capacity into a surviving district.
 
-**5. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
+**6. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
 monuments) — not started.
 
 **Still open from before, unchanged:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8 week

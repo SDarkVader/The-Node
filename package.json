@@ -19,6 +19,7 @@
     "district-role-sweep": "tsx src/sim/districtRoleSweep.ts",
     "multi-shard-role-district-sweep": "tsx src/sim/multiShardRoleDistrictSweep.ts",
     "wealth-inequality-report": "tsx src/sim/wealthInequalityReport.ts",
+    "shard-identity-report": "tsx src/sim/shardIdentityReport.ts",
     "resource-report": "tsx src/sim/resourceReport.ts",
     "district-layout-comparison": "tsx src/sim/districtLayoutComparison.ts",
     "joint-grid-search": "tsx src/sim/jointGridSearch.ts",

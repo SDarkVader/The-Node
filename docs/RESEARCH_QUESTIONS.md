@@ -176,6 +176,36 @@ the simulation — Import/Export's route detection uses an aggregate stand-in
 
 ---
 
+## 10. Do players chase the *best* shard, or the most *interesting* one? — **LOAD-BEARING (blocks Tier 2 diversity)**
+
+**What we assume:** that shards are **interchangeable**. `chooseMigrationDestination` picks
+by dormancy first, then lowest population — it has no concept of a player preferring one
+shard over another on any quality, and no way to express such a preference.
+
+**Why it matters:** that assumption is safe only while every shard is genuinely identical,
+which is true today. The moment shards differ in more than name (Tier 2 — per-shard role
+counts, scarcity, or conditions), the assumption silently becomes false, and the simulation
+would keep reporting a stable population equilibrium it is no longer actually testing.
+
+**The specific risk:** diversity has to be *lateral* (different in character) rather than
+*vertical* (different in quality). If one shard is simply a better place to live, migration
+stops being a redistribution mechanism and becomes a gradient everyone flows down — which
+would undo the population equilibrium that `opportunityAdjustedMigrationStep` was built to
+fix. Worse, the current model cannot detect that happening, because it never models choosing.
+
+**What we did about it for now:** shipped **Tier 1 only** — shards differ in name and local
+framing, with identical mechanics, enforced structurally (`world.ts` cannot even import
+`shardIdentity.ts`; see `test/shardIdentity.test.ts`). That delivers cross-shard diversity
+and the "a migrant's knowledge is partially wrong" effect with zero calibration risk, and
+deliberately leaves Tier 2 blocked on this question.
+
+**What would answer it:** research on server/realm selection in games that offer meaningfully
+different realms; whether players optimise for advantage or for social fit and novelty. If
+they optimise for advantage, Tier 2 needs a migration-preference model *before* any shard is
+allowed to differ mechanically.
+
+---
+
 ## Cross-cutting note on method
 
 Several of these share a failure mode worth naming: **the simulation models compliance as
@@ -187,3 +217,8 @@ otherwise.
 
 Conversely, questions 3, 4, 7, 8 and 9 are calibration: the model *can* explore them, and
 the sweep infrastructure already exists to do so once a target is known.
+
+Question 10 is a third kind again: the model does not merely fail to answer it, it **encodes
+a specific answer already** (shards are interchangeable) without that ever having been a
+decision. Those are the most dangerous assumptions in any simulation — not the ones known to
+be uncertain, but the ones baked in as structure and never noticed.
