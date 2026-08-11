@@ -206,6 +206,25 @@ allowed to differ mechanically.
 
 ---
 
+## 11. Where does a persistent, ambitious player put that ambition? — **LOAD-BEARING**
+
+**What we assume:** nothing — and that is the problem. There is **no reputation system in the
+code at all**. Containment against domination works (see `docs/ADVERSARIAL_CONTAINMENT.md`),
+but a patient, invested player currently has no legitimate channel for ambition whatsoever.
+
+**Why it matters:** this may be a worse failure than the domination risk it is protecting
+against. The players most willing to invest years are the ones with least to do. Constraint 6
+already fixes the *shape* any answer must take (additive only, never subtractive, never
+pushing anyone below their floor) and constraint 4 fixes where legacy may live (public
+collectively-witnessed events persist; private judgements never do). The design is specified
+and unbuilt.
+
+**What would answer it:** research on prestige and legacy systems that confer standing
+without conferring power over others — the distinction is the whole difficulty, and most
+existing games collapse it.
+
+---
+
 ## Cross-cutting note on method
 
 Several of these share a failure mode worth naming: **the simulation models compliance as
@@ -217,6 +236,10 @@ otherwise.
 
 Conversely, questions 3, 4, 7, 8 and 9 are calibration: the model *can* explore them, and
 the sweep infrastructure already exists to do so once a target is known.
+
+Question 11 is the mirror of the rest: not "is our number right" but "is there anything here
+for our most invested players to want". Simulation cannot raise it either, because nothing in
+the model has ambition.
 
 Question 10 is a third kind again: the model does not merely fail to answer it, it **encodes
 a specific answer already** (shards are interchangeable) without that ever having been a

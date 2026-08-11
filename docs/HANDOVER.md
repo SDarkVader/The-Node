@@ -171,6 +171,15 @@ which is the only reason it keeps getting caught — 151 of 560 allocations fail
 `FLOUR_PER_BREAD` is the free parameter that absorbs adjustment; the role allocation is
 chosen on design grounds and should not be bent to fix the chain.
 
+**Containment of adversarial players rests on properties that are easy to remove by
+accident.** See `docs/ADVERSARIAL_CONTAINMENT.md`. In short: wealth is currently a scoreboard
+that buys nothing, sabotage is uniform-random and cannot be aimed at a person, roles are
+single-occupancy and rotate by churn/conscription regardless of merit. Those three are what
+stop a determined player taking a quiet shard apart — and two of them are **incidental**,
+not designed. Making wealth spendable or sabotage targetable would each break it, and neither
+would look dangerous in isolation. Re-verify containment whenever either is touched, the same
+way supply-chain coherence is re-verified after a config change.
+
 **Stability is the floor, not the goal.** Most of this session optimised for stability, and
 that work is necessary — but a perfectly stable shard is a placid idle game. Time and
 migration are the antagonists; the pressure is supposed to bite. Do not treat "more stable"
