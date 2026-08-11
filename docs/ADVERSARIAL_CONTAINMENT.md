@@ -212,8 +212,15 @@ Two consequences follow directly, and both are already constraints:
 User's closing point, and the keystone of the whole design: *"the biggest benefit is you are
 just known everywhere, and also the biggest risk."*
 
+**The risk is to the famous player themselves, not a risk they pose to everyone else.** This
+matters and is easy to misread: "biggest risk" does not mean known players are dangerous to
+the community and need checking. It means fame is a bet the player places *on themselves*.
+Reading it the other way invites a mechanic that penalises the well-known — which would be
+subtractive, would violate constraint 6, and would invert the design.
+
 Reputation's payoff is that strangers will act with you without being briefed — which is the
-only route to anything ambitious. Its cost is that the same visibility makes you **legible**.
+only route to anything ambitious. Its cost, borne entirely by the person who earned it, is
+that the same visibility makes them **legible**.
 A known player cannot move quietly. Every pattern they run is watched by people who already
 know to watch them, and every action they take is the kind that gets witnessed and
 remembered.
