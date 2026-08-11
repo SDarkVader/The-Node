@@ -1617,6 +1617,91 @@ behavior; `splitBakerDemand`'s scale-invariant relative-shares property, the mec
 the whole tightening relies on). 174 tests total, all passing; `npm run typecheck` clean.
 Golden-value snapshot regenerated again — same deliberate-change discipline as above.
 
+## 5-role roster + grifter pool (2026-08-11) — built, but its own sweep surfaced a bigger unresolved problem
+
+**Roster.** User-specified directly: Miller, Baker, Courier, Journalist, Detective, plus
+roleless "grifters" (community players), individually tracked for the first time
+(`GrifterSlot: { id, wealth, daysAsGrifter }`) — a deliberate expansion of Phase B's
+earlier scoping decision to leave the gossip layer aggregate-only. Miller/Baker keep their
+existing Cournot/Bertrand mechanics; Courier/Journalist/Detective get a flat
+`SUPPORT_ROLE_DAILY_WAGE` (`wealth.ts`) — no differentiated economic mechanic is designed
+for any of the three anywhere in this project, flagged as a placeholder standing in for
+three genuinely different unbuilt economies. `GRIFTER_DAILY_INCOME` is the roleless floor,
+below every role's wage but strictly positive (constraint 2).
+
+**Mechanism.** `sim/multiRoleConscription.ts` (new file) generalizes the existing 2-role
+`conscriptionHarness.ts`'s `stepConscriptionDay` to N roles sharing one real grifter pool,
+reusing `vacancy.ts`'s `stepSlot`/`fillHazard` unmodified. The old function is untouched.
+Churn returns a role-holder to the grifter pool (they're still present, just roleless);
+BACKSTOPPED slots draft from grifters or evict another role's FILLED member, generalizing
+the old Miller-only-conscription/gossip-vs-other-role weighting symmetrically across all 5
+roles. Role-to-building assignment is now district-aware (round-robins across all 5 roles
+through the district-ordered building sequence, replacing "first N buildings in generation
+order"). `wealthGini`/`wealthTop10Share` now span all 5 roles + grifters — every
+identity-bearing player — widened from the old Miller+Baker-only scope now that grifters
+have individual wealth to include. `wealthTaxRate`/`wealthCap` stay scoped to Miller+Baker
+only, an explicit open scoping question, not silently decided either way.
+
+**A real bug found and fixed, then formalized as a test.** Module-level tests for
+`multiRoleConscription.ts` verified arithmetic pool conservation but never checked
+non-negativity. `fillHazard`'s willingness math has no concept of a real, finite, shared
+candidate pool (never needed one with only 2 roles, each with its own abstracted "N-R"
+count). With 5 roles drawing from one real pool, multiple roles could independently roll a
+genuine fill the same day and jointly overdraw it — slots flipped to FILLED without a real
+grifter behind them, breaking population conservation. Fixed by gating voluntary fills on
+real same-day availability, same pattern already used for the grifter-sourced conscription
+branch. `grifters.length + total FILLED across all 5 roles == population` is now an
+explicitly tested invariant, every tick, across long runs and multiple seeds.
+
+**Bigger finding, deliberately not resolved here.** `src/sim/districtRoleSweep.ts` (built
+to derive the role-slot allocation and district count from simulation, as asked, not
+guess them) shows population collapsing well below `targetPopulation=65` at *every*
+role-split candidate tested — current default settles around **26.6**, others range
+roughly **7 to 37** over a 2000-day/3-seed run. Confirmed this is not a 5-role-specific
+artifact: the same S=24 split (Miller=8/Baker=16, matching the pre-existing default) run
+through the NEW kernel still settles around 28. Confirmed separately that some drift
+already existed in the OLD, pre-session, already-validated 2-role kernel too — running the
+actual pre-session code unmodified (`git stash`) over the same window shows it settling
+around 46, not 65 — so `world.ts`'s composed kernel apparently never got checked at this
+timescale before (its own tests never ran past a few hundred ticks). The NEW kernel's
+drift is considerably worse.
+
+Root cause: `vacancyParamsFor`'s `N` uses the static `config.targetPopulation` (a
+pre-existing simplification, untouched here), so `fillHazard`'s fill probability is
+numerically identical old vs. new. The only actual difference is the correctness fix
+above — a successful roll can now be vetoed when there's no real grifter to fill it. Once
+population drifts down for any reason, the now-finite, now-shared-across-5-roles grifter
+pool shrinks too, the veto bites more, refills slow further, the roleless fraction
+`migrationValveStep` reacts to rises, emigration pressure increases, population drops
+further. A genuine negative feedback loop toward collapse — see full trace and numbers in
+`docs/DEVLOG.md`'s 2026-08-11 entry.
+
+Also flagged mid-discussion by the user, not yet modeled: shard **arrivals** currently use
+a flat, uncalibrated `arrivalPDaily` constant representing brand-new players, with no
+concept of *existing* players migrating in from elsewhere — while `migrationValveStep`
+gives emigration a real, reactive, population-and-staffing-driven rate. A single-shard
+kernel has no natural pool of "other shards' players" to draw an inflow rate from without
+either simulating multiple shards or modeling an abstracted external pool — an open
+design question, not resolved here, but plausibly a significant piece of the collapse
+above (a real, reactive outflow paired with a flat trivial inflow is inherently unstable).
+
+**Deliberately NOT resolved**: `DEFAULT_WORLD_CONFIG`'s role split (Miller 3/Baker 7/
+Courier 6/Journalist 5/Detective 3, S=24) ships as a working, population-conserving,
+fully-tested default, but is explicitly NOT claimed to be "the cleanest and fairest"
+allocation the user asked to derive — picking one from the sweep would be meaningless
+while population collapses under every candidate regardless of split. The rebalancing
+question (migration valve calibration, arrival model realism, and a still-undesigned 6th
+"Import/Export" role adding a further hard resource constraint on Miller output) needs to
+be settled first.
+
+**Verification.** 26 new tests (support-role wage/grifter income constants;
+`multiRoleConscription.ts` determinism, population conservation, both draft sources,
+no-draftees edge case, the non-negativity fix; world-level 5-role/grifter population
+conservation across long runs and seeds, grifter income floor and `daysAsGrifter`
+tracking, support-role wage and reset-on-new-occupant, district-aware assignment, widened
+wealthGini scope). 200 tests total, all passing; `npm run typecheck` clean. Golden-value
+snapshot regenerated (deliberate, documented) — tick shape and behavior both changed.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

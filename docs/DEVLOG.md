@@ -6,6 +6,113 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — 5-role roster + individually-tracked grifter pool; found the vacancy model's candidate-pool assumption breaks under a real, finite pool
+
+**Context.** User specified the target roster directly: Miller, Baker, Courier,
+Journalist, Detective, plus roleless "grifters" — community players drafted or selected
+into any open role, earning a smaller floor income until they get one, individually
+tracked (unlike the old aggregate-only "gossip layer") specifically so "the effect of
+grifters being under the minimum income floor until they obtain a role" is directly
+measurable. Asked to derive district count and role-slot allocation from simulation
+("test test test"), not guess them.
+
+**Built in layers, testing each before composing.**
+1. `wealth.ts`: `SUPPORT_ROLE_DAILY_WAGE` (flat, calibrated between Miller/Baker's current
+   earnings — Courier/Journalist/Detective have no designed market mechanic anywhere in
+   this project, flagged as an undifferentiated placeholder) and `GRIFTER_DAILY_INCOME`
+   (the floor, positive per constraint 2, below every role's wage).
+2. `sim/multiRoleConscription.ts` (new file): generalizes `conscriptionHarness.ts`'s
+   existing 2-role `stepConscriptionDay` to N roles + one shared grifter pool, reusing
+   `vacancy.ts`'s `stepSlot`/`fillHazard` directly. The old function is untouched, still
+   covered by its own tests.
+3. `world.ts`: wired all 5 roles + individually-tracked `GrifterSlot[]` into the kernel.
+   District-aware building assignment (round-robins across all 5 roles through the
+   district-ordered building sequence, replacing "first N buildings in generation order").
+   `wealthGini`/`wealthTop10Share` widened to span all 5 roles + grifters (every
+   identity-bearing player, now that grifters have individual wealth) —
+   `wealthTaxRate`/`wealthCap` stay scoped to Miller+Baker only, flagged as an open,
+   not-yet-decided widening question, not silently resolved either way.
+
+**Bug found and fixed while writing world-level population-conservation tests.** Module-
+level tests for `multiRoleConscription.ts` verified *arithmetic* pool conservation but
+never checked *non-negativity* — `fillHazard`'s voluntary-fill roll has no concept of a
+real, finite, shared candidate pool (it never needed one when only 2 roles existed and
+each used a separately-abstracted "N-R" candidate count). With 5 roles now drawing from
+one real, shared grifter pool, multiple roles could independently roll a genuine fill the
+same day and jointly overdraw a pool smaller than their combined draws — `world.ts` was
+silently no-op'ing the "no grifter left to pop" case while the slot still flipped to
+FILLED, breaking population conservation. Fixed by gating voluntary fills on real
+same-day pool availability in `multiRoleConscription.ts` (same pattern already used for
+the conscription-from-grifters branch), formalized as its own regression test (pool never
+goes negative under a tight population/role ratio). Population conservation
+(`grifters.length + total FILLED across all 5 roles == population`, every tick) is now
+its own tested invariant at the world level, across long runs and multiple seeds.
+
+**Bigger finding — the fix above is correct, and it exposes something the sweep script
+(`src/sim/districtRoleSweep.ts`, built to derive the role-slot allocation as asked)
+surfaced immediately: population collapses to well below `targetPopulation` at every
+role-split candidate tested, not just an unlucky one.** At the current illustrative
+default (Miller 3/Baker 7/Courier 6/Journalist 5/Detective 3, S=24), `population` settles
+around **26.6** over a 2000-day run — not near 65. Every other candidate split tested
+(even split, Miller/Baker-heavy, support-heavy, S=18, S=30) shows the same pattern,
+landing anywhere from ~7 to ~37. **This is not new behavior specific to the 5-role split —
+confirmed by running the SAME S=24 (Miller=8/Baker=16, matching the pre-existing default)
+through the new kernel: population still settles around 28, not 65.** Confirmed further
+by running the actual pre-session code (`git stash`, then `npm run role-ratio-sweep`
+unmodified) over the same 2000-day/3-seed window: even the OLD, already-validated 2-role
+kernel settles at **meanPop=46**, not 65 — so some population drift below target was
+already a real, pre-existing, apparently never-noticed-at-this-timescale property of the
+composed `world.ts` kernel (its own tests never ran past a few hundred ticks). The NEW
+kernel's drift is considerably worse (26-28 vs. 46 for a comparable role-slot count).
+
+**Root cause, traced not guessed**: `vacancyParamsFor`'s `N` parameter has always used the
+*static* `config.targetPopulation` (a pre-existing simplification, flagged in `world.ts`'s
+own comments, not touched in this pass) — so `fillHazard`'s probability of a voluntary
+fill succeeding on a given day is numerically identical between the old and new kernels,
+same formula, same inputs. The only actual difference is the fix above: a successful roll
+can now be vetoed when there's no real grifter to fill it. Once population starts to
+drift down for any reason (including the pre-existing drift the old kernel already had),
+the grifter pool — now finite and shared across 5 roles instead of an infinite abstraction
+per role — shrinks too, making the veto bite more often, slowing refills further, raising
+the roleless fraction `migrationValveStep` reacts to, which increases emigration pressure,
+which shrinks population further. A genuine, real negative feedback loop toward
+population collapse — exactly what constraint 2 ("no permanent zero-state... whether
+that's a player, a role-slot, or eventually a whole shard") warns about, now demonstrated
+in simulation rather than theorized.
+
+**Deliberately NOT resolved in this pass.** Picking a "fairest" role-slot allocation from
+`districtRoleSweep.ts`'s numbers would be meaningless while population is spiraling
+downward under every candidate — the more fundamental problem is
+`migrationValveStep`'s theta/k calibration (and/or `fillHazard`'s beta/tPain/tHard),
+validated against an assumption (an effectively infinite abstract candidate pool) that no
+longer holds now that the pool is real and finite. `DEFAULT_WORLD_CONFIG`'s role split
+(Miller 3/Baker 7/Courier 6/Journalist 5/Detective 3) stays as shipped — a working,
+tested, population-conserving default — but is NOT claimed to be "the cleanest and
+fairest" the user asked to derive; that derivation needs the rebalancing question settled
+first. Flagged here and in `BLUEPRINT.md`'s "5-role roster" entry rather than silently
+picking numbers from a sweep whose premise turned out to be undermined by something
+bigger. Reported directly to the user rather than pushed past.
+
+**Also mid-discussion, not yet built**: the user separately raised a 6th role
+(Import/Export — receives a new resource ("nodules") daily, converts to grain for Miller,
+controls legal/illegal shard-to-shard movement tied to the existing postcard/tier exit-
+ticket system, gated by a 24/7 randomized-behavior detection mechanic). Explicitly asked
+to "think it through before moving further" — no code written for this yet; see chat
+history for the design discussion and open questions (what forces player interaction
+with Import/Export specifically; whether to fold nodules into the same rebalancing pass
+as the population-collapse finding above, since nodules would add a second hard resource
+constraint on top of an already-fragile equilibrium).
+
+**Verification.** 26 new tests across `wealth.ts` constants, `multiRoleConscription.ts`
+(determinism, population conservation, both draft sources occurring, no-draftees edge
+case, the non-negativity fix), and `world.ts` (5-role/grifter population conservation
+across long runs and seeds, grifter income floor and `daysAsGrifter` tracking, support-role
+wage and reset-on-new-occupant, district-aware assignment, widened wealthGini scope).
+200 tests total, all passing; `npm run typecheck` clean. Golden-value snapshot
+regenerated twice (deliberate, documented) as the tick's shape and behavior changed.
+
+---
+
 ## 2026-08-11 — Tightened the purchase cycle, swept first, found a precise scale-invariance property
 
 **Context.** Direct follow-up to the Baker demand model fix: "tighten the purchase cycle

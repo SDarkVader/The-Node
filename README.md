@@ -61,19 +61,29 @@ price and watch your customers drift next door. It's a smaller, steadier
 kind of pressure than Miller's, but it's real, and it's felt by everyone who
 eats bread, which is everyone.
 
-**Couriers, and the rest of the trades** keep everything else moving.
-These are the "stable" roles — three or four people deep, less
-individually exposed than Miller, but no less necessary. A slow Courier
-shift is a Baker running short on flour by evening.
+**Couriers, Journalists, and Detectives** keep everything else moving —
+three "stable" roles, less individually exposed than Miller, no less
+necessary. A slow Courier shift is a Baker running short on flour by
+evening. What each of them actually *does*, day to day, is still being
+worked out — right now they share a flat wage, a deliberate placeholder
+until each gets its own real mechanic, the same way Miller and Baker did.
+
+**Everyone else is a community player — a "grifter," in the project's own
+shorthand** — with no role at all, yet. Not sitting outside the economy:
+grifters still earn something every day, just less than any role does,
+and they're the pool every open role gets filled from — drafted, if
+nobody volunteers first. Nobody stays a grifter forever by design, and
+nobody who is one goes without, however thin the margin.
 
 None of these roles are permanent. Anyone can quit, log off for good,
-disappear. The node doesn't stop for them, but it doesn't pretend nothing
-happened either.
+disappear — including out of a role and back into the grifter pool, not
+out of the node entirely. The node doesn't stop for them, but it doesn't
+pretend nothing happened either.
 
-None of these roles are fixed, either. Miller and Baker are real and
-built; Courier and the rest are placeholders for a wider roster still
-being designed, deliberately. The specific list will grow — the principle
-that every role produces something someone else needs won't change.
+The specific roster (five roles plus the grifter pool) is real and built
+now, but exactly how many of each role a node should hold, and how many
+districts a node should have, is still being worked out — the mechanics
+are in place, the actual balance isn't settled yet.
 
 Staying in a role is its own kind of investment. The longer you hold one
 without interruption, the better you actually get at it — a real,
@@ -276,9 +286,22 @@ hours, dampened not stopped, "for RL"). The purchase cycle was then swept
 and tightened further, bringing the earnings gap down to roughly 1-2x —
 a proven property turned up along the way: tightening it narrows the gap
 *between* Millers and Bakers but does nothing for inequality *among*
-bakers themselves, since relative demand shares don't change. See
-`docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 174 automated tests cover all of it.
+bakers themselves, since relative demand shares don't change.
+
+The full 5-role roster (Miller, Baker, Courier, Journalist, Detective)
+plus an individually-tracked "grifter" pool for roleless community
+players is now built and wired into the world kernel — every role can
+draft an open slot from the grifter pool or from another role's holder,
+not just Miller as before. **A real, honestly-reported finding came out
+of deriving how many of each role a node should hold**: population
+collapses well below its target at every allocation tested, because the
+grifter pool is now a real, finite, shared resource for the first time —
+exposing that the migration system's calibration assumed an effectively
+infinite one. Not silently patched with a guessed number; the actual
+role/district allocation stays a working default, not a final answer,
+until that's resolved. See `docs/HANDOVER.md` and `docs/BLUEPRINT.md`
+for the full numbers, citations, and open questions left. 200 automated
+tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -289,15 +312,16 @@ playable form.
 
 ```
 npm install
-npm test               # 174 tests
+npm test               # 200 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
-npm run conscription-sim # Miller conscription sweep (delay x N)
+npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
 npm run ecosystem-sim   # combined economic-health / sabotage-detection comparison
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim        # the unified kernel — market + vacancy + ecosystem, one running world
-npm run role-ratio-sweep # role-slot/population ratio outcomes — data, not a recommendation
+npm run role-ratio-sweep # old 2-role Miller/Baker ratio sweep — superseded by the one below
+npm run district-role-sweep # 5-role + grifter-pool allocation/district sweep
 npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
 npm run mvp             # two-Baker + rumour-mill scenario, CLI, day-by-day output
 npm run server          # WebSocket server for the Godot client to connect to
