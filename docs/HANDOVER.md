@@ -201,6 +201,16 @@ not designed. Making wealth spendable or sabotage targetable would each break it
 would look dangerous in isolation. Re-verify containment whenever either is touched, the same
 way supply-chain coherence is re-verified after a config change.
 
+**The economy is the board, not the game — keep it computable.** All the stabilisation work
+in this repo exists so players can *reason* about the world: work out what flour will cost,
+when a slot opens, what a district's decline implies. Do not add hidden modifiers or
+unlearnable rules to "add mystery" — the mystery is supposed to live in other people (allies
+who cannot be briefed, intel that expires, witnesses who may not be there), not in obscured
+arithmetic. The target is **calculable but not solvable**: a player should be able to compute
+the odds and still not know the answer. See `ADVERSARIAL_CONTAINMENT.md`'s "deeper calculus"
+section — it also gives the first concrete design target the Detective/Journalist roles have
+had ("caught less than you succeed", as a career ratio, not a per-attempt probability).
+
 **Stability is the floor, not the goal.** Most of this session optimised for stability, and
 that work is necessary — but a perfectly stable shard is a placid idle game. Time and
 migration are the antagonists; the pressure is supposed to bite. Do not treat "more stable"
