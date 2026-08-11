@@ -230,6 +230,43 @@ describe('createWorld — configuration errors are real, not silently swallowed'
   });
 });
 
+describe('stepWorld — sabotage timing is a hazard, not a learnable clock', () => {
+  it('preserves the configured expected frequency', () => {
+    let events = 0;
+    const DAYS = 3000;
+    const SEEDS = [1, 2, 3];
+    for (const seed of SEEDS) {
+      let w = createWorld(seed, DEFAULT_WORLD_CONFIG);
+      for (let i = 0; i < DAYS; i++) {
+        w = stepWorld(w);
+        if (w.lastSabotage) events++;
+      }
+    }
+    const meanInterval = (DAYS * SEEDS.length) / events;
+    expect(meanInterval).toBeGreaterThan(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 0.75);
+    expect(meanInterval).toBeLessThan(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 1.25);
+  });
+
+  it('has no learnable period — intervals vary rather than repeating a fixed cadence', () => {
+    // Regression for a real vulnerability: sabotage used to fire on
+    // `day % sabotageCadenceDays === 0`, a covert mechanic on a public timetable that any
+    // player tracking dates would learn within two cycles. A fixed clock yields exactly one
+    // distinct interval; a hazard yields many.
+    const gaps: number[] = [];
+    let w = createWorld(4, DEFAULT_WORLD_CONFIG);
+    let last = -1;
+    for (let i = 0; i < 4000; i++) {
+      w = stepWorld(w);
+      if (w.lastSabotage) {
+        if (last >= 0) gaps.push(i - last);
+        last = i;
+      }
+    }
+    expect(gaps.length).toBeGreaterThan(20);
+    expect(new Set(gaps).size).toBeGreaterThan(10);
+  });
+});
+
 describe('wealth tracking — the new stock variable on top of the market\'s existing flow variables', () => {
   it('everyone starts at zero wealth — perfect equality, honestly, not undefined', () => {
     const world = createWorld(1);
@@ -367,12 +404,18 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
   });
 
   it('wealthCap=undefined (the default) is a true no-op — no bound applied', () => {
-    let world = createWorld(1, { ...DEFAULT_WORLD_CONFIG, wealthCap: undefined });
-    for (let i = 0; i < 300; i++) world = stepWorld(world);
-    const maxWealth = Math.max(...[...world.millers, ...world.bakers].map((m) => m.wealth));
-    // With no cap over a 300-day run, at least someone should exceed a value that would
-    // be an artificially low "accidental" cap — proves nothing is silently bounding it.
-    expect(maxWealth).toBeGreaterThan(5);
+    // Tests the property directly rather than against a magic threshold: run the same seed
+    // capped and uncapped, and the uncapped run must exceed the cap the other one enforced.
+    // (A previous version asserted max wealth > 5, which sat close enough to the real value
+    // that an unrelated RNG change flipped it — a brittle test, not a real regression.)
+    const CAP = 3;
+    const maxWealth = (cap: number | undefined) => {
+      let w = createWorld(1, { ...DEFAULT_WORLD_CONFIG, wealthCap: cap });
+      for (let i = 0; i < 300; i++) w = stepWorld(w);
+      return Math.max(...[...w.millers, ...w.bakers].filter((s2) => s2.slot.state === 'FILLED').map((m) => m.wealth));
+    };
+    expect(maxWealth(CAP)).toBeLessThanOrEqual(CAP + 1e-9);
+    expect(maxWealth(undefined)).toBeGreaterThan(CAP);
   });
 
   it('config.purchaseCycleDays actually overrides wealth.ts\'s own default, not silently ignored', () => {

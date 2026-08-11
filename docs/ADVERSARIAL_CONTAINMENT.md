@@ -59,6 +59,52 @@ positive, the vacancy backstop keeps unstaffed slots productive, and
 `CONSOLIDATION_FRICTION_FLOOR` never reaches zero access. There is no mechanism by which one
 player reduces another player's baseline. **The worst anyone can do is decline to elevate.**
 
+### 5. Direct channels cannot carry a plan — **the answer to information-brokering**
+
+The stated exploit is specific: *"I used information to know what people were going to do
+before they decided amongst themselves ... because it was directly accessible through direct
+channels."* That is information-brokering — aggregating private communications to front-run a
+group decision.
+
+NODE's private channel is the **Envelope**, and its entire payload is:
+
+```ts
+export interface Envelope { id; fromId; toId; state: SelfState; day; opened }
+```
+
+`SelfState` is one of ten first-person feelings ("I feel isolated", "I feel exploited").
+There is **no free text, no subject, and no third-party reference anywhere in the grammar** —
+`grammar.ts` states this as a structural rule and `test/grammar.test.ts` asserts the whole
+table rather than spot-checking it.
+
+So a player who successfully taps every private channel in the shard obtains a **distribution
+of moods, not a set of intentions**. They cannot learn what the group will decide, because the
+vocabulary is incapable of expressing a decision. This is the strongest anti-brokering
+property in the design, and unlike wealth-inertness it *is* deliberate.
+
+**Tripwire:** adding free text, a subject slot, or any third-party reference to the grammar
+would convert direct channels into exactly the vector described above. This is the single
+change most likely to be requested for "expressiveness" and most damaging if granted.
+
+### 6. Fixed schedules — **a real vulnerability, now fixed**
+
+Found while auditing this: sabotage fired on `day > 0 && day % sabotageCadenceDays === 0` —
+a **covert mechanic running on a perfectly public 20-day timetable**. Any player tracking
+dates learns it within two cycles and can plan around or exploit it. That directly
+contradicted the treatment already given to interception in `importExport.ts` (stateless,
+jittered, "no pattern to learn because nothing persistent generates one").
+
+**Fixed** by making the opportunity a per-day hazard of `1 / sabotageCadenceDays`. Expected
+frequency is mathematically unchanged — verified at 1 per 20.3 days against a cadence of 20 —
+so no calibration moves; only predictability is removed. Measured 88 distinct interval
+lengths where a fixed clock gives exactly 1. Locked by two regression tests.
+
+**Deliberately left deterministic**, because these are *civic* timers that everyone is
+supposed to be able to read: the vacancy flag at `tFlag`, the backstop at `tHard`, the
+conscription delay, and the district-consolidation grace period. Public pressure only works
+if the clock is public. The distinction that matters: **overt mechanics may be predictable;
+covert ones must not be.**
+
 ---
 
 ## The gap: the reach they *want* does not exist

@@ -171,6 +171,19 @@ which is the only reason it keeps getting caught — 151 of 560 allocations fail
 `FLOUR_PER_BREAD` is the free parameter that absorbs adjustment; the role allocation is
 chosen on design grounds and should not be bent to fix the chain.
 
+**Covert mechanics must not run on learnable clocks; overt ones may.** Sabotage used to fire
+on `day % sabotageCadenceDays === 0` — a covert mechanic on a public 20-day timetable, which
+any player tracking dates learns in two cycles. Now a per-day hazard of `1/cadence`: identical
+expected frequency (verified 1 per 20.3 days), no learnable period. The vacancy flag, backstop,
+conscription delay and consolidation grace period are deliberately left deterministic — those
+are civic timers and public pressure only works if the clock is public.
+
+**Direct channels cannot carry a plan, and that is load-bearing.** An `Envelope` payload is a
+single `SelfState` — ten first-person feelings, no free text, no subject, no third-party
+reference. Tapping every private channel yields a distribution of moods, never intentions.
+Adding free text or a subject slot for "expressiveness" would convert direct channels into an
+information-brokering vector; treat that request as a containment change, not a UX one.
+
 **Containment of adversarial players rests on properties that are easy to remove by
 accident.** See `docs/ADVERSARIAL_CONTAINMENT.md`. In short: wealth is currently a scoreboard
 that buys nothing, sabotage is uniform-random and cannot be aimed at a person, roles are

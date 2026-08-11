@@ -1033,7 +1033,16 @@ export function stepWorld(world: World): World {
   let population = world.population;
   let lastSabotage: SabotageLogEntry | null = null;
 
-  if (day > 0 && day % config.sabotageCadenceDays === 0) {
+  // Sabotage opportunity arrives as a HAZARD, not on a clock (2026-08-11). It previously
+  // fired on `day % sabotageCadenceDays === 0` — a covert mechanic running on a public
+  // timetable, which any player tracking dates would learn within a couple of cycles and
+  // could then plan around or exploit. That directly contradicts the treatment already
+  // given to interception in `importExport.ts` (stateless, jittered, "no pattern to learn
+  // because nothing persistent generates one"); this is the same principle applied to
+  // timing rather than to probability. Expected frequency is unchanged — a 1/cadence daily
+  // hazard has the same mean interval as a fixed cadence — so no calibration moves; only
+  // predictability is removed.
+  if (day > 0 && rng() < 1 / config.sabotageCadenceDays) {
     const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters });
     if (filled.length > 0) {
       const targetIdx = Math.floor(rng() * filled.length);
