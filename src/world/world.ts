@@ -84,6 +84,7 @@ import {
   CONSOLIDATION_GRACE_DAYS,
   type DistrictHealth,
 } from '../engine/districtConsolidation.js';
+import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
 import { stepBakers } from '../engine/bakers.js';
 import {
@@ -687,10 +688,15 @@ export function stepWorld(world: World): World {
   ];
   const districtHealth: Record<string, DistrictHealth> = {};
   const newlyMergedDistrictIds: string[] = [];
+  // Captured alongside districtHealth so District Weather (below) reads the identical
+  // filled-fraction signal districtConsolidation.ts computed, rather than measuring it a
+  // second time — see districtWeather.ts's header.
+  const districtFilledFractionById: Record<string, number> = {};
   for (const d of world.shard.districts) {
     const districtSlots = allRoleSlotsForHealth.filter((s) => buildingDistrictId.get(s.buildingId) === d.id);
     const filledCount = districtSlots.filter((s) => s.slot.state === 'FILLED').length;
     const fraction = districtFilledFraction(filledCount, districtSlots.length);
+    districtFilledFractionById[d.id] = fraction;
     const prevHealth = world.districtHealth[d.id] ?? initialDistrictHealth();
     const nextHealth = stepDistrictHealth(prevHealth, fraction, day);
     districtHealth[d.id] = nextHealth;
@@ -1085,6 +1091,25 @@ export function stepWorld(world: World): World {
     }
   }
 
+  // ---- District Weather (2026-08-11, Design Addendum item 0/3) -----------------------
+  // Reads the SAME fraction/health this tick already computed in Stage 1b, plus whether
+  // sabotage just landed in a district this tick — no second measurement, no invented
+  // signal. Computed here (after sabotage resolves, before it's too late to reflect today's
+  // spike) and applied to `world.shard` below, which Stage 1's own comment used to describe
+  // as "static geography... Phase B doesn't move anyone" — weather is the one thing that now
+  // does change on it every tick, deliberately: it's per-district climate, not geometry.
+  const sabotagedDistrictId = lastSabotage ? buildingDistrictId.get(lastSabotage.targetBuildingId) : undefined;
+  const localTensions: Record<string, number> = {};
+  for (const d of world.shard.districts) {
+    localTensions[d.id] = localDistrictTension(
+      districtFilledFractionById[d.id] ?? 1,
+      districtHealth[d.id]!.state,
+      d.id === sabotagedDistrictId,
+    );
+  }
+  const weatherField = districtTensionField(world.shard, localTensions);
+  const shardWithWeather = stepDistrictWeather(world.shard, weatherField, day);
+
   let lastNewArrivals = 0;
   if (rng() < config.arrivalPDaily) {
     population += 1;
@@ -1189,7 +1214,10 @@ export function stepWorld(world: World): World {
   return {
     ...world,
     tick: world.tick + 1,
-    shard: world.shard, // static geography — Phase B doesn't move anyone (see header note)
+    // Geography (plots/buildings/coordinates) is still static — Phase B doesn't move
+    // anyone — but weatherHistory is per-district climate, not geometry, and now updates
+    // every tick (see District Weather above).
+    shard: shardWithWeather,
     millers,
     bakers,
     couriers,
