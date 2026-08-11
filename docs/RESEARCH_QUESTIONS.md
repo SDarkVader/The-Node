@@ -239,6 +239,13 @@ what is lost is obscurity, never standing, and obscurity was never part of the p
 baseline (constraint 6 guarantees a floor *of* visibility). Any design where fame *reduces*
 something violates constraint 6.
 
+**Hard requirement, from a trap identified 2026-08-11:** a roleless player must have some way
+to accumulate witnessed action. If reputation accrues only from role activity, grifters have
+no route onto the ladder — no role, no witnessed action, no coordination, no route to a role
+— which converts a temporary position into a caste and violates constraint 2 in spirit even
+while every individual mechanic respects its letter. Reject any design that cannot answer
+this.
+
 **What would answer it:** research on prestige and legacy systems that confer standing
 without conferring power over others — the distinction is the whole difficulty, and most
 existing games collapse it. Also: how coordination forms between strangers under enforced
