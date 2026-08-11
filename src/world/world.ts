@@ -85,6 +85,7 @@ import {
   type DistrictHealth,
 } from '../engine/districtConsolidation.js';
 import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
+import { emptyIdentityLedger, recordEncounter, type IdentityLedger } from '../engine/identity.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
 import { stepBakers } from '../engine/bakers.js';
 import {
@@ -340,6 +341,12 @@ export interface World {
   pendingWallPosts: WallPost[];
   lastRumourEvents: RumourEventLite[];
   lastSabotage: SabotageLogEntry | null;
+  /** Design Addendum item 1 (2026-08-11) — the Silhouette Shield's real trigger condition.
+   *  Directional, per-observer encounter counts fed from real rumour-hearing events (see
+   *  engine/identity.ts's header for why that signal, not a fabricated one). Never touched
+   *  by `player.ts`'s `isKnown()` directly — derive an observer's known-set via
+   *  `identity.ts`'s `resolvedSubjects()` first. */
+  identityLedger: IdentityLedger;
 }
 
 /**
@@ -502,6 +509,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     pendingWallPosts: [],
     lastRumourEvents: [],
     lastSabotage: null,
+    identityLedger: emptyIdentityLedger(),
   };
 }
 
@@ -1211,6 +1219,16 @@ export function stepWorld(world: World): World {
     }
   }
 
+  // Design Addendum item 1 (2026-08-11) — the Silhouette Shield's real trigger. Each rumour
+  // heard is a real, directional event: neighborId (the hearer) becomes one real encounter
+  // closer to resolving post.authorId's (the source's) full identity. The source's own
+  // ledger is untouched by this — see identity.ts's header for why this signal, and why it's
+  // asymmetric by construction rather than by extra bookkeeping.
+  let identityLedger = world.identityLedger;
+  for (const event of lastRumourEvents) {
+    identityLedger = recordEncounter(identityLedger, event.heardBy, event.heardFrom);
+  }
+
   return {
     ...world,
     tick: world.tick + 1,
@@ -1245,5 +1263,6 @@ export function stepWorld(world: World): World {
     pendingWallPosts: [],
     lastRumourEvents,
     lastSabotage,
+    identityLedger,
   };
 }

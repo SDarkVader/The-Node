@@ -3,6 +3,10 @@
  * "Architecture scoped ahead of schedule"). Deliberately thin — a session-scoped id is
  * enough to unblock targeted networking and the binary identity-resolution decision.
  * Real accounts/auth are a separate, later concern, not decided here.
+ *
+ * `isKnown()`'s trigger condition — what actually populates an observer's known-set — is
+ * `engine/identity.ts` (2026-08-11, Design Addendum item 1, "the Silhouette Shield"). This
+ * file is deliberately untouched by that: `isKnown()`'s shape was already right.
  */
 
 export type PlayerId = string;
