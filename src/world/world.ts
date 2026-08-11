@@ -196,9 +196,17 @@ export interface WorldConfig {
 // scarce at 5 of 28. M7-based candidates scored well on coherence margin purely by adding
 // Millers, and were rejected for undermining that design pillar.
 //
-// 11 districts remains a live alternative, not a rejected one: it trades ~1.4% health for
-// ~6% better equality and shorter grifter waits. It was not taken because it thins flour
-// coherence margin markedly (three of eight finalists fail there outright).
+// RE-CONFIRMED 2026-08-11 after the district-consolidation defect was fixed, with this
+// allocation re-entered into the grid as an explicit incumbent baseline. It lost the
+// "coherent at every district count" property it was originally chosen for (1.000 at 11
+// districts), and the natural replacement bought that property back only by adding a
+// Miller — the same scarcity trade already rejected for M7 candidates. Resolved by moving
+// FLOUR_PER_BREAD 0.23 -> 0.20 instead: the allocation is chosen on design grounds, the
+// flour ratio is the free parameter. Margin is now ~15% at 6 districts and coherent at 11.
+//
+// 11 districts remains a live alternative, not a rejected one: post-fix it trades 2.4%
+// health and 1.2% population for 1.7% better equality and 5.0% shorter grifter waits — a
+// real but modest trade, materially weaker than the pre-fix numbers suggested.
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
   rMiller: 5,

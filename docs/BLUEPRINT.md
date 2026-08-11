@@ -2213,6 +2213,46 @@ while the health cost grows to 2.4%, population is 1.2% lower, and coherence mar
 thinner. 11 still wins on grifter wait (-5.0%), so it remains a live option if wait time is
 weighted heavily, but it is no longer close to a free improvement.
 
+## Joint grid re-run after the consolidation fix (2026-08-11) — what changed, and what didn't
+
+The first joint grid was measured *through* the absorbing-state defect, so every conclusion
+it reached about district count stood on a broken mechanic. Re-ran both phases against the
+fixed system, with the currently-shipped allocation added explicitly as an incumbent
+baseline — otherwise a "winner" cannot be shown to actually beat what is live.
+
+**What held.** The screen is essentially unchanged: 560 allocations, **151 discarded as
+incoherent** (was 154). The failure mode is structural, not an artifact of the defect.
+
+**What broke: the shipped allocation lost its main selling point.** M5 B5 C5 J5 D5 IE3 was
+chosen partly because it stayed coherent at *every* district count. With consolidation
+fixed, milled flour changed and it now reads flourRatio **1.000 — outright incoherent — at
+11 districts**, and only ~4% margin (0.959) at the shipped 6. The property it was selected
+for no longer held once the mechanic underneath was correct.
+
+**The tempting fix was the wrong one.** M6 B5 C5 J4 D5 IE3 inherits exactly that property
+(0.730 / 0.823 / 0.831 across 3/6/11 districts) and is otherwise **identical** to the
+incumbent on every outcome metric — population 57.7 vs 57.4, health 0.864 vs 0.866, Gini
+0.548 vs 0.549, waits 22.2 vs 22.5, shard count 3.0 either way. It buys ~4x the coherence
+margin by adding a Miller. That is the same scarcity trade already rejected for the M7
+candidates, just smaller — so it was rejected again, for the same reason.
+
+**Fix applied instead: `FLOUR_PER_BREAD` 0.23 -> 0.20.** The allocation was chosen on real
+design grounds (Miller scarcity, bounded shard count, fairness); the flour ratio is the free
+parameter, so the parameter absorbs the adjustment rather than the design yielding to it.
+Result: flourRatio **0.828 at 6 districts and 0.858 at 11** — a ~15% margin, coherent at
+every layout again, with population, health, Gini, waits and shard count all unchanged.
+
+**Also re-confirmed: 6 districts stays.** Post-fix the head-to-head is 11 districts giving
+1.7% better Gini and 5.0% shorter grifter waits for 2.4% worse health and 1.2% less
+population — a genuine but modest trade, materially weaker than the pre-fix numbers
+suggested (which showed 4.9% better Gini). Consolidation now runs at 22.2% merged (6
+districts) and 12.1% (11), versus 62.5%/36.3% through the defect.
+
+**Method note worth keeping**: adding the incumbent to the finalist set was what made this
+legible. Without it the grid would have reported a "winner" with no way to see that it beat
+the live configuration only on a metric the live configuration had just lost for an
+unrelated reason.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

@@ -74,7 +74,7 @@ export const GRAIN_PER_FLOUR = 1.2;
  * value 0.23 sits just under the chosen allocation's break-even of 0.239, holding a small
  * surplus. Re-run that sweep, not this constant alone, whenever role counts change.
  */
-export const FLOUR_PER_BREAD = 0.23;
+export const FLOUR_PER_BREAD = 0.20;
 /** Parcels one Courier moves in a full active day. [ILLUSTRATIVE] */
 export const PARCELS_PER_COURIER_DAY = 14;
 /** Stories one Journalist files in a full active day. [ILLUSTRATIVE] */

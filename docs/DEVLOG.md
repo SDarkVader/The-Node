@@ -6,6 +6,38 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Re-ran the joint grid on the fixed mechanic; the shipped allocation lost its rationale
+
+**Context.** "Rerun the joint grid search now the defect is fixed." Correct call — the
+first grid measured through the absorbing-state defect, so its district-count conclusions
+rested on a broken mechanic.
+
+**Added the incumbent to the finalist set.** The screen no longer surfaces the shipped
+allocation at all, so without explicitly including it there would be no way to tell whether
+a new "winner" actually beats what is live. This turned out to be the thing that made the
+result readable.
+
+**What held**: 560 screened, 151 incoherent (was 154) — the flour-chain failure mode is
+structural, not an artifact of the defect.
+
+**What broke**: M5 B5 C5 J5 D5 IE3 was picked partly for staying coherent at every district
+count. Post-fix it reads 1.000 (incoherent) at 11 districts and only ~4% margin at 6. The
+reason it was chosen no longer held.
+
+**Rejected the obvious replacement.** M6 B5 C5 J4 D5 IE3 restores that property and is
+identical to the incumbent on population, health, Gini, waits and shard count — but buys
+its margin by adding a Miller. Same scarcity trade already rejected for M7 candidates, so
+rejected again rather than accepted because it was smaller this time.
+
+**Fixed the constant instead**: FLOUR_PER_BREAD 0.23 -> 0.20. The allocation was chosen on
+design grounds; the flour ratio is the free parameter. Now 0.828 at 6 districts and 0.858
+at 11 — ~15% margin, coherent everywhere, every other metric unchanged.
+
+**6 districts re-confirmed.** Post-fix, 11 gives 1.7% better Gini and 5.0% shorter waits for
+2.4% worse health — materially weaker than the pre-fix 4.9% Gini gain.
+
+**Verification.** 266 tests, all passing; typecheck clean. Snapshot regenerated.
+
 ## 2026-08-11 — 11 vs 6 districts; instrumenting the mechanism exposed a consolidation defect
 
 **Context.** "Try 11 districts and compare." Ran both deeply (2500 days, 3 seeds) and
