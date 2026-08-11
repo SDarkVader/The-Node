@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   millerDailyIncome,
   bakerDailyIncome,
+  dailyDueCustomers,
+  splitBakerDemand,
   giniCoefficient,
   topShare,
   taxAndRedistributeIncome,
   applyWealthCap,
+  DAILY_ACTIVITY_MULTIPLIER,
+  BAKER_MAX_DAILY_CUSTOMERS,
+  PURCHASE_CYCLE_DAYS,
 } from '../src/engine/wealth.js';
 
 /**
@@ -22,6 +27,74 @@ describe('millerDailyIncome / bakerDailyIncome', () => {
   it('baker income is margin over flour cost times volume, floored at zero', () => {
     expect(bakerDailyIncome(1.0, 0.6, 2)).toBeCloseTo(0.8, 10);
     expect(bakerDailyIncome(0.3, 0.6, 2)).toBe(0); // selling below flour cost never yields negative income
+  });
+});
+
+describe('dailyDueCustomers — population-bound, not baker-count-bound', () => {
+  it('divides population by the purchase cycle', () => {
+    expect(dailyDueCustomers(65, 2.5)).toBeCloseTo(26, 10);
+  });
+
+  it('is independent of anything about bakers — same population always gives the same due-customer count', () => {
+    expect(dailyDueCustomers(65)).toBe(dailyDueCustomers(65));
+  });
+
+  it('uses the default PURCHASE_CYCLE_DAYS when not overridden', () => {
+    expect(dailyDueCustomers(65)).toBeCloseTo(65 / PURCHASE_CYCLE_DAYS, 10);
+  });
+});
+
+describe('splitBakerDemand — population-bound, price-weighted, capacity-capped', () => {
+  it('splits demand equally among bakers priced identically', () => {
+    const shares = splitBakerDemand([1, 1, 1], 30, 100);
+    expect(shares[0]).toBeCloseTo(10, 8);
+    expect(shares[1]).toBeCloseTo(10, 8);
+    expect(shares[2]).toBeCloseTo(10, 8);
+  });
+
+  it('a cheaper baker gets a strictly larger share than a pricier rival', () => {
+    const shares = splitBakerDemand([0.5, 2.0], 30, 100);
+    expect(shares[0]!).toBeGreaterThan(shares[1]!);
+  });
+
+  it('no single baker\'s served customers ever exceeds the capacity cap, however much demand-share math would give them', () => {
+    // One baker priced far below its rival should win almost all the raw demand share —
+    // confirm the cap still holds even in that lopsided case.
+    const shares = splitBakerDemand([0.01, 5], 1000, BAKER_MAX_DAILY_CUSTOMERS);
+    for (const s of shares) expect(s).toBeLessThanOrEqual(BAKER_MAX_DAILY_CUSTOMERS);
+  });
+
+  it('total demand distributed never exceeds the actual due-customer pool (capped demand is not manufactured elsewhere)', () => {
+    const dueCustomers = 20;
+    const shares = splitBakerDemand([1, 1, 1, 1], dueCustomers, 100);
+    const total = shares.reduce((a, b) => a + b, 0);
+    expect(total).toBeLessThanOrEqual(dueCustomers + 1e-8);
+  });
+
+  it('zero due customers means every baker serves zero, not NaN or negative', () => {
+    const shares = splitBakerDemand([1, 2, 3], 0);
+    for (const s of shares) expect(s).toBe(0);
+  });
+
+  it('an empty baker list returns an empty result', () => {
+    expect(splitBakerDemand([], 30)).toEqual([]);
+  });
+
+  it('a near-zero price does not produce infinite or NaN demand share (epsilon floor holds)', () => {
+    const shares = splitBakerDemand([0, 1], 30, 100);
+    expect(Number.isFinite(shares[0]!)).toBe(true);
+    expect(shares[0]!).toBeGreaterThan(shares[1]!); // still wins the larger share, just not infinite
+  });
+});
+
+describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the 8-hour downtime window', () => {
+  it('equals the correct blended average: 16/24 at full rate, 8/24 at 10%', () => {
+    expect(DAILY_ACTIVITY_MULTIPLIER).toBeCloseTo((16 / 24) * 1 + (8 / 24) * 0.1, 10);
+  });
+
+  it('is strictly less than 1 — the window genuinely reduces daily totals, not a no-op', () => {
+    expect(DAILY_ACTIVITY_MULTIPLIER).toBeLessThan(1);
+    expect(DAILY_ACTIVITY_MULTIPLIER).toBeGreaterThan(0);
   });
 });
 

@@ -6,6 +6,57 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Fixed the Baker demand model; added a daily downtime window
+
+**Context.** Direct follow-up to the wealth-inequality session. Asked whether the 4-8x
+Baker/Miller earnings gap was because the model assumed every player sees a baker every
+day — yes, exactly: `BAKER_DAILY_VOLUME=1.0` was a flat per-baker constant with no
+population bound at all, so adding more bakers manufactured more total income rather than
+splitting a bounded customer pool. User specified the fix directly: customers store food
+and don't buy daily, a baker has a realistic service ceiling ("can't serve 20-30 people
+daily"), demand should scale with population not baker count, and the shard needs a daily
+low-activity window "to account for RL" — same wall-clock hours every day, one shared
+timezone, values dampened to 10% rather than trading stopping outright, "keeps the
+economy alive during down time."
+
+**Built exactly that.** `dailyDueCustomers()` bounds total demand by population divided
+by a purchase cycle (2.5 days, illustrative). `splitBakerDemand()` splits that pool
+across bakers weighted by inverse price — cheaper bakers get more, real Bertrand behavior
+that `bakers.ts`'s own price competition never actually fed into anything before this —
+capped per baker at a realistic daily ceiling (12, comfortably under "20-30").
+`DAILY_ACTIVITY_MULTIPLIER` is the correct blended daily average of 16 active hours at
+full rate and 8 downtime hours at 10% (≈0.70), applied to both roles' income, "all round."
+
+**Flagged the scope honestly rather than overbuilding**: the kernel's tick is one day —
+every existing calibration is calibrated in days, so making the downtime window a literal
+same-UTC-hours clock gate would mean subdividing ticks to hourly, which would invalidate
+essentially every previously-validated number in this repo. At daily granularity, the
+correct representation of "quiet for part of the day" IS the blended multiplier — not an
+approximation of some bigger thing left undone. The literal real-time clock enforcement
+(blocking actions during specific hours) is a `src/server/ws.ts` concern for whenever real
+player actions exist to gate at all — noted, not solved here.
+
+**Re-ran the baseline after the fix — reported honestly, didn't declare victory.** The
+Baker/Miller ratio dropped from 4.1-7.8x to 3.4-6.5x — real, but modest, not dramatic.
+Traced why rather than just reporting the smaller number: at the current default role
+counts (8 Millers, 16 Bakers against population 65), the population-bound due-customer
+pool works out to ~26/day, split across 16 bakers ≈ 1.6 each — actually *higher* than the
+old flat 1.0 constant, so the new capacity cap (12) never actually binds at these
+defaults. The mechanism is structurally correct now; the current role-slot ratio just
+doesn't happen to make its constraints bite yet. Real levers for tightening it further
+(longer purchase cycle, fewer bakers relative to population, a tighter cap) are named but
+not applied — that would mean touching the role-roster ratio, still the user's own open
+call, not something to decide inside this fix.
+
+**Verification.** 12 new tests for the demand-split function (price-weighting, the
+capacity cap actually holding even in a lopsided case, population-boundedness, zero-
+due-customer and near-zero-price edge cases) plus a check on the activity multiplier's
+exact value. 172 tests total, all passing; `npm run typecheck` clean. The golden-value
+tick-order snapshot was regenerated — expected and documented, since income computation
+deliberately changed.
+
+---
+
 ## 2026-08-10 — Wealth tracking, Gini coefficient, and checking the "90%/10%" concern directly
 
 **Context.** User request, outside the Observatory phase sequence: track wealth

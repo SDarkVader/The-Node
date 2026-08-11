@@ -76,10 +76,13 @@ import type { WallPost, SelfState } from '../comms/grammar.js';
 import {
   millerDailyIncome,
   bakerDailyIncome,
+  dailyDueCustomers,
+  splitBakerDemand,
   giniCoefficient,
   topShare,
   taxAndRedistributeIncome,
   applyWealthCap,
+  DAILY_ACTIVITY_MULTIPLIER,
 } from '../engine/wealth.js';
 
 export interface WorldConfig {
@@ -417,12 +420,19 @@ export function stepWorld(world: World): World {
     () => 0.5 + rng() * 0.2,
   );
 
-  // Wealth accrual (2026-08-10, user-requested) — the new stock variable wealth.ts adds
-  // on top of the market's existing flow variables. A Miller sells its whole quantity at
-  // the market-clearing flour price; a Baker earns margin-over-flour-cost times an
-  // illustrative fixed daily volume (no per-baker demand model exists). BACKSTOPPED slots
-  // earn nothing — nobody is there to receive it. See wealth.ts's header for the full
-  // grounding and docs/BLUEPRINT.md's "Wealth inequality" entry for the baseline findings.
+  // Wealth accrual (2026-08-10, user-requested; demand model + downtime window revised
+  // 2026-08-11, user-specified) — the new stock variable wealth.ts adds on top of the
+  // market's existing flow variables. A Miller sells its whole quantity at the
+  // market-clearing flour price. A Baker earns margin-over-flour-cost times however many
+  // customers it actually served today — served-customer counts come from
+  // splitBakerDemand(), which bounds total daily demand by population (not baker count),
+  // dilutes it by a multi-day purchase cycle (customers don't buy daily), splits it toward
+  // whoever's priced lower (real Bertrand behavior), and caps any one baker's daily
+  // customers at a realistic ceiling. BACKSTOPPED slots earn nothing — nobody is there to
+  // receive it. Both roles' income is then scaled by DAILY_ACTIVITY_MULTIPLIER — the daily
+  // blended consequence of an 8-hour low-activity window every day, "all round." See
+  // wealth.ts's header for the full reasoning and docs/BLUEPRINT.md's "Wealth inequality"
+  // entry for the baseline findings this revision responds to.
   //
   // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
   // redistributed across the combined Miller+Baker FILLED pool (one shared pool, not two
@@ -431,8 +441,21 @@ export function stepWorld(world: World): World {
   // today, not retroactively on the whole accumulated balance. The wealth cap, if enabled,
   // then bounds the resulting stock. Both are PROPOSALS, simulated and reported in
   // docs/BLUEPRINT.md, neither shipped as a default (wealthTaxRate=0, wealthCap=undefined).
-  const millerIncomes = millers.map((m) => (m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) : 0));
-  const bakerIncomes = bakers.map((b) => (b.slot.state === 'FILLED' ? bakerDailyIncome(b.value, flourPriceValue) : 0));
+  const millerIncomes = millers.map((m) =>
+    m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER : 0,
+  );
+
+  const bakerFilledForDemand = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
+  const dueCustomers = dailyDueCustomers(world.population);
+  const servedCustomers = splitBakerDemand(
+    bakerFilledForDemand.map((i) => bakers[i]!.value),
+    dueCustomers,
+  );
+  const bakerIncomes = bakers.map((b, i) => {
+    const pos = bakerFilledForDemand.indexOf(i);
+    if (pos < 0) return 0;
+    return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER;
+  });
 
   let finalMillerIncomes = millerIncomes;
   let finalBakerIncomes = bakerIncomes;

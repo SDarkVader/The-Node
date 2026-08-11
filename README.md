@@ -266,10 +266,16 @@ real research on wealth concentration in agent-based economic models: NODE's
 market structure does **not** produce runaway inequality (Gini plateaus
 around 0.5, not the 90%+ concentration some model families produce), but a
 real, different problem turned up instead — Bakers earning several times
-more than Millers on average, traced to a placeholder assumption, not a
-validated prediction. See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the
-full numbers, citations, and open questions left. 160 automated tests cover
-all of it.
+more than Millers on average, traced to a placeholder assumption that
+implicitly let every baker sell to unlimited customers regardless of
+population. Fixed: demand is now bounded by population and a multi-day
+purchase cycle (people store food, they don't buy daily), split toward
+whoever's cheaper, capped at a realistic customers-per-day ceiling per
+baker, and the whole economy now runs a daily low-activity window (8
+hours, dampened not stopped, "for RL"). The earnings gap narrowed but
+didn't close — reported honestly rather than declared fixed. See
+`docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
+citations, and open questions left. 172 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -280,7 +286,7 @@ playable form.
 
 ```
 npm install
-npm test               # 160 tests
+npm test               # 172 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -302,7 +308,7 @@ never shipped, structurally guarded), `src/sim/` (deterministic seeded
 harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (160 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (172 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

@@ -1498,6 +1498,76 @@ in `test/world.regression.test.ts` (wealth resets on new occupancy, freezes whil
 BACKSTOPPED, accrues correctly, remediation wiring). 160 tests total, all passing; `npm
 run typecheck` clean.
 
+**Revised the Baker demand model + added a daily downtime window (2026-08-11,
+user-specified fix to the role-gap finding above).** The user identified the actual root
+cause precisely: `BAKER_DAILY_VOLUME=1.0` assumed every FILLED baker sold exactly 1 unit
+every single day regardless of population, rival count, or price — so total assumed
+demand scaled with *baker count*, not population, and adding more bakers manufactured
+more total income out of nowhere rather than splitting a bounded customer pool. Specified
+the fix directly: customers don't buy daily (they can store food and stay home), a single
+baker has a realistic daily service ceiling ("can't serve 20-30 people daily"), demand
+should be population-bound, and the shard needs a daily low-activity window "to account
+for RL" without the economy going fully dark.
+
+**Built exactly that, in `wealth.ts`:** `dailyDueCustomers(population, purchaseCycleDays)`
+— today's due-customer pool is `population / PURCHASE_CYCLE_DAYS` (2.5 days,
+`[ILLUSTRATIVE]`), not the whole population every day. `splitBakerDemand(prices,
+dueCustomers, maxDailyCustomers)` — splits that bounded pool across FILLED bakers
+weighted by inverse price (cheaper bakers get a larger share — real Bertrand behavior,
+which `bakers.ts`'s own price dynamics never actually fed into anything before this),
+capped per baker at `BAKER_MAX_DAILY_CUSTOMERS=12` (`[ILLUSTRATIVE]`, kept comfortably
+under "20-30," not just short of it). `DAILY_ACTIVITY_MULTIPLIER` — the correct blended
+daily average of `ACTIVE_HOURS=16` at full rate and `DOWNTIME_HOURS=8` at
+`DOWNTIME_DAMPENING=0.1`, applied to both Miller and Baker income ("all round"), giving
+`(16/24)×1 + (8/24)×0.1 ≈ 0.70`.
+
+**Scoping note, flagged not silently narrowed**: this kernel's tick is one full day —
+every existing calibration (churn probabilities, experience growth, sabotage cadence,
+migration step size) is calibrated in days, so subdividing ticks to hourly to represent a
+literal "same UTC hours every day" window would invalidate essentially all of it, a far
+larger and riskier change than what was asked for. At daily granularity there's no way to
+represent "quiet for part of the day" except as the correct blended daily average of a
+fixed intra-day schedule — which is what `DAILY_ACTIVITY_MULTIPLIER` is. What this does
+NOT do: literally block real player actions from arriving during specific UTC hours —
+that's a real-time server-clock policy (`src/server/ws.ts`), a separate and later concern
+once real player actions exist to gate at all (Phase C's drivers aren't wired into the
+tick yet either — see the Phase C entry above).
+
+**Re-ran the baseline after the fix — reports honestly, doesn't declare victory.**
+`npm run wealth-inequality-report`, 2000 days, 3 seeds, within-role breakdown:
+
+```
+seed  combinedGini  millerOnlyGini  bakerOnlyGini  meanMillerWealth  meanBakerWealth  ratio
+1     0.570         0.638           0.444          0.92              5.98             6.5x
+2     0.418         0.346           0.331          1.25              4.32             3.4x
+3     0.623         0.726           0.503          1.32              8.19             6.2x
+```
+
+The Baker/Miller ratio dropped modestly (was 4.1-7.8x before the fix, now 3.4-6.5x) —
+real, but not the dramatic correction the mechanism change might suggest. Traced why,
+not just reported the number: at the *current* default role counts (`rMiller=8,
+rBaker=16`) against `targetPopulation=65`, `dailyDueCustomers` works out to
+`65/2.5 ≈ 26` customers/day, split across 16 bakers ≈ **1.6 customers each on average** —
+which is actually *higher* than the old flat `1.0` constant, not lower, so
+`BAKER_MAX_DAILY_CUSTOMERS=12` never binds at these defaults (average demand sits at
+roughly 13% of the cap). The new model is structurally correct now — population-bound,
+purchase-cycle-diluted, price-competitive, capacity-capped — but at this specific
+role-slot ratio those constraints mostly aren't the binding limit yet. If the gap needs
+to shrink further, the actual levers now available (not applied here, flagged for
+review): a longer purchase cycle, fewer Bakers relative to population (interacts with the
+still-open role-roster question above), or a tighter capacity cap so it actually starts
+to bind. Overall economy size also shrank as expected from `DAILY_ACTIVITY_MULTIPLIER`
+(`meanFinalWealth` at baseline: 7.33 before this fix, 4.40 after, in the remediation
+sweep's own comparable row) — the "gives people a break" effect is working as specified,
+separate from the demand-model fix.
+
+**Verification.** 12 new tests (`splitBakerDemand`'s price-weighting, capacity cap,
+population-boundedness, zero-due-customer and near-zero-price edge cases;
+`DAILY_ACTIVITY_MULTIPLIER`'s exact value). 172 tests total, all passing; `npm run
+typecheck` clean. The golden-value tick-order snapshot was regenerated — a deliberate,
+reviewed change to income computation, not a silent regression (documented in
+`test/world.regression.test.ts`'s own comment on when regeneration is appropriate).
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

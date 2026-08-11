@@ -126,12 +126,29 @@ single-pass implementation loses value rather than fully conserving it, flagged 
 real caveat, not hidden. Full numbers and citations: `docs/BLUEPRINT.md`'s "Wealth
 inequality" entry.
 
+**2026-08-11: fixed the Baker demand model at the user's own diagnosis and spec.**
+Confirmed the root cause directly: `BAKER_DAILY_VOLUME` had no population bound at all —
+adding more Bakers manufactured more total income instead of splitting a bounded customer
+pool. Replaced with `dailyDueCustomers()` (population ÷ a 2.5-day purchase cycle —
+customers don't buy daily) and `splitBakerDemand()` (splits that bounded pool across
+Bakers weighted toward whoever's cheaper — real Bertrand behavior, capped at 12
+customers/baker/day — "can't serve 20-30 daily"). Also added `DAILY_ACTIVITY_MULTIPLIER`
+— a daily downtime window (8 hours dampened to 10%, "all round," both roles) "to account
+for RL." **Re-ran the baseline and reported honestly**: the Baker/Miller ratio dropped
+from 4.1-7.8x to 3.4-6.5x — real, but modest, because at the *current* default role
+counts (8 Miller, 16 Baker against N=65) the new bounded demand pool (~26/day) still
+averages ~1.6 customers per baker, which is actually *higher* than the old flat
+constant, so the new capacity cap doesn't bind yet. The mechanism is now structurally
+correct; the current role ratio just doesn't make its own constraints bite. Full numbers:
+`docs/BLUEPRINT.md`'s "Wealth inequality" entry (see the "Revised the Baker demand model"
+sub-entry).
+
 **Phases D-F of the Observatory spec not started** — stopping here to report back and
 check in again before continuing, per explicit instruction not to do too much in one pass.
 
 ```
 npm install
-npm test              # 160 tests, all passing
+npm test              # 172 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -418,12 +435,23 @@ alongside a real open question it inherits: no persistent per-district state exi
   produce once run through the real composed kernel (population/health/flour-price
   outcomes, not a recommendation) — data for whenever this gets decided, not a decision
   made in its place. See `docs/BLUEPRINT.md`'s "Phase C" entry for the numbers.
-- **`BAKER_DAILY_VOLUME=1.0` (`src/engine/wealth.ts`) is `[ILLUSTRATIVE]`, not a real
-  demand model — no per-baker sales-volume mechanic exists anywhere in this repo.** It's
-  a meaningful part of why the wealth-inequality baseline found Bakers earning 4-8x more
-  than Millers on average (`docs/BLUEPRINT.md`'s "Wealth inequality" entry) — that ratio
-  should be treated as provisional until a real Baker demand/volume model exists, not as
-  a validated economic prediction about the two roles.
+- **`PURCHASE_CYCLE_DAYS=2.5` and `BAKER_MAX_DAILY_CUSTOMERS=12` (`src/engine/wealth.ts`,
+  2026-08-11) are `[ILLUSTRATIVE]`, replacing the old flat `BAKER_DAILY_VOLUME=1.0`
+  constant that had no population bound at all.** Demand is now population-bound and
+  price-competitive (`splitBakerDemand()`), but at the *current* default role counts (8
+  Miller, 16 Baker against N=65) the capacity cap never actually binds — the bounded
+  demand pool still averages ~1.6 customers/baker, above the old flat constant, not below
+  it. The Baker/Miller earnings gap dropped from 4-8x to 3.4-6.5x, not further — treat
+  both the ratio and these two constants as provisional, not a validated economic
+  prediction (`docs/BLUEPRINT.md`'s "Wealth inequality" entry, "Revised the Baker demand
+  model" sub-entry, has the full trace of why the cap doesn't bind yet).
+- **`DAILY_ACTIVITY_MULTIPLIER≈0.70` (`src/engine/wealth.ts`, 2026-08-11)** scales both
+  Miller and Baker income daily — the blended consequence of an 8-hour low-activity
+  window every day ("account for RL"). It's a daily-aggregate blend, not a literal
+  same-UTC-hours clock gate — the kernel's tick is one full day, and subdividing it to
+  hourly would invalidate essentially every other calibration in this repo. Real-time
+  clock enforcement (blocking actions during specific hours) is a `src/server/ws.ts`
+  concern for once real player actions exist to gate — not attempted here.
 
 ## Documentation rules (see CLAUDE.md for the full standing instruction)
 

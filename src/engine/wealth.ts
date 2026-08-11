@@ -36,19 +36,96 @@
  * proposal.
  */
 
-/** [ILLUSTRATIVE] — no per-baker demand/volume model exists anywhere in this repo yet;
- *  flagged the same way every other filled-in gap in this codebase is. */
-export const BAKER_DAILY_VOLUME = 1.0;
+/**
+ * Baker demand model (2026-08-11, revised — the flat `BAKER_DAILY_VOLUME=1.0` constant
+ * this replaced was a real gap, not just an illustrative placeholder: it assumed every
+ * FILLED baker sold exactly 1 unit every single day regardless of population, rival count,
+ * or price competitiveness, so total assumed demand scaled with *baker count*, not
+ * population — adding more bakers manufactured more total income out of nowhere instead
+ * of splitting a bounded customer pool. User-identified, user-specified the fix:
+ * customers don't buy daily (they can store food and stay home — "hoard a little extra"),
+ * a single baker has a realistic daily service ceiling ("can't serve 20-30 people daily"),
+ * and demand should be population-bound, not baker-count-bound. All three constants below
+ * are illustrative — chosen to be defensible and testable, not derived from the brief,
+ * same as every other filled-in gap in this codebase.
+ */
+
+/** Average days between one customer's purchases — "2-3 days per visiting requirement." [ILLUSTRATIVE] */
+export const PURCHASE_CYCLE_DAYS = 2.5;
+/** A single baker's realistic daily service ceiling — kept comfortably under "20-30 people
+ *  daily," not just short of it. [ILLUSTRATIVE] */
+export const BAKER_MAX_DAILY_CUSTOMERS = 12;
+/** Bread-demand units one served customer represents — kept at 1.0 so the resulting income
+ *  scale is comparable to the model this replaced, not because it's independently derived. */
+export const CUSTOMER_PURCHASE_UNIT = 1.0;
 
 /** A Miller sells its whole competed-for quantity at the shared market-clearing flour price. */
 export function millerDailyIncome(quantity: number, flourPrice: number): number {
   return Math.max(0, quantity * flourPrice);
 }
 
-/** A Baker's daily profit: margin over flour cost times an illustrative fixed daily volume. */
-export function bakerDailyIncome(price: number, flourPrice: number, volume: number = BAKER_DAILY_VOLUME): number {
-  return Math.max(0, price - flourPrice) * volume;
+/**
+ * How many customers are actually due to buy bread *today*, out of the whole population —
+ * population divided by the purchase cycle, not the whole population every day. Bakers
+ * split this bounded pool; they do not each independently generate their own demand.
+ */
+export function dailyDueCustomers(population: number, purchaseCycleDays: number = PURCHASE_CYCLE_DAYS): number {
+  if (purchaseCycleDays <= 0) return 0;
+  return Math.max(0, population / purchaseCycleDays);
 }
+
+/**
+ * Splits today's due-customer pool across FILLED bakers, weighted toward whoever's priced
+ * lower — real Bertrand behavior (the cheaper competitor captures disproportionate share),
+ * which `bakers.ts`'s own price dynamics never actually fed into anything before this.
+ * Each baker's raw share is then capped at `maxDailyCustomers` — a single shop has a
+ * realistic ceiling regardless of how much demand its price would otherwise pull in;
+ * capped demand is NOT redistributed to other bakers (a customer turned away by a
+ * maxed-out shop doesn't necessarily walk to the next one same-day — a simplification,
+ * flagged rather than silently assumed away). Returns one served-customer count per input
+ * price, same order, only for `prices` — callers pass just the FILLED bakers' prices.
+ */
+export function splitBakerDemand(
+  prices: readonly number[],
+  totalDueCustomers: number,
+  maxDailyCustomers: number = BAKER_MAX_DAILY_CUSTOMERS,
+): number[] {
+  if (prices.length === 0 || totalDueCustomers <= 0) return prices.map(() => 0);
+  const EPSILON = 1e-6; // floors price so a near-zero/zero price can't produce an infinite weight
+  const weights = prices.map((p) => 1 / Math.max(p, EPSILON));
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  return weights.map((w) => Math.min(maxDailyCustomers, totalDueCustomers * (w / totalWeight)));
+}
+
+/** A Baker's daily profit: margin over flour cost times however many customers it actually served today. */
+export function bakerDailyIncome(price: number, flourPrice: number, servedCustomers: number, unit: number = CUSTOMER_PURCHASE_UNIT): number {
+  return Math.max(0, price - flourPrice) * servedCustomers * unit;
+}
+
+/**
+ * Daily downtime window (2026-08-11, user-specified): a fixed 8-hour stretch every day,
+ * same wall-clock hours, single shared timezone (not per-player-adjusted) — "account for
+ * RL," gives real players an actual break. During it, trading activity dampens to 10% of
+ * normal rather than stopping outright, "all round" (both roles) — the shard stays alive
+ * (constraint 2: no permanent zero-state, at any scale, including a single day) rather
+ * than freezing dead for a third of every day.
+ *
+ * IMPLEMENTATION SCOPE, flagged not silently narrowed: this kernel's tick is one full day
+ * (every existing calibration — churn probabilities, experience growth, sabotage cadence,
+ * migration step size — is calibrated in days; subdividing ticks to hourly would invalidate
+ * essentially all of it, a much larger and riskier change than what was asked for here).
+ * At daily granularity there's no way to represent "quiet for part of the day" except as
+ * the correct blended daily average of a fixed intra-day schedule — which is exactly what
+ * this constant is, not an approximation of a bigger unbuilt mechanic. What this does NOT
+ * do: literally block real player actions from arriving during specific UTC hours — that's
+ * a real-time server-clock policy (`src/server/ws.ts`, once real player actions exist to
+ * gate at all), a separate and later concern from this deterministic kernel's own economics.
+ */
+export const DOWNTIME_HOURS = 8;
+export const ACTIVE_HOURS = 24 - DOWNTIME_HOURS;
+export const DOWNTIME_DAMPENING = 0.1;
+/** The correct same-day blend of ACTIVE_HOURS at full rate and DOWNTIME_HOURS at DOWNTIME_DAMPENING. */
+export const DAILY_ACTIVITY_MULTIPLIER = (ACTIVE_HOURS / 24) * 1 + (DOWNTIME_HOURS / 24) * DOWNTIME_DAMPENING;
 
 /**
  * Standard Gini coefficient over a wealth distribution: 0 = perfect equality, approaching
