@@ -146,6 +146,41 @@ Three properties make it a real puzzle rather than a guessing game:
 - **Silence is information.** With ten states and no way to say nothing-in-particular,
   *choosing not to post* is itself legible to anyone watching closely.
 
+#### The unresolved tension: the design withholds the thing this player most enjoys
+
+*"But I like talking to people. And the chaos or beauty that follows."*
+
+This deserves a straight answer rather than a reassuring one. **NODE, as designed, does not
+let you talk to people.** Ten mood-symbols is not conversation. The planned face-to-face
+proximity channel is also a composed vocabulary rather than free text, so it does not solve
+this either. Free typed text is not merely unbuilt — it is deliberately excluded, and Phase 5
+(voice/safety) is hard-gated on legal review precisely because open expression in a game
+built on rivalry and social pressure is a harassment vector. The design's own framing is that
+"the harmful sentence structures simply don't exist in the grammar you're given."
+
+So the trade is real and should be named: **the design chose safety and anti-brokering over
+expression, and the cost is paid by exactly the players who most want to talk.** That is not
+a bug to be engineered around; it is a decision with a price, and this is the price.
+
+What the design offers instead — and whether it is enough is genuinely unknown:
+
+- **The chaos comes from interpretation, not expression.** When a channel is this narrow,
+  meaning is made by the receiver. The rumour mill *literally* distorts signals in transit,
+  so what you meant and what lands are routinely different. Misreading is guaranteed rather
+  than incidental.
+- **The beauty, if it appears, is inference.** Working out who someone is from ten symbols,
+  their timing, their silences, and what other people started saying afterwards — that is a
+  different pleasure from conversation, not a substitute for it.
+- **Relationships still form**, but through accumulated shared history rather than dialogue,
+  which is what makes private conventions possible at all (above).
+
+**Honest assessment:** if what a player loves is the back-and-forth itself, this design will
+frustrate them, and no amount of clever signalling mechanics will fix that. If what they love
+is the *consequences* — the chaos, the misreadings, the reputations that form — then a narrow
+channel may actually intensify it, because ambiguity is the raw material. Which of those is
+true for real players is unknown and unsimulable, and it is the same question as research
+question 12 seen from the other side.
+
 **The open risk, stated honestly:** this may be *too* hard. Ten symbols is roughly 3.3 bits a
 message, and if probing turns out to be indistinguishable from noise in practice, the social
 layer is not subtle — it is dead, and the anti-brokering protection has cost the game its

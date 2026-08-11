@@ -280,6 +280,16 @@ detect these and should not try — the useful property is that a code cannot be
 with a *stranger* through ten ambiguous symbols, so conspiracy ends up gated on relationship
 rather than banned. Whether that is enough to feel like a game is the open part.
 
+**The other side of the same question, and the harder one.** A player who enjoys *talking to
+people and the chaos or beauty that follows* is not served by ten symbols, and will not be by
+any refinement of them. Free typed text is deliberately excluded (harassment vector in a game
+built on rivalry; Phase 5 voice/safety is hard-gated on legal review), so this is a decision
+with a price rather than a gap to fill. The bet the design is making: that chaos comes from
+*interpretation* rather than expression — narrow channels force the receiver to make meaning,
+the rumour mill distorts signals in transit so misreading is guaranteed, and reputations form
+out of inference. If a player loves the back-and-forth itself, that bet loses and nothing
+mechanical rescues it. If they love the consequences, ambiguity may intensify them.
+
 **What would answer it:** playtesting, primarily — this is not simulable, since the model has
 no player capable of probing. Adjacent evidence: research on constrained-communication games
 (Hanabi, Spyfall, Werewolf variants with restricted vocabularies) and how much expressive
