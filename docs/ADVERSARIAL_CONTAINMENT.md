@@ -103,6 +103,55 @@ property in the design, and unlike wealth-inertness it *is* deliberate.
 would convert direct channels into exactly the vector described above. This is the single
 change most likely to be requested for "expressiveness" and most damaging if granted.
 
+#### Correction: the grammar does not make conspiracy impossible — it makes it require history
+
+I overstated this above ("the vocabulary is incapable of expressing a decision"). Literally
+true of a *single* message; false over a relationship. Ten symbols, sent repeatedly between
+two people, is enough to build a private convention — *two 'uneasy' in a row means the thing
+we discussed*. Players will do this, the system cannot detect it, and it should not try.
+
+What matters is that establishing a code **requires shared context that must be built first**,
+and the channel is too narrow to bootstrap one with a stranger. So the real property is
+better than the one I claimed:
+
+- **Strangers cannot conspire.** Ten ambiguous mood-symbols carry no way to agree on what
+  they will mean, with someone you have no history with.
+- **Long-standing allies can.** People with accumulated shared experience can hold a private
+  code, because the meaning lives in the history rather than in the message.
+- **Codes need maintenance.** The diary's TTL means the shared context underpinning a
+  convention decays unless it keeps being refreshed by real interaction.
+
+That is exactly the intended shape: conspiracy is not banned, it is **gated on relationship**.
+The determined player can absolutely build a coded channel — with people they have invested
+years in. Which is the cost, and which is also, again, reputation.
+
+### Interrogation is the actual gameplay — and it is deliberately hard
+
+*"I'll have to interrogate people without them knowing it through cryptic messages. Not
+exactly an easy start."*
+
+That is the intended loop, and it falls straight out of the constraints. You cannot ask a
+question — the grammar has no interrogative and no subject. What you can do is **emit a
+signal and read what comes back**: send a state, watch whether the reply shifts, watch what
+propagates to the Wall, watch what a third party starts broadcasting a week later. It is a
+signalling game played in ten symbols against people who may be doing the same to you.
+
+Three properties make it a real puzzle rather than a guessing game:
+
+- **You cannot tell probing from sincerity.** A player broadcasting `suspicious` may be
+  genuinely suspicious or fishing. Neither you nor they can prove which.
+- **The channel distorts.** Rumours decay and flip in transit (`comms/decay.ts`), so a signal
+  arriving three hops away may not be the one that was sent — and the sender cannot know what
+  the receiver actually got.
+- **Silence is information.** With ten states and no way to say nothing-in-particular,
+  *choosing not to post* is itself legible to anyone watching closely.
+
+**The open risk, stated honestly:** this may be *too* hard. Ten symbols is roughly 3.3 bits a
+message, and if probing turns out to be indistinguishable from noise in practice, the social
+layer is not subtle — it is dead, and the anti-brokering protection has cost the game its
+actual gameplay. Nothing in the simulation can tell us which, since it has no player capable
+of probing. Logged as research question 12.
+
 ### 6. Fixed schedules — **a real vulnerability, now fixed**
 
 Found while auditing this: sabotage fired on `day > 0 && day % sabotageCadenceDays === 0` —

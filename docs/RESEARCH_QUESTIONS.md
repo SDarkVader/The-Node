@@ -256,6 +256,37 @@ alone is a sufficient deterrent in practice, or whether players simply accept be
 
 ---
 
+## 12. Is ten symbols enough to actually play a social game with? — **LOAD-BEARING**
+
+**What we assume:** that the grammar (10 `SelfState` values, first-person only, no subject,
+no free text) leaves enough room for meaningful social play — probing, signalling, building
+private conventions with trusted allies.
+
+**Why it matters:** the constraint is doing excellent defensive work — it is the single
+strongest anti-information-brokering property in the design (see
+`docs/ADVERSARIAL_CONTAINMENT.md`). But defence is not the point. The intended gameplay is
+*interrogating people without them knowing*, by emitting a signal and reading what comes back.
+That requires the channel to be narrow enough to stay ambiguous and wide enough to carry
+intent. Ten symbols is ~3.3 bits per message.
+
+**The failure mode:** if probing is indistinguishable from noise in practice, the social layer
+is not subtle — it is dead. The protection would then have cost the game the very thing it
+exists to protect. That is a real possibility and the current design has no evidence either
+way.
+
+**What we know it does support, at least in principle:** private conventions between players
+with shared history ("two `uneasy` in a row means the thing we discussed"). The system cannot
+detect these and should not try — the useful property is that a code cannot be bootstrapped
+with a *stranger* through ten ambiguous symbols, so conspiracy ends up gated on relationship
+rather than banned. Whether that is enough to feel like a game is the open part.
+
+**What would answer it:** playtesting, primarily — this is not simulable, since the model has
+no player capable of probing. Adjacent evidence: research on constrained-communication games
+(Hanabi, Spyfall, Werewolf variants with restricted vocabularies) and how much expressive
+range players need before signalling becomes legible.
+
+---
+
 ## Cross-cutting note on method
 
 Several of these share a failure mode worth naming: **the simulation models compliance as
@@ -267,6 +298,9 @@ otherwise.
 
 Conversely, questions 3, 4, 7, 8 and 9 are calibration: the model *can* explore them, and
 the sweep infrastructure already exists to do so once a target is known.
+
+Question 12 is the sharpest case of the whole pattern: the mechanic is provably good at what
+it prevents and completely unevidenced at what it enables. Only people can tell us.
 
 Question 11 is the mirror of the rest: not "is our number right" but "is there anything here
 for our most invested players to want". Simulation cannot raise it either, because nothing in
