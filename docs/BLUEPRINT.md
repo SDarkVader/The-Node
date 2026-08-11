@@ -1568,6 +1568,55 @@ typecheck` clean. The golden-value tick-order snapshot was regenerated — a del
 reviewed change to income computation, not a silent regression (documented in
 `test/world.regression.test.ts`'s own comment on when regeneration is appropriate).
 
+**Tightened the purchase cycle at direct user instruction (2026-08-11) — swept first,
+then set the default from evidence.** `purchaseCycleDays` was exposed as a `WorldConfig`
+field specifically so it could be swept without editing source. Swept `[2.5, 4, 5, 7, 10,
+14]` days, 3 seeds, 2000 days each, at the current default role counts:
+
+```
+cycleDays  combinedGini  millerOnlyGini  bakerOnlyGini  meanMillerWealth  meanBakerWealth  ratio  meanFinalWealth
+2.5        0.537         0.570           0.426          1.16              6.16             5.3x   4.40
+4          0.510         0.570           0.426          1.16              3.85             3.3x   2.90
+5          0.500         0.570           0.426          1.16              3.08             2.7x   2.40
+7          0.489         0.570           0.426          1.16              2.20             1.9x   1.83
+10         0.488         0.570           0.426          1.16              1.54             1.3x   1.40
+14         0.504         0.570           0.426          1.16              1.10             0.9x   1.12
+```
+
+**A precise, non-obvious property this sweep revealed, not assumed**: `millerOnlyGini`
+and `bakerOnlyGini` are *identical* at every cycle length. Traced to the mechanism:
+`splitBakerDemand()`'s price-weighted shares are normalized regardless of total demand,
+so tightening the cycle scales every baker's income down by the exact same proportional
+factor — a uniform multiplier — and Gini is scale-invariant under one (already verified
+in `wealth.ts`'s own tests). Tightening the purchase cycle is therefore a real, working
+lever for the *cross-role* Miller/Baker gap, and does *nothing at all* for inequality
+*among* bakers themselves — a different lever (the wealth cap, or the still-open role-
+roster ratio) would be needed for that. Formalized as its own test
+(`test/wealth.regression.test.ts`) so this property stays verified, not just observed
+once in a sweep.
+
+**Set `PURCHASE_CYCLE_DAYS=7` as the new default** (`src/engine/wealth.ts`) — a real
+correction (ratio 5.3x → 1.9x) without overshooting into Bakers earning *less* than
+Millers, which cycle=10 and cycle=14 both start to do. Re-ran the standard baseline
+report at the new default, 3000 days, 3 seeds:
+
+```
+combinedGini: 0.35-0.59 (was 0.42-0.62)   bakerToMillerRatio: 1.2x-2.3x (was 4.1-7.8x originally, 3.4-6.5x after the demand-model fix alone)
+```
+
+The remediation sweep's own numbers shrink in relevance now, worth noting rather than
+silently leaving stale: with the earnings gap this much smaller, flat-tax redistribution
+moves almost nothing (Gini 0.489→0.487 even at 80% tax — there's much less variance left
+to redistribute), and the wealth cap's effect is smaller in absolute terms too (overall
+`meanFinalWealth` dropped from ~7.33 originally to ~1.83 now, so a `cap=5` barely binds
+anymore). Neither remediation mechanism's earlier numbers should be read as still current
+without re-running `npm run wealth-inequality-report` against today's defaults.
+
+**Verification.** 2 new tests (`purchaseCycleDays` config override actually changes
+behavior; `splitBakerDemand`'s scale-invariant relative-shares property, the mechanism
+the whole tightening relies on). 174 tests total, all passing; `npm run typecheck` clean.
+Golden-value snapshot regenerated again — same deliberate-change discipline as above.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

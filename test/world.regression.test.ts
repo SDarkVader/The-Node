@@ -334,4 +334,18 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
     // be an artificially low "accidental" cap — proves nothing is silently bounding it.
     expect(maxWealth).toBeGreaterThan(5);
   });
+
+  it('config.purchaseCycleDays actually overrides wealth.ts\'s own default, not silently ignored', () => {
+    let worldTight = createWorld(1, { ...DEFAULT_WORLD_CONFIG, purchaseCycleDays: 14 });
+    let worldLoose = createWorld(1, { ...DEFAULT_WORLD_CONFIG, purchaseCycleDays: 2.5 });
+    for (let i = 0; i < 200; i++) {
+      worldTight = stepWorld(worldTight);
+      worldLoose = stepWorld(worldLoose);
+    }
+    const bakerWealth = (w: World) => w.bakers.filter((b) => b.slot.state === 'FILLED').reduce((a, b) => a + b.wealth, 0);
+    // Longer cycle -> less total demand -> strictly less accumulated baker wealth over the
+    // same seed and duration, since prices/quantities are byte-identical (no RNG consumed
+    // by the demand model) and only income differs.
+    expect(bakerWealth(worldTight)).toBeLessThan(bakerWealth(worldLoose));
+  });
 });

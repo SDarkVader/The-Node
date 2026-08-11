@@ -6,6 +6,43 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Tightened the purchase cycle, swept first, found a precise scale-invariance property
+
+**Context.** Direct follow-up to the Baker demand model fix: "tighten the purchase cycle
+and rerun the numbers." Exposed `purchaseCycleDays` as a `WorldConfig` field first,
+specifically so it could be swept without editing source repeatedly.
+
+**Swept before picking a number.** `[2.5, 4, 5, 7, 10, 14]` days, 3 seeds, 2000 days each.
+Found something precise and non-obvious, not just "bigger cycle, smaller gap":
+`millerOnlyGini` and `bakerOnlyGini` were *identical* at every single cycle length
+tested. Traced it: `splitBakerDemand()`'s price-weighted shares are normalized regardless
+of total demand, so tightening the cycle scales every baker's income down by the exact
+same proportional factor, and Gini is scale-invariant under a uniform multiplier
+(verified in `wealth.ts`'s own earlier tests). That means tightening the purchase cycle
+is a real lever for the *cross-role* Miller/Baker gap and does *nothing whatsoever* for
+inequality *among* bakers themselves — a genuinely useful distinction to have proven
+rather than assumed, and now locked in as its own test so it stays true.
+
+**Set the new default from the sweep's evidence**: `PURCHASE_CYCLE_DAYS=7` (was 2.5) —
+brings the ratio from 5.3x to 1.9x without overshooting into Bakers earning *less* than
+Millers, which cycle=10 and cycle=14 both start to do. Re-ran the standard baseline
+report at the new default: combined Gini now 0.35-0.59 (was 0.42-0.62), ratio 1.2x-2.3x
+(was 4.1-7.8x before either fix, 3.4-6.5x after the demand-model fix alone).
+
+**Flagged, didn't silently leave stale**: the remediation sweep's tax/cap numbers from
+the previous session are now largely obsolete — with the gap this much smaller, flat-tax
+redistribution barely moves anything (Gini 0.489→0.487 even at 80% tax), and the wealth
+cap's absolute effect shrank too (overall wealth levels dropped roughly 4x, so a cap of 5
+barely binds anymore). Noted in `docs/BLUEPRINT.md` that neither should be read as
+current without re-running the report.
+
+**Verification.** 2 new tests (the config override actually takes effect; the
+scale-invariant relative-shares property the whole tightening's reasoning depends on).
+174 tests total, all passing; `npm run typecheck` clean. Golden-value snapshot
+regenerated again — same deliberate-change discipline as the previous session.
+
+---
+
 ## 2026-08-11 — Fixed the Baker demand model; added a daily downtime window
 
 **Context.** Direct follow-up to the wealth-inequality session. Asked whether the 4-8x

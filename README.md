@@ -272,10 +272,13 @@ population. Fixed: demand is now bounded by population and a multi-day
 purchase cycle (people store food, they don't buy daily), split toward
 whoever's cheaper, capped at a realistic customers-per-day ceiling per
 baker, and the whole economy now runs a daily low-activity window (8
-hours, dampened not stopped, "for RL"). The earnings gap narrowed but
-didn't close — reported honestly rather than declared fixed. See
+hours, dampened not stopped, "for RL"). The purchase cycle was then swept
+and tightened further, bringing the earnings gap down to roughly 1-2x —
+a proven property turned up along the way: tightening it narrows the gap
+*between* Millers and Bakers but does nothing for inequality *among*
+bakers themselves, since relative demand shares don't change. See
 `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 172 automated tests cover all of it.
+citations, and open questions left. 174 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system, the Oracle, the private
@@ -286,7 +289,7 @@ playable form.
 
 ```
 npm install
-npm test               # 172 tests
+npm test               # 174 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -308,7 +311,7 @@ never shipped, structurally guarded), `src/sim/` (deterministic seeded
 harnesses and sweeps),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (172 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (174 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

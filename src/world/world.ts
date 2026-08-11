@@ -115,6 +115,10 @@ export interface WorldConfig {
   /** PROPOSAL, not shipped as default (undefined = no cap). Hard ceiling on accumulated
    *  wealth — see wealth.ts's applyWealthCap(). */
   wealthCap?: number;
+  /** Average days between one customer's bread purchases — feeds dailyDueCustomers().
+   *  Defaults to wealth.ts's own PURCHASE_CYCLE_DAYS; exposed here so it's a real,
+   *  sweepable knob rather than requiring a source edit to test different values. */
+  purchaseCycleDays?: number;
 }
 
 // rMiller + rBaker = 24, matching ecosystem.ts's own S_DEFAULT — not an arbitrary choice.
@@ -144,6 +148,7 @@ export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   commsProximityRange: 10,
   wealthTaxRate: 0, // PROPOSAL disabled by default — see docs/BLUEPRINT.md's "Wealth inequality" entry
   wealthCap: undefined,
+  purchaseCycleDays: undefined, // undefined = wealth.ts's own PURCHASE_CYCLE_DAYS default
 };
 
 export interface RoleEconomicSlot {
@@ -446,7 +451,10 @@ export function stepWorld(world: World): World {
   );
 
   const bakerFilledForDemand = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
-  const dueCustomers = dailyDueCustomers(world.population);
+  const dueCustomers =
+    config.purchaseCycleDays !== undefined
+      ? dailyDueCustomers(world.population, config.purchaseCycleDays)
+      : dailyDueCustomers(world.population);
   const servedCustomers = splitBakerDemand(
     bakerFilledForDemand.map((i) => bakers[i]!.value),
     dueCustomers,

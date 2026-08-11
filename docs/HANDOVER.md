@@ -143,12 +143,28 @@ correct; the current role ratio just doesn't make its own constraints bite. Full
 `docs/BLUEPRINT.md`'s "Wealth inequality" entry (see the "Revised the Baker demand model"
 sub-entry).
 
+**2026-08-11, same day: tightened the purchase cycle at direct instruction, swept
+first.** Exposed `purchaseCycleDays` as a `WorldConfig` field so it could be swept
+without editing source — `[2.5, 4, 5, 7, 10, 14]` days tested. Found a precise, proven
+property: `millerOnlyGini`/`bakerOnlyGini` are *identical* at every cycle length, because
+`splitBakerDemand()`'s relative shares are scale-invariant to total demand and Gini is
+scale-invariant to a uniform multiplier — tightening the cycle is a real lever for the
+*cross-role* gap and does *nothing* for inequality *among* bakers. Set the new default to
+`PURCHASE_CYCLE_DAYS=7` (was 2.5) from that evidence — brings the ratio to **1.2x-2.3x**
+(was 4.1-7.8x originally, 3.4-6.5x after the demand-model fix alone), without
+overshooting into Bakers earning less than Millers (cycle=10/14 both start to). **The
+earlier remediation-sweep numbers (tax/cap) are now largely obsolete** — with the gap
+this much smaller there's much less variance left to redistribute; don't treat those old
+numbers as current without re-running `npm run wealth-inequality-report`. Full numbers:
+`docs/BLUEPRINT.md`'s "Wealth inequality" entry, "Tightened the purchase cycle"
+sub-entry.
+
 **Phases D-F of the Observatory spec not started** — stopping here to report back and
 check in again before continuing, per explicit instruction not to do too much in one pass.
 
 ```
 npm install
-npm test              # 172 tests, all passing
+npm test              # 174 tests, all passing
 npm run sim            # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout (N=50/60/80)
 npm run conscription-sim # Miller conscription sweep (delay x N)
@@ -435,16 +451,18 @@ alongside a real open question it inherits: no persistent per-district state exi
   produce once run through the real composed kernel (population/health/flour-price
   outcomes, not a recommendation) — data for whenever this gets decided, not a decision
   made in its place. See `docs/BLUEPRINT.md`'s "Phase C" entry for the numbers.
-- **`PURCHASE_CYCLE_DAYS=2.5` and `BAKER_MAX_DAILY_CUSTOMERS=12` (`src/engine/wealth.ts`,
-  2026-08-11) are `[ILLUSTRATIVE]`, replacing the old flat `BAKER_DAILY_VOLUME=1.0`
-  constant that had no population bound at all.** Demand is now population-bound and
-  price-competitive (`splitBakerDemand()`), but at the *current* default role counts (8
-  Miller, 16 Baker against N=65) the capacity cap never actually binds — the bounded
-  demand pool still averages ~1.6 customers/baker, above the old flat constant, not below
-  it. The Baker/Miller earnings gap dropped from 4-8x to 3.4-6.5x, not further — treat
-  both the ratio and these two constants as provisional, not a validated economic
-  prediction (`docs/BLUEPRINT.md`'s "Wealth inequality" entry, "Revised the Baker demand
-  model" sub-entry, has the full trace of why the cap doesn't bind yet).
+- **`PURCHASE_CYCLE_DAYS=7` (tightened 2026-08-11 from 2.5, at direct instruction, swept
+  first) and `BAKER_MAX_DAILY_CUSTOMERS=12` (`src/engine/wealth.ts`) are `[ILLUSTRATIVE]`,
+  replacing the old flat `BAKER_DAILY_VOLUME=1.0` constant that had no population bound
+  at all.** Demand is now population-bound and price-competitive (`splitBakerDemand()`);
+  the capacity cap still doesn't bind at the *current* default role counts (8 Miller, 16
+  Baker against N=65) — that's a separate, still-open lever. The Baker/Miller earnings
+  gap is now **1.2x-2.3x** (was 4-8x originally). `purchaseCycleDays` is exposed as a
+  `WorldConfig` field specifically so it can be swept further without editing source —
+  proven property: tightening it narrows the *cross-role* gap only, it does nothing for
+  inequality *among* bakers (Gini among bakers is identical at every cycle length tested,
+  since relative demand shares are scale-invariant). Treat the ratio and these constants
+  as provisional (`docs/BLUEPRINT.md`'s "Wealth inequality" entry has the full sweep).
 - **`DAILY_ACTIVITY_MULTIPLIER≈0.70` (`src/engine/wealth.ts`, 2026-08-11)** scales both
   Miller and Baker income daily — the blended consequence of an 8-hour low-activity
   window every day ("account for RL"). It's a daily-aggregate blend, not a literal

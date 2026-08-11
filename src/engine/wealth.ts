@@ -50,8 +50,20 @@
  * same as every other filled-in gap in this codebase.
  */
 
-/** Average days between one customer's purchases — "2-3 days per visiting requirement." [ILLUSTRATIVE] */
-export const PURCHASE_CYCLE_DAYS = 2.5;
+/**
+ * Average days between one customer's purchases. [ILLUSTRATIVE] Tightened 2026-08-11
+ * from the original "2-3 days" (2.5) to 7, per direct user instruction after sweeping the
+ * effect first (`purchaseCycleDays` is a `WorldConfig` field precisely so this could be
+ * swept without editing source). One important property, verified by the sweep, not
+ * assumed: because `splitBakerDemand()`'s price-weighted shares are normalized regardless
+ * of total demand, tightening this constant scales every baker's income down by the same
+ * proportional factor — it narrows the *cross-role* Miller/Baker gap (Gini is scale-
+ * invariant under a uniform multiplier) but does nothing whatsoever for inequality *among*
+ * bakers themselves, which stayed at exactly the same Gini value across every cycle length
+ * tested. See docs/BLUEPRINT.md's "Wealth inequality" entry for the full sweep and the
+ * before/after ratio.
+ */
+export const PURCHASE_CYCLE_DAYS = 7;
 /** A single baker's realistic daily service ceiling — kept comfortably under "20-30 people
  *  daily," not just short of it. [ILLUSTRATIVE] */
 export const BAKER_MAX_DAILY_CUSTOMERS = 12;

@@ -85,6 +85,20 @@ describe('splitBakerDemand — population-bound, price-weighted, capacity-capped
     expect(Number.isFinite(shares[0]!)).toBe(true);
     expect(shares[0]!).toBeGreaterThan(shares[1]!); // still wins the larger share, just not infinite
   });
+
+  it('scaling total due-customers scales every baker\'s share by the same factor (relative shares are invariant to the purchase cycle) — below the capacity cap', () => {
+    // This is the property the purchase-cycle tightening (2026-08-11) relies on: since
+    // relative shares don't change, tightening the cycle narrows the cross-role Miller/
+    // Baker gap (a uniform scale) without changing inequality *among* bakers at all
+    // (Gini is scale-invariant). Only holds below the capacity cap — verified separately
+    // that the cap itself does bound things once demand is high enough to hit it.
+    const prices = [0.5, 1.0, 2.0, 0.3];
+    const sharesAt10 = splitBakerDemand(prices, 10, 1000);
+    const sharesAt30 = splitBakerDemand(prices, 30, 1000);
+    for (let i = 0; i < prices.length; i++) {
+      expect(sharesAt30[i]! / sharesAt10[i]!).toBeCloseTo(3, 6);
+    }
+  });
 });
 
 describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the 8-hour downtime window', () => {
