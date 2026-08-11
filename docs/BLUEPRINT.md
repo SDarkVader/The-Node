@@ -1887,6 +1887,82 @@ counts, joint role-split × district-count combinations) could still find someth
 This is the first evidence-backed answer to "derive role numbers and district count," not
 claimed to be the global optimum.
 
+## Multi-shard equilibrium + the opportunity valve (2026-08-11) — what actually sets population
+
+**The "~68% of target" concern was two separate things, and instrumenting beat guessing.**
+Rather than sweep constants until a number improved, the actual flows were measured. Two
+findings, both verifiable by re-running `npm run multi-shard-equilibrium-sweep`:
+
+**1. Equilibrium is an exact inflow/outflow balance.** The ONLY population inflow is
+`arrivalPDaily` per shard per day; the ONLY outflow is a failed cross-shard migration
+(a successful one conserves population exactly; churn, conscription and district merges
+only ever move people between roles and the grifter pool). So the system must settle where
+`arrivalPDaily x shardCount == migrationFailureRate x emigrantsPerDay`. Measured at the
+shipped defaults: 0.303 arrivals/day vs. 0.295 failures/day — the accounting balances,
+confirming the governing relationship rather than assuming it.
+
+**2. A real bifurcation — "just raise population" is not free.** Both obvious levers
+(raise `arrivalPDaily`, lower `migrationFailureRate`) do raise population, and both trigger
+unbounded shard proliferation past a critical point, because a fuller shard satisfies
+`canOpenNewShard`'s gate and every new shard adds its own arrival inflow — positive
+feedback on shard count. Measured: `arrivalPDaily` 0.10 -> 3 shards, 0.20 -> 31, 0.45 ->
+100 (cooldown-capped); `migrationFailureRate` 0.15 -> 3 shards, 0.10 -> 5.3, 0.04 -> 42.
+
+**Also corrected: the per-shard mean was hiding nothing, and 65 is not a floor.** Verified
+per-shard rather than trusting the aggregate — all shards sat evenly (54.6/55.1/54.8 at
+one seed), no thin shard buried in the mean. And the brief's own stated range is **50-80
+players per shard**, so `targetPopulation=65` is the midpoint of that band, not a minimum
+being missed. The stale "68%" figure in earlier docs was measured against the pre-S=30
+default and should not be quoted.
+
+### The opportunity valve — the structural fix (user-specified)
+
+User's steer: "adapt the mechanics of the Oracle and economic opportunity possibilities to
+stabilize ... purely statistics, no bias." That named a genuine flaw. `migrationValveStep`
+keys emigration purely off the roleless FRACTION, which conflates two completely different
+situations: 28 roleless players with 4 open role-slots (real, reachable opportunity) versus
+70 roleless players with every slot filled (none). Both produce identical emigration
+pressure — which is why the system had no negative feedback holding population up: nothing
+about a shard emptying out made it more attractive to stay in.
+
+`opportunityAdjustedMigrationStep` (`engine/ecosystem.ts`, a NEW function — the validated
+`migrationValveStep` is untouched, same discipline as `multiRoleConscription.ts` vs.
+`stepConscriptionDay`) damps emigration by **open role-slots per roleless player**. As a
+shard thins, open slots rise while the roleless pool shrinks, so opportunity climbs sharply
+and emigration is suppressed — the shard becomes genuinely worth staying in and recovers.
+As it fills toward its role-slot ceiling, open slots approach zero, damping vanishes, and
+emigration returns to full strength — so it **cannot** cause the runaway regime above; it
+has no effect at all at the crowded end, precisely where that risk lives.
+
+Pure arithmetic on counts already tracked — nothing with behavior or belief to infer
+(constraint 3), every player in a shard sees the identical figure (no bias, no per-player
+targeting), and it only ever REDUCES emigration, never increases it, so it cannot push a
+shard toward a zero-state (constraint 2).
+
+**`OPPORTUNITY_WEIGHT=2.0`, set from a sweep, not guessed** (3000 days, 3 seeds; per-shard
+population, weakest shard, shard count): 0 -> 54.6 (51.7), 3.0 | 1 -> 57.9 (57.3), 3.3 |
+**2 -> 59.0 (57.0), 3.7** | 3 -> 59.8 (60.3), 5.3 | 5 -> 60.2 (61.0), 9.7 | 8 -> 61.1
+(61.3), 13.3. Weight 2 takes most of the available gain (84% -> 91% of target) while the
+registry stays essentially bounded; past it population flattens as shard count accelerates.
+
+**Result** (`npm run multi-shard-validation`): the isolated single-shard baseline improved
+from **8.1/65 to 38.5/65** — a lone shard can now retain people instead of only bleeding
+out — and the multi-shard registry from 44.5 to **51.3/65** across 3.67 shards. The valve
+helps most exactly where the system was weakest, which is what a stabilizer should do.
+
+**Why `migrationFailureRate` was NOT retuned**: it is an explicit placeholder for
+Import/Export's unbuilt legal/illegal route-detection mechanic, so its real value must come
+from that design, not from population balancing. The sweep is checked in so whoever builds
+Import/Export can see exactly what a chosen detection rate does to equilibrium and shard
+count before picking it.
+
+**Oracle presentation (user-specified, recorded — not built)**: an AI in human form,
+half-bodied on a metal platform, embedded like an ATM machine but large, lit and glowing so
+it reads as positive *irrespective* of the economic situation or any prize reduction.
+Mechanically load-bearing, not just flavour: because its presentation never signals
+decline, players cannot read shard health off it, preserving the information asymmetry.
+Outputs stay deterministic — no AI involvement in the implementation.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

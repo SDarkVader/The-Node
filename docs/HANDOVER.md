@@ -29,7 +29,8 @@ web observatory app, civic-memory monuments) are not started.
 the population-collapse finding that surfaced from deriving a role/district allocation for
 it, and (3) district consolidation + a multi-shard registry, built specifically to fix
 that collapse, per direct user design spec.** All three are built and tested. 233 tests
-total, all passing; `npm run typecheck` clean.
+total, all passing; `npm run typecheck` clean. (Since extended — see (4) and (5) below;
+238 tests now.)
 
 ### (1) 5-role roster + grifter pool
 
@@ -97,8 +98,8 @@ not-yet-designed route-detection mechanic.
 **Final validation (`npm run multi-shard-validation`)**: single-shard baseline collapses
 to **8.1/65** mean population (worse than pre-live-N-fix — an honest consequence of
 removing the old model's optimism, not a regression). Multi-shard registry settles at **3
-shards, 44.5/65 mean population per shard (~68%)** — real, substantial improvement,
-reported plainly, not fully healthy yet. Full numbers and reasoning:
+shards, 44.5/65 mean population per shard** at the time — since improved again to 51.3/65
+by the opportunity valve, see (5) below. Full numbers and reasoning:
 `docs/BLUEPRINT.md`'s "District consolidation + shard registry" entry.
 
 ### (4) Role/district allocation — finally derived against the real system
@@ -122,6 +123,24 @@ Full numbers, the traced mechanism behind the district tradeoff, and the honest 
 (only one S=30 split and three district counts were tested, not exhaustive) are in
 `docs/BLUEPRINT.md`'s "5-role/district allocation, re-derived" entry.
 
+### (5) Population health — solved by instrumenting, not tuning
+
+The standing "~68% of target" concern turned out to be partly stale (measured against the
+old S=24 default; really 84%) and partly a misreading — the brief's own range is **50-80
+players per shard**, so `targetPopulation=65` is that band's midpoint, not a floor. Flows
+were measured rather than constants swept: equilibrium is exactly `arrivals == migration
+failures` (0.303 vs 0.295/day, verified), and both obvious levers trigger unbounded shard
+proliferation, so neither was a clean fix.
+
+The real flaw, found from the user's steer ("economic opportunity ... purely statistics, no
+bias"): the migration valve keyed emigration off roleless *fraction* alone, treating "28
+roleless with 4 open slots" identically to "70 roleless with nothing open" — so nothing
+about a shard emptying made it worth staying in. `opportunityAdjustedMigrationStep`
+(`engine/ecosystem.ts`, new; the validated `migrationValveStep` is untouched) damps
+emigration by open role-slots per roleless player: thin shards recover, full shards are
+unaffected (so it cannot cause runaway growth). `OPPORTUNITY_WEIGHT=2.0` from a sweep.
+**Single-shard 8.1 -> 38.5/65; multi-shard 44.5 -> 51.3/65.**
+
 ```
 npm install
 npm test                     # 233 tests, all passing
@@ -136,6 +155,7 @@ npm run role-ratio-sweep     # OLD 2-role Miller/Baker ratio sweep — long supe
 npm run district-role-sweep  # OLD single-shard 5-role sweep — stale, predates the fixes above, superseded by the one below
 npm run multi-shard-role-district-sweep # the CURRENT role/district sweep — evidence behind DEFAULT_WORLD_CONFIG
 npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
+npm run multi-shard-equilibrium-sweep # what sets equilibrium population + the bifurcation
 npm run multi-shard-validation # single-shard collapse vs. multi-shard registry — the population-collapse evidence
 npm run mvp                  # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server                # WebSocket server broadcasting the MVP scenario live
@@ -159,14 +179,11 @@ change at a time — see `CLAUDE.md`'s "Branch policy." No CI configured. See
 `DEFAULT_WORLD_CONFIG` moved to S=30 (Miller 4/Baker 8/Courier 8/Journalist 7/Detective 3),
 district count stays at 6. Not the top priority anymore; the item below is.
 
-**Highest priority — multi-shard population still isn't fully healthy (~68% of target per
-shard).** The registry fix works and is real, but isn't tuned to full health yet. Open,
-not yet attempted: `fillHazard`'s beta/tPain calibration for a real finite pool,
-`MIGRATION_FAILURE_RATE`'s value (currently a flat 0.15 placeholder), or
-`SHARD_OPEN_STABILITY_THRESHOLD`/`SHARD_OPEN_SURPLUS_FACTOR`. Any of these need the same
-sweep-then-set discipline used everywhere else in this codebase, not a guess. Worth
-re-running `multi-shard-validation` after any change here, since it's the one script that
-actually measures whether a change helps.
+**Population health is resolved** — see "Current state" (5) below. The isolated
+single-shard baseline went 8.1 -> 38.5/65 and the multi-shard registry 44.5 -> 51.3/65 via
+the opportunity valve. Per-shard population now sits inside the brief's own 50-80 band.
+Remaining tuning is optional, not a blocker; `migrationFailureRate` is deliberately left
+alone until Import/Export's route-detection design sets it.
 
 **A finer role/district search is possible but not done** — only one split was tested at
 S=30 (out of many possible distributions at that total) and only three district counts

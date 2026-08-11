@@ -47,16 +47,24 @@ export interface MultiShardState {
   /** Cumulative count of migration attempts that failed (lost, arrived nowhere) — for
    *  observability/reporting, not used by the simulation itself. */
   totalFailedMigrations: number;
+  /**
+   * Per-run override of `MIGRATION_FAILURE_RATE`. Exposed as state (rather than only a
+   * module constant) for the same reason `WorldConfig.purchaseCycleDays` is a config
+   * field: it is the single controlling lever on this system's equilibrium population
+   * (see `sim/multiShardEquilibriumSweep.ts`), so it must be sweepable without editing
+   * source. Defaults to `MIGRATION_FAILURE_RATE` when not supplied.
+   */
+  migrationFailureRate: number;
 }
 
-export function createMultiShardState(seed: number, config: WorldConfig): MultiShardState {
+export function createMultiShardState(seed: number, config: WorldConfig, migrationFailureRate: number = MIGRATION_FAILURE_RATE): MultiShardState {
   const rng = mulberry32(seed);
   const registry = createShardRegistry(config.targetPopulation);
   const worlds = new Map<number, World>();
   for (const shard of registry.shards) {
     worlds.set(shard.id, createWorld(seed * 1000 + shard.id + 1, config));
   }
-  return { registry, worlds, day: 0, rng, seed, config, totalFailedMigrations: 0 };
+  return { registry, worlds, day: 0, rng, seed, config, totalFailedMigrations: 0, migrationFailureRate };
 }
 
 /**
@@ -86,7 +94,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
       // The source shard already lost this person (stepWorld's own emigration accounting
       // happened before lastEmigrants was reported). A failed migration means they simply
       // never arrive anywhere — a real cost, not redirected or refunded.
-      if (state.rng() < MIGRATION_FAILURE_RATE) {
+      if (state.rng() < state.migrationFailureRate) {
         totalFailedMigrations += 1;
         continue;
       }

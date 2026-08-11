@@ -6,6 +6,56 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Solved the population-health question by instrumenting it, not tuning it; the opportunity valve
+
+**Context.** "Solve it buddy." The standing item was multi-shard population sitting at
+~68% of target. Rather than sweep constants until a number improved, I measured the actual
+flows first — which turned out to matter, because the premise was partly wrong.
+
+**Diagnosis before any change.** (1) The 68% figure was stale — measured against the old
+S=24 default; the real figure was 84%. (2) It was not a slow climb averaged down: a
+6000-day run showed a genuinely stable oscillation, not a trend. (3) The per-shard mean was
+hiding nothing — all shards sat evenly (54.6/55.1/54.8), no thin shard buried in it. (4)
+Most importantly: the brief's own range is **50-80 players per shard**, so 54.6 was already
+in spec — `targetPopulation=65` is that band's midpoint, not a floor being missed.
+
+**Then the real mechanism, derived and verified.** The only inflow is `arrivalPDaily`; the
+only outflow is a failed migration. So equilibrium must satisfy `arrivals == failures` —
+measured 0.303 vs 0.295/day, confirming it. And a genuine bifurcation: BOTH obvious levers
+(more arrivals, less leak) raise population *and* trigger unbounded shard proliferation
+(arrivals 0.45 -> 100 shards; failure rate 0.04 -> 42 shards), because fuller shards satisfy
+the open-gate and each new shard adds its own inflow. So neither constant was a clean fix.
+
+**The user's steer found the actual flaw.** "Adapt the mechanics of the Oracle and economic
+opportunity possibilities to stabilize ... purely statistics, no bias." The migration valve
+keyed emigration off roleless *fraction* alone, conflating "28 roleless with 4 open slots"
+(real opportunity) with "70 roleless and nothing open" (none) — so nothing about a shard
+emptying out made it more attractive to stay in. No negative feedback anywhere.
+
+**Built `opportunityAdjustedMigrationStep`** (new function; validated `migrationValveStep`
+untouched): damps emigration by open role-slots per roleless player. Thin shard -> high
+opportunity -> people stay -> recovery. Full shard -> no open slots -> damping vanishes ->
+emigration at full strength, so it provably cannot cause the runaway regime. Pure counting,
+no agent, identical for every player, and it only ever reduces emigration (constraints 2
+and 3 both respected by construction, not by assertion).
+
+**`OPPORTUNITY_WEIGHT=2.0` from a sweep, not a guess** — weight 2 takes most of the gain
+(84% -> 91% of target) while the registry stays bounded at 3.7 shards; higher weights flatten
+population while accelerating shard count.
+
+**Result**: isolated single-shard baseline **8.1 -> 38.5 / 65**; multi-shard **44.5 ->
+51.3 / 65**. The valve helps most exactly where the system was weakest.
+
+**Deliberately not retuned**: `migrationFailureRate`, because it is a placeholder for
+Import/Export's unbuilt route-detection design — tuning it to chase a population number
+would be backwards. The sweep is checked in (`npm run multi-shard-equilibrium-sweep`) so
+that design can be made with its consequences visible.
+
+**Verification.** 5 new tests (exact passthrough at zero open slots; emigration never
+increased; damping strengthens as a shard thins; weight=0 no-op; never exceeds the roleless
+pool). 238 tests total, all passing; typecheck clean. Golden snapshot unaffected — the
+valve is surgical enough not to touch the fully-staffed pinned window.
+
 ## 2026-08-11 — Role/district allocation, finally derived against the real system — "run it on your baseline then solve it regardless"
 
 **Context.** Direct follow-up once the district-consolidation/shard-registry/live-N work

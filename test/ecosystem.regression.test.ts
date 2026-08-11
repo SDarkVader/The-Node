@@ -10,6 +10,7 @@ import {
   decayExperienceTraveling,
   districtArrivalChoice,
   migrationValveStep,
+  opportunityAdjustedMigrationStep,
   applySabotageDamage,
 } from '../src/engine/ecosystem.js';
 import { runCombinedEconomySim, tailMean } from '../src/sim/ecosystemHarness.js';
@@ -229,5 +230,59 @@ describe('experience decay while traveling', () => {
     const pctLost = ((EXPERIENCE_CAP - exp) / EXPERIENCE_CAP) * 100;
     expect(pctLost).toBeGreaterThanOrEqual(25);
     expect(pctLost).toBeLessThanOrEqual(60);
+  });
+});
+
+describe('opportunityAdjustedMigrationStep — economic opportunity as the stabilizer', () => {
+  const always = () => 0.999; // never triggers the stochastic-rounding extra emigrant
+
+  it('with zero open role-slots it reproduces migrationValveStep exactly — no free lunch at the crowded end', () => {
+    // filled === totalRoleSlots means opportunity 0, damping 1: the regime where runaway
+    // growth would otherwise live is deliberately untouched by this mechanism.
+    for (const n of [40, 65, 100, 150]) {
+      const filled = 30;
+      const a = migrationValveStep(n, filled, always);
+      const b = opportunityAdjustedMigrationStep(n, filled, 30, always);
+      expect(b).toBe(a);
+    }
+  });
+
+  it('open role-slots strictly reduce emigration, never increase it (constraint 2 — cannot push a shard toward zero)', () => {
+    for (const n of [40, 55, 65, 80, 120]) {
+      for (const filled of [5, 12, 20, 26]) {
+        const plain = migrationValveStep(n, filled, always);
+        const adjusted = opportunityAdjustedMigrationStep(n, filled, 30, always);
+        expect(adjusted).toBeLessThanOrEqual(plain);
+      }
+    }
+  });
+
+  it('damping strengthens as a shard thins — the negative feedback the plain valve lacked', () => {
+    // Same roleless fraction, different opportunity: a thin shard with many open slots
+    // must emigrate proportionally less than a crowded one with few.
+    const thinExpected = 40 - 8; // n=40, filled=8 -> 22 open slots for 32 roleless
+    const crowdedExpected = 120 - 28; // n=120, filled=28 -> 2 open slots for 92 roleless
+    const thinRatio = opportunityAdjustedMigrationStep(40, 8, 30, always) / thinExpected;
+    const crowdedRatio = opportunityAdjustedMigrationStep(120, 28, 30, always) / crowdedExpected;
+    expect(thinRatio).toBeLessThan(crowdedRatio);
+  });
+
+  it('opportunityWeight=0 is an exact no-op passthrough', () => {
+    for (const filled of [5, 15, 25]) {
+      expect(opportunityAdjustedMigrationStep(65, filled, 30, always, undefined, undefined, 0)).toBe(
+        migrationValveStep(65, filled, always),
+      );
+    }
+  });
+
+  it('never emigrates more than the roleless population, and never goes negative', () => {
+    const rng = mulberry32(4);
+    for (let i = 0; i < 500; i++) {
+      const n = 1 + Math.floor(rng() * 150);
+      const filled = Math.floor(rng() * Math.min(n, 30));
+      const e = opportunityAdjustedMigrationStep(n, filled, 30, rng);
+      expect(e).toBeGreaterThanOrEqual(0);
+      expect(e).toBeLessThanOrEqual(n - filled);
+    }
   });
 });

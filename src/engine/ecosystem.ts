@@ -226,6 +226,78 @@ export function migrationValveStep(
   return Math.min(emigrants, r);
 }
 
+/**
+ * Weight on economic opportunity in `opportunityAdjustedMigrationStep` below. 0 reproduces
+ * `migrationValveStep` exactly; higher values mean open role-slots hold people more
+ * strongly. Set from a real sweep (3000 days, 3 seeds, multi-shard), not guessed —
+ * per-shard population and the WEAKEST shard's population by weight:
+ *   0 -> 54.6 (weakest 51.7), 3.0 shards   1 -> 57.9 (57.3), 3.3
+ *   2 -> 59.0 (57.0), 3.7 shards           3 -> 59.8 (60.3), 5.3
+ *   5 -> 60.2 (61.0), 9.7 shards           8 -> 61.1 (61.3), 13.3
+ * 2.0 takes most of the available gain (84% -> 91% of target) while the shard registry
+ * stays essentially bounded; past it, population flattens while shard count accelerates
+ * into the growth regime documented in sim/multiShardEquilibriumSweep.ts.
+ * [ILLUSTRATIVE — swept, see sim/multiShardEquilibriumSweep.ts]
+ */
+export const OPPORTUNITY_WEIGHT = 2.0;
+
+/**
+ * Migration valve, modulated by real economic opportunity (2026-08-11, user-specified:
+ * "adapt the mechanics of the Oracle and economic opportunity possibilities to stabilize
+ * ... purely statistics, no bias"). A NEW function alongside `migrationValveStep` above,
+ * which is left untouched and still covered by its own validated tests — same discipline
+ * as `multiRoleConscription.ts` vs. `stepConscriptionDay`.
+ *
+ * THE FLAW THIS FIXES, found by instrumenting the multi-shard equilibrium rather than
+ * theorized: `migrationValveStep` keys emigration purely off the roleless FRACTION
+ * `f = (n - filled) / n`, which conflates two completely different situations — 28
+ * roleless players with 4 open role-slots (real, reachable opportunity) and 70 roleless
+ * players with every slot already filled (none whatsoever). Both produce a high `f` and
+ * therefore identical emigration pressure, which is wrong, and it is why the system had
+ * no negative feedback holding population up: nothing about a shard emptying out made it
+ * any more attractive to stay in.
+ *
+ * THE MECHANISM. `opportunity` = open role-slots per roleless player. As a shard thins,
+ * `filled` drops (more open slots) while the roleless pool shrinks too, so opportunity
+ * rises sharply and emigration is damped — the shard becomes genuinely worth staying in,
+ * and recovers. As a shard fills toward its role-slot ceiling, open slots approach zero,
+ * damping vanishes, and emigration returns to full strength — so this cannot cause the
+ * runaway-growth regime documented in `sim/multiShardEquilibriumSweep.ts` (it has no
+ * effect at all at the crowded end, exactly where that risk lives). Negative feedback in
+ * both directions, which is what the valve was missing.
+ *
+ * Deliberately pure arithmetic on counts the simulation already tracks — no per-player
+ * modelling, nothing with behavior or belief to infer (constraint 3), and no way for it to
+ * favour or disfavour any individual: every player in a shard sees the identical
+ * opportunity figure, the same "purely statistics, no bias, deterministic outputs only"
+ * property the Oracle is specified to have. It only ever REDUCES emigration relative to
+ * the unmodulated valve, never increases it — so it cannot push any shard toward a
+ * zero-state (constraint 2).
+ */
+export function opportunityAdjustedMigrationStep(
+  n: number,
+  filled: number,
+  totalRoleSlots: number,
+  rand: () => number,
+  theta: number = MIGRATION_THETA,
+  k: number = MIGRATION_K,
+  opportunityWeight: number = OPPORTUNITY_WEIGHT,
+): number {
+  const r = n - filled;
+  if (r <= 0 || n <= 0) return 0;
+  const f = r / n;
+  if (f <= theta) return 0;
+
+  const openSlots = Math.max(0, totalRoleSlots - filled);
+  const opportunity = openSlots / r; // open role-slots per roleless player
+  const damping = 1 / (1 + opportunityWeight * opportunity); // in (0, 1]; 1 when no slots are open
+
+  const rate = k * (f - theta) * damping;
+  const expected = r * rate;
+  const emigrants = Math.floor(expected) + (rand() < expected % 1 ? 1 : 0);
+  return Math.min(emigrants, r);
+}
+
 // ---- Sabotage ---------------------------------------------------------------------------
 
 /**

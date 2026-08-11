@@ -90,7 +90,7 @@ import {
   economicHealth,
   economicHealthWithExperience,
   growExperience,
-  migrationValveStep,
+  opportunityAdjustedMigrationStep,
   detectionProbability,
   sabotageAttempt,
   applySabotageDamage,
@@ -145,6 +145,10 @@ export interface WorldConfig {
   arrivalPDaily: number;
   migrationTheta: number;
   migrationK: number;
+  /** Weight on economic opportunity (open role-slots per roleless player) in damping
+   *  emigration — see ecosystem.ts's `opportunityAdjustedMigrationStep`. 0 reproduces the
+   *  old unmodulated valve exactly. Exposed as config so it stays sweepable. */
+  opportunityWeight?: number;
   /** Radius used to build the proximity-based connection graph for Wall-post propagation. */
   commsProximityRange: number;
   /** PROPOSAL, not shipped as default (0). Flat daily income tax, redistributed equally
@@ -312,6 +316,11 @@ export interface World {
  * population sits away from it (which is precisely the collapsed/recovering state this
  * whole mechanism now spends most of its time in).
  */
+/** Total role slots across all 5 roles — the shard's full staffing capacity. */
+function totalRoleSlotsFor(config: WorldConfig): number {
+  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+}
+
 function vacancyParamsFor(R: number, population: number, pMonthly: number, config: WorldConfig): VacancyParams {
   return {
     N: population,
@@ -982,7 +991,18 @@ export function stepWorld(world: World): World {
   }
 
   const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives }).length;
-  const emigrants = migrationValveStep(population, preEmigrationFilledCount, rng, config.migrationTheta, config.migrationK);
+  // Opportunity-adjusted (2026-08-11): open role-slots damp emigration, so a thinning
+  // shard becomes genuinely worth staying in and recovers — the negative feedback the
+  // plain roleless-fraction valve never had. See ecosystem.ts's own doc comment.
+  const emigrants = opportunityAdjustedMigrationStep(
+    population,
+    preEmigrationFilledCount,
+    totalRoleSlotsFor(config),
+    rng,
+    config.migrationTheta,
+    config.migrationK,
+    config.opportunityWeight,
+  );
   const actualEmigrants = Math.min(emigrants, population);
   for (let k = 0; k < actualEmigrants; k++) {
     if (grifters.length > 0) {
