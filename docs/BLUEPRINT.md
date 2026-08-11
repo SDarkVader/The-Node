@@ -1963,6 +1963,44 @@ Mechanically load-bearing, not just flavour: because its presentation never sign
 decline, players cannot read shard health off it, preserving the information asymmetry.
 Outputs stay deterministic — no AI involvement in the implementation.
 
+## Named per-role resources (2026-08-11) — and the incoherence they immediately exposed
+
+User-specified: "create arbitrary resources as named variables, make them suitable to the
+role and associate them with real numbers I can track over time." `engine/resources.ts`
+(pure, dependency-free) names six: **grain** (Import/Export — unbuilt), **flour** (Miller),
+**bread** (Baker), **parcels** (Courier), **stories** (Journalist), **leads** (Detective).
+One owning role each. Tracked as both per-day flows and cumulative totals on
+`World.resources`, so a shard's activity is observable rather than implied —
+`npm run resource-report` prints the real time series.
+
+**What is derived vs. invented, kept distinct.** Miller flour is that Miller's own
+competed-for Cournot quantity; Baker bread is its own served-customer count from
+`wealth.ts`'s validated demand model — this module only *names and records* what those
+layers already computed, changing no market behaviour. The three support-role rates are
+genuinely new `[ILLUSTRATIVE]` constants, since no mechanic exists anywhere to derive them
+from. Support output also takes district trade-route friction, so a Courier in a declining
+district really does move fewer parcels — the same consequence their income already takes.
+
+**A real defect surfaced the moment the numbers existed.** The grain->flour->bread chain
+was quietly incoherent: at an initial `FLOUR_PER_BREAD=0.35`, Bakers drew ~1.39 flour/day
+while 4 Millers milled ~1.09 — a permanent ~31% deficit, i.e. bread being baked from flour
+that was never milled. Invisible before this, because nothing tracked it. Resolved in the
+direction that respects what is validated: `rMiller=4` came from a real multi-shard sweep
+(population/health/equality), whereas the ratio was a fresh invention — so the invented
+constant yields, not the derived role split. Measured break-even by Miller count:
+3 -> 0.193 | 4 -> 0.274 | 5 -> 0.318 | 6 -> 0.381 | 7 -> 0.426 | 8 -> 0.477. Shipped
+**0.25** (0.27 still left a 3-8% deficit across seeds at 1500 days), holding a small
+structural surplus — the correct side to err on with no stockpile simulated. Locked by a
+regression test asserting the consumed/milled ratio stays under 1.05.
+
+**Grain has no producer, deliberately.** It accumulates as real, measurable demand with no
+supply behind it — the exact size of the hole Import/Export exists to fill ("they receive
+nodules every day to trade with the Miller"), quantified before that role is built rather
+than papered over. ~2562 units over 2000 days on one shard at the shipped defaults.
+
+**Reported, not enforced.** No stockpile is simulated, so a flour imbalance cannot starve
+anyone — enforcing it would need a real stock and a real answer to constraint 2 first.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

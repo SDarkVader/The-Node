@@ -97,6 +97,7 @@ import {
   BACKSTOP_PRODUCTIVITY,
   EXPERIENCE_CAP,
 } from '../engine/ecosystem.js';
+import { emptyLedger, accumulate, stepResourceFlows, type ResourceLedger } from '../engine/resources.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -302,6 +303,9 @@ export interface World {
    *  tick (0 or 1) — kept distinct from cross-shard migration inflow, which arrives via
    *  `receiveMigrants()` instead. */
   lastNewArrivals: number;
+  /** Named per-role resource flows (today) and cumulative totals since creation — see
+   *  `engine/resources.ts`. grain/flour/bread/parcels/stories/leads. */
+  resources: ResourceLedger;
   pendingWallPosts: WallPost[];
   lastRumourEvents: RumourEventLite[];
   lastSabotage: SabotageLogEntry | null;
@@ -458,6 +462,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     wealthGini: 0, // everyone starts at 0 wealth — perfect equality, honestly
     wealthTop10Share: 0,
     districtHealth,
+    resources: emptyLedger(),
     lastEmigrants: 0,
     lastNewArrivals: 0,
     pendingWallPosts: [],
@@ -934,6 +939,25 @@ export function stepWorld(world: World): World {
   detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
 
+  // Named per-role resource flows (2026-08-11). Miller/Baker figures are the quantities
+  // those layers ALREADY computed above (Cournot quantity, served customers) — named and
+  // recorded here, never recomputed or second-guessed. Support roles contribute their own
+  // trade-route friction, so a Courier in a declining district really does move fewer
+  // parcels, the same consequence their income already takes. See engine/resources.ts.
+  const supportFriction = (arr: SupportRoleSlot[]) =>
+    arr.filter((s2) => s2.slot.state === 'FILLED').map((s2) => frictionFor(s2.buildingId));
+  const resources = accumulate(
+    world.resources,
+    stepResourceFlows(
+      millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.value),
+      servedCustomers,
+      supportFriction(couriers),
+      supportFriction(journalists),
+      supportFriction(detectives),
+      DAILY_ACTIVITY_MULTIPLIER,
+    ),
+  );
+
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
   // Sabotage-before-arrival order matches design/tick_order_check.py's own validated
   // finding — checked before choosing this order, not reinvented.
@@ -1104,6 +1128,7 @@ export function stepWorld(world: World): World {
     wealthGini: giniCoefficient(allWealthValues),
     wealthTop10Share: topShare(allWealthValues, 0.1),
     districtHealth,
+    resources,
     lastEmigrants: actualEmigrants,
     lastNewArrivals,
     pendingWallPosts: [],

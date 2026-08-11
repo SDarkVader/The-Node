@@ -6,6 +6,37 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Named per-role resources; tracking them immediately exposed an incoherent supply chain
+
+**Context.** "We need to create arbitrary resources as named variables. Make them suitable
+to the role and associate them with real numbers I can track over time."
+
+**Built `engine/resources.ts`** — grain/flour/bread/parcels/stories/leads, one owning role
+each, tracked as per-day flows and cumulative totals on `World.resources`, with
+`npm run resource-report` printing a real time series. Miller/Baker figures are *derived
+from mechanics that already exist* (Cournot quantity, served customers) — named and
+recorded, not recomputed or second-guessed. The three support-role rates are new
+`[ILLUSTRATIVE]` constants, flagged as such, because nothing exists to derive them from.
+This also finally makes Courier/Journalist/Detective economically distinguishable instead
+of three identical flat wages.
+
+**The point of tracking proved itself immediately.** The grain->flour->bread chain was
+incoherent and nobody could have seen it: Bakers drew ~1.39 flour/day while 4 Millers
+milled ~1.09 — bread baked from flour that was never milled, a ~31% permanent deficit.
+
+**Fixed in the direction that respects evidence.** `rMiller=4` came from a real sweep;
+`FLOUR_PER_BREAD` was something I had just invented — so the invented constant yielded to
+the derived role split, not the reverse. First correction to 0.27 (computed break-even
+from one seed) still left a 3-8% deficit across 5 seeds — caught by my own regression test
+failing, which is exactly what it was for. Shipped 0.25, holding a small surplus. Test now
+asserts the consumed/milled ratio rather than per-seed surplus, since that's noisy.
+
+**Grain deliberately has no producer** — it accumulates as measurable demand with no supply,
+quantifying the hole Import/Export exists to fill (~2562 units / 2000 days / shard) before
+that role is built.
+
+**Verification.** 11 new tests. 249 total, all passing; typecheck clean.
+
 ## 2026-08-11 — Solved the population-health question by instrumenting it, not tuning it; the opportunity valve
 
 **Context.** "Solve it buddy." The standing item was multi-shard population sitting at
