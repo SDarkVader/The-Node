@@ -539,9 +539,12 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         const wasFilled = before[idx]!.slot.state === 'FILLED';
         const isFilled = world.couriers[idx]!.slot.state === 'FILLED';
         if (!wasFilled && isFilled) {
-          // Reset to 0, then this same day's wage accrues on top — should equal exactly
-          // one day's SUPPORT_ROLE_DAILY_WAGE, not some larger carried-forward balance.
-          expect(world.couriers[idx]!.wealth).toBeCloseTo(SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+          // Reset to 0, then this same day's wage accrues on top — bounded above by one
+          // day's SUPPORT_ROLE_DAILY_WAGE (trade-route friction can only ever reduce it,
+          // never exceed the base rate — see districtConsolidation.ts), and strictly
+          // positive, not some larger carried-forward balance from a previous occupant.
+          expect(world.couriers[idx]!.wealth).toBeGreaterThan(0);
+          expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + 1e-9);
           checkedReset = true;
         }
       }

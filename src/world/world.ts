@@ -76,6 +76,14 @@ import {
 import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
 import { DEFAULTS as VACANCY_DEFAULTS } from '../sim/vacancyHarness.js';
 import { stepMultiRoleConscriptionDay, type RoleGroupState } from '../sim/multiRoleConscription.js';
+import {
+  stepDistrictHealth,
+  initialDistrictHealth,
+  districtFilledFraction,
+  consolidationFrictionMultiplier,
+  CONSOLIDATION_GRACE_DAYS,
+  type DistrictHealth,
+} from '../engine/districtConsolidation.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
 import { stepBakers } from '../engine/bakers.js';
 import {
@@ -220,6 +228,11 @@ export interface GrifterSlot {
    *  This is the direct measurement of "the effect of grifters being under the minimum
    *  income floor until they obtain a role." */
   daysAsGrifter: number;
+  /** Set only for grifters displaced by a district MERGE (see `stepWorld`'s district-health
+   *  stage) — the day index by which they must be placed into an open role, "2 weeks to
+   *  gain a role or be drafted." undefined for ordinary churn/sabotage/arrival grifters,
+   *  who have no such deadline and wait on the ordinary conscription timers instead. */
+  consolidationDeadline?: number;
 }
 
 export interface SabotageLogEntry {
@@ -264,6 +277,19 @@ export interface World {
   wealthGini: number;
   /** Share of total tracked wealth held by the richest 10% of all tracked players, same scope. */
   wealthTop10Share: number;
+  /** Per-district consolidation state, keyed by `District.id`. Every district starts ACTIVE;
+   *  see `engine/districtConsolidation.ts`. A MERGED district's record stays in this map
+   *  forever (constraint: shard ids/records only ever grow, nothing is ever deleted) — its
+   *  buildings are logically, not physically, excluded from role assignment from then on. */
+  districtHealth: Record<string, DistrictHealth>;
+  /** Real emigrants this tick — exposed (rather than silently absorbed into `population`)
+   *  so a multi-shard orchestrator can route them to an actual destination shard instead of
+   *  having them vanish. See `sim/multiShardHarness.ts`. */
+  lastEmigrants: number;
+  /** Whether the flat brand-new-player arrival channel (`config.arrivalPDaily`) fired this
+   *  tick (0 or 1) — kept distinct from cross-shard migration inflow, which arrives via
+   *  `receiveMigrants()` instead. */
+  lastNewArrivals: number;
   pendingWallPosts: WallPost[];
   lastRumourEvents: RumourEventLite[];
   lastSabotage: SabotageLogEntry | null;
@@ -383,6 +409,9 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     daysAsGrifter: 0,
   }));
 
+  const districtHealth: Record<string, DistrictHealth> = {};
+  for (const d of shard.districts) districtHealth[d.id] = initialDistrictHealth();
+
   return {
     seed,
     tick: 0,
@@ -402,10 +431,60 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     economicHealthWithExperience: economicHealthWithExperience(millers.length + bakers.length, avgExp, config.rMiller + config.rBaker),
     wealthGini: 0, // everyone starts at 0 wealth — perfect equality, honestly
     wealthTop10Share: 0,
+    districtHealth,
+    lastEmigrants: 0,
+    lastNewArrivals: 0,
     pendingWallPosts: [],
     lastRumourEvents: [],
     lastSabotage: null,
   };
+}
+
+/**
+ * A newly-opened shard with no world yet — "everything else on your second empty shard
+ * goes into automated economic stability until a new player lands." Reuses `createWorld`'s
+ * geography/role-slot layout, then vacates every role slot and clears population/grifters —
+ * no new "dormant mode" is needed inside `stepWorld` itself: a world with 0 population and
+ * every slot VACANT already behaves as mechanically stable (BACKSTOPPED coverage kicks in
+ * via the ordinary vacancy timers, <2 FILLED already freezes the competitive layer) for
+ * free, from behavior that was already correct. See `sim/multiShardHarness.ts`.
+ */
+export function createDormantWorld(seed: number, config: WorldConfig): World {
+  const w = createWorld(seed, config);
+  const vacantizeRole = <T extends { slot: RoleSlot }>(arr: T[]): T[] =>
+    arr.map((s) => ({ ...s, slot: { state: 'VACANT' as const, vacantSince: 0 } }));
+  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+  return {
+    ...w,
+    millers: vacantizeRole(w.millers),
+    bakers: vacantizeRole(w.bakers),
+    couriers: vacantizeRole(w.couriers),
+    journalists: vacantizeRole(w.journalists),
+    detectives: vacantizeRole(w.detectives),
+    grifters: [],
+    nextGrifterId: 0,
+    population: 0,
+    economicHealth: economicHealth(0, totalRoleSlots),
+    economicHealthWithExperience: 0,
+    wealthGini: 0,
+    wealthTop10Share: 0,
+  };
+}
+
+/**
+ * Injects `count` real migrants (from another shard, via a multi-shard orchestrator) as
+ * new grifters — they arrive roleless, same as any other fresh arrival, and take their
+ * place in the ordinary vacancy/conscription cycle from the next tick on.
+ */
+export function receiveMigrants(world: World, count: number): World {
+  if (count <= 0) return world;
+  let grifters = world.grifters;
+  let nextGrifterId = world.nextGrifterId;
+  for (let i = 0; i < count; i++) {
+    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+    nextGrifterId += 1;
+  }
+  return { ...world, grifters, nextGrifterId, population: world.population + count };
 }
 
 /**
@@ -504,14 +583,6 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
   return out;
 }
 
-function justFilledSet(before: { slot: RoleSlot; buildingId: string }[], afterSlots: RoleSlot[]): Set<string> {
-  const s = new Set<string>();
-  before.forEach((b, i) => {
-    if (b.slot.state !== 'FILLED' && afterSlots[i]!.state === 'FILLED') s.add(b.buildingId);
-  });
-  return s;
-}
-
 /** One deterministic tick. See this file's header comment for the pinned stage order. */
 export function stepWorld(world: World): World {
   const { rng, config } = world;
@@ -530,34 +601,117 @@ export function stepWorld(world: World): World {
         return { playerId: s.buildingId, x: b.x, y: b.y };
       });
 
-  // ---- Stage 2: vacancy and conscription (all 5 roles + grifter pool) ----------------
-  const roleGroupsIn: RoleGroupState[] = [
-    { roleId: 'miller', slots: world.millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'baker', slots: world.bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'courier', slots: world.couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'journalist', slots: world.journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, config.targetPopulation, config.pMonthly, config) },
-    { roleId: 'detective', slots: world.detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, config.targetPopulation, config.pMonthly, config) },
+  // ---- Stage 1b: district health (2026-08-11) ----------------------------------------
+  // Underpopulation-triggered, irreversible per district — see districtConsolidation.ts's
+  // header for the full reasoning. Stepped from the INCOMING (pre-tick) role-slot state,
+  // so a district that flips to MERGED today already excludes its slots from today's own
+  // conscription pass below, same same-day-cascading discipline as everything else here.
+  const buildingDistrictId = new Map<string, string>();
+  for (const d of world.shard.districts) {
+    for (const b of d.buildings) buildingDistrictId.set(b.id, d.id);
+  }
+  const allRoleSlotsForHealth: { buildingId: string; slot: RoleSlot }[] = [
+    ...world.millers,
+    ...world.bakers,
+    ...world.couriers,
+    ...world.journalists,
+    ...world.detectives,
   ];
-  const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, world.grifters.length, day, config.conscriptionDelay, rng);
+  const districtHealth: Record<string, DistrictHealth> = {};
+  const newlyMergedDistrictIds: string[] = [];
+  for (const d of world.shard.districts) {
+    const districtSlots = allRoleSlotsForHealth.filter((s) => buildingDistrictId.get(s.buildingId) === d.id);
+    const filledCount = districtSlots.filter((s) => s.slot.state === 'FILLED').length;
+    const fraction = districtFilledFraction(filledCount, districtSlots.length);
+    const prevHealth = world.districtHealth[d.id] ?? initialDistrictHealth();
+    const nextHealth = stepDistrictHealth(prevHealth, fraction, day);
+    districtHealth[d.id] = nextHealth;
+    if (prevHealth.state !== 'MERGED' && nextHealth.state === 'MERGED') newlyMergedDistrictIds.push(d.id);
+  }
+
+  // ---- Stage 2: vacancy and conscription (all 5 roles + grifter pool) ----------------
+  let millers = world.millers;
+  let bakers = world.bakers;
+  let couriers = world.couriers;
+  let journalists = world.journalists;
+  let detectives = world.detectives;
+  let grifters = world.grifters;
+  let nextGrifterId = world.nextGrifterId;
+
+  // A district crossing into MERGED today evicts every role-holder physically in it —
+  // "excess players" pushed into the grifter pool with a hard consolidationDeadline (the
+  // district's own grace period, so "2 weeks to gain a role or be drafted" lands on the
+  // same calendar the district itself just finished counting down). Their buildings are
+  // logically excluded from every future conscription pass below (never physically
+  // spliced from shard.districts — see districtConsolidation.ts's header).
+  if (newlyMergedDistrictIds.length > 0) {
+    const isInMergedDistrict = (buildingId: string) => newlyMergedDistrictIds.includes(buildingDistrictId.get(buildingId)!);
+    const evictWithDeadline = <T extends { slot: RoleSlot; buildingId: string }>(arr: T[]): T[] =>
+      arr.map((s) => {
+        if (s.slot.state === 'FILLED' && isInMergedDistrict(s.buildingId)) {
+          grifters = [
+            ...grifters,
+            { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, consolidationDeadline: day + CONSOLIDATION_GRACE_DAYS },
+          ];
+          nextGrifterId += 1;
+          return { ...s, slot: { state: 'VACANT' as const, vacantSince: day } };
+        }
+        return s;
+      });
+    millers = evictWithDeadline(millers);
+    bakers = evictWithDeadline(bakers);
+    couriers = evictWithDeadline(couriers);
+    journalists = evictWithDeadline(journalists);
+    detectives = evictWithDeadline(detectives);
+  }
+
+  // A MERGED district's slots are NOT permanently excluded from ordinary refilling —
+  // deliberately reverted from an earlier version of this change that did exclude them,
+  // once testing showed it over a long enough run collapses every role slot toward zero
+  // with nowhere for that capacity to go (contradicts "combine into half the shard,"
+  // which concentrates capacity, not deletes it; also contradicts constraint 2, no
+  // permanent zero-state, applied to the whole shard's economy). A MERGED district's
+  // buildings stay part of the ordinary vacancy/conscription pool going forward — the
+  // real, lasting consequence of a merge is the one-time eviction above plus the
+  // permanent friction floor on income (Stage 3 below), not a capacity cliff. Physically
+  // relocating a merged district's buildings into a surviving district's geography is a
+  // larger change (real building reassignment, not just a state flag) deliberately left
+  // for a later pass — flagged in docs/BLUEPRINT.md, not silently narrowed.
+  function justFilledSet(before: { slot: RoleSlot; buildingId: string }[], afterSlots: RoleSlot[]): Set<string> {
+    const s = new Set<string>();
+    before.forEach((b, i) => {
+      if (b.slot.state !== 'FILLED' && afterSlots[i]!.state === 'FILLED') s.add(b.buildingId);
+    });
+    return s;
+  }
+
+  const roleGroupsIn: RoleGroupState[] = [
+    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, config.targetPopulation, config.pMonthly, config) },
+  ];
+  const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, grifters.length, day, config.conscriptionDelay, rng);
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
 
-  const millerJustFilled = justFilledSet(world.millers, byRole.get('miller')!);
-  const bakerJustFilled = justFilledSet(world.bakers, byRole.get('baker')!);
-  const courierJustFilled = justFilledSet(world.couriers, byRole.get('courier')!);
-  const journalistJustFilled = justFilledSet(world.journalists, byRole.get('journalist')!);
-  const detectiveJustFilled = justFilledSet(world.detectives, byRole.get('detective')!);
+  const millerJustFilled = justFilledSet(millers, byRole.get('miller')!);
+  const bakerJustFilled = justFilledSet(bakers, byRole.get('baker')!);
+  const courierJustFilled = justFilledSet(couriers, byRole.get('courier')!);
+  const journalistJustFilled = justFilledSet(journalists, byRole.get('journalist')!);
+  const detectiveJustFilled = justFilledSet(detectives, byRole.get('detective')!);
 
-  let millers = world.millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
-  let bakers = world.bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
-  let couriers = world.couriers.map((c, i) => {
+  millers = millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
+  bakers = bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
+  couriers = couriers.map((c, i) => {
     const slot = byRole.get('courier')![i]!;
     return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0 } : { ...c, slot };
   });
-  let journalists = world.journalists.map((j, i) => {
+  journalists = journalists.map((j, i) => {
     const slot = byRole.get('journalist')![i]!;
     return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0 } : { ...j, slot };
   });
-  let detectives = world.detectives.map((d, i) => {
+  detectives = detectives.map((d, i) => {
     const slot = byRole.get('detective')![i]!;
     return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0 } : { ...d, slot };
   });
@@ -567,8 +721,7 @@ export function stepWorld(world: World): World {
   // grifter-sourced conscription pops whoever has waited LONGEST — a real, simulate-able
   // policy (not left unspecified) that directly answers "the effect of grifters being
   // under the floor until they obtain a role."
-  let grifters = world.grifters.map((g) => ({ ...g, daysAsGrifter: g.daysAsGrifter + 1 }));
-  let nextGrifterId = world.nextGrifterId;
+  grifters = grifters.map((g) => ({ ...g, daysAsGrifter: g.daysAsGrifter + 1 }));
   for (const event of conscriptionResult.events) {
     if (event.type === 'churn') {
       grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
@@ -584,6 +737,56 @@ export function stepWorld(world: World): World {
     }
     // conscriptionFromOtherRole / backstopFires: no grifter-pool change — that player
     // moves directly between roles, or the slot stays mechanically covered.
+  }
+
+  // Forced 2-week deadline draft (2026-08-11): any grifter whose consolidation window has
+  // expired must be placed into an open role today if one exists anywhere — "2 weeks to
+  // gain a role or be drafted." Runs AFTER ordinary conscription above (so a
+  // self-selected voluntary fill during the 2 weeks always takes priority) and bypasses
+  // the ordinary probabilistic machinery entirely — this is a hard deadline, not another
+  // hazard roll. Excess overdue grifters beyond however many slots are open simply stay
+  // overdue (their deadline has already passed, so they claim the very next slot that
+  // opens, on any future tick, with no re-arming needed) — not a permanent-zero-state
+  // violation, since GRIFTER_DAILY_INCOME keeps accruing to them meanwhile.
+  const overdue = grifters.filter((g) => g.consolidationDeadline !== undefined && day >= g.consolidationDeadline);
+  if (overdue.length > 0) {
+    const openSlots: { role: RoleType; index: number }[] = [];
+    millers.forEach((m, i) => {
+      if (m.slot.state === 'VACANT') openSlots.push({ role: 'miller', index: i });
+    });
+    bakers.forEach((b, i) => {
+      if (b.slot.state === 'VACANT') openSlots.push({ role: 'baker', index: i });
+    });
+    couriers.forEach((c, i) => {
+      if (c.slot.state === 'VACANT') openSlots.push({ role: 'courier', index: i });
+    });
+    journalists.forEach((j, i) => {
+      if (j.slot.state === 'VACANT') openSlots.push({ role: 'journalist', index: i });
+    });
+    detectives.forEach((d, i) => {
+      if (d.slot.state === 'VACANT') openSlots.push({ role: 'detective', index: i });
+    });
+
+    const placedGrifterIds = new Set<string>();
+    const placeCount = Math.min(overdue.length, openSlots.length);
+    for (let k = 0; k < placeCount; k++) {
+      const grifter = overdue[k]!;
+      const target = openSlots[k]!;
+      placedGrifterIds.add(grifter.id);
+      const fill = { state: 'FILLED' as const, vacantSince: null };
+      if (target.role === 'miller') {
+        millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0 } : m));
+      } else if (target.role === 'baker') {
+        bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0 } : b));
+      } else if (target.role === 'courier') {
+        couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0 } : c));
+      } else if (target.role === 'journalist') {
+        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0 } : j));
+      } else {
+        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0 } : d));
+      }
+    }
+    if (placedGrifterIds.size > 0) grifters = grifters.filter((g) => !placedGrifterIds.has(g.id));
   }
 
   // ---- Stage 3: market (Miller then Baker, then support-role wage + grifter floor) ---
@@ -618,8 +821,22 @@ export function stepWorld(world: World): World {
   // nothing — nobody is there to receive it. Every income stream is scaled by
   // DAILY_ACTIVITY_MULTIPLIER — the daily blended consequence of an 8-hour low-activity
   // window every day, "all round." See wealth.ts's header for the full reasoning.
+  //
+  // Trade-route friction (2026-08-11) — "underpopulated areas can't access certain
+  // services without greater effort": a role-holder physically in a CONSOLIDATING or
+  // MERGED district earns proportionally less, ramping down across the district's own
+  // grace period. This is the "cracks forming" made felt, not just visible — real pressure
+  // to relocate into the consolidated half before being forced to, and grifters have no
+  // fixed position in this model (same flagged simplification as everywhere else in this
+  // file) so friction only applies to role-holders with a building, not the grifter floor.
+  const frictionFor = (buildingId: string): number => {
+    const districtId = buildingDistrictId.get(buildingId);
+    if (!districtId) return 1;
+    return consolidationFrictionMultiplier(districtHealth[districtId]!, day);
+  };
+
   const millerIncomes = millers.map((m) =>
-    m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER : 0,
+    m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(m.buildingId) : 0,
   );
 
   const bakerFilledForDemand = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
@@ -634,7 +851,7 @@ export function stepWorld(world: World): World {
   const bakerIncomes = bakers.map((b, i) => {
     const pos = bakerFilledForDemand.indexOf(i);
     if (pos < 0) return 0;
-    return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER;
+    return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(b.buildingId);
   });
 
   // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
@@ -682,11 +899,13 @@ export function stepWorld(world: World): World {
     }
   }
 
-  // Support-role wage and grifter floor — flat, uncapped, untaxed (see header scoping note).
+  // Support-role wage and grifter floor — uncapped, untaxed (see header scoping note).
+  // Support wages get the same trade-route friction as Miller/Baker; the grifter floor
+  // doesn't (grifters have no fixed position — see frictionFor's own comment above).
   const supportDaily = SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER;
-  couriers = couriers.map((c) => (c.slot.state === 'FILLED' ? { ...c, wealth: c.wealth + supportDaily } : c));
-  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily } : j));
-  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily } : d));
+  couriers = couriers.map((c) => (c.slot.state === 'FILLED' ? { ...c, wealth: c.wealth + supportDaily * frictionFor(c.buildingId) } : c));
+  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId) } : j));
+  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
 
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
@@ -737,8 +956,10 @@ export function stepWorld(world: World): World {
     }
   }
 
+  let lastNewArrivals = 0;
   if (rng() < config.arrivalPDaily) {
     population += 1;
+    lastNewArrivals = 1;
     grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
     nextGrifterId += 1;
   }
@@ -845,6 +1066,9 @@ export function stepWorld(world: World): World {
     // as "no meaningful comparison," not an error.
     wealthGini: giniCoefficient(allWealthValues),
     wealthTop10Share: topShare(allWealthValues, 0.1),
+    districtHealth,
+    lastEmigrants: actualEmigrants,
+    lastNewArrivals,
     pendingWallPosts: [],
     lastRumourEvents,
     lastSabotage,
