@@ -1,45 +1,64 @@
 /**
  * Unified deterministic world kernel (Observatory build spec, Phase B). Composes the
  * three previously-separate models — Phase 1 market (`millers.ts`/`bakers.ts`), Phase 2
- * vacancy/conscription (`vacancy.ts`, `sim/conscriptionHarness.ts`), and the ecosystem
+ * vacancy/conscription (`vacancy.ts`, `sim/multiRoleConscription.ts`), and the ecosystem
  * layer (`ecosystem.ts`) — into one `World` object and one `stepWorld()` tick, now sited
  * on real geography via Phase A's `space.ts`. Existing engine modules are called, not
- * reimplemented — `conscriptionHarness.ts` was refactored (2026-08-10, same commit) to
- * expose `stepConscriptionDay()` specifically so this file could reuse its Miller
- * conscription logic verbatim instead of duplicating it.
+ * reimplemented.
  *
  * TICK ORDER (pinned by `test/world.regression.test.ts`'s determinism/order test — do not
  * reorder without updating both): space/occupancy -> vacancy and conscription -> market
- * (Miller then Baker) -> ecosystem (sabotage, arrivals, migration, health, experience) ->
- * comms (rumour propagation). Matches the Observatory spec's given order exactly. Within
- * the ecosystem stage, sabotage is applied BEFORE arrivals, per `design/
- * tick_order_check.py`'s own validated finding ("shock BEFORE arrival" — the prior art the
- * spec explicitly said to check before choosing an order) — checked, not reinvented.
+ * (Miller then Baker, then support-role and grifter income) -> ecosystem (sabotage,
+ * arrivals, migration, health, experience) -> comms (rumour propagation). Matches the
+ * Observatory spec's given order exactly. Within the ecosystem stage, sabotage is applied
+ * BEFORE arrivals, per `design/tick_order_check.py`'s own validated finding ("shock BEFORE
+ * arrival" — the prior art the spec explicitly said to check before choosing an order) —
+ * checked, not reinvented.
  *
  * DETERMINISM: `World.rng` is a single `mulberry32` closure created once in `createWorld`
  * and threaded through every `stepWorld` call via the returned `World`'s own field —
  * identical to how every existing harness in this repo (`vacancyHarness.ts`,
- * `ecosystemHarness.ts`, `conscriptionHarness.ts`) already threads one `rng` through a
- * whole run. This means `World` is not literally a plain JSON value (it carries a
- * function) — `stepWorld` is still deterministic given the same starting `World` (no
- * `Math.random()`, no external mutable state), but it is NOT the same thing as
- * `structuredClone(world)` producing an independently-steppable fork; two `World`s only
- * diverge by calling `createWorld` with a new seed. Phase D's snapshot contract will need
- * its own explicit projection from `World` to a serializable schema — deliberately not
- * attempted here, since a snapshot should not expose seed-continuation internals that
- * would let an observer predict future rolls anyway.
+ * `ecosystemHarness.ts`) already threads one `rng` through a whole run. This means `World`
+ * is not literally a plain JSON value (it carries a function) — `stepWorld` is still
+ * deterministic given the same starting `World` (no `Math.random()`, no external mutable
+ * state), but it is NOT the same thing as `structuredClone(world)` producing an
+ * independently-steppable fork; two `World`s only diverge by calling `createWorld` with a
+ * new seed. Phase D's snapshot contract will need its own explicit projection from `World`
+ * to a serializable schema — deliberately not attempted here.
  *
- * SCOPE NOTE: only Miller and Baker are modeled as role types (matching every existing
- * harness's own convention — "the roles are arbitrary," an expanded roster is explicitly
- * not designed yet, see HANDOVER.md). District-level population tracks role-holders only
- * (Miller/Baker slots physically in that district); a persistent gossip-layer-per-district
- * population ledger is not built here — `placeArrival()` (Phase A) remains available but
- * unused by this tick, since Phase B's population model only tracks a global N. Weather
- * history stays empty — District Weather's actual tension value isn't computed by any
- * named phase of this task, only given somewhere to live (Phase A). Comms only propagates
- * `pendingWallPosts` — nothing in Phase B autonomously posts to the Wall (that's a driver
- * action, Phase C's job), so this stage is a real, tested mechanism that is a no-op in
- * practice until Phase C appends to that queue.
+ * ROLE ROSTER (2026-08-11, user-specified, replacing the earlier 2-role-only scope):
+ * Miller and Baker keep their existing competitive (Cournot/Bertrand) market mechanics,
+ * unchanged. Courier, Journalist, and Detective have no differentiated economic mechanic
+ * designed anywhere in this project's lore/brief — each gets a flat `SUPPORT_ROLE_DAILY_WAGE`
+ * (`wealth.ts`), explicitly flagged as an undifferentiated placeholder standing in for
+ * three genuinely different unbuilt economies, not a claim that couriering, reporting, and
+ * detective work are actually economically identical.
+ *
+ * "Grifters" (2026-08-11, user's own term) are roleless community players — individually
+ * tracked (`GrifterSlot`, unlike the prior "gossip layer," which was only ever an aggregate
+ * count), earning `GRIFTER_DAILY_INCOME` (below every role's wage — constraint 2's "no
+ * permanent zero-state" still applies, so it is a real positive floor, not zero) until
+ * drafted or self-selected into any open role. Role-vacancy handling for all 5 roles now
+ * runs through `sim/multiRoleConscription.ts`'s `stepMultiRoleConscriptionDay` — a NEW,
+ * separate N-role generalization of the original 2-role `conscriptionHarness.ts`, which is
+ * left untouched and still covers its own tests. A departing role-holder (churn, or a
+ * sabotage eviction) falls back into the grifter pool rather than leaving the population —
+ * they are still present, just roleless, until re-drafted; only true emigration
+ * (`migrationValveStep`) removes someone from `population` entirely.
+ *
+ * WEALTH-INEQUALITY SCOPE (widened 2026-08-11): `wealthGini`/`wealthTop10Share` previously
+ * covered Miller+Baker only, because the gossip layer had no individually-tracked wealth to
+ * include. Grifters now do — this task's whole point — so these two fields now span every
+ * identity-bearing player in the shard (all 5 roles' FILLED slots + every grifter), which is
+ * what the original "90%/10%" concern in docs/BLUEPRINT.md was actually asking about.
+ * `wealthTaxRate`/`wealthCap` remediation stays scoped to Miller+Baker only, deliberately
+ * NOT widened in this pass — flagged as an open scoping question, not silently decided;
+ * both remain off by default (`wealthTaxRate: 0`, `wealthCap: undefined`) regardless.
+ *
+ * Comms only propagates `pendingWallPosts` from role-holders with a fixed building position
+ * (Miller/Baker/Courier/Journalist/Detective); grifters have no fixed position in this model
+ * (same simplification `space.ts`'s own `placeArrival()` already left unused) and are not
+ * part of the proximity graph.
  */
 
 import { mulberry32, gaussian } from '../sim/rng.js';
@@ -54,9 +73,9 @@ import {
   type PlayerId,
   DEFAULT_SHARD_CONFIG,
 } from '../engine/space.js';
-import { stepSlot, dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
+import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
 import { DEFAULTS as VACANCY_DEFAULTS } from '../sim/vacancyHarness.js';
-import { stepConscriptionDay } from '../sim/conscriptionHarness.js';
+import { stepMultiRoleConscriptionDay, type RoleGroupState } from '../sim/multiRoleConscription.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
 import { stepBakers } from '../engine/bakers.js';
 import {
@@ -83,12 +102,23 @@ import {
   taxAndRedistributeIncome,
   applyWealthCap,
   DAILY_ACTIVITY_MULTIPLIER,
+  SUPPORT_ROLE_DAILY_WAGE,
+  GRIFTER_DAILY_INCOME,
 } from '../engine/wealth.js';
+
+export type RoleType = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective';
+export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'journalist', 'detective'];
 
 export interface WorldConfig {
   shardConfig: ShardLayoutConfig;
   rMiller: number;
   rBaker: number;
+  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
+  rCourier: number;
+  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
+  rJournalist: number;
+  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
+  rDetective: number;
   targetPopulation: number;
   pMonthly: number;
   conscriptionDelay: number;
@@ -110,10 +140,12 @@ export interface WorldConfig {
   /** Radius used to build the proximity-based connection graph for Wall-post propagation. */
   commsProximityRange: number;
   /** PROPOSAL, not shipped as default (0). Flat daily income tax, redistributed equally
-   *  across all currently-FILLED role-holders — see wealth.ts's taxAndRedistributeIncome(). */
+   *  across all currently-FILLED Miller+Baker role-holders — see wealth.ts's
+   *  taxAndRedistributeIncome(). Deliberately NOT widened to the other 3 roles or grifters
+   *  in this pass — see this file's header "WEALTH-INEQUALITY SCOPE" note. */
   wealthTaxRate: number;
   /** PROPOSAL, not shipped as default (undefined = no cap). Hard ceiling on accumulated
-   *  wealth — see wealth.ts's applyWealthCap(). */
+   *  Miller+Baker wealth only — see wealth.ts's applyWealthCap() and the scoping note above. */
   wealthCap?: number;
   /** Average days between one customer's bread purchases — feeds dailyDueCustomers().
    *  Defaults to wealth.ts's own PURCHASE_CYCLE_DAYS; exposed here so it's a real,
@@ -121,17 +153,21 @@ export interface WorldConfig {
   purchaseCycleDays?: number;
 }
 
-// rMiller + rBaker = 24, matching ecosystem.ts's own S_DEFAULT — not an arbitrary choice.
-// An earlier draft of this default used rMiller=3/rBaker=5 (8 total), which produced a
-// roleless fraction of ~88% against targetPopulation=65 and drained population toward
-// zero within ~25 ticks once migrationValveStep actually ran for the first time in a real
-// composed tick. That was this file's own inconsistency, not a genuine module conflict —
-// S_DEFAULT=24 against N=65 lands at ~63% roleless, inside migrationValveStep's own
-// already-validated [55%, 68%] equilibrium band. See docs/BLUEPRINT.md's "Phase B" entry.
+// Five-role split (2026-08-11, user-specified roster), still summing to 24 — matching
+// ecosystem.ts's own S_DEFAULT, the same anchor the old rMiller=8/rBaker=16 split used —
+// specifically so migrationValveStep's already-validated [55%, 68%] roleless-fraction
+// equilibrium band (tuned against S=24 against targetPopulation=65) stays valid without
+// re-deriving it from scratch. The SPLIT across the 5 roles (3/7/6/5/3) is a starting
+// allocation, not a validated conclusion — see sim/districtRoleSweep.ts and
+// docs/BLUEPRINT.md's "5-role roster" entry for the sweep this was checked against.
+// [ILLUSTRATIVE, sweep-informed]
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
-  rMiller: 8,
-  rBaker: 16,
+  rMiller: 3,
+  rBaker: 7,
+  rCourier: 6,
+  rJournalist: 5,
+  rDetective: 3,
   targetPopulation: 65,
   pMonthly: 0.2,
   conscriptionDelay: 14,
@@ -164,6 +200,28 @@ export interface RoleEconomicSlot {
   wealth: number;
 }
 
+/** Courier/Journalist/Detective — same slot/wealth reset convention as RoleEconomicSlot,
+ *  minus `value`/`experience` since none of the three have a competitive market mechanic. */
+export interface SupportRoleSlot {
+  slot: RoleSlot;
+  buildingId: string;
+  wealth: number;
+}
+
+/** A roleless community player ("grifter" — user's own term). Individually tracked, unlike
+ *  the aggregate-only gossip-layer population this replaces for identity purposes. */
+export interface GrifterSlot {
+  id: string;
+  /** Accumulated personal earnings at GRIFTER_DAILY_INCOME/day. Resets to 0 on creation
+   *  (churn, sabotage eviction, or a fresh arrival never inherits anyone's balance). */
+  wealth: number;
+  /** Consecutive days spent roleless so far. Reset to 0 on creation; the identity is popped
+   *  from the pool (not decremented) the moment it fills or is drafted into an open role.
+   *  This is the direct measurement of "the effect of grifters being under the minimum
+   *  income floor until they obtain a role." */
+  daysAsGrifter: number;
+}
+
 export interface SabotageLogEntry {
   tick: number;
   targetBuildingId: string;
@@ -188,26 +246,33 @@ export interface World {
   shard: Shard;
   millers: RoleEconomicSlot[];
   bakers: RoleEconomicSlot[];
+  couriers: SupportRoleSlot[];
+  journalists: SupportRoleSlot[];
+  detectives: SupportRoleSlot[];
+  grifters: GrifterSlot[];
+  /** Monotonic counter for grifter ids — deterministic, not time-based. */
+  nextGrifterId: number;
   flourPrice: number;
   population: number;
   economicHealth: number;
+  /** Scoped to Miller+Baker only — the only two roles with a tracked `experience` field
+   *  (support roles have no differentiated productivity mechanic to grow experience in). */
   economicHealthWithExperience: number;
-  /** Gini coefficient over currently-FILLED role-holders' wealth only (Miller+Baker) —
-   *  the gossip layer has no tracked individual identity in this model, see wealth.ts's
-   *  header comment and docs/BLUEPRINT.md's "Wealth inequality" entry for the scoping
-   *  reasoning. 0 when fewer than 2 role-holders are FILLED (nothing meaningful to compare). */
+  /** Gini coefficient over every identity-bearing player's wealth: all 5 roles' FILLED
+   *  slots plus every grifter. Widened 2026-08-11 — see this file's header note. 0 when
+   *  fewer than 2 people are tracked (nothing meaningful to compare). */
   wealthGini: number;
-  /** Share of total FILLED-role-holder wealth held by the richest 10% of them, same scope. */
+  /** Share of total tracked wealth held by the richest 10% of all tracked players, same scope. */
   wealthTop10Share: number;
   pendingWallPosts: WallPost[];
   lastRumourEvents: RumourEventLite[];
   lastSabotage: SabotageLogEntry | null;
 }
 
-function vacancyParamsFor(rMiller: number, targetPopulation: number, pMonthly: number, config: WorldConfig): VacancyParams {
+function vacancyParamsFor(R: number, targetPopulation: number, pMonthly: number, config: WorldConfig): VacancyParams {
   return {
     N: targetPopulation,
-    R: rMiller,
+    R,
     pDaily: dailyChurnFromMonthly(pMonthly),
     beta: config.vacancy?.beta ?? VACANCY_DEFAULTS.beta,
     tPain: config.vacancy?.tPain ?? VACANCY_DEFAULTS.tPain,
@@ -218,24 +283,62 @@ function vacancyParamsFor(rMiller: number, targetPopulation: number, pMonthly: n
   };
 }
 
-/** Assigns the first `rMiller` + `rBaker` buildings (generation order, deterministic) to roles. */
-function assignRoleBuildings(shard: Shard, rMiller: number, rBaker: number): { millerBuildings: Building[]; bakerBuildings: Building[] } {
-  const allBuildings = shard.districts.flatMap((d) => d.buildings);
-  if (allBuildings.length < rMiller + rBaker) {
+/**
+ * District-aware assignment across all 5 roles (2026-08-11, replacing the old "first
+ * rMiller+rBaker buildings in generation order" approach, which wasn't district-aware at
+ * all — every role clustered into whichever districts happened to be generated first).
+ * Walks every building in shard-generation (district-by-district) order, round-robining a
+ * cursor across `ROLE_TYPES` so each role's slots are spread across the district sequence
+ * roughly in proportion to its share of the total — "roles required locally," not just
+ * globally. A deterministic, simple, testable policy; not claimed to be the only possible
+ * one — see docs/BLUEPRINT.md's "5-role roster" entry.
+ */
+function assignRoleBuildings(shard: Shard, roleCounts: Record<RoleType, number>): Record<RoleType, Building[]> {
+  const totalRoles = ROLE_TYPES.reduce((sum, r) => sum + roleCounts[r], 0);
+  const totalBuildings = shard.districts.reduce((sum, d) => sum + d.buildings.length, 0);
+  if (totalBuildings < totalRoles) {
     throw new Error(
-      `shard has ${allBuildings.length} buildings, but rMiller (${rMiller}) + rBaker (${rBaker}) = ${rMiller + rBaker} role slots requested — increase the shard config's building counts or lower rMiller/rBaker`,
+      `shard has ${totalBuildings} buildings, but ${ROLE_TYPES.map((r) => `${r}=${roleCounts[r]}`).join('+')} = ${totalRoles} role slots requested — increase the shard config's building counts or lower the role counts`,
     );
   }
-  return {
-    millerBuildings: allBuildings.slice(0, rMiller),
-    bakerBuildings: allBuildings.slice(rMiller, rMiller + rBaker),
-  };
+
+  const remaining: Record<RoleType, number> = { ...roleCounts };
+  const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], journalist: [], detective: [] };
+
+  let cursor = 0;
+  let assigned = 0;
+  for (const district of shard.districts) {
+    for (const building of district.buildings) {
+      if (assigned >= totalRoles) break;
+      let attempts = 0;
+      while (remaining[ROLE_TYPES[cursor % ROLE_TYPES.length]!] <= 0 && attempts < ROLE_TYPES.length) {
+        cursor += 1;
+        attempts += 1;
+      }
+      const role = ROLE_TYPES[cursor % ROLE_TYPES.length]!;
+      if (remaining[role]! > 0) {
+        result[role].push(building);
+        remaining[role]! -= 1;
+        assigned += 1;
+        cursor += 1;
+      }
+    }
+  }
+
+  return result;
 }
 
 export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CONFIG): World {
   const rng = mulberry32(seed);
   const shard = generateShardLayout(seed, config.shardConfig);
-  const { millerBuildings, bakerBuildings } = assignRoleBuildings(shard, config.rMiller, config.rBaker);
+  const roleCounts: Record<RoleType, number> = {
+    miller: config.rMiller,
+    baker: config.rBaker,
+    courier: config.rCourier,
+    journalist: config.rJournalist,
+    detective: config.rDetective,
+  };
+  const assigned = assignRoleBuildings(shard, roleCounts);
 
   // Bind buildings to their role slot — space.ts's own building.roleSlotRef, resolved here.
   // Mutates the just-generated shard's building objects in place — acceptable only
@@ -243,31 +346,42 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
   // below never mutates an already-returned world's shard the same way.
   for (const shardDistrict of shard.districts) {
     for (const building of shardDistrict.buildings) {
-      if (millerBuildings.includes(building)) building.roleSlotRef = `miller-${millerBuildings.indexOf(building)}`;
-      else if (bakerBuildings.includes(building)) building.roleSlotRef = `baker-${bakerBuildings.indexOf(building)}`;
+      for (const role of ROLE_TYPES) {
+        const idx = assigned[role].indexOf(building);
+        if (idx >= 0) building.roleSlotRef = `${role}-${idx}`;
+      }
     }
   }
 
-  const millers: RoleEconomicSlot[] = millerBuildings.map((b) => ({
+  const millers: RoleEconomicSlot[] = assigned.miller.map((b) => ({
     slot: { state: 'FILLED', vacantSince: null },
     buildingId: b.id,
     value: 0.3 + rng() * 0.2, // matches initMarket's own initial-quantity draw
     experience: EXPERIENCE_CAP, // "start maxed, established shard" — matches ecosystemHarness's convention
     wealth: 0,
   }));
-  const bakers: RoleEconomicSlot[] = bakerBuildings.map((b) => ({
+  const bakers: RoleEconomicSlot[] = assigned.baker.map((b) => ({
     slot: { state: 'FILLED', vacantSince: null },
     buildingId: b.id,
     value: 0.5 + rng() * 0.2, // matches initMarket's own initial-price draw
     experience: EXPERIENCE_CAP,
     wealth: 0,
   }));
+  const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
+  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
+  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
   const flourPriceValue = computeFlourPrice(supply);
-  const s = config.rMiller + config.rBaker;
-  const filled = millers.length + bakers.length; // all FILLED at creation
+  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
   const avgExp = EXPERIENCE_CAP;
+
+  const grifterCount = Math.max(0, config.targetPopulation - totalRoleSlots);
+  const grifters: GrifterSlot[] = Array.from({ length: grifterCount }, (_, i) => ({
+    id: `grifter-${i}`,
+    wealth: 0,
+    daysAsGrifter: 0,
+  }));
 
   return {
     seed,
@@ -277,10 +391,15 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     shard,
     millers,
     bakers,
+    couriers,
+    journalists,
+    detectives,
+    grifters,
+    nextGrifterId: grifterCount,
     flourPrice: flourPriceValue,
     population: config.targetPopulation,
-    economicHealth: economicHealth(filled, s),
-    economicHealthWithExperience: economicHealthWithExperience(filled, avgExp, s),
+    economicHealth: economicHealth(totalRoleSlots, totalRoleSlots), // all FILLED at creation
+    economicHealthWithExperience: economicHealthWithExperience(millers.length + bakers.length, avgExp, config.rMiller + config.rBaker),
     wealthGini: 0, // everyone starts at 0 wealth — perfect equality, honestly
     wealthTop10Share: 0,
     pendingWallPosts: [],
@@ -356,6 +475,43 @@ function buildProximityGraph(occupants: PlayerPosition[], maxRange: number): Con
   return graph;
 }
 
+interface RoleArrays {
+  millers: RoleEconomicSlot[];
+  bakers: RoleEconomicSlot[];
+  couriers: SupportRoleSlot[];
+  journalists: SupportRoleSlot[];
+  detectives: SupportRoleSlot[];
+}
+
+/** Every currently-FILLED slot across all 5 roles, with enough to identify and evict it. */
+function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; buildingId: string }[] {
+  const out: { role: RoleType; index: number; buildingId: string }[] = [];
+  arrays.millers.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'miller', index: i, buildingId: s.buildingId });
+  });
+  arrays.bakers.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'baker', index: i, buildingId: s.buildingId });
+  });
+  arrays.couriers.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'courier', index: i, buildingId: s.buildingId });
+  });
+  arrays.journalists.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'journalist', index: i, buildingId: s.buildingId });
+  });
+  arrays.detectives.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'detective', index: i, buildingId: s.buildingId });
+  });
+  return out;
+}
+
+function justFilledSet(before: { slot: RoleSlot; buildingId: string }[], afterSlots: RoleSlot[]): Set<string> {
+  const s = new Set<string>();
+  before.forEach((b, i) => {
+    if (b.slot.state !== 'FILLED' && afterSlots[i]!.state === 'FILLED') s.add(b.buildingId);
+  });
+  return s;
+}
+
 /** One deterministic tick. See this file's header comment for the pinned stage order. */
 export function stepWorld(world: World): World {
   const { rng, config } = world;
@@ -366,7 +522,7 @@ export function stepWorld(world: World): World {
   // no synthetic drivers exist yet (Phase C) to actually move anyone. Recomputes each
   // building's occupant position (its own plot, static) and feeds district population.
   const allBuildingsById = new Map(world.shard.districts.flatMap((d) => d.buildings).map((b) => [b.id, b]));
-  const occupantsOf = (slots: RoleEconomicSlot[]): PlayerPosition[] =>
+  const occupantsOf = (slots: { slot: RoleSlot; buildingId: string }[]): PlayerPosition[] =>
     slots
       .filter((s) => s.slot.state === 'FILLED')
       .map((s) => {
@@ -374,37 +530,63 @@ export function stepWorld(world: World): World {
         return { playerId: s.buildingId, x: b.x, y: b.y };
       });
 
-  // ---- Stage 2: vacancy and conscription --------------------------------------------
-  const millerParams = vacancyParamsFor(config.rMiller, config.targetPopulation, config.pMonthly, config);
-  const bakerParams = { ...millerParams, R: config.rBaker };
-  const millerSlotsIn = world.millers.map((m) => m.slot);
-  const bakerSlotsIn = world.bakers.map((b) => b.slot);
-  const gossipSize = Math.max(config.targetPopulation - config.rMiller - config.rBaker, 0);
+  // ---- Stage 2: vacancy and conscription (all 5 roles + grifter pool) ----------------
+  const roleGroupsIn: RoleGroupState[] = [
+    { roleId: 'miller', slots: world.millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'baker', slots: world.bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'courier', slots: world.couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'journalist', slots: world.journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, config.targetPopulation, config.pMonthly, config) },
+    { roleId: 'detective', slots: world.detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, config.targetPopulation, config.pMonthly, config) },
+  ];
+  const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, world.grifters.length, day, config.conscriptionDelay, rng);
+  const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
 
-  const conscriptionResult = stepConscriptionDay(
-    millerSlotsIn,
-    bakerSlotsIn,
-    day,
-    millerParams,
-    bakerParams,
-    config.conscriptionDelay,
-    gossipSize,
-    rng,
-  );
+  const millerJustFilled = justFilledSet(world.millers, byRole.get('miller')!);
+  const bakerJustFilled = justFilledSet(world.bakers, byRole.get('baker')!);
+  const courierJustFilled = justFilledSet(world.couriers, byRole.get('courier')!);
+  const journalistJustFilled = justFilledSet(world.journalists, byRole.get('journalist')!);
+  const detectiveJustFilled = justFilledSet(world.detectives, byRole.get('detective')!);
 
-  const millerJustFilled = new Set<string>();
-  const bakerJustFilled = new Set<string>();
-  world.millers.forEach((m, i) => {
-    if (m.slot.state !== 'FILLED' && conscriptionResult.millerSlots[i]!.state === 'FILLED') millerJustFilled.add(m.buildingId);
+  let millers = world.millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
+  let bakers = world.bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
+  let couriers = world.couriers.map((c, i) => {
+    const slot = byRole.get('courier')![i]!;
+    return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0 } : { ...c, slot };
   });
-  world.bakers.forEach((b, i) => {
-    if (b.slot.state !== 'FILLED' && conscriptionResult.otherSlots[i]!.state === 'FILLED') bakerJustFilled.add(b.buildingId);
+  let journalists = world.journalists.map((j, i) => {
+    const slot = byRole.get('journalist')![i]!;
+    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0 } : { ...j, slot };
+  });
+  let detectives = world.detectives.map((d, i) => {
+    const slot = byRole.get('detective')![i]!;
+    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0 } : { ...d, slot };
   });
 
-  let millers = world.millers.map((m, i) => ({ ...m, slot: conscriptionResult.millerSlots[i]! }));
-  let bakers = world.bakers.map((b, i) => ({ ...b, slot: conscriptionResult.otherSlots[i]! }));
+  // Grifter pool bookkeeping: age everyone still waiting by one day, then apply today's
+  // events in the exact order stepMultiRoleConscriptionDay produced them. A fill or
+  // grifter-sourced conscription pops whoever has waited LONGEST — a real, simulate-able
+  // policy (not left unspecified) that directly answers "the effect of grifters being
+  // under the floor until they obtain a role."
+  let grifters = world.grifters.map((g) => ({ ...g, daysAsGrifter: g.daysAsGrifter + 1 }));
+  let nextGrifterId = world.nextGrifterId;
+  for (const event of conscriptionResult.events) {
+    if (event.type === 'churn') {
+      grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+      nextGrifterId += 1;
+    } else if (event.type === 'genuineFill' || event.type === 'conscriptionFromGrifters') {
+      if (grifters.length > 0) {
+        let longestIdx = 0;
+        for (let i = 1; i < grifters.length; i++) {
+          if (grifters[i]!.daysAsGrifter > grifters[longestIdx]!.daysAsGrifter) longestIdx = i;
+        }
+        grifters = grifters.filter((_, i) => i !== longestIdx);
+      }
+    }
+    // conscriptionFromOtherRole / backstopFires: no grifter-pool change — that player
+    // moves directly between roles, or the slot stays mechanically covered.
+  }
 
-  // ---- Stage 3: market (Miller then Baker) ------------------------------------------
+  // ---- Stage 3: market (Miller then Baker, then support-role wage + grifter floor) ---
   const noise = () => gaussian(rng, config.noiseSigma);
   millers = stepCompetitiveLayer(
     millers,
@@ -426,26 +608,16 @@ export function stepWorld(world: World): World {
   );
 
   // Wealth accrual (2026-08-10, user-requested; demand model + downtime window revised
-  // 2026-08-11, user-specified) — the new stock variable wealth.ts adds on top of the
-  // market's existing flow variables. A Miller sells its whole quantity at the
-  // market-clearing flour price. A Baker earns margin-over-flour-cost times however many
-  // customers it actually served today — served-customer counts come from
+  // 2026-08-11; support-role wage + grifter floor added 2026-08-11) — the stock variable
+  // wealth.ts adds on top of the market's existing flow variables. A Miller sells its whole
+  // quantity at the market-clearing flour price. A Baker earns margin-over-flour-cost times
+  // however many customers it actually served today — served-customer counts come from
   // splitBakerDemand(), which bounds total daily demand by population (not baker count),
-  // dilutes it by a multi-day purchase cycle (customers don't buy daily), splits it toward
-  // whoever's priced lower (real Bertrand behavior), and caps any one baker's daily
-  // customers at a realistic ceiling. BACKSTOPPED slots earn nothing — nobody is there to
-  // receive it. Both roles' income is then scaled by DAILY_ACTIVITY_MULTIPLIER — the daily
-  // blended consequence of an 8-hour low-activity window every day, "all round." See
-  // wealth.ts's header for the full reasoning and docs/BLUEPRINT.md's "Wealth inequality"
-  // entry for the baseline findings this revision responds to.
-  //
-  // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
-  // redistributed across the combined Miller+Baker FILLED pool (one shared pool, not two
-  // separate ones — matches "daily resource allocation" as untargeted and unconditional),
-  // THEN accrued onto wealth — so remediation (disabled by default) acts on what's earned
-  // today, not retroactively on the whole accumulated balance. The wealth cap, if enabled,
-  // then bounds the resulting stock. Both are PROPOSALS, simulated and reported in
-  // docs/BLUEPRINT.md, neither shipped as a default (wealthTaxRate=0, wealthCap=undefined).
+  // dilutes it by a multi-day purchase cycle, splits it toward whoever's priced lower, and
+  // caps any one baker's daily customers at a realistic ceiling. BACKSTOPPED slots earn
+  // nothing — nobody is there to receive it. Every income stream is scaled by
+  // DAILY_ACTIVITY_MULTIPLIER — the daily blended consequence of an 8-hour low-activity
+  // window every day, "all round." See wealth.ts's header for the full reasoning.
   const millerIncomes = millers.map((m) =>
     m.slot.state === 'FILLED' ? millerDailyIncome(m.value, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER : 0,
   );
@@ -465,6 +637,12 @@ export function stepWorld(world: World): World {
     return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER;
   });
 
+  // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
+  // redistributed across the combined Miller+Baker FILLED pool (one shared pool, not two
+  // separate ones — matches "daily resource allocation" as untargeted and unconditional),
+  // THEN accrued onto wealth. The wealth cap, if enabled, then bounds the resulting stock.
+  // Both are PROPOSALS, simulated and reported in docs/BLUEPRINT.md, neither shipped as a
+  // default, and deliberately scoped to Miller+Baker only — see this file's header note.
   let finalMillerIncomes = millerIncomes;
   let finalBakerIncomes = bakerIncomes;
   if (config.wealthTaxRate > 0) {
@@ -504,6 +682,13 @@ export function stepWorld(world: World): World {
     }
   }
 
+  // Support-role wage and grifter floor — flat, uncapped, untaxed (see header scoping note).
+  const supportDaily = SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER;
+  couriers = couriers.map((c) => (c.slot.state === 'FILLED' ? { ...c, wealth: c.wealth + supportDaily } : c));
+  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily } : j));
+  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily } : d));
+  grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
+
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
   // Sabotage-before-arrival order matches design/tick_order_check.py's own validated
   // finding — checked before choosing this order, not reinvented.
@@ -511,31 +696,40 @@ export function stepWorld(world: World): World {
   let lastSabotage: SabotageLogEntry | null = null;
 
   if (day > 0 && day % config.sabotageCadenceDays === 0) {
-    const combined = [...millers, ...bakers];
-    const filledCombined = combined.filter((s) => s.slot.state === 'FILLED');
-    if (filledCombined.length > 0) {
-      const targetIdx = Math.floor(rng() * filledCombined.length);
-      const target = filledCombined[targetIdx]!;
+    const filled = filledEntries({ millers, bakers, couriers, journalists, detectives });
+    if (filled.length > 0) {
+      const targetIdx = Math.floor(rng() * filled.length);
+      const target = filled[targetIdx]!;
       const targetBuilding = allBuildingsById.get(target.buildingId)!;
 
-      const occupants = occupantsOf(millers).concat(occupantsOf(bakers)).filter((o) => o.playerId !== target.buildingId);
+      const occupants = [
+        ...occupantsOf(millers),
+        ...occupantsOf(bakers),
+        ...occupantsOf(couriers),
+        ...occupantsOf(journalists),
+        ...occupantsOf(detectives),
+      ].filter((o) => o.playerId !== target.buildingId);
       const witnesses = occupantsWithin(world.shard, occupants, targetBuilding, config.witnessRadius).length;
 
       const successfulSaboteurs = sabotageAttempt(config.saboteurCount, config.acquireDays, detectionProbability(witnesses), rng);
-      const remainingAfterDamage = applySabotageDamage(filledCombined.length, successfulSaboteurs, config.damagePerSuccess);
-      const evictCount = filledCombined.length - remainingAfterDamage;
+      const remainingAfterDamage = applySabotageDamage(filled.length, successfulSaboteurs, config.damagePerSuccess);
+      const evictCount = filled.length - remainingAfterDamage;
 
       if (evictCount > 0) {
-        const evictable = [...filledCombined];
+        const evictable = [...filled];
         for (let k = 0; k < evictCount; k++) {
           const pick = Math.floor(rng() * evictable.length);
           const chosen = evictable.splice(pick, 1)[0]!;
-          const isMiller = millers.some((m) => m.buildingId === chosen.buildingId);
-          if (isMiller) {
-            millers = millers.map((m) => (m.buildingId === chosen.buildingId ? { ...m, slot: { state: 'BACKSTOPPED', vacantSince: day } } : m));
-          } else {
-            bakers = bakers.map((b) => (b.buildingId === chosen.buildingId ? { ...b, slot: { state: 'BACKSTOPPED', vacantSince: day } } : b));
-          }
+          // Evicted to BACKSTOPPED, and rejoins the grifter pool — sabotage costs someone
+          // their role, not their place in the population (same framing as ordinary churn).
+          grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+          nextGrifterId += 1;
+          const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
+          if (chosen.role === 'miller') millers = millers.map((m, i) => (i === chosen.index ? { ...m, slot: evict } : m));
+          else if (chosen.role === 'baker') bakers = bakers.map((b, i) => (i === chosen.index ? { ...b, slot: evict } : b));
+          else if (chosen.role === 'courier') couriers = couriers.map((c, i) => (i === chosen.index ? { ...c, slot: evict } : c));
+          else if (chosen.role === 'journalist') journalists = journalists.map((j, i) => (i === chosen.index ? { ...j, slot: evict } : j));
+          else detectives = detectives.map((d, i) => (i === chosen.index ? { ...d, slot: evict } : d));
         }
       }
 
@@ -545,21 +739,60 @@ export function stepWorld(world: World): World {
 
   if (rng() < config.arrivalPDaily) {
     population += 1;
+    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+    nextGrifterId += 1;
   }
 
-  const combinedFilledCount = millers.filter((m) => m.slot.state === 'FILLED').length + bakers.filter((b) => b.slot.state === 'FILLED').length;
-  const emigrants = migrationValveStep(population, combinedFilledCount, rng, config.migrationTheta, config.migrationK);
-  population = Math.max(0, population - emigrants);
+  const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives }).length;
+  const emigrants = migrationValveStep(population, preEmigrationFilledCount, rng, config.migrationTheta, config.migrationK);
+  const actualEmigrants = Math.min(emigrants, population);
+  for (let k = 0; k < actualEmigrants; k++) {
+    if (grifters.length > 0) {
+      // Emigration draws from the grifter pool first — someone with no role yet is the
+      // least invested, and this is what keeps population exactly conserved without ever
+      // touching a role-holder's slot unless there's truly nobody roleless left to leave.
+      const idx = Math.floor(rng() * grifters.length);
+      grifters = grifters.filter((_, i) => i !== idx);
+    } else {
+      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives });
+      if (filled.length > 0) {
+        const pick = filled[Math.floor(rng() * filled.length)]!;
+        const vacate = { state: 'VACANT' as const, vacantSince: day };
+        if (pick.role === 'miller') millers = millers.map((m, i) => (i === pick.index ? { ...m, slot: vacate } : m));
+        else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? { ...b, slot: vacate } : b));
+        else if (pick.role === 'courier') couriers = couriers.map((c, i) => (i === pick.index ? { ...c, slot: vacate } : c));
+        else if (pick.role === 'journalist') journalists = journalists.map((j, i) => (i === pick.index ? { ...j, slot: vacate } : j));
+        else detectives = detectives.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
+      }
+    }
+  }
+  population = Math.max(0, population - actualEmigrants);
 
-  const s = config.rMiller + config.rBaker;
+  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+  const finalFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives }).length;
   const filledExpValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.experience);
   const avgExp = filledExpValues.length > 0 ? filledExpValues.reduce((a, b) => a + b, 0) / filledExpValues.length : 0;
-  const filledWealthValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.wealth);
+
+  // Wealth-inequality scope widened (2026-08-11) — see this file's header note.
+  const allWealthValues = [
+    ...millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.wealth),
+    ...bakers.filter((b) => b.slot.state === 'FILLED').map((b) => b.wealth),
+    ...couriers.filter((c) => c.slot.state === 'FILLED').map((c) => c.wealth),
+    ...journalists.filter((j) => j.slot.state === 'FILLED').map((j) => j.wealth),
+    ...detectives.filter((d) => d.slot.state === 'FILLED').map((d) => d.wealth),
+    ...grifters.map((g) => g.wealth),
+  ];
 
   // ---- Stage 5: comms (rumour propagation) ------------------------------------------
   let lastRumourEvents: RumourEventLite[] = [];
   if (world.pendingWallPosts.length > 0) {
-    const occupants = occupantsOf(millers).concat(occupantsOf(bakers));
+    const occupants = [
+      ...occupantsOf(millers),
+      ...occupantsOf(bakers),
+      ...occupantsOf(couriers),
+      ...occupantsOf(journalists),
+      ...occupantsOf(detectives),
+    ];
     const graph = buildProximityGraph(occupants, config.commsProximityRange);
     for (const post of world.pendingWallPosts) {
       for (const { id: neighborId, weight } of graph.neighbors(post.authorId)) {
@@ -595,14 +828,23 @@ export function stepWorld(world: World): World {
     shard: world.shard, // static geography — Phase B doesn't move anyone (see header note)
     millers,
     bakers,
+    couriers,
+    journalists,
+    detectives,
+    grifters,
+    nextGrifterId,
     flourPrice: flourPriceValue,
     population,
-    economicHealth: economicHealth(combinedFilledCount, s),
-    economicHealthWithExperience: economicHealthWithExperience(combinedFilledCount, avgExp, s),
-    // giniCoefficient/topShare both return 0 for an empty array — 0 FILLED role-holders
-    // reads as "no meaningful comparison," not an error.
-    wealthGini: giniCoefficient(filledWealthValues),
-    wealthTop10Share: topShare(filledWealthValues, 0.1),
+    economicHealth: economicHealth(finalFilledCount, totalRoleSlots),
+    economicHealthWithExperience: economicHealthWithExperience(
+      millers.filter((m) => m.slot.state === 'FILLED').length + bakers.filter((b) => b.slot.state === 'FILLED').length,
+      avgExp,
+      config.rMiller + config.rBaker,
+    ),
+    // giniCoefficient/topShare both return 0 for an empty array — 0 tracked players reads
+    // as "no meaningful comparison," not an error.
+    wealthGini: giniCoefficient(allWealthValues),
+    wealthTop10Share: topShare(allWealthValues, 0.1),
     pendingWallPosts: [],
     lastRumourEvents,
     lastSabotage,

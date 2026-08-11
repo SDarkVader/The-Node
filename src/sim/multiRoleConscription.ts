@@ -94,7 +94,15 @@ export function stepMultiRoleConscriptionDay(
           events.push({ type: 'backstopFires', roleId: group.roleId });
           return { state: 'BACKSTOPPED' as const, vacantSince: slot.vacantSince };
         }
-        if (rng() < fillHazard(tau, params)) {
+        // fillHazard's willingness math is a pure function of (tau, N, R) — it has no
+        // concept of a real, finite, shared candidate pool running low, because the
+        // original 2-role model never shared one candidate pool across 5 simultaneous
+        // roles. Generalizing to N roles drawing from ONE real grifter pool means a
+        // voluntary fill must not be allowed to succeed when nobody is actually left to
+        // fill it — gated here the same way the BACKSTOPPED branch below already gates
+        // conscription on real availability, using the running same-day pool total.
+        const availableForFill = grifterPoolSize + grifterPoolDelta > 0;
+        if (availableForFill && rng() < fillHazard(tau, params)) {
           events.push({ type: 'genuineFill', roleId: group.roleId });
           grifterPoolDelta -= 1;
           return { state: 'FILLED' as const, vacantSince: null };

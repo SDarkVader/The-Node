@@ -119,6 +119,28 @@ describe('stepMultiRoleConscriptionDay — draft sourcing across 5 roles', () =>
   });
 });
 
+describe('stepMultiRoleConscriptionDay — grifter pool never goes negative', () => {
+  it('a tight population/role ratio (many simultaneous VACANT slots across roles competing for a small pool) never drives the running pool below zero', () => {
+    // Found bug (2026-08-11): fillHazard's willingness math has no concept of a real,
+    // finite, shared candidate pool — multiple roles could each independently roll a
+    // genuine fill the same day and jointly overdraw a pool smaller than their combined
+    // draws. Fixed by gating voluntary fills on real same-day availability; this test
+    // formalizes that fix as a property, not just an observation caught once downstream.
+    const smallGrifterStart = 3; // deliberately tiny relative to 5 roles' combined VACANT pressure
+    const roleCounts = { miller: 2, baker: 2, courier: 2, journalist: 2, detective: 2 };
+    const N = smallGrifterStart + Object.values(roleCounts).reduce((a, b) => a + b, 0);
+    let working = initialGroups(roleCounts, N, 20);
+    let pool = smallGrifterStart;
+    const rng = mulberry32(13);
+    for (let day = 0; day < 2000; day++) {
+      const result = stepMultiRoleConscriptionDay(working, pool, day, 5, rng);
+      working = result.roleGroups;
+      pool += result.grifterPoolDelta;
+      expect(pool).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
 describe('stepMultiRoleConscriptionDay — no draftees available', () => {
   it('a BACKSTOPPED slot with zero grifters and zero other-role FILLED members stays BACKSTOPPED, never throws', () => {
     const params = makeParams(1, 10, 5);

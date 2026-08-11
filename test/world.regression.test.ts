@@ -10,6 +10,7 @@ import {
 } from '../src/world/world.js';
 import { BACKSTOP_PRODUCTIVITY } from '../src/engine/ecosystem.js';
 import { flourPrice } from '../src/engine/millers.js';
+import { giniCoefficient, SUPPORT_ROLE_DAILY_WAGE, GRIFTER_DAILY_INCOME, DAILY_ACTIVITY_MULTIPLIER } from '../src/engine/wealth.js';
 
 /**
  * Regression tests for Phase B of the Observatory build spec (`src/world/world.ts`).
@@ -31,6 +32,12 @@ function scalarSnapshot(world: World) {
     wealthTop10Share: world.wealthTop10Share,
     millerValues: world.millers.map((m) => ({ state: m.slot.state, value: m.value, exp: m.experience, wealth: m.wealth })),
     bakerValues: world.bakers.map((b) => ({ state: b.slot.state, value: b.value, exp: b.experience, wealth: b.wealth })),
+    courierValues: world.couriers.map((c) => ({ state: c.slot.state, wealth: c.wealth })),
+    journalistValues: world.journalists.map((j) => ({ state: j.slot.state, wealth: j.wealth })),
+    detectiveValues: world.detectives.map((d) => ({ state: d.slot.state, wealth: d.wealth })),
+    grifterCount: world.grifters.length,
+    grifterTotalWealth: world.grifters.reduce((a, g) => a + g.wealth, 0),
+    grifterMaxDaysWaiting: world.grifters.reduce((max, g) => Math.max(max, g.daysAsGrifter), 0),
   };
 }
 
@@ -165,11 +172,16 @@ describe('stepWorld — comms propagation uses real spatial proximity', () => {
   it('a pending Wall post from a role-holder propagates to at least one nearby role-holder when they are close', () => {
     // Small shard, tight rMiller/rBaker so buildings land close together (a small core
     // district's plots are all within the default commsProximityRange of each other).
+    // Support roles zeroed out here — this shard is deliberately tiny (6 buildings) to
+    // force proximity, and only has room for the 2 roles this test actually exercises.
     const config: WorldConfig = {
       ...DEFAULT_WORLD_CONFIG,
       shardConfig: { ...DEFAULT_WORLD_CONFIG.shardConfig, coreDistrictCount: 1, peripheryDistrictCount: 0, buildingsPerCoreDistrict: 6 },
       rMiller: 3,
       rBaker: 3,
+      rCourier: 0,
+      rJournalist: 0,
+      rDetective: 0,
     };
     let world = createWorld(3, config);
     const author = world.millers[0]!.buildingId;
@@ -256,7 +268,13 @@ describe('wealth tracking — the new stock variable on top of the market\'s exi
       world2 = stepWorld(world2);
       if (before) {
         const after = world2.millers.find((m) => m.buildingId === before.buildingId);
-        if (after && after.slot.state === 'BACKSTOPPED') {
+        // Same `vacantSince` confirms this is the SAME continuous backstop episode, not a
+        // same-day coincidence where this slot got conscripted back to FILLED in Stage 2
+        // and then immediately sabotage-evicted to a NEW BACKSTOPPED episode in Stage 4 —
+        // a real possible sequence now that sabotage draws from all 5 roles' FILLED pool
+        // every sabotageCadenceDays, which resets wealth to a fresh occupant's one-day
+        // income (by design — new occupant, no inheritance), not a frozen-wealth violation.
+        if (after && after.slot.state === 'BACKSTOPPED' && after.slot.vacantSince === before.slot.vacantSince) {
           expect(after.wealth).toBe(before.wealth);
           checkedFreeze = true;
         }
@@ -305,14 +323,21 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
     expect(worldNoTax.wealthGini).toBe(worldAlsoNoTax.wealthGini);
   });
 
-  it('a high wealthTaxRate measurably reduces wealthGini relative to no tax, over the same seed', () => {
+  it('a high wealthTaxRate measurably reduces Miller+Baker wealth Gini relative to no tax, over the same seed', () => {
+    // world.wealthGini now spans all 5 roles + grifters (widened 2026-08-11 — see
+    // world.ts's header note), but wealthTaxRate stays deliberately scoped to Miller+Baker
+    // only. Taxing ~10 of ~62 tracked players may not move the population-wide figure
+    // measurably, so this checks the mechanism directly on the pool it actually acts on.
+    const millerBakerWealth = (w: World) =>
+      [...w.millers, ...w.bakers].filter((s) => s.slot.state === 'FILLED').map((s) => s.wealth);
+
     let worldTaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0.8 });
     let worldUntaxed = createWorld(7, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
     for (let i = 0; i < 300; i++) {
       worldTaxed = stepWorld(worldTaxed);
       worldUntaxed = stepWorld(worldUntaxed);
     }
-    expect(worldTaxed.wealthGini).toBeLessThan(worldUntaxed.wealthGini);
+    expect(giniCoefficient(millerBakerWealth(worldTaxed))).toBeLessThan(giniCoefficient(millerBakerWealth(worldUntaxed)));
   });
 
   it('a wealthCap bounds every FILLED role-holder\'s wealth at or below the cap', () => {
@@ -347,5 +372,195 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
     // same seed and duration, since prices/quantities are byte-identical (no RNG consumed
     // by the demand model) and only income differs.
     expect(bakerWealth(worldTight)).toBeLessThan(bakerWealth(worldLoose));
+  });
+});
+
+/**
+ * 5-role roster + grifter pool (2026-08-11, user-specified). Miller, Baker, Courier,
+ * Journalist, Detective, plus individually-tracked roleless "grifters." Covers population
+ * conservation (the invariant grifters.length + total FILLED across all 5 roles ==
+ * population), the grifter income floor and daysAsGrifter wait-time tracking, the flat
+ * support-role wage, and district-aware building assignment.
+ */
+
+function totalFilledAcrossRoles(world: World): number {
+  return (
+    world.millers.filter((m) => m.slot.state === 'FILLED').length +
+    world.bakers.filter((b) => b.slot.state === 'FILLED').length +
+    world.couriers.filter((c) => c.slot.state === 'FILLED').length +
+    world.journalists.filter((j) => j.slot.state === 'FILLED').length +
+    world.detectives.filter((d) => d.slot.state === 'FILLED').length
+  );
+}
+
+describe('createWorld — 5-role roster + grifter pool', () => {
+  it('the default role split sums to 24, matching ecosystem.ts\'s S_DEFAULT anchor', () => {
+    const { rMiller, rBaker, rCourier, rJournalist, rDetective } = DEFAULT_WORLD_CONFIG;
+    expect(rMiller + rBaker + rCourier + rJournalist + rDetective).toBe(24);
+  });
+
+  it('grifters.length + total FILLED across all 5 roles equals population at creation', () => {
+    const world = createWorld(1);
+    expect(world.grifters.length + totalFilledAcrossRoles(world)).toBe(world.population);
+  });
+
+  it('every role starts fully FILLED, and every grifter starts at 0 wealth / 0 daysAsGrifter', () => {
+    const world = createWorld(1);
+    for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives]) {
+      for (const s of arr) expect(s.slot.state).toBe('FILLED');
+    }
+    for (const g of world.grifters) {
+      expect(g.wealth).toBe(0);
+      expect(g.daysAsGrifter).toBe(0);
+    }
+  });
+
+  it('district-aware assignment gives every role exactly its configured count of distinct buildings', () => {
+    const world = createWorld(1);
+    const ids = (arr: { buildingId: string }[]) => arr.map((s) => s.buildingId);
+    const allIds = [
+      ...ids(world.millers),
+      ...ids(world.bakers),
+      ...ids(world.couriers),
+      ...ids(world.journalists),
+      ...ids(world.detectives),
+    ];
+    expect(new Set(allIds).size).toBe(allIds.length); // no building double-assigned
+    expect(world.millers.length).toBe(DEFAULT_WORLD_CONFIG.rMiller);
+    expect(world.bakers.length).toBe(DEFAULT_WORLD_CONFIG.rBaker);
+    expect(world.couriers.length).toBe(DEFAULT_WORLD_CONFIG.rCourier);
+    expect(world.journalists.length).toBe(DEFAULT_WORLD_CONFIG.rJournalist);
+    expect(world.detectives.length).toBe(DEFAULT_WORLD_CONFIG.rDetective);
+  });
+
+  it('throws a clear error when the 5 roles combined exceed the shard\'s building count', () => {
+    expect(() =>
+      createWorld(1, { ...DEFAULT_WORLD_CONFIG, rMiller: 1000, rCourier: 1000 }),
+    ).toThrow(/role slots requested/);
+  });
+});
+
+describe('stepWorld — population conservation across ticks (5 roles + grifter pool)', () => {
+  it('grifters.length + total FILLED across all 5 roles equals population, every tick, across a long run', () => {
+    let world = createWorld(3);
+    for (let i = 0; i < 1000; i++) {
+      world = stepWorld(world);
+      expect(world.grifters.length + totalFilledAcrossRoles(world)).toBe(world.population);
+    }
+  });
+
+  it('holds under high churn and small role counts too, across several seeds', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rJournalist: 2, rDetective: 2, pMonthly: 0.9 };
+    for (const seed of [1, 2, 3]) {
+      let world = createWorld(seed, config);
+      for (let i = 0; i < 500; i++) {
+        world = stepWorld(world);
+        expect(world.grifters.length + totalFilledAcrossRoles(world)).toBe(world.population);
+      }
+    }
+  });
+
+  it('the grifter pool is not monotonic — it both grows (churn/sabotage) and shrinks (fills/conscription) over time', () => {
+    let world = createWorld(3);
+    let sawGrowth = false;
+    let sawShrink = false;
+    let prevCount = world.grifters.length;
+    for (let i = 0; i < 500; i++) {
+      world = stepWorld(world);
+      if (world.grifters.length > prevCount) sawGrowth = true;
+      if (world.grifters.length < prevCount) sawShrink = true;
+      prevCount = world.grifters.length;
+    }
+    expect(sawGrowth).toBe(true);
+    expect(sawShrink).toBe(true);
+  });
+});
+
+describe('stepWorld — grifter income floor and daysAsGrifter wait-time tracking', () => {
+  it('every grifter accrues exactly GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER per day they remain roleless', () => {
+    let world = createWorld(1);
+    const before = new Map(world.grifters.map((g) => [g.id, g.wealth]));
+    world = stepWorld(world);
+    for (const g of world.grifters) {
+      const wealthBefore = before.get(g.id);
+      if (wealthBefore !== undefined) {
+        expect(g.wealth).toBeCloseTo(wealthBefore + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER, 10);
+      }
+    }
+  });
+
+  it('daysAsGrifter increases by 1 each day a specific grifter identity survives in the pool', () => {
+    let world = createWorld(1);
+    world = stepWorld(world);
+    const survivorId = world.grifters[0]!.id;
+    const daysBefore = world.grifters.find((g) => g.id === survivorId)!.daysAsGrifter;
+    world = stepWorld(world);
+    const after = world.grifters.find((g) => g.id === survivorId);
+    if (after) expect(after.daysAsGrifter).toBe(daysBefore + 1);
+  });
+
+  it('over a long high-churn run, at least one grifter is eventually drafted or fills an open role (pool never stuck at a single ever-growing size)', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rJournalist: 2, rDetective: 2, pMonthly: 0.9, conscriptionDelay: 3 };
+    let world = createWorld(5, config);
+    const initialCount = world.grifters.length;
+    let sawShrinkBelowInitial = false;
+    for (let i = 0; i < 500; i++) {
+      world = stepWorld(world);
+      if (world.grifters.length < initialCount) sawShrinkBelowInitial = true;
+    }
+    expect(sawShrinkBelowInitial).toBe(true);
+  });
+});
+
+describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () => {
+  it('a FILLED support-role slot accrues exactly SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day', () => {
+    let world = createWorld(1);
+    const before = { c: world.couriers.map((c) => c.wealth), j: world.journalists.map((j) => j.wealth), d: world.detectives.map((d) => d.wealth) };
+    world = stepWorld(world);
+    world.couriers.forEach((c, i) => {
+      if (c.slot.state === 'FILLED') expect(c.wealth).toBeCloseTo(before.c[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+    });
+    world.journalists.forEach((j, i) => {
+      if (j.slot.state === 'FILLED') expect(j.wealth).toBeCloseTo(before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+    });
+    world.detectives.forEach((d, i) => {
+      if (d.slot.state === 'FILLED') expect(d.wealth).toBeCloseTo(before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+    });
+  });
+
+  it('a new support-role occupant starts at 0 wealth, not inheriting the previous occupant\'s balance', () => {
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rCourier: 2, conscriptionDelay: 3, pMonthly: 0.9 };
+    let world = createWorld(5, config);
+    let checkedReset = false;
+    for (let i = 0; i < 400; i++) {
+      const before = world.couriers;
+      world = stepWorld(world);
+      for (let idx = 0; idx < world.couriers.length; idx++) {
+        const wasFilled = before[idx]!.slot.state === 'FILLED';
+        const isFilled = world.couriers[idx]!.slot.state === 'FILLED';
+        if (!wasFilled && isFilled) {
+          // Reset to 0, then this same day's wage accrues on top — should equal exactly
+          // one day's SUPPORT_ROLE_DAILY_WAGE, not some larger carried-forward balance.
+          expect(world.couriers[idx]!.wealth).toBeCloseTo(SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+          checkedReset = true;
+        }
+      }
+    }
+    expect(checkedReset).toBe(true);
+  });
+});
+
+describe('stepWorld — wealthGini now spans all 5 roles + grifters', () => {
+  it('everyone (all roles + grifters) starts at 0 wealth at creation — still perfect equality', () => {
+    const world = createWorld(1);
+    expect(world.wealthGini).toBe(0);
+  });
+
+  it('the population-wide Gini reflects more than just Miller+Baker — grifters alone (uniform income) do not drive it to 0', () => {
+    // With everyone else earning role-specific incomes and grifters earning a flat floor,
+    // the combined population should show real inequality after enough days.
+    let world = createWorld(1);
+    for (let i = 0; i < 150; i++) world = stepWorld(world);
+    expect(world.wealthGini).toBeGreaterThan(0);
   });
 });
