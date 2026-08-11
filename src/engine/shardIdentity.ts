@@ -110,6 +110,78 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
     },
   },
   {
+    name: 'Underhill',
+    premise: 'Half of it is below ground; the day starts and ends by lamplight.',
+    roleTitles: {
+      miller: 'Millwright',
+      baker: 'Oven-keeper',
+      courier: 'Tunnelhand',
+      journalist: 'Lamplighter',
+      detective: 'Delver',
+      importExport: 'Winchmaster',
+    },
+  },
+  {
+    name: 'Fairweather',
+    premise: 'Prosperous, pleased with itself, and quietly certain nothing here can go wrong.',
+    roleTitles: {
+      miller: 'Miller',
+      baker: 'Baker',
+      courier: 'Porter',
+      journalist: 'Gazetteer',
+      detective: 'Auditor',
+      importExport: 'Merchant',
+    },
+  },
+  {
+    name: 'Threadneedle',
+    premise: 'Everyone owes someone here, and the ledgers are older than the buildings.',
+    roleTitles: {
+      miller: 'Grindmaster',
+      baker: 'Bakehouse',
+      courier: 'Errander',
+      journalist: 'Scribe',
+      detective: 'Assessor',
+      importExport: 'Creditor',
+    },
+  },
+  {
+    name: 'Ninefold',
+    premise: 'Nine old villages that grew together and still refuse to agree on anything.',
+    roleTitles: {
+      miller: 'Miller',
+      baker: 'Breadwright',
+      courier: 'Between-runner',
+      journalist: 'Townsvoice',
+      detective: 'Arbiter',
+      importExport: 'Tollkeeper',
+    },
+  },
+  {
+    name: 'The Sump',
+    premise: 'Low, wet, and cheap to live in — which is why people end up here.',
+    roleTitles: {
+      miller: 'Mill-hand',
+      baker: 'Oven-keeper',
+      courier: 'Wader',
+      journalist: 'Hearsay',
+      detective: 'Nose',
+      importExport: 'Salvor',
+    },
+  },
+  {
+    name: 'Highcross',
+    premise: 'Four roads meet here; nobody stays long enough to be missed.',
+    roleTitles: {
+      miller: 'Grinder',
+      baker: 'Baker',
+      courier: 'Roadman',
+      journalist: 'Postboard',
+      detective: 'Marshal',
+      importExport: 'Waymaster',
+    },
+  },
+  {
     name: 'Coldharbour',
     premise: 'The last stop before nowhere; people arrive here on purpose or not at all.',
     roleTitles: {
