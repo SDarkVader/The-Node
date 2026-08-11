@@ -66,11 +66,15 @@ export const GRAIN_PER_FLOUR = 1.2;
  * structural SURPLUS — the correct side to err on, since no stockpile is simulated and a chronic
  * deficit would be an unbacked claim that Bakers can bake flour that was never milled.
  *
- * This constant and the role allocation are coupled and should be re-derived TOGETHER once
- * the 6-role split is swept (flagged in docs/HANDOVER.md) — re-tuning it alone each time a
- * role count moves is a stopgap, not the eventual answer.
+ * RESOLVED 2026-08-11: this constant and the role allocation are now derived TOGETHER by
+ * sim/multiShardRoleDistrictSweep.ts, which reports each candidate's own break-even value
+ * so the constant follows the chosen allocation instead of being chased after it. Doing so
+ * immediately caught that the then-shipped split ran a flourRatio of 1.222 — Bakers baking
+ * flour nobody milled — which no population-only metric could have surfaced. The shipped
+ * value 0.23 sits just under the chosen allocation's break-even of 0.239, holding a small
+ * surplus. Re-run that sweep, not this constant alone, whenever role counts change.
  */
-export const FLOUR_PER_BREAD = 0.22;
+export const FLOUR_PER_BREAD = 0.23;
 /** Parcels one Courier moves in a full active day. [ILLUSTRATIVE] */
 export const PARCELS_PER_COURIER_DAY = 14;
 /** Stories one Journalist files in a full active day. [ILLUSTRATIVE] */

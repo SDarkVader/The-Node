@@ -2058,6 +2058,49 @@ a role count moves is a stopgap, flagged as such, not the eventual answer.
 **Total role slots is now 32**, so the S=30 sweep that set the other five predates this role
 and needs re-running — flagged in `docs/HANDOVER.md`, not quietly ignored.
 
+## Six-role allocation, re-derived (2026-08-11) — and the incoherence it caught
+
+Re-run after Import/Export landed, superseding the five-role S=30 conclusion (which
+predated the role). `sim/multiShardRoleDistrictSweep.ts` now judges candidates on
+population/health/equality **and supply-chain coherence together**, because they are
+coupled: adding role slots dilutes staffing, which lowers milled flour, which moves the
+break-even `FLOUR_PER_BREAD`. Each candidate reports its own `flourRatio` (flour consumed /
+milled; <= 1.0 coherent) and the break-even value that would make it coherent — so the
+constant follows the chosen allocation instead of being chased after it.
+
+**That coupling immediately caught a real defect.** The then-shipped default
+(M=4 B=8 C=8 J=7 D=3 IE=2) ran a `flourRatio` of **1.222** — Bakers baking flour nobody
+milled — invisible to every population-only metric, and not caught by the earlier
+single-shard tuning of `FLOUR_PER_BREAD` because the multi-shard system runs more shards at
+lower staffing. Two other candidates (support-heavy 1.579, S=26 1.141) were incoherent too.
+
+**Measured, 1500 days, 2 seeds** (coherent candidates only):
+
+| split | pop/65 | health | gini | flourRatio | shards | grainCover |
+|---|---|---|---|---|---|---|
+| M=6 B=8 C=6 J=6 D=3 IE=3 | 58.7 | 0.870 | 0.531 | 0.808 | 4.5 | 1.47 |
+| **M=5 B=6 C=6 J=6 D=5 IE=4** | **57.8** | **0.864** | **0.505** | **0.921** | **4.0** | **2.24** |
+| M=7 B=6 C=7 J=6 D=3 IE=3 | 58.4 | 0.869 | 0.521 | 0.704 | 4.5 | 1.32 |
+
+**Shipped: M=5 B=6 C=6 J=6 D=5 IE=4 (S=32), `FLOUR_PER_BREAD=0.23`.** It gives up ~1.5%
+population — inside noise — for the best equality of any coherent candidate (0.505), the
+most bounded shard count (4.0 vs 4.5), and the widest grain headroom (2.24x vs 1.32-1.47).
+"Cleanest and fairest" reads as staffed AND equitable, and the population differences here
+are not real separation. S=38 was rejected despite decent numbers because it drove shard
+count to 10 — the proliferation regime; S=26 was both thinner and incoherent. **Miller
+stays deliberately scarce** at 5 of 32, honouring the brief's own intent for that role.
+Verified after the change: flourRatio 0.74-0.77, grain cover ~2.4x, milled flour up from
+1292 to ~1850 over 1500 days.
+
+**District count stays at 6.** Re-checked with the shipped split: 3 districts give better
+health (0.925) but the worst equality (0.567) and longest grifter waits (27.6/125); 11
+districts give the best equality (0.470) and shortest waits but the worst health (0.855).
+6 remains the balance point — the same monotonic tradeoff found before, unchanged by the
+6th role.
+
+**Still not exhaustive**, flagged rather than overclaimed: 7 allocations and 3 district
+counts were tested, not a joint grid search over every combination.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

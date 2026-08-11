@@ -1,20 +1,28 @@
 import { DEFAULT_WORLD_CONFIG, type WorldConfig } from '../world/world.js';
 import type { ShardLayoutConfig } from '../engine/space.js';
 import { createMultiShardState, stepMultiShard, totalPopulation } from './multiShardHarness.js';
+import { FLOUR_PER_BREAD } from '../engine/resources.js';
 
 /**
- * Role-slot allocation / district-layout sweep, re-run through the ACTUAL fixed system
- * (2026-08-11) — the original `districtRoleSweep.ts` predates the district-consolidation,
- * shard-registry, and live-N fixes, so its numbers no longer describe what ships. Judging
- * "cleanest and fairest" against a single, isolated shard is also misleading now that the
- * real fix is the multi-shard registry — a single shard alone still collapses by design
- * (see `multiShardValidation.ts`), so this sweeps every candidate through
- * `multiShardHarness.ts` instead, the same composed system that's actually shipped.
+ * Six-role allocation / district-layout sweep, run through the ACTUAL composed system
+ * (2026-08-11, re-run after Import/Export landed). Supersedes the five-role version — that
+ * one predated the Import/Export role, so its S=30 conclusion no longer describes what
+ * ships (S=32 today).
  *
- * "Cleanest and fairest" operationalized the same way as before: staffed
- * (meanPerShardPopulation close to targetPopulation), not wildly unequal (population-wide
- * wealthGini), and not leaving grifters stuck for excessive stretches (grifter mean/max
- * days waiting) — now measured across every shard in the registry, not one.
+ * This sweep deliberately answers TWO coupled questions at once, because tuning them
+ * separately was already flagged as a stopgap: the role allocation, AND whether the
+ * grain -> flour -> bread chain is actually coherent at that allocation. Adding role slots
+ * dilutes staffing, which lowers milled flour, which moves the break-even
+ * `FLOUR_PER_BREAD` — so a "best" allocation chosen on population metrics alone can quietly
+ * leave Bakers baking flour nobody milled. Each candidate therefore reports its own
+ * `flourRatio` (flour consumed / flour milled; <= 1.0 is coherent) and the
+ * `breakEvenFPB` that WOULD make it coherent, so the constant can be derived from the
+ * chosen allocation rather than chased after the fact.
+ *
+ * "Cleanest and fairest" stays operationalized as before: staffed (per-shard population
+ * near target, health high), not wildly unequal (population-wide Gini), not leaving
+ * grifters stuck (mean/max days waiting) — now with chain coherence as a hard qualifier
+ * rather than an afterthought.
  */
 
 const DAYS = 1500;
@@ -28,42 +36,32 @@ interface RoleSplit {
   rCourier: number;
   rJournalist: number;
   rDetective: number;
+  rImportExport: number;
 }
 
 const ROLE_SPLITS: RoleSplit[] = [
-  { label: 'current illustrative default (S=24)', rMiller: 3, rBaker: 7, rCourier: 6, rJournalist: 5, rDetective: 3 },
-  { label: 'even split (S=24)', rMiller: 5, rBaker: 5, rCourier: 5, rJournalist: 5, rDetective: 4 },
-  { label: 'Miller/Baker-heavy (S=24)', rMiller: 6, rBaker: 10, rCourier: 3, rJournalist: 3, rDetective: 2 },
-  { label: 'support-role-heavy (S=24)', rMiller: 2, rBaker: 4, rCourier: 8, rJournalist: 6, rDetective: 4 },
-  { label: 'smaller total, more grifter headroom (S=18)', rMiller: 2, rBaker: 5, rCourier: 5, rJournalist: 4, rDetective: 2 },
-  { label: 'larger total, less grifter headroom (S=30)', rMiller: 4, rBaker: 8, rCourier: 8, rJournalist: 7, rDetective: 3 },
+  { label: 'shipped default (S=32)', rMiller: 4, rBaker: 8, rCourier: 8, rJournalist: 7, rDetective: 3, rImportExport: 2 },
+  { label: 'Miller-heavier, for chain coherence (S=32)', rMiller: 6, rBaker: 8, rCourier: 6, rJournalist: 6, rDetective: 3, rImportExport: 3 },
+  { label: 'even-ish across six (S=32)', rMiller: 5, rBaker: 6, rCourier: 6, rJournalist: 6, rDetective: 5, rImportExport: 4 },
+  { label: 'support-heavy (S=32)', rMiller: 3, rBaker: 6, rCourier: 9, rJournalist: 8, rDetective: 4, rImportExport: 2 },
+  { label: 'fewer Bakers, Miller-led (S=32)', rMiller: 7, rBaker: 6, rCourier: 7, rJournalist: 6, rDetective: 3, rImportExport: 3 },
+  { label: 'smaller total (S=26)', rMiller: 4, rBaker: 6, rCourier: 6, rJournalist: 5, rDetective: 3, rImportExport: 2 },
+  { label: 'larger total (S=38)', rMiller: 6, rBaker: 9, rCourier: 9, rJournalist: 8, rDetective: 3, rImportExport: 3 },
 ];
 
-const FEWER_BIGGER_DISTRICTS: ShardLayoutConfig = {
-  ...DEFAULT_WORLD_CONFIG.shardConfig,
-  coreDistrictCount: 1,
-  peripheryDistrictCount: 2,
-  buildingsPerCoreDistrict: 20,
-  buildingsPerPeripheryDistrict: 10,
-};
-
-interface DistrictLayout {
-  label: string;
-  shardConfig: ShardLayoutConfig;
-}
-
-const DISTRICT_LAYOUTS: DistrictLayout[] = [
-  { label: 'default (2 core + 4 periphery, 6 districts, 40 buildings)', shardConfig: DEFAULT_WORLD_CONFIG.shardConfig },
-  { label: 'fewer, bigger districts (1 core + 2 periphery, 3 districts, 40 buildings)', shardConfig: FEWER_BIGGER_DISTRICTS },
+const DISTRICT_LAYOUTS: { label: string; shardConfig: ShardLayoutConfig }[] = [
+  { label: 'default (2 core + 4 periphery, 6 districts)', shardConfig: DEFAULT_WORLD_CONFIG.shardConfig },
   {
-    label: 'more, smaller districts (3 core + 8 periphery, 11 districts, 42 buildings)',
-    shardConfig: { ...DEFAULT_WORLD_CONFIG.shardConfig, coreDistrictCount: 3, peripheryDistrictCount: 8, buildingsPerCoreDistrict: 6, buildingsPerPeripheryDistrict: 3 },
+    label: 'fewer, bigger districts (3 districts)',
+    shardConfig: { ...DEFAULT_WORLD_CONFIG.shardConfig, coreDistrictCount: 1, peripheryDistrictCount: 2, buildingsPerCoreDistrict: 24, buildingsPerPeripheryDistrict: 12 },
+  },
+  {
+    label: 'more, smaller districts (11 districts)',
+    shardConfig: { ...DEFAULT_WORLD_CONFIG.shardConfig, coreDistrictCount: 3, peripheryDistrictCount: 8, buildingsPerCoreDistrict: 8, buildingsPerPeripheryDistrict: 4 },
   },
 ];
 
-function mean(arr: number[]): number {
-  return arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-}
+const mean = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 
 function runCandidate(shardConfig: ShardLayoutConfig, split: RoleSplit) {
   const config: WorldConfig = {
@@ -74,65 +72,89 @@ function runCandidate(shardConfig: ShardLayoutConfig, split: RoleSplit) {
     rCourier: split.rCourier,
     rJournalist: split.rJournalist,
     rDetective: split.rDetective,
+    rImportExport: split.rImportExport,
   };
 
-  const perShardPopSamples: number[] = [];
-  const healthSamples: number[] = [];
-  const giniSamples: number[] = [];
-  const grifterWaitMeans: number[] = [];
-  const grifterWaitMaxes: number[] = [];
-  const finalShardCounts: number[] = [];
+  const pops: number[] = [];
+  const healths: number[] = [];
+  const ginis: number[] = [];
+  const waitMeans: number[] = [];
+  const waitMaxes: number[] = [];
+  const shardCounts: number[] = [];
+  const flourRatios: number[] = [];
+  const breakEvens: number[] = [];
+  const grainCover: number[] = [];
 
   for (const seed of SEEDS) {
     let state = createMultiShardState(seed, config);
     for (let i = 0; i < DAYS; i++) {
       state = stepMultiShard(state);
       if (i >= BURN_IN) {
-        const worlds = [...state.worlds.values()].filter((w) => w.population > 0);
-        if (worlds.length > 0) {
-          perShardPopSamples.push(totalPopulation(state) / state.registry.shards.length);
-          healthSamples.push(mean(worlds.map((w) => w.economicHealth)));
-          giniSamples.push(mean(worlds.map((w) => w.wealthGini)));
-          const waits = worlds.flatMap((w) => w.grifters.map((g) => g.daysAsGrifter));
-          grifterWaitMeans.push(mean(waits));
-          grifterWaitMaxes.push(waits.length > 0 ? Math.max(...waits) : 0);
+        const live = [...state.worlds.values()].filter((w) => w.population > 0);
+        if (live.length > 0) {
+          pops.push(totalPopulation(state) / state.registry.shards.length);
+          healths.push(mean(live.map((w) => w.economicHealth)));
+          ginis.push(mean(live.map((w) => w.wealthGini)));
+          const waits = live.flatMap((w) => w.grifters.map((g) => g.daysAsGrifter));
+          waitMeans.push(mean(waits));
+          waitMaxes.push(waits.length ? Math.max(...waits) : 0);
         }
       }
     }
-    finalShardCounts.push(state.registry.shards.length);
+    shardCounts.push(state.registry.shards.length);
+    for (const w of state.worlds.values()) {
+      const c = w.resources.cumulative;
+      if (c.flourProduced > 0) {
+        flourRatios.push(c.flourConsumed / c.flourProduced);
+        breakEvens.push((c.flourProduced / c.breadProduced) || 0);
+      }
+      if (c.grainConsumed > 0) grainCover.push(c.grainDelivered / c.grainConsumed);
+    }
   }
 
   return {
-    meanPerShardPop: mean(perShardPopSamples),
-    meanHealth: mean(healthSamples),
-    meanGini: mean(giniSamples),
-    grifterMeanWait: mean(grifterWaitMeans),
-    grifterMaxWait: grifterWaitMaxes.length > 0 ? Math.max(...grifterWaitMaxes) : 0,
-    meanFinalShardCount: mean(finalShardCounts),
+    perShardPop: mean(pops),
+    health: mean(healths),
+    gini: mean(ginis),
+    waitMean: mean(waitMeans),
+    waitMax: waitMaxes.length ? Math.max(...waitMaxes) : 0,
+    shards: mean(shardCounts),
+    flourRatio: mean(flourRatios),
+    breakEvenFPB: mean(breakEvens),
+    grainCover: mean(grainCover),
   };
 }
 
-console.log('Role/district sweep — re-run through the ACTUAL multi-shard system (2026-08-11).');
-console.log(`DAYS=${DAYS} BURN_IN=${BURN_IN} SEEDS=${JSON.stringify(SEEDS)} targetPopulation=${DEFAULT_WORLD_CONFIG.targetPopulation}\n`);
+console.log('Six-role allocation + district sweep, through the real multi-shard system.');
+console.log(`DAYS=${DAYS} BURN_IN=${BURN_IN} SEEDS=${JSON.stringify(SEEDS)} target=${DEFAULT_WORLD_CONFIG.targetPopulation} (brief band 50-80)`);
+console.log(`shipped FLOUR_PER_BREAD=${FLOUR_PER_BREAD} — "breakEvenFPB" is the value that would make each candidate exactly coherent\n`);
 
-console.log('=== Role-slot allocation sweep (default shard/district layout) ===\n');
-for (const split of ROLE_SPLITS) {
-  const r = runCandidate(DEFAULT_WORLD_CONFIG.shardConfig, split);
+console.log('=== Role allocation (default district layout) ===\n');
+console.log('candidate                                        S   pop/65  health  shards   gini  waitMean  waitMax  flourRatio  breakEvenFPB  grainCover');
+for (const sp of ROLE_SPLITS) {
+  const S = sp.rMiller + sp.rBaker + sp.rCourier + sp.rJournalist + sp.rDetective + sp.rImportExport;
+  const r = runCandidate(DEFAULT_WORLD_CONFIG.shardConfig, sp);
+  const coherent = r.flourRatio <= 1.0 ? ' ' : '!';
   console.log(
-    `${split.label}\n` +
-      `  M=${split.rMiller} B=${split.rBaker} C=${split.rCourier} J=${split.rJournalist} D=${split.rDetective}` +
-      ` (S=${split.rMiller + split.rBaker + split.rCourier + split.rJournalist + split.rDetective})\n` +
-      `  meanPerShardPop=${r.meanPerShardPop.toFixed(1)}/${DEFAULT_WORLD_CONFIG.targetPopulation}  meanHealth=${r.meanHealth.toFixed(3)}  meanFinalShardCount=${r.meanFinalShardCount.toFixed(2)}\n` +
-      `  meanGini(per-shard, all roles+grifters)=${r.meanGini.toFixed(3)}  grifterMeanDaysWaiting=${r.grifterMeanWait.toFixed(1)}  grifterMaxDaysWaiting=${r.grifterMaxWait}\n`,
+    `${sp.label.padEnd(45)} ${String(S).padStart(3)}  ${r.perShardPop.toFixed(1).padStart(6)}  ${r.health.toFixed(3)}  ` +
+      `${r.shards.toFixed(1).padStart(6)}  ${r.gini.toFixed(3)}  ${r.waitMean.toFixed(1).padStart(8)}  ${String(r.waitMax).padStart(7)}  ` +
+      `${r.flourRatio.toFixed(3).padStart(10)}${coherent}  ${r.breakEvenFPB.toFixed(3).padStart(12)}  ${r.grainCover.toFixed(2).padStart(10)}`,
+  );
+  console.log(`${''.padEnd(45)}      M=${sp.rMiller} B=${sp.rBaker} C=${sp.rCourier} J=${sp.rJournalist} D=${sp.rDetective} IE=${sp.rImportExport}`);
+}
+
+console.log('\n=== District layout (shipped role split held fixed) ===\n');
+console.log('layout                                          pop/65  health  shards   gini  waitMean  waitMax  flourRatio');
+for (const lay of DISTRICT_LAYOUTS) {
+  const r = runCandidate(lay.shardConfig, ROLE_SPLITS[0]!);
+  console.log(
+    `${lay.label.padEnd(45)} ${r.perShardPop.toFixed(1).padStart(6)}  ${r.health.toFixed(3)}  ${r.shards.toFixed(1).padStart(6)}  ` +
+      `${r.gini.toFixed(3)}  ${r.waitMean.toFixed(1).padStart(8)}  ${String(r.waitMax).padStart(7)}  ${r.flourRatio.toFixed(3).padStart(10)}`,
   );
 }
 
-console.log('\n=== District layout sweep (current illustrative role split held fixed) ===\n');
-for (const layout of DISTRICT_LAYOUTS) {
-  const r = runCandidate(layout.shardConfig, ROLE_SPLITS[0]!);
-  console.log(
-    `${layout.label}\n` +
-      `  meanPerShardPop=${r.meanPerShardPop.toFixed(1)}/${DEFAULT_WORLD_CONFIG.targetPopulation}  meanHealth=${r.meanHealth.toFixed(3)}  meanFinalShardCount=${r.meanFinalShardCount.toFixed(2)}\n` +
-      `  meanGini(per-shard, all roles+grifters)=${r.meanGini.toFixed(3)}  grifterMeanDaysWaiting=${r.grifterMeanWait.toFixed(1)}  grifterMaxDaysWaiting=${r.grifterMaxWait}\n`,
-  );
-}
+console.log(
+  '\nflourRatio = flour consumed / flour milled; <= 1.000 is coherent, "!" marks a candidate\n' +
+    'baking flour nobody milled. grainCover = grain delivered / grain drawn; >= 1.00 means\n' +
+    'Import/Export actually covers the Millers. See docs/BLUEPRINT.md for the reading.',
+);

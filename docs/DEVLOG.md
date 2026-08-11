@@ -6,6 +6,35 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Re-ran the allocation sweep across all six roles; it caught an incoherent shipped default
+
+**Context.** "Re-run the sweep across all six roles." The S=30 five-role conclusion
+predated Import/Export, so it no longer described what ships.
+
+**Made the sweep answer both coupled questions at once** rather than allocation alone —
+each candidate now reports its own supply-chain coherence (`flourRatio`) and the break-even
+`FLOUR_PER_BREAD` that would make it coherent. That was the whole point of flagging the
+coupling last pass instead of quietly re-tuning the constant again.
+
+**It immediately earned that.** The then-shipped default (M=4 B=8 C=8 J=7 D=3 IE=2) ran a
+flourRatio of **1.222** — Bakers baking flour nobody milled. Invisible to any
+population/health/Gini metric, and missed by my earlier single-shard tuning of
+FLOUR_PER_BREAD because the multi-shard system runs more shards at lower staffing. Two
+other candidates were incoherent too (support-heavy 1.579, S=26 1.141).
+
+**Chose M=5 B=6 C=6 J=6 D=5 IE=4 (S=32), FLOUR_PER_BREAD=0.23.** Among coherent candidates
+it gives up ~1.5% population (inside noise) for the best equality (gini 0.505), the most
+bounded shard count (4.0), and the widest grain headroom (2.24x). S=38 rejected despite
+decent numbers — it drove shard count to 10, the proliferation regime. Miller stays
+deliberately scarce at 5 of 32. Verified after: flourRatio 0.74-0.77, milled flour up
+1292 -> ~1850.
+
+**District count re-checked and unchanged at 6** — the same monotonic health-vs-equality
+tradeoff as before, unaffected by the 6th role.
+
+**Verification.** 262 tests, all passing; typecheck clean. Golden snapshot regenerated
+(deliberate — DEFAULT_WORLD_CONFIG changed).
+
 ## 2026-08-11 — Import/Export + nodules: the 6th role, and a circular measurement caught
 
 **Context.** "Now build the Import/Export role and nodules." The design had been discussed

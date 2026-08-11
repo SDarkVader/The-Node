@@ -170,34 +170,38 @@ export interface WorldConfig {
   purchaseCycleDays?: number;
 }
 
-// Five-role split, re-derived 2026-08-11 against the ACTUAL fixed system (district
-// consolidation + shard registry + live-N), via sim/multiShardRoleDistrictSweep.ts —
-// superseding the earlier S=24 default, which was anchored to ecosystem.ts's S_DEFAULT
-// (a pre-multi-shard calibration point that no longer describes what's actually running).
-// Swept 6 role-slot totals through the real multi-shard harness: every S=24 split tested
-// clustered tightly together (44.1-44.7/65 mean per-shard population, 0.847-0.860 health)
-// with no meaningful difference between which of the 5 roles got the slots — the total
-// mattered, not the split. S=30 was the one candidate that meaningfully out-staffed the
-// rest (53.3/65, 82%, health 0.875) at a real but smaller equality cost (Gini 0.563 vs.
-// 0.518-0.542 for the S=24 cluster) — judged worth it since "cleanest and fairest" means
-// both staffed AND equitable, not equity at any staffing cost, and S=18 was strictly worse
-// on every axis (not a real tradeoff). The specific 4/8/8/7/3 split is the one S=30
-// configuration tested, not an exhaustive search across every possible split at that
-// total — see docs/BLUEPRINT.md's "5-role/district allocation, re-derived" entry for the
-// full numbers and the district-count decision (kept at 6 — see DEFAULT_SHARD_CONFIG's
-// own note). [ILLUSTRATIVE, sweep-informed against the real, current system]
+// Six-role split, re-derived 2026-08-11 against the real multi-shard system AFTER
+// Import/Export landed (sim/multiShardRoleDistrictSweep.ts). Supersedes the earlier S=30
+// five-role conclusion, which predated this role.
+//
+// This sweep judged allocations on population/health/equality AND on supply-chain
+// coherence together, because they are coupled: adding role slots dilutes staffing, which
+// lowers milled flour, which moves the break-even FLOUR_PER_BREAD. That coupling caught a
+// real defect — the previous default (M=4 B=8 C=8 J=7 D=3 IE=2) ran a flourRatio of 1.222,
+// i.e. Bakers baking flour nobody milled, invisible to any population-only metric.
+//
+// Measured across 7 candidates (1500 days, 2 seeds), coherent ones only:
+//   M=6 B=8 C=6 J=6 D=3 IE=3  pop 58.7  health 0.870  gini 0.531  flour 0.808  shards 4.5
+//   M=5 B=6 C=6 J=6 D=5 IE=4  pop 57.8  health 0.864  gini 0.505  flour 0.921  shards 4.0  <- shipped
+//   M=7 B=6 C=7 J=6 D=3 IE=3  pop 58.4  health 0.869  gini 0.521  flour 0.704  shards 4.5
+// The shipped choice gives up ~1.5% population for the best equality of any coherent
+// candidate (0.505), the most bounded shard count, and the widest grain headroom
+// (grainCover 2.24 vs 1.32-1.47) — "cleanest and fairest" reads as staffed AND equitable,
+// and the population cost is inside noise. S=38 was rejected despite good numbers because
+// it drove shard count to 10 (the proliferation regime); S=26 was both thinner and
+// incoherent. Miller stays deliberately scarce at 5 of 32, per the brief's own intent.
+// [Evidence-derived; not an exhaustive search — see docs/BLUEPRINT.md]
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
-  rMiller: 4,
-  rBaker: 8,
-  rCourier: 8,
-  rJournalist: 7,
-  rDetective: 3,
-  // 2 slots deliver ~1.40 grain/day against a MEASURED demand of ~1.28/day/shard (from
-  // resources.ts's accumulated grainConsumed) — sized from the real number, not guessed.
-  // NOTE: total role slots is now 32, so the S=30 sweep that set the other five predates
-  // this role and should be re-run — flagged in docs/HANDOVER.md, not silently ignored.
-  rImportExport: 2,
+  rMiller: 5,
+  rBaker: 6,
+  rCourier: 6,
+  rJournalist: 6,
+  rDetective: 5,
+  // 4 slots, from the same six-role sweep: gives grainCover 2.24 (grain delivered vs.
+  // drawn), so Import/Export comfortably covers milling and grain binds only under real
+  // understaffing rather than as a standing tax.
+  rImportExport: 4,
   targetPopulation: 65,
   pMonthly: 0.2,
   conscriptionDelay: 14,

@@ -185,6 +185,12 @@ the opportunity valve. Per-shard population now sits inside the brief's own 50-8
 Remaining tuning is optional, not a blocker; `migrationFailureRate` is deliberately left
 alone until Import/Export's route-detection design sets it.
 
+**The six-role allocation is re-derived and shipped** — M=5 B=6 C=6 J=6 D=5 IE=4 (S=32),
+district count 6, `FLOUR_PER_BREAD=0.23`, all from `npm run multi-shard-role-district-sweep`,
+which now judges allocation and supply-chain coherence together. That sweep caught the
+previous default baking flour nobody milled (flourRatio 1.222) — re-run it, not the
+constant alone, whenever role counts change.
+
 **A finer role/district search is possible but not done** — only one split was tested at
 S=30 (out of many possible distributions at that total) and only three district counts
 were tried at all (3/6/11). A proper grid search (S=26/28/32, more district counts, joint
