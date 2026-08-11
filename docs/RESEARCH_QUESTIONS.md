@@ -239,12 +239,14 @@ what is lost is obscurity, never standing, and obscurity was never part of the p
 baseline (constraint 6 guarantees a floor *of* visibility). Any design where fame *reduces*
 something violates constraint 6.
 
-**Hard requirement, from a trap identified 2026-08-11:** a roleless player must have some way
-to accumulate witnessed action. If reputation accrues only from role activity, grifters have
-no route onto the ladder — no role, no witnessed action, no coordination, no route to a role
-— which converts a temporary position into a caste and violates constraint 2 in spirit even
-while every individual mechanic respects its letter. Reject any design that cannot answer
-this.
+**Requirement, revised 2026-08-11.** An earlier version of this said grifters must be able to
+build standing *outside* roles, on the grounds that reputation-from-role-activity would lock
+them out. That was overstated: the role system is itself the ladder — voluntary fills and
+conscription move grifters into roles at a ~22-day mean wait, and holding a role is exactly
+what makes a player witnessable. The narrower requirement that does hold: **a long roleless
+spell must not erase a player's history.** `RoleEconomicSlot.wealth` resets to 0 on every new
+occupancy, which is right for wealth and would be wrong for standing — applied to reputation
+it would turn the ~100-day worst-case wait into a genuine caste trap.
 
 **What would answer it:** research on prestige and legacy systems that confer standing
 without conferring power over others — the distinction is the whole difficulty, and most

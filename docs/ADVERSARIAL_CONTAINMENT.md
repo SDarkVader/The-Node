@@ -294,21 +294,97 @@ of it:
 Neither is a penalty applied by the system; both are consequences of where a player currently
 stands on a single axis. That is what makes them feel different without being different rules.
 
-### The trap this exposes — flag before building reputation
+### Reputation and diary decay in opposite directions — which is where the worries come from
 
-If reputation is built on **witnessed action**, and only role-holders act visibly, then
-grifters have no route onto the ladder at all: no role → no witnessed action → no reputation
-→ no coordination → no route to a role except waiting to be drafted. That is a **structural
-underclass**, and it would violate constraint 2 in spirit even while every individual
-mechanic respects the letter (their income floor stays positive the whole time).
+The design already has **two** memory systems pointing opposite ways, and that asymmetry is
+what makes different players worry about different things without any special-casing:
 
-Today grifters have `daysAsGrifter` accumulating and nothing accruing from it. A reputation
-system keyed purely to role activity would harden that into permanence.
+| | Reputation (civic memory) | Diary (personal memory) |
+|---|---|---|
+| **Visibility** | Public | Private to one owner, never leaks |
+| **Over time** | Accumulates, permanent | Silently expires, per entry, on its own clock |
+| **Status** | Specified, **unbuilt** | **Built** — `engine/privateStore.ts` |
+| **Governed by** | Constraint 4 (civic memory is immortal) + constraint 6 (additive only) | Constraint 4 (personal memory is mortal) |
 
-**Requirement for any reputation design:** a roleless player must have *some* way to
-accumulate witnessed action. Waiting must not be the only thing they can do, and time spent
-roleless must not be dead time. What that mechanism is remains open — but a design that
-cannot answer it should be rejected, because it converts a temporary position into a caste.
+This is constraint 4's split doing real mechanical work rather than just settling a
+philosophical question. And it produces the third distinct worry:
+
+**The informed player's fear is expiry.** Private observations rot. You cannot bank
+intelligence and cash it in later — an entry is silently gone at its TTL boundary, with no
+fade and no warning. So the player who has *worked out what is going on* is racing a clock
+that the famous player is not.
+
+That is a direct, structural answer to the original exploit — *"I used information to know
+what people were going to do before they decided amongst themselves."* Information advantage
+in NODE is **perishable by construction**. Aggregating intel over months does not compound;
+it evaporates behind you at the same rate you gather it. Use it or lose it, permanently.
+
+Note the pleasing inversion: the two assets a determined player would most want to stockpile
+behave oppositely. **Reputation cannot be spent** (you can't trade fame for obscurity), and
+**intel cannot be saved** (you can't hold knowledge until the moment suits). Neither hoards.
+
+### Finding the opportunity is its own worry
+
+Opportunities are transient and contested, and now genuinely so: role vacancies open and
+close on churn, sabotage windows are a hazard rather than a timetable, districts decline on
+a smoothed signal, migration destinations shift as shards fill. Nothing waits.
+
+That gives a fourth position with its own fear — not exposure, not expiry, but **timing**:
+finding the opening while it is still open, and while whatever you know about it is still
+alive in your diary. The two clocks interact, which is the interesting part: intel about an
+opportunity ages at the same time the opportunity itself closes.
+
+### The four worries, one mechanism
+
+| Position | Scarce resource | Time does what to it | Fear |
+|---|---|---|---|
+| Known / high reputation | Obscurity | Erodes it — reputation only accumulates | Being seen |
+| Informed / rich diary | Fresh intel | Expires it — per entry, silently | Acting too late |
+| Grifter / roleless | Attention | Wastes it — `daysAsGrifter` climbs, nothing accrues | Not being seen |
+| Opportunist | Open windows | Closes them | Missing it |
+
+None of these are separate rule-sets. They are four positions on the same witness-and-memory
+machinery, which is why the game can make very different players anxious about very different
+things without fragmenting into special cases.
+
+### There is no anonymous power — you have to hold a job
+
+User's resolving point (2026-08-11): *"you still need a job... a role... so you can't be a
+hidden prick."*
+
+This is the load-bearing containment rule, and it is already true of the mechanics rather
+than something to add. **Every form of leverage in NODE is attached to a role**, and a role is
+a fixed, located, visible position: it occupies a specific building in a specific district,
+its output is public (a Miller's supply sets the flour price everyone pays), and its
+occupancy is legible to the whole shard through the vacancy system.
+
+There is no mechanism anywhere that lets a player accumulate influence while remaining a
+nobody. Wealth buys nothing. Sabotage cannot be aimed. The grammar cannot brief an ally. The
+*only* route to mattering is to take a position that puts you in a building with your name
+effectively on it.
+
+So the scheming-from-the-shadows archetype is not blocked by a rule — it is **structurally
+unavailable**, because the shadows contain no levers. To reach for power you must first
+become findable, and having become findable you cannot go back (see the reputation section
+above: obscurity is unrecoverable).
+
+### Correcting an overstatement of mine
+
+I previously flagged that grifters would be locked out of reputation entirely — "no role, no
+witnessed action, no reputation, no route to a role except waiting to be drafted" — and
+called it a structural underclass. **That was too strong**, and this point is why: the role
+system *is* the ladder. Voluntary fills and conscription both move grifters into roles
+routinely, measured at a ~22-day mean wait, and taking a role is precisely what makes a
+player witnessable. The route exists and is well-trodden.
+
+What survives of the concern is narrower and worth keeping: while roleless, **nothing
+accrues**. `daysAsGrifter` climbs and yields nothing, so the ~100-day worst-case wait is dead
+time in a way the mean is not. The requirement on a future reputation design is therefore not
+"invent a way for grifters to build standing outside roles" but the softer **"do not let a
+long wait erase someone's history"** — a player returning to a role after a long gap should
+not be starting from zero on every axis at once. Note `RoleEconomicSlot.wealth` already
+resets to 0 on every new occupancy, which is correct for wealth and would be wrong for
+standing.
 
 ---
 
@@ -326,7 +402,8 @@ something else. Each of these is individually reasonable-sounding and collective
 | **Cross-shard persistent per-player scores** | Violates constraint 4 and lets a reputation built by grinding one shard be imported as power into a quiet one — the exact "outsider imposes their will" scenario. |
 | **Reputation derived from wealth, rank, or role held** rather than witnessed action | Turns reputation into superiority, which is the specific thing requirement 6 excludes. Coordination would then be purchasable, and the puzzle disappears. |
 | **Removing every pattern with randomness** | Overcorrection. Produces a game of dice instead of judgement, and leaves the Detective/Journalist roles nothing to contest. Patterns should be priced by counter-play, not erased. |
-| **Reputation accruing only from role activity** | Locks grifters out of the only ladder — no role, no witnessed action, no coordination, no route to a role. Converts a temporary position into a caste and violates constraint 2 in spirit. |
+| **Any leverage that does not require holding a role** — anonymous influence, off-books deals, power that follows a player rather than a position | Reintroduces the hidden operator the whole design excludes. Power must stay attached to a located, visible, losable position. |
+| **Standing that resets to zero on losing a role**, the way wealth does | Correct for wealth, wrong for reputation: it would make a long roleless spell erase a player's history and turn the ~100-day worst-case wait into a genuine caste trap. |
 
 **Recommended standing rule:** treat containment as a property to be *re-verified* whenever
 any of the above is touched, in the same way supply-chain coherence is re-verified after any
@@ -355,6 +432,7 @@ tested against real adversarial players, not against the harness.
 | Quiet places can't be steamrolled | **Holds** — wealth is inert, sabotage is undirected, roles rotate |
 | Exploits are priced, not blocked | **Partial** — no free wins remain, but nothing yet makes an attempt a *calculated* bet, because Detective/Journalist have no mechanics |
 | Ambition requires coordination | **Holds structurally** — one role each, no purchasable allies, no grammar for briefing them |
+| No anonymous power | **Holds** — every lever is attached to a located, visible role; the shadows contain nothing to pull |
 | Contained, not excluded | **Holds** — no bans, no exclusion; the floor is untouchable |
 | Reach is reputational, not destructive | **Half-met** — destructive reach is genuinely absent; reputational reach does not exist yet |
 | Remembered | **Unbuilt** — civic memory is specified (constraint 4) but no monuments/legacy system exists |
