@@ -207,8 +207,44 @@ Two consequences follow directly, and both are already constraints:
   faked or bought. That *is* the cost in "at what cost". It is also exactly the legacy the
   player asked to be remembered by.
 
-**Status: specified, unbuilt.** Constraints 4 and 6 fix the shape and the limits; this fixes
-the purpose. What remains is a mechanic. See `docs/RESEARCH_QUESTIONS.md` question 11.
+### Being known is the benefit AND the risk — the mechanism that makes this self-limiting
+
+User's closing point, and the keystone of the whole design: *"the biggest benefit is you are
+just known everywhere, and also the biggest risk."*
+
+Reputation's payoff is that strangers will act with you without being briefed — which is the
+only route to anything ambitious. Its cost is that the same visibility makes you **legible**.
+A known player cannot move quietly. Every pattern they run is watched by people who already
+know to watch them, and every action they take is the kind that gets witnessed and
+remembered.
+
+**This is what makes containment intrinsic rather than bolted on.** The exact property that
+enables coordination is the property that removes covertness. Ambition therefore pays twice:
+
+1. **Time**, to accumulate witnessed action before anyone will coordinate with you.
+2. **Obscurity**, permanently, the moment you have. You cannot spend reputation to become
+   unknown again.
+
+So the determined player faces a genuine bind rather than an artificial cap: *the reach
+required to execute a plan is exactly the reach that makes the plan visible.* Nothing blocks
+them. The cost is structural and self-inflicted, which is why it satisfies requirement 5
+(priced, not blocked) without any punishment mechanic existing at all.
+
+**Critically, this does not make reputation subtractive** — constraint 6 holds intact. What
+a known player loses is **obscurity, not standing**. Their visibility and access only ever
+increase; nothing is removed from them, no floor is lowered, no door closes. Obscurity was
+never part of the protected baseline — constraint 6 guarantees a floor *of* visibility, so
+becoming more visible moves with that guarantee rather than against it. A design that made
+fame *reduce* anything would violate constraint 6 and should be rejected.
+
+This also gives the two unbuilt roles their natural hook: a Journalist writes about who is
+already known; a Detective watches who is already worth watching. Counter-play scales with
+the target's own reach, which means it needs no arbitrary difficulty knob.
+
+**Status: specified, unbuilt.** Constraints 4 and 6 fix the shape and the limits; the
+sections above fix the purpose (coordination substrate), the source (witnessed action, never
+superiority), and now the self-limiting mechanism (visibility as both payoff and exposure).
+What remains is a mechanic. See `docs/RESEARCH_QUESTIONS.md` question 11.
 
 ---
 
@@ -257,6 +293,7 @@ tested against real adversarial players, not against the harness.
 | Contained, not excluded | **Holds** — no bans, no exclusion; the floor is untouchable |
 | Reach is reputational, not destructive | **Half-met** — destructive reach is genuinely absent; reputational reach does not exist yet |
 | Remembered | **Unbuilt** — civic memory is specified (constraint 4) but no monuments/legacy system exists |
+| Self-limiting rather than capped | **Specified, unbuilt** — visibility as both payoff and exposure means containment is intrinsic to the power, needing no punishment mechanic |
 
 The containment is real. Some of it is deliberate and some of it is a happy consequence of
 what remains unbuilt — which means it is fragile in a specific way: it degrades the moment

@@ -231,10 +231,19 @@ publicly witnessed events, never from wealth, rank, or role held. Constraint 4 s
 source (civic memory: collectively-witnessed events may persist, private judgement may not);
 constraint 6 supplies the limit (additive only, never subtractive).
 
+**The self-limiting mechanism (2026-08-11).** Being known is simultaneously the benefit and
+the risk: reputation buys coordination with strangers, and the same visibility makes the
+player legible, so they can no longer move quietly. Ambition pays twice — in time to build
+it, and in obscurity permanently once built. Note carefully that this is **not** subtractive:
+what is lost is obscurity, never standing, and obscurity was never part of the protected
+baseline (constraint 6 guarantees a floor *of* visibility). Any design where fame *reduces*
+something violates constraint 6.
+
 **What would answer it:** research on prestige and legacy systems that confer standing
 without conferring power over others — the distinction is the whole difficulty, and most
 existing games collapse it. Also: how coordination forms between strangers under enforced
-communication limits, since that is the loop this has to support.
+communication limits, since that is the loop this has to support; and whether visibility
+alone is a sufficient deterrent in practice, or whether players simply accept being watched.
 
 ---
 
