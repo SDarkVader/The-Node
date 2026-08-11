@@ -221,6 +221,15 @@ export interface ShardLayoutConfig {
   buildingsPerPeripheryDistrict: number;
 }
 
+// District count (6: 2 core + 4 periphery) checked, not just inherited, 2026-08-11 —
+// sim/multiShardRoleDistrictSweep.ts swept 3/6/11 districts through the real multi-shard
+// system and found a genuine, monotonic tradeoff: fewer/bigger districts staff better but
+// are less equal and leave grifters waiting longer (district-consolidation's irreversible
+// ratchet trips less often when each district's filled-fraction averages over more role
+// slots); more/smaller districts are fairer and faster for grifters but worse-staffed. 6
+// districts sits almost exactly between both extremes on every metric measured — kept as
+// the deliberate balance point, not a default nobody re-examined. See docs/BLUEPRINT.md's
+// "5-role/district allocation, re-derived" entry for the full numbers.
 export const DEFAULT_SHARD_CONFIG: ShardLayoutConfig = {
   targetPopulation: 65,
   coreDistrictCount: 2,

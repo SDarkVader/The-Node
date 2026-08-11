@@ -161,20 +161,28 @@ export interface WorldConfig {
   purchaseCycleDays?: number;
 }
 
-// Five-role split (2026-08-11, user-specified roster), still summing to 24 — matching
-// ecosystem.ts's own S_DEFAULT, the same anchor the old rMiller=8/rBaker=16 split used —
-// specifically so migrationValveStep's already-validated [55%, 68%] roleless-fraction
-// equilibrium band (tuned against S=24 against targetPopulation=65) stays valid without
-// re-deriving it from scratch. The SPLIT across the 5 roles (3/7/6/5/3) is a starting
-// allocation, not a validated conclusion — see sim/districtRoleSweep.ts and
-// docs/BLUEPRINT.md's "5-role roster" entry for the sweep this was checked against.
-// [ILLUSTRATIVE, sweep-informed]
+// Five-role split, re-derived 2026-08-11 against the ACTUAL fixed system (district
+// consolidation + shard registry + live-N), via sim/multiShardRoleDistrictSweep.ts —
+// superseding the earlier S=24 default, which was anchored to ecosystem.ts's S_DEFAULT
+// (a pre-multi-shard calibration point that no longer describes what's actually running).
+// Swept 6 role-slot totals through the real multi-shard harness: every S=24 split tested
+// clustered tightly together (44.1-44.7/65 mean per-shard population, 0.847-0.860 health)
+// with no meaningful difference between which of the 5 roles got the slots — the total
+// mattered, not the split. S=30 was the one candidate that meaningfully out-staffed the
+// rest (53.3/65, 82%, health 0.875) at a real but smaller equality cost (Gini 0.563 vs.
+// 0.518-0.542 for the S=24 cluster) — judged worth it since "cleanest and fairest" means
+// both staffed AND equitable, not equity at any staffing cost, and S=18 was strictly worse
+// on every axis (not a real tradeoff). The specific 4/8/8/7/3 split is the one S=30
+// configuration tested, not an exhaustive search across every possible split at that
+// total — see docs/BLUEPRINT.md's "5-role/district allocation, re-derived" entry for the
+// full numbers and the district-count decision (kept at 6 — see DEFAULT_SHARD_CONFIG's
+// own note). [ILLUSTRATIVE, sweep-informed against the real, current system]
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
-  rMiller: 3,
-  rBaker: 7,
-  rCourier: 6,
-  rJournalist: 5,
+  rMiller: 4,
+  rBaker: 8,
+  rCourier: 8,
+  rJournalist: 7,
   rDetective: 3,
   targetPopulation: 65,
   pMonthly: 0.2,

@@ -1831,6 +1831,62 @@ now averaged across 5 seeds). 233 tests total, all passing; `npm run typecheck` 
 Golden-value snapshot unchanged (no district crosses its tipping point within the pinned
 test's short, fully-staffed 25-tick window).
 
+## 5-role/district allocation, re-derived (2026-08-11) — the question finally answered
+
+**Why re-derive, not reuse the earlier sweep.** `districtRoleSweep.ts`'s numbers (the
+original "5-role roster" entry above) predate the district-consolidation, shard-registry,
+and live-N fixes — they describe a system that no longer exists. Re-running that same
+script confirms as much: a single shard alone still collapses hard in isolation (meanPop
+7-23/65, worse than before — expected, live-N removed an optimistic bias, see the previous
+entry), which makes judging "cleanest and fairest" against it actively misleading now that
+the real fix is the multi-shard registry, not any single shard's own settings. Built
+`sim/multiShardRoleDistrictSweep.ts` instead — same metrics, same candidate pool, but
+every candidate run through the actual composed system (`multiShardHarness.ts`), 1500
+days, burn-in 300, 2 seeds, per-shard population/health/Gini/grifter-wait sampled across
+every shard in the registry, not one.
+
+**Role split: the total mattered, not the distribution.** All six S=24 candidates
+clustered tightly (44.1-44.7/65 mean per-shard population, 68-69% of target;
+0.847-0.860 health; 0.518-0.542 Gini) regardless of how those 24 slots were divided
+across Miller/Baker/Courier/Journalist/Detective — no split meaningfully beat another at
+the same total. S=18 was strictly worse on every axis (34.7/65, 0.814 health, worse Gini
+too) — not a real tradeoff, just an under-resourced shard. **S=30 was the one candidate
+that separated itself**: 53.3/65 (82%), 0.875 health — clearly better staffed — at a real
+but proportionally smaller cost (Gini 0.563, the worst tested, vs. 0.518-0.542 for the
+S=24 cluster; grifter mean wait 19.3 vs. 18.1-18.9). Judged worth it: "cleanest and
+fairest" means both staffed and equitable, not equity purchased by leaving a shard
+under-resourced. **`DEFAULT_WORLD_CONFIG` moves from Miller 3/Baker 7/Courier 6/Journalist
+5/Detective 3 (S=24) to Miller 4/Baker 8/Courier 8/Journalist 7/Detective 3 (S=30)** — the
+one S=30 split actually tested, not an exhaustive search across every possible
+distribution at that total; a real, evidence-backed decision, not a final optimum.
+
+**District count: a genuine, monotonic tradeoff, kept at the balance point.** Swept 3
+(fewer/bigger), 6 (default), and 11 (more/smaller) districts with the role split held
+fixed. Fewer/bigger districts staff better (48.5/65, 0.903 health) but are less equal
+(Gini 0.585, worst of any candidate tested in this whole pass) and leave grifters waiting
+longest (22.2/108 mean/max days). More/smaller districts are the fairest and fastest for
+grifters (Gini 0.459, wait 14.1/76) but worst-staffed (38.9/65, 0.768 health). Mechanism,
+traced not assumed: `districtFilledFraction` averages over however many role slots a
+district has — fewer, bigger districts smooth that average over more slots, so the
+irreversible consolidation ratchet trips less often, avoiding the compounding friction
+penalty; more, smaller districts are individually more volatile, trip more often, and
+each merge event redistributes its displaced players faster into a smaller overall system
+— fairer, but at real staffing cost. **6 districts (2 core + 4 periphery, the existing
+default) sits almost exactly between both extremes on every metric measured** — kept
+deliberately, not left unexamined; moving either direction trades one half of "cleanest
+and fairest" for the other, and 6 is where neither is sacrificed for the other's sake.
+
+**Verification.** `npm run multi-shard-role-district-sweep` (new script, checked into
+the repo) reproduces these numbers. `test/world.regression.test.ts`'s "the default role
+split sums to..." test updated (24 → 30); golden-value snapshot regenerated (deliberate —
+`DEFAULT_WORLD_CONFIG` changed). 233 tests total, all passing; `npm run typecheck` clean.
+
+**Still not exhaustive, flagged not hidden**: only one split was tested at S=30 and only
+three district counts were tested at all — a finer grid search (S=26/28/32, more district
+counts, joint role-split × district-count combinations) could still find something better.
+This is the first evidence-backed answer to "derive role numbers and district count," not
+claimed to be the global optimum.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,

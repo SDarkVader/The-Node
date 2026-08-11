@@ -6,6 +6,51 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Role/district allocation, finally derived against the real system — "run it on your baseline then solve it regardless"
+
+**Context.** Direct follow-up once the district-consolidation/shard-registry/live-N work
+landed: "run it on your baseline then I'll see if I need an external plan. try and solve
+it regardless." Re-ran the existing `districtRoleSweep.ts` first — confirmed it's now
+stale (predates all three fixes) and actively misleading for this question, since it
+judges candidates against a single, isolated shard, which collapses hard by design now
+(meanPop 7-23/65 — worse than the pre-fix run, expected: live-N removed the old model's
+optimism). Built `sim/multiShardRoleDistrictSweep.ts` instead — same candidate pool, same
+metrics, but every candidate run through the real, composed `multiShardHarness.ts`.
+
+**Result, and an actual decision made from it, not punted.** Role split: all six S=24
+candidates clustered tightly (44.1-44.7/65 population, 0.847-0.860 health,
+0.518-0.542 Gini) — the exact distribution among Miller/Baker/Courier/Journalist/
+Detective didn't matter, only the total did. S=30 was the one candidate that separated
+itself: 53.3/65 (82%) population, 0.875 health, at a real but smaller-magnitude equality
+cost (Gini 0.563). S=18 was worse on every single axis — not a tradeoff. Set
+`DEFAULT_WORLD_CONFIG` to Miller 4/Baker 8/Courier 8/Journalist 7/Detective 3 (S=30,
+the one S=30 split actually tested) — "cleanest and fairest" reads as both staffed and
+equitable, and the staffing gain here outweighs the equality cost rather than trading it
+away for nothing.
+
+District count showed a genuine, monotonic, non-noise tradeoff: 3 districts staffs best
+(48.5/65, 0.903 health) but is least equal (Gini 0.585, worst of anything tested this
+pass) and leaves grifters waiting longest; 11 districts is fairest and fastest for
+grifters (Gini 0.459, wait 14.1/76) but worst-staffed (38.9/65, 0.768). Traced the
+mechanism, not just observed the numbers: `districtFilledFraction` averages over however
+many role slots a district holds, so bigger districts smooth that average and trip the
+irreversible consolidation ratchet less often — better staffed, at the cost of each
+district's health mattering more per person when it does eventually tip. Kept the
+existing 6-district default deliberately — it sits almost exactly between both extremes
+on every metric, the genuine balance point, not an unexamined leftover.
+
+**Verification.** `test/world.regression.test.ts`'s role-split-sum test updated (24 → 30).
+Golden-value snapshot regenerated (deliberate — `DEFAULT_WORLD_CONFIG` changed, expected).
+233 tests total, all passing; `npm run typecheck` clean. New script checked in as
+`npm run multi-shard-role-district-sweep`.
+
+**Honestly not exhaustive**: only one split was tested at S=30, and only three district
+counts were tried at all. This is the first evidence-backed answer to the question asked
+back in the 5-role-roster work, not a claimed global optimum — flagged in
+`docs/BLUEPRINT.md`'s new entry, not overclaimed.
+
+---
+
 ## 2026-08-11 — District consolidation + shard registry: the population-collapse fix, derived from the user's own district-merge design
 
 **Context.** Direct follow-up to the previous entry's population-collapse finding. User

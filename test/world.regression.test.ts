@@ -407,9 +407,9 @@ function totalFilledAcrossRoles(world: World): number {
 }
 
 describe('createWorld — 5-role roster + grifter pool', () => {
-  it('the default role split sums to 24, matching ecosystem.ts\'s S_DEFAULT anchor', () => {
+  it('the default role split sums to 30, re-derived against the real multi-shard system (see world.ts\'s own comment)', () => {
     const { rMiller, rBaker, rCourier, rJournalist, rDetective } = DEFAULT_WORLD_CONFIG;
-    expect(rMiller + rBaker + rCourier + rJournalist + rDetective).toBe(24);
+    expect(rMiller + rBaker + rCourier + rJournalist + rDetective).toBe(30);
   });
 
   it('grifters.length + total FILLED across all 5 roles equals population at creation', () => {

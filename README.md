@@ -45,7 +45,7 @@ most people can tell which one they're standing in without being told.
 
 ## The roles you can hold
 
-**Millers** control the flour supply. There are only ever two or three of
+**Millers** control the flour supply. There are only ever a handful of
 them in a node, deliberately — this is the one role the design keeps
 starved on purpose. Every Miller decides, day by day, how much to produce,
 and that decision alone sets the price everyone downstream pays. It's not a
@@ -81,9 +81,11 @@ out of the node entirely. The node doesn't stop for them, but it doesn't
 pretend nothing happened either.
 
 The specific roster (five roles plus the grifter pool) is real and built
-now, but exactly how many of each role a node should hold, and how many
-districts a node should have, is still being worked out — the mechanics
-are in place, the actual balance isn't settled yet.
+now, and how many of each role a node should hold has been simulated and
+decided, not just assumed — checked against the actual multi-shard system
+rather than one shard in isolation. It's a real answer, not necessarily
+the last word on it; a finer search across more combinations could still
+turn up something better.
 
 Staying in a role is its own kind of investment. The longer you hold one
 without interruption, the better you actually get at it — a real,

@@ -101,6 +101,27 @@ shards, 44.5/65 mean population per shard (~68%)** — real, substantial improve
 reported plainly, not fully healthy yet. Full numbers and reasoning:
 `docs/BLUEPRINT.md`'s "District consolidation + shard registry" entry.
 
+### (4) Role/district allocation — finally derived against the real system
+
+Immediate follow-up: "run it on your baseline then I'll see if I need an external plan.
+try and solve it regardless." The original `districtRoleSweep.ts` numbers were stale
+(predate the fixes above) and misleading to use as-is (judges candidates against a single,
+isolated shard, which still collapses by design). Built `sim/multiShardRoleDistrictSweep.ts`
+to re-run the same candidate pool through the real `multiShardHarness.ts` instead, and
+actually picked a default from the results rather than leaving it open:
+
+- **Role split moved from S=24 to S=30** — `DEFAULT_WORLD_CONFIG` is now Miller 4/Baker
+  8/Courier 8/Journalist 7/Detective 3. Every S=24 split tested clustered tightly together
+  regardless of distribution; S=30 was the one candidate that meaningfully out-staffed the
+  rest (82% vs. ~68% of target population) at a smaller equality cost.
+- **District count stays at 6** (2 core + 4 periphery) — a real, monotonic tradeoff exists
+  (fewer/bigger districts staff better but are less equal and slower for grifters; more/
+  smaller districts are the reverse), and 6 sits almost exactly at the balance point.
+
+Full numbers, the traced mechanism behind the district tradeoff, and the honest caveat
+(only one S=30 split and three district counts were tested, not exhaustive) are in
+`docs/BLUEPRINT.md`'s "5-role/district allocation, re-derived" entry.
+
 ```
 npm install
 npm test                     # 233 tests, all passing
@@ -111,10 +132,11 @@ npm run ecosystem-sim        # combined economic-health / sabotage-detection com
 npm run sabotage-pattern-sim # pattern-based sabotage PROPOSAL — not the shipped default
 npm run spatial-witness-report # real spatial witness counts vs. the assumed flat 23
 npm run world-sim            # unified kernel — market + vacancy + ecosystem, one running world
-npm run role-ratio-sweep     # OLD 2-role Miller/Baker ratio sweep — superseded by the one below
-npm run district-role-sweep  # 5-role + grifter-pool allocation/district sweep — predates the fix below, needs re-running against it
+npm run role-ratio-sweep     # OLD 2-role Miller/Baker ratio sweep — long superseded
+npm run district-role-sweep  # OLD single-shard 5-role sweep — stale, predates the fixes above, superseded by the one below
+npm run multi-shard-role-district-sweep # the CURRENT role/district sweep — evidence behind DEFAULT_WORLD_CONFIG
 npm run wealth-inequality-report # Gini/top-10% baseline + tax/cap remediation sweep
-npm run multi-shard-validation # single-shard collapse vs. multi-shard registry — the evidence above
+npm run multi-shard-validation # single-shard collapse vs. multi-shard registry — the population-collapse evidence
 npm run mvp                  # two-Baker + rumour-mill scenario, CLI, prints day-by-day output
 npm run server                # WebSocket server broadcasting the MVP scenario live
 npm run typecheck
@@ -133,17 +155,25 @@ change at a time — see `CLAUDE.md`'s "Branch policy." No CI configured. See
 
 ## What's next
 
-**Highest priority — re-run `district-role-sweep` against the now-fixed migration
-model.** It predates the district-consolidation/shard-registry/live-N fixes, so its
-numbers no longer reflect current behavior. Once that's done, "the cleanest and fairest"
-role/district allocation the user originally asked for can finally be honestly derived —
-picking one before this would still be premature.
+**Role/district allocation is now resolved** (see "Current state" (4) above) —
+`DEFAULT_WORLD_CONFIG` moved to S=30 (Miller 4/Baker 8/Courier 8/Journalist 7/Detective 3),
+district count stays at 6. Not the top priority anymore; the item below is.
 
-**Multi-shard population still isn't fully healthy (~68% of target per shard)** —
-further tuning is open, not yet attempted: `fillHazard`'s beta/tPain calibration for a
-real finite pool, `MIGRATION_FAILURE_RATE`'s value, or `SHARD_OPEN_STABILITY_THRESHOLD`/
-`SHARD_OPEN_SURPLUS_FACTOR`. Any of these would need the same sweep-then-set discipline
-used everywhere else in this codebase, not a guess.
+**Highest priority — multi-shard population still isn't fully healthy (~68% of target per
+shard).** The registry fix works and is real, but isn't tuned to full health yet. Open,
+not yet attempted: `fillHazard`'s beta/tPain calibration for a real finite pool,
+`MIGRATION_FAILURE_RATE`'s value (currently a flat 0.15 placeholder), or
+`SHARD_OPEN_STABILITY_THRESHOLD`/`SHARD_OPEN_SURPLUS_FACTOR`. Any of these need the same
+sweep-then-set discipline used everywhere else in this codebase, not a guess. Worth
+re-running `multi-shard-validation` after any change here, since it's the one script that
+actually measures whether a change helps.
+
+**A finer role/district search is possible but not done** — only one split was tested at
+S=30 (out of many possible distributions at that total) and only three district counts
+were tried at all (3/6/11). A proper grid search (S=26/28/32, more district counts, joint
+role-split × district-count combinations) could still find something better than what
+shipped. Not urgent — what's live now is evidence-backed, not a guess — but worth knowing
+it isn't claimed to be a global optimum.
 
 **Import/Export (nodules, grain conversion, legal/illegal shard movement) is mid-design,
 not started.** Open questions from the design discussion: what forces player interaction
@@ -185,10 +215,11 @@ mechanically).
 
 ## Things to know before you touch this
 
-- **The 5-role kernel's `DEFAULT_WORLD_CONFIG` role split is a working default, not a
-  validated conclusion** — don't treat Miller 3/Baker 7/Courier 6/Journalist 5/Detective 3
-  as final; it's what shipped so the kernel has *something* consistent to run, pending the
-  re-swept allocation decision above.
+- **The 5-role kernel's `DEFAULT_WORLD_CONFIG` role split (Miller 4/Baker 8/Courier 8/
+  Journalist 7/Detective 3, S=30) is now evidence-backed, re-derived against the real
+  multi-shard system** — not the same as claiming it's a global optimum (only one S=30
+  split and three district counts were ever tested — see "What's next"), but it's a real
+  decision made from data, not a placeholder awaiting one. District count (6) likewise.
 - **`multiRoleConscription.ts` is a NEW, separate function from `conscriptionHarness.ts`'s
   `stepConscriptionDay`** — the old one is untouched and still what its own tests cover.
   Don't merge them without checking both test suites first.
