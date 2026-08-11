@@ -116,21 +116,34 @@ script logic, not the GUI experience.
 
 ## What's next
 
-**1. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
-currently draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57% hold a complete
-ticket) rather than from real per-player postcard holdings. That's the last placeholder in
-an otherwise complete mechanic.
+**Scope directive (2026-08-11, from the user): the role roster is CLOSED at six. Not looking
+to keep expanding roles — build "enough for stability and fun."** Treat that as binding: the
+work below is about making what exists hold up, not adding to it. Resist the pull to add
+another role or system to solve a balance problem; the last several balance problems were
+solved by fixing a constant or a mechanism, not by adding anything.
 
-**2. Courier/Journalist/Detective still share one flat wage.** They now produce
-differentiated *resources* (parcels/stories/leads), but nothing consumes those yet. Giving
-each a real mechanic — something that depends on their output the way milling now depends on
-grain — is the biggest remaining gap in the roster.
+**1. Answer the research questions that simulation cannot.** See
+`docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to
+us, because **the simulation models compliance as certain** — conscripted players always
+accept, grifters always wait, displaced players always take the new role. Nothing in the
+model can output "the player just quit". Question 1 (how long will someone tolerate having
+no role — we currently make them wait ~22 days mean, 100+ worst case) is the single largest
+untested assumption in the design.
 
-**3. Physical building relocation on MERGE.** A merged district's buildings stay in place,
-permanently friction-penalised, rather than relocating capacity into a surviving district. A
-true "combine into half the shard" needs this.
+**2. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
+draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
+per-player postcard holdings. The last placeholder in an otherwise complete mechanic.
 
-**4. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
+**3. Courier/Journalist/Detective share one flat wage.** They produce differentiated
+resources (parcels/stories/leads) that nothing consumes yet. This is *deepening three
+existing roles*, not expanding the roster — but it is also the easiest place to accidentally
+over-build, so keep it to whatever makes them distinct and fun to hold, not a full economy
+each.
+
+**4. Physical building relocation on MERGE.** A merged district's buildings stay in place,
+permanently friction-penalised, rather than relocating capacity into a surviving district.
+
+**5. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
 monuments) — not started.
 
 **Still open from before, unchanged:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8 week
