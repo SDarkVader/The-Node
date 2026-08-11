@@ -6,6 +6,16 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — Sprint: addendum items 1+ (terse entries — full BLUEPRINT pass deferred to sprint end, per user directive)
+
+**Item 1 (Silhouette Shield)**: `engine/identity.ts` — real trigger for `isKnown()`, fed from
+real rumour heardBy/heardFrom events (no per-player trade ledger exists to trigger off yet;
+used the addendum's other offered signal instead of inventing a new subsystem). Deterministic
+`generateFace()`, seeded from player id. 17 tests, asymmetry verified end-to-end through a
+real `stepWorld` run. 327 tests total.
+
+---
+
 ## 2026-08-11 — Design Addendum received; item 0/3 (District Weather) wired first, as instructed
 
 **Context.** A 9-item design addendum arrived mid-session (`NODE_DESIGN_ADDENDUM_2026-08-11`,
