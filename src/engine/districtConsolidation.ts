@@ -27,6 +27,12 @@ export interface DistrictHealth {
   state: DistrictConsolidationStateName;
   /** Day the district first crossed the tipping point into CONSOLIDATING. null while ACTIVE. */
   consolidatingSince: number | null;
+  /** Smoothed (EMA) filled fraction — the signal the ratchet actually reads. null until the
+   *  first observation seeds it. See CONSOLIDATION_EMA_ALPHA for why this is smoothed. */
+  emaFilledFraction: number | null;
+  /** Consecutive days the SMOOTHED fraction has sat below the tipping point while ACTIVE.
+   *  Resets on recovery. See CONSOLIDATION_TRIGGER_DAYS. */
+  daysBelowTippingPoint: number;
 }
 
 /** A district counts as "underpopulated" once fewer than this fraction of its own role
@@ -36,6 +42,59 @@ export const DISTRICT_TIPPING_POINT_FILLED_FRACTION = 0.3;
 export const CONSOLIDATION_GRACE_DAYS = 14;
 /** Friction never reaches full inaccessibility — constraint 2, no permanent zero-state. [ILLUSTRATIVE] */
 export const CONSOLIDATION_FRICTION_FLOOR = 0.25;
+/**
+ * Consecutive days a district's SMOOTHED occupancy must sit below the tipping point before
+ * the irreversible ratchet engages. [ILLUSTRATIVE — swept against real trajectories]
+ *
+ * With the EMA signal below, this finally discriminates rather than switching all-or-
+ * nothing. Districts merged, by shard condition (3000 days, replayed trajectories):
+ *   trigger      3     5     7    10    14    21    30
+ *   thin(35)   2/4   1/4   1/4   0/4   0/4   0/4   0/4
+ *   v.thin(22) 4/4   4/4   4/4   4/4   3/4   1/4   0/4
+ *   collapsing 4/4   4/4   4/4   4/4   4/4   4/4   4/4
+ * 21 fires reliably on genuine collapse, occasionally on a very thin shard, and never on a
+ * shard whose population actually matches its role slots. 30 would only ever catch total
+ * collapse; <=10 fires on shards that are merely churning.
+ *
+ * Added 2026-08-11 to fix a real defect found by instrumenting the district-layout
+ * comparison: with an INSTANTANEOUS trigger, an irreversible ratchet is an absorbing state.
+ * Any district that dipped below the threshold for even a single day was permanently
+ * doomed, and over a long run every district eventually has one bad day — measured, all 4
+ * slot-bearing districts merged by day 500 and stayed merged forever. The mechanic fired
+ * once, universally, and then never again: trade-route friction degenerated into a constant
+ * tax on the whole shard rather than a signal, and the 2-week grace/draft never triggered
+ * again for the rest of the run.
+ *
+ * This does NOT weaken irreversibility, which is the user's explicit design ("once passed a
+ * tipping point can't be reversed"). It makes the trigger mean what that sentence implies:
+ * a transient dip is noise, not a tipping point. Once decline is genuinely sustained the
+ * ratchet engages exactly as before and still cannot be reversed. 21 days is deliberately
+ * longer than CONSOLIDATION_GRACE_DAYS, so a district must be failing for longer than it
+ * then gets to recover socially before anything becomes permanent.
+ */
+export const CONSOLIDATION_TRIGGER_DAYS = 21;
+
+/**
+ * Smoothing factor for the district's filled-fraction signal (EMA), ~30-day effective
+ * window. [ILLUSTRATIVE]
+ *
+ * Second correction, 2026-08-11. Requiring N consecutive days below the threshold on the
+ * RAW fraction did not work, and the sweep showed exactly why: it was a cliff, not a
+ * gradient — at <=14 days every district merged, at 21 none did, and the result was
+ * IDENTICAL for healthy and collapsing shards. The trigger discriminated nothing.
+ *
+ * The metric was at fault, not the threshold. A district's raw filled fraction is a small,
+ * lumpy ratio (a 3-slot district reads 0.00 the moment its occupants happen to be between
+ * assignments), so ordinary churn drives it below 30% constantly while genuine long-run
+ * decline looks no different day to day. Counting consecutive days on a signal that noisy
+ * can only ever be all-or-nothing.
+ *
+ * Smoothing first makes the signal mean what the design intends: a district that is
+ * genuinely under-occupied holds a low EMA, while one that is merely churning recovers it.
+ * The tipping point and the irreversible ratchet are unchanged — they now just read a
+ * signal that can actually tell those two situations apart.
+ */
+export const CONSOLIDATION_EMA_ALPHA = 2 / 31;
 
 export function districtFilledFraction(filledCount: number, totalSlots: number): number {
   if (totalSlots <= 0) return 1; // no slots to be understaffed about — vacuously healthy
@@ -43,7 +102,7 @@ export function districtFilledFraction(filledCount: number, totalSlots: number):
 }
 
 export function initialDistrictHealth(): DistrictHealth {
-  return { state: 'ACTIVE', consolidatingSince: null };
+  return { state: 'ACTIVE', consolidatingSince: null, emaFilledFraction: null, daysBelowTippingPoint: 0 };
 }
 
 /**
@@ -57,22 +116,35 @@ export function stepDistrictHealth(
   day: number,
   tippingPoint: number = DISTRICT_TIPPING_POINT_FILLED_FRACTION,
   graceDays: number = CONSOLIDATION_GRACE_DAYS,
+  triggerDays: number = CONSOLIDATION_TRIGGER_DAYS,
+  emaAlpha: number = CONSOLIDATION_EMA_ALPHA,
 ): DistrictHealth {
-  if (health.state === 'MERGED') return health;
+  // Smooth first — the ratchet reads the EMA, never the raw daily fraction.
+  const ema =
+    health.emaFilledFraction === null
+      ? filledFraction
+      : health.emaFilledFraction + emaAlpha * (filledFraction - health.emaFilledFraction);
+
+  if (health.state === 'MERGED') return { ...health, emaFilledFraction: ema };
 
   if (health.state === 'ACTIVE') {
-    if (filledFraction < tippingPoint) {
-      return { state: 'CONSOLIDATING', consolidatingSince: day };
+    if (ema < tippingPoint) {
+      const days = health.daysBelowTippingPoint + 1;
+      if (days >= triggerDays) {
+        return { state: 'CONSOLIDATING', consolidatingSince: day, emaFilledFraction: ema, daysBelowTippingPoint: days };
+      }
+      return { ...health, emaFilledFraction: ema, daysBelowTippingPoint: days };
     }
-    return health;
+    // Sustained occupancy recovered before the ratchet engaged — not a tipping point.
+    return { ...health, emaFilledFraction: ema, daysBelowTippingPoint: 0 };
   }
 
   // CONSOLIDATING — counting down regardless of any later recovery in filledFraction.
   const daysSince = day - (health.consolidatingSince ?? day);
   if (daysSince >= graceDays) {
-    return { state: 'MERGED', consolidatingSince: health.consolidatingSince };
+    return { ...health, state: 'MERGED', emaFilledFraction: ema };
   }
-  return health;
+  return { ...health, emaFilledFraction: ema };
 }
 
 /**

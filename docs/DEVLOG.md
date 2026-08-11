@@ -6,6 +6,44 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-11 — 11 vs 6 districts; instrumenting the mechanism exposed a consolidation defect
+
+**Context.** "Try 11 districts and compare." Ran both deeply (2500 days, 3 seeds) and
+instrumented how many districts actually trip the ratchet, rather than only comparing
+outcomes — which is what found the real problem.
+
+**I had documented the mechanism backwards.** I'd written that smaller districts are more
+volatile and trip the ratchet more often. Measurement says the opposite: 11 districts merge
+LESS than 6 (12.1% vs 22.2%). Fewer slots per district means crossing a 30% threshold needs
+nearly all of them empty at once — a discretisation effect, not volatility. Corrected.
+
+**The defect: MERGED was an absorbing state.** An irreversible ratchet on an instantaneous
+threshold dooms any district that has one bad day, and over a long run every district does.
+All 4 slot-bearing districts merged by day 500 and stayed merged forever — the mechanic
+fired once, universally, then never again. Friction became a flat shard-wide tax instead of
+a signal; the 2-week grace/draft never fired again.
+
+**First fix attempt was also wrong, and the sweep said so.** Requiring N consecutive days
+below the threshold on the raw fraction produced a cliff, not a gradient: <=14 days merged
+everything, 21 merged nothing, and healthy and collapsing shards gave IDENTICAL results.
+Zero discrimination. The metric was the problem — a small lumpy ratio where churn and
+genuine decline look alike day to day.
+
+**Second fix: smooth first.** ~30-day EMA on the filled fraction, then the unchanged
+tipping point and ratchet. That discriminates properly: at TRIGGER_DAYS=21 a collapsing
+shard merges 4/4, a very thin one 1/4, a thin-but-viable one 0/4. Irreversibility is fully
+preserved — only the definition of "passed a tipping point" changed, from a single bad day
+to sustained decline, which is what the phrase always implied.
+
+**Result of the actual comparison: keep 6 districts.** With the defect fixed, 11's case is
+weaker than the joint grid implied — equality gain down to 1.7% (was 4.9%), health cost up
+to 2.4%, population -1.2%, coherence margin 3.6% thinner. It still wins on grifter wait
+(-5.0%) so it stays a live option, but it is not close to free.
+
+**Verification.** 4 new tests (churn noise cannot doom a district; sustained decline still
+engages; thin-but-viable vs failing discrimination; EMA seeding). 266 total, all passing;
+typecheck clean. Golden snapshot regenerated (deliberate).
+
 ## 2026-08-11 — Joint grid search over allocation x district layout; found an axis interaction
 
 **Context.** "Now do the joint grid search." The previous pass tested allocations and

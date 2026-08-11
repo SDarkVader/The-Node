@@ -2161,6 +2161,58 @@ margin markedly — three of eight finalists fail there outright.
 drive shard proliferation) and Courier/Journalist were derived from the remainder rather
 than varied independently, so this is a large structured grid, not every conceivable split.
 
+## District layout head-to-head, and a consolidation defect it exposed (2026-08-11)
+
+Ran 6 vs 11 districts deeply at the shipped allocation (2500 days, 3 seeds), instrumenting
+the MECHANISM — how many districts actually trip the ratchet — not just the outcomes.
+
+**A documented mechanism of mine was simply wrong.** BLUEPRINT and `space.ts` previously
+claimed smaller districts are "individually more volatile, trip the ratchet more often."
+The measurement says the opposite: 11 districts end up **less** merged than 6 (12.1% vs
+22.2%). Smaller districts hold fewer role slots, so crossing a 30%-filled threshold
+requires nearly all of them empty at once, which is rarer — a discretisation effect, not
+volatility. Corrected rather than left standing.
+
+**A real defect, found by instrumenting rather than by a failing test.** With an
+instantaneous trigger, an irreversible ratchet is an **absorbing state**: any district
+dipping below the threshold for a single day was permanently doomed, and over a long run
+every district has one bad day. Measured: **all 4 slot-bearing districts MERGED by day 500
+and stayed merged forever**. The mechanic fired once, universally, then never again —
+trade-route friction degenerated from a signal into a flat tax on the whole shard, and the
+2-week grace/draft never triggered again for the remainder of the run.
+
+**Two attempts, because the first was wrong too.** Requiring N consecutive days below the
+threshold on the raw fraction did not fix it — a sweep showed a cliff, not a gradient: at
+<=14 days every district merged, at 21 none did, and *the result was identical for healthy
+and collapsing shards*. The trigger discriminated nothing. The metric was at fault: a
+district's raw filled fraction is small and lumpy (a 3-slot district reads 0.00 whenever
+its occupants are briefly between assignments), so ordinary churn and genuine decline look
+the same day to day, and counting consecutive days on that signal can only be all-or-nothing.
+
+**Fix: smooth the signal first** (`CONSOLIDATION_EMA_ALPHA`, ~30-day EMA), then apply the
+unchanged tipping point and irreversible ratchet. Now it discriminates — districts merged
+by shard condition, 3000 days, replayed trajectories:
+
+| trigger days | 3 | 5 | 7 | 10 | 14 | 21 | 30 |
+|---|---|---|---|---|---|---|---|
+| thin but viable (35) | 2/4 | 1/4 | 1/4 | 0/4 | 0/4 | 0/4 | 0/4 |
+| very thin (22) | 4/4 | 4/4 | 4/4 | 4/4 | 3/4 | 1/4 | 0/4 |
+| collapsing (16) | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 |
+
+`CONSOLIDATION_TRIGGER_DAYS=21` fires reliably on genuine collapse, occasionally on a very
+thin shard, and never on one whose population matches its role slots. **Irreversibility is
+untouched** — the user's explicit design ("once passed a tipping point can't be reversed")
+is preserved; what changed is that a transient dip is no longer treated as a tipping point.
+
+**Post-fix, consolidation is an occasional pressure again**: 22.2% merged at 6 districts,
+12.1% at 11, versus 62.5%/36.3% before.
+
+**Outcome of the 6-vs-11 comparison: 6 districts stays.** With the defect fixed the case
+for 11 is *weaker* than the joint grid suggested — equality gain shrinks to 1.7% (was 4.9%)
+while the health cost grows to 2.4%, population is 1.2% lower, and coherence margin is 3.6%
+thinner. 11 still wins on grifter wait (-5.0%), so it remains a live option if wait time is
+weighted heavily, but it is no longer close to a free improvement.
+
 ## Brief §7 open questions — still unresolved (do not silently resolve)
 
 Ruin Floor (`R(t)`), density numbers, exact colour palette, ripple decay-weight variance,
