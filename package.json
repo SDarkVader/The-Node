@@ -26,6 +26,7 @@
     "multi-shard-equilibrium-sweep": "tsx src/sim/multiShardEquilibriumSweep.ts",
     "multi-shard-validation": "tsx src/sim/multiShardValidation.ts",
     "identity-resolution-report": "tsx src/sim/identityResolutionReport.ts",
+    "throttle-window-report": "tsx src/sim/throttleWindowReport.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },

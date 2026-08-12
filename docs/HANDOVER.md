@@ -18,7 +18,7 @@ here on.
 
 ## Current state (as of 2026-08-12, end of session)
 
-**427 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**432 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 **The entire 2026-08-11 Design Addendum's build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) is now
 built and tested.** What's left from it is only its own "report back explicitly on" section —
@@ -112,6 +112,27 @@ Phases D-F are not started.
     first, which would have silently doubled dampened hours and invalidated every wealth/
     Gini/flourRatio calibration this session's history depends on. See `docs/BLUEPRINT.md`'s
     "Item 8" entry for the full reasoning.
+11. **Identity resolution core-vs-periphery sweep** (`sim/identityResolutionHarness.ts`,
+    `npm run identity-resolution-report`) — the addendum's last open "report back" question,
+    answered with real numbers: averaged across 5 seeds, periphery role-holders take ~35%
+    longer to resolve than core ones, real but noisy per-seed, and confirmed to be a pacing
+    difference (periphery still reaches >85% resolved given enough time), not a structural
+    exclusion. Built a synthetic Wall-posting driver to make the measurement possible at all
+    (`pendingWallPosts` has no driver anywhere in the shipped kernel) — flagged as
+    measurement-only, same discipline `src/sim/drivers/` already uses for its own synthetic
+    policies. See `docs/BLUEPRINT.md`'s "Identity resolution core-vs-periphery sweep" entry.
+12. **Item 8's report-back verification, strengthened** (`test/throttleWindowImpact.test.ts`,
+    `npm run throttle-window-report`) — proved EXACTLY, not just checked against the shipped
+    constant's value, that the throttle windows can never distort market-clearing dynamics:
+    grain supply and demand are both linear in the activity multiplier, so `grainFactor` and
+    `flourPrice` are provably invariant to it, verified numerically at multipliers 0.1 through
+    2.0. Caught a real methodology bug while measuring real per-role numbers (a naive
+    population-mean-at-two-points approach conflated income with role-holder turnover — fixed
+    with same-slot single-day deltas), and flagged a real nuance rather than hiding it
+    (Miller/Baker/Courier/Journalist's completion bonus, item 4, is NOT activity-scaled, so
+    their combined income isn't a clean sample — grifters' is, and it landed at exactly the
+    proven 30% cut in all 3 seeds). See `docs/BLUEPRINT.md`'s "Item 8 report-back
+    verification" entry.
 
 ### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
 
@@ -196,7 +217,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 427 tests
+npm test                              # 432 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -205,6 +226,8 @@ npm run multi-shard-validation        # single-shard collapse vs multi-shard reg
 npm run multi-shard-equilibrium-sweep # what sets equilibrium population, and the bifurcation
 npm run resource-report               # named per-role resources over time
 npm run wealth-inequality-report      # Gini/top-10% baseline + tax/cap remediation sweep
+npm run identity-resolution-report    # core-vs-periphery identity resolution speed, real numbers
+npm run throttle-window-report        # item 8: real measured per-role income vs. its unthrottled equivalent
 
 npm run world-sim                     # unified kernel, one running world
 npm run sim                           # Phase 1 stability-curve sweep
@@ -272,6 +295,13 @@ not still open:
   on SPEED only: given enough time (250 days), periphery resolution reaches >85% too, so this
   is a pacing difference, not a structural exclusion (constraint 2/6 both still hold). The
   addendum's own build order and its entire "report back" section are now fully closed.
+- **Item 8's own verification was also strengthened** (it has no line in the addendum's
+  "report back" section, but was checked to the same standard anyway): proved EXACTLY that
+  the windows never distort market-clearing dynamics (grain supply/demand both scale linearly
+  with the activity multiplier, so `flourPrice` is provably invariant to it), and confirmed
+  with real measured numbers that grifter income — the one role with no completion-bonus
+  contamination — lands at exactly the proven 30% reduction, in every seed tested. See
+  `docs/BLUEPRINT.md`'s "Item 8 report-back verification" entry.
 
 **1. Answer the research questions that simulation cannot.** See
 `docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to

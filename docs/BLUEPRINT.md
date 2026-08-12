@@ -2854,3 +2854,42 @@ themselves as hard filters). Full suite 427 tests (up from 418).
 **This closes the last open item from the 2026-08-11 addendum's "report back explicitly on"
 section.** Every question that section asked is now answered, either structurally (items 5, 7)
 or by direct measurement (items 4, and now identity resolution).
+
+### Item 8 report-back verification (2026-08-12) — the earlier "verified against the existing
+### mechanic" check strengthened into an exact structural proof plus real measured numbers
+
+Item 8's original verification (above) checked the addendum's requirements point by point and
+confirmed `DAILY_ACTIVITY_MULTIPLIER`'s numeric VALUE didn't change — true, but a narrower
+claim than "the windows never distort anything else." This pass goes further: proves the
+throttle windows are an EXACT, uniform multiplier on realized income with zero effect on
+market-clearing dynamics, then anchors that in real measured numbers from a live world.
+
+**The structural proof** (`test/throttleWindowImpact.test.ts`): `grainDeliveredToday(...)` (the
+grain-supply side) and `grainDemanded = intendedMillerSupply * activityMultiplier *
+GRAIN_PER_FLOUR` (the demand side) are BOTH linear in the activity multiplier, so
+`millingCapacityFactor`'s ratio — and therefore `millerSupply` and `flourPrice` — are exactly
+INVARIANT to the multiplier, for any value, not just the shipped 0.7. Verified numerically
+across several representative (filled, backstopped, intendedSupply) combinations, not just
+algebra: at multipliers 0.1 through 2.0, `grainFactor` came out bit-identical every time. This
+means the throttle windows can NEVER distort the flour price signal Bakers react to, or shift
+who out-competes whom in the Cournot/Bertrand layers — only realized income scales, nothing
+about the market's relative structure does.
+
+**The real numbers** (`npm run throttle-window-report`): measuring this correctly required
+catching a real methodology bug first — a naive "population mean wealth at two distant points
+in time, divided by elapsed days" conflates real income with role-holder TURNOVER (a departing
+high-wealth holder leaving the FILLED array, a fresh occupant resetting to 0, both
+masquerading as income). Fixed by sampling SAME-SLOT single-day deltas instead (only buildingIds
+FILLED both immediately before and after one `stepWorld` call contribute a sample). A second
+real nuance surfaced while writing the report, not hidden: Miller/Baker/Courier/Journalist also
+earn `COMPLETION_REWARD` (item 4) — a FLAT bonus, deliberately never activity-scaled — so their
+total measured income mixes a genuinely 30%-capped component with an untouched one, and the
+report says so explicitly rather than presenting a misleadingly precise combined percentage.
+Grifters have no completion bonus, so their income alone is a clean, fully activity-scaled
+sample: measured real grifter income came out to exactly the proven 30% reduction from its
+unthrottled-equivalent, in every one of 3 seeds — the algebra and the live simulation agree.
+
+Verified: `npm run typecheck` clean; `test/throttleWindowImpact.test.ts`, 5 tests (the exact
+invariance proof, the linear-scaling proof across every role's income function, and the
+`DAILY_ACTIVITY_MULTIPLIER`/`DOWNTIME_DAMPENING` value checks). Full suite 432 tests (up from
+427).

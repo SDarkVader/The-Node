@@ -6,6 +6,52 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — Item 8's report-back verification: exact proof + real numbers, and a methodology bug caught mid-write
+
+**Context.** User: "continue with item 8's report-back verification" — item 8 itself doesn't
+have its own line in the addendum's "report back explicitly on" section (that section only
+names items 5, 7, 4-parity, and identity resolution, all now closed), but the earlier item-8
+verification was narrower than the others: it confirmed `DAILY_ACTIVITY_MULTIPLIER`'s numeric
+value didn't change, not that nothing else was disturbed. Went further, matching the standard
+every other item was held to.
+
+**Found a genuinely interesting structural fact while checking it**: `grainDeliveredToday`
+(supply) and `grainDemanded` (demand, `intendedMillerSupply * activityMultiplier *
+GRAIN_PER_FLOUR`) are both linear in the activity multiplier, so `millingCapacityFactor`'s
+ratio — and therefore `millerSupply` and `flourPrice` — are exactly INVARIANT to it, for any
+value. Verified numerically across several (filled, backstopped, intendedSupply) combinations
+at multipliers 0.1 through 2.0: `grainFactor` came out bit-identical every time, algebra
+confirmed by direct computation, not just derived on paper. This proves the throttle windows
+can never distort the flour price signal or shift competitive outcomes between Millers/Bakers
+— only realized income scales, market structure is untouched.
+
+**A real methodology bug caught before it shipped as a misleading report.** First attempt at
+measuring real per-role daily income compared mean wealth across the whole FILLED population
+at two widely-separated points in time, divided by elapsed days — wrong, because the set of
+FILLED role-holders churns (conscription, backstop, sabotage), so the naive delta mixes real
+income with role-holder TURNOVER (a departing high-wealth holder leaving the array, a fresh
+occupant resetting to 0, both masquerading as "income"). First run of the report produced
+negative and near-zero numbers and one outright NaN (a seed where couriers were all vacant at
+measurement time) — caught immediately as nonsense rather than reported as-is. Fixed by
+sampling SAME-SLOT single-day deltas: only buildingIds FILLED both immediately before and
+after one `stepWorld` call contribute a sample.
+
+**A second real nuance surfaced while writing the report, flagged rather than smoothed over**:
+Miller/Baker/Courier/Journalist also earn `COMPLETION_REWARD` (item 4) — a flat bonus,
+deliberately never activity-scaled. Their measured total income is therefore a MIX of a
+genuinely 30%-capped component and an untouched one; presenting a single combined "removed
+fraction" for those roles would have been precise-looking but wrong. The report says so
+explicitly and doesn't attempt the reconstruction for them. Grifters earn no completion bonus,
+so their income is a clean sample: measured real grifter income landed at exactly the proven
+30% reduction from its unthrottled-equivalent, in all 3 seeds — algebra and live simulation
+agreeing, which is the actual point of "simulate before trusting" rather than trusting either
+alone.
+
+New `test/throttleWindowImpact.test.ts` (5 tests), `sim/throttleWindowReport.ts` (`npm run
+throttle-window-report`). Full suite: 432 tests (up from 427), `npm run typecheck` clean.
+
+---
+
 ## 2026-08-12 — Identity resolution core-vs-periphery sweep: the addendum's last open question, answered
 
 **Context.** User: "script and test identify resolution" — the one genuinely open item left
