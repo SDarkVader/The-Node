@@ -38,6 +38,10 @@ export const WEATHER_CONSOLIDATION_WEIGHT = 0.4;
 /** Weight given to a same-day sabotage spike — the single sharpest, most legible event, so
  *  it outweighs either ambient signal on its own. [ILLUSTRATIVE] */
 export const WEATHER_SABOTAGE_WEIGHT = 0.6;
+/** Weight given to a detected pressure-broadcasting pattern in the district (2026-08-12
+ *  addendum §4 — see `pressureDetection.ts`'s header for the full reasoning: this is a
+ *  magnitude only, never a name). [ILLUSTRATIVE] */
+export const WEATHER_PRESSURE_WEIGHT = 0.5;
 
 /** How far tension is felt beyond its source district, in space.ts's grid units. [ILLUSTRATIVE] */
 export const WEATHER_DECAY_MAX_RANGE = 40;
@@ -52,20 +56,27 @@ function consolidationPressure(state: DistrictConsolidationStateName): number {
 }
 
 /**
- * A district's own local tension reading, before it spreads to its neighbours. The three
+ * A district's own local tension reading, before it spreads to its neighbours. The four
  * weighted contributions can sum past 1 (e.g. an empty, CONSOLIDATING district hit by
  * sabotage the same day) — clamped to [0,1], the range `tension` is documented to mean.
+ *
+ * `pressureSignal` (default 0, so every existing caller is unaffected) is the magnitude from
+ * `pressureDetection.ts`'s `pressureContribution()` for whichever detected pattern is
+ * strongest in this district today — never an identity, purely a number. See that module's
+ * header and `ADVERSARIAL_CONTAINMENT.md`'s resolution of why this is a magnitude, not a name.
  */
 export function localDistrictTension(
   filledFraction: number,
   healthState: DistrictConsolidationStateName,
   sabotagedToday: boolean,
+  pressureSignal: number = 0,
 ): number {
   const vacancy = Math.max(0, Math.min(1, 1 - filledFraction));
   const raw =
     vacancy * WEATHER_VACANCY_WEIGHT +
     consolidationPressure(healthState) * WEATHER_CONSOLIDATION_WEIGHT +
-    (sabotagedToday ? WEATHER_SABOTAGE_WEIGHT : 0);
+    (sabotagedToday ? WEATHER_SABOTAGE_WEIGHT : 0) +
+    Math.max(0, Math.min(1, pressureSignal)) * WEATHER_PRESSURE_WEIGHT;
   return Math.max(0, Math.min(1, raw));
 }
 

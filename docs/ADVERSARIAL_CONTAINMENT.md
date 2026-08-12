@@ -507,6 +507,56 @@ compliance as certain. It cannot produce a player who quits, and it cannot produ
 who schemes. Containment therefore has to be argued from mechanism — as above — and then
 tested against real adversarial players, not against the harness.
 
+**Partially closed 2026-08-12**, without touching the TypeScript engine — exactly because the
+engine cannot model an adversary. A separate session ran standalone Python models of a
+specific, competent, patient operator (drawn from a real historical case) against four open
+questions from this document, and found four of five failure modes close on the constraints
+already shipped; the fifth does not, and is resolved below. Full findings, all figures
+provisional pending in-engine re-derivation: `docs/DESIGN_ADDENDUM_2026-08-12.md`.
+
+### The open failure mode, and its resolution: naming is not recourse
+
+The one mode that didn't close on analysis alone: a known player broadcasting a
+pressure-skewed pattern of self-states on the Wall creates measurable ambient dread across
+everyone who can hear it (2.5× the unease of the same posting pattern from an unknown player,
+in the model) — and the obvious fix, having a Detective or Journalist *identify* the
+broadcaster, was tested against the real historical case and found to make things **worse**,
+not better: being named confirmed the threat and made the waiting worse, it didn't let anyone
+organise. Identification alone amplifies; it does not defend.
+
+The reason this matters for constraint 6 specifically: the tempting mechanic — a public
+"pressure alert" that names a player — is a subtractive reputation mechanic wearing a safety
+costume. It would let the population *punish* a player by identification even though nothing
+about their in-game standing changed; that's a real-world social penalty riding on a
+mechanical signal, and constraint 6 forbids exactly this shape of thing (the worst a group may
+do is decline to elevate someone, never brand them). **Naming-as-defense was rejected on this
+basis, not just because the model showed it backfiring.**
+
+**Resolution, consistent with every standing constraint**: the detection signal is real
+(§4 of the 08-12 addendum shows public Wall-post frequency and pressure-cluster skew is a
+genuine, observable pattern, not currently read by anything) — but what it feeds is
+**ambient, anonymous, mechanical, and already built**, not an accusation. It becomes a new
+contributing source to District Weather's `tension` (`engine/districtWeather.ts`, shipped
+2026-08-11, item 0/3), alongside the vacancy/consolidation/sabotage signals already there —
+never naming a player, never touching anyone's reputation, purely "something is elevated
+here." What the population does in response is exactly the lever §9 of the same addendum
+already proved works mechanically: build trust links, which cut successful predation from 70%
+to 25% in that model. The recourse is real and actionable — it just isn't an accusation.
+
+This composes rather than invents:
+- Reuses District Weather (item 0/3) as the delivery channel — "reused, not reinvented," the
+  same discipline the diary-distortion proposal in the 08-12 addendum applies to `decay.ts`.
+- Never violates constraint 4 (no private dossier travels — the signal is aggregate skew, not
+  content, and the grammar already prevents any post from naming a third party at all).
+- Never violates constraint 6 (nobody's reputation moves; nobody is identified).
+- Gives calculating players a real, computable variable to react to — "calculable but not
+  solvable," this document's own repeated standard — rather than nothing, and rather than a
+  vigilante tool.
+
+Detective and Journalist are the natural sensors for this (their item-4 completion task
+today is an undifferentiated friction bar, flagged at the time as a placeholder pending a
+real signal to detect) — see `engine/pressureDetection.ts` for the implementation.
+
 ---
 
 ## Why the floor serves the powerful player too

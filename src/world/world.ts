@@ -87,6 +87,13 @@ import {
 import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
 import { emptyIdentityLedger, recordEncounter, type IdentityLedger } from '../engine/identity.js';
 import {
+  emptyPressureRecord,
+  recordPost,
+  pressureContribution,
+  knownFraction,
+  type PressureRecord,
+} from '../engine/pressureDetection.js';
+import {
   emptyCompletionStats,
   recordAttempt,
   averageRivalValue,
@@ -362,6 +369,11 @@ export interface World {
    *  already uses). Reset to empty the moment a slot is freshly (re)FILLED — see
    *  engine/roleCompletion.ts's header. */
   completionStats: Readonly<Record<string, CompletionStats>>;
+  /** Design Addendum 2026-08-12, §4 — pressure detection. Per-author (buildingId-keyed, same
+   *  convention as everything else here) rolling record of Wall-post content, feeding
+   *  `districtWeather.ts`'s ambient `tension` — never a name, never a per-player identifier
+   *  exposed to any other player. See engine/pressureDetection.ts's header. */
+  pressureLedger: Readonly<Record<string, PressureRecord>>;
 }
 
 /**
@@ -526,6 +538,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastSabotage: null,
     identityLedger: emptyIdentityLedger(),
     completionStats: {},
+    pressureLedger: {},
   };
 }
 
@@ -1181,25 +1194,6 @@ export function stepWorld(world: World): World {
     }
   }
 
-  // ---- District Weather (2026-08-11, Design Addendum item 0/3) -----------------------
-  // Reads the SAME fraction/health this tick already computed in Stage 1b, plus whether
-  // sabotage just landed in a district this tick — no second measurement, no invented
-  // signal. Computed here (after sabotage resolves, before it's too late to reflect today's
-  // spike) and applied to `world.shard` below, which Stage 1's own comment used to describe
-  // as "static geography... Phase B doesn't move anyone" — weather is the one thing that now
-  // does change on it every tick, deliberately: it's per-district climate, not geometry.
-  const sabotagedDistrictId = lastSabotage ? buildingDistrictId.get(lastSabotage.targetBuildingId) : undefined;
-  const localTensions: Record<string, number> = {};
-  for (const d of world.shard.districts) {
-    localTensions[d.id] = localDistrictTension(
-      districtFilledFractionById[d.id] ?? 1,
-      districtHealth[d.id]!.state,
-      d.id === sabotagedDistrictId,
-    );
-  }
-  const weatherField = districtTensionField(world.shard, localTensions);
-  const shardWithWeather = stepDistrictWeather(world.shard, weatherField, day);
-
   let lastNewArrivals = 0;
   if (rng() < config.arrivalPDaily) {
     population += 1;
@@ -1311,6 +1305,49 @@ export function stepWorld(world: World): World {
     identityLedger = recordEncounter(identityLedger, event.heardBy, event.heardFrom);
   }
 
+  // Design Addendum 2026-08-12, §4/§4.1 — pressure detection. Every Wall post posted today
+  // (regardless of whether it propagated to anyone — the pattern being detected is the
+  // AUTHOR's own posting behaviour, not who heard it) updates that author's rolling
+  // pressure-skew record. Real per-tick state, never a name — see pressureDetection.ts.
+  let pressureLedger: Readonly<Record<string, PressureRecord>> = world.pressureLedger;
+  for (const post of world.pendingWallPosts) {
+    const existing = pressureLedger[post.authorId] ?? emptyPressureRecord();
+    pressureLedger = { ...pressureLedger, [post.authorId]: recordPost(existing, day, post.state) };
+  }
+
+  // ---- District Weather (2026-08-11 item 0/3; extended 2026-08-12 with the pressure
+  // signal above) --------------------------------------------------------------------
+  // Reads the SAME fraction/health Stage 1b already computed, whether sabotage landed in a
+  // district this tick, and now whether today's UPDATED pressureLedger clears the detection
+  // bar for anyone whose building is in that district — no second measurement, no invented
+  // signal. Moved to run here (after Stage 5, not right after sabotage as item 0/3 originally
+  // had it) specifically so the pressure signal reflects TODAY's posts rather than lagging a
+  // full tick; the sabotage/consolidation/vacancy signals are unaffected by the move since
+  // none of them change between the old and new position in the tick. Applied to
+  // `world.shard` below, which Stage 1's own comment describes as "static geography... Phase
+  // B doesn't move anyone" — weather is the one thing that now changes on it every tick.
+  const sabotagedDistrictId = lastSabotage ? buildingDistrictId.get(lastSabotage.targetBuildingId) : undefined;
+  const pressureContributionByDistrict: Record<string, number> = {};
+  for (const [authorId, record] of Object.entries(pressureLedger)) {
+    const districtId = buildingDistrictId.get(authorId);
+    if (!districtId) continue; // grifters and anyone without a building have no district to register in
+    const contribution = pressureContribution(record, knownFraction(identityLedger, authorId));
+    if (contribution > (pressureContributionByDistrict[districtId] ?? 0)) {
+      pressureContributionByDistrict[districtId] = contribution;
+    }
+  }
+  const localTensions: Record<string, number> = {};
+  for (const d of world.shard.districts) {
+    localTensions[d.id] = localDistrictTension(
+      districtFilledFractionById[d.id] ?? 1,
+      districtHealth[d.id]!.state,
+      d.id === sabotagedDistrictId,
+      pressureContributionByDistrict[d.id] ?? 0,
+    );
+  }
+  const weatherField = districtTensionField(world.shard, localTensions);
+  const shardWithWeather = stepDistrictWeather(world.shard, weatherField, day);
+
   return {
     ...world,
     tick: world.tick + 1,
@@ -1347,5 +1384,6 @@ export function stepWorld(world: World): World {
     lastSabotage,
     identityLedger,
     completionStats,
+    pressureLedger,
   };
 }
