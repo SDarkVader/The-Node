@@ -6,31 +6,120 @@ doesn't have to rediscover them.
 
 ---
 
-## 2026-08-11 — Sprint: addendum items 1+ (terse entries — full BLUEPRINT pass deferred to sprint end, per user directive)
+## 2026-08-11 — Grammar invariants rewritten to survive a vocabulary that's about to grow
+
+**Context.** The user stated plainly that vocabulary WILL expand — envelopes, voice chat, and
+a slightly larger Wall grammar — "but using the same structural rules, some things can never
+be said... as long as we constrain the vocabulary and the experience tight enough against
+hard testing." That reframes what the grammar tests are for: they are the mechanism that
+makes expansion safe, so they have to hold against entries that don't exist yet.
+
+**A real gap was already live.** `test/grammar.test.ts`'s banned-word check covered only
+`baker|miller|courier` — missing journalist, detective, importExport, and all 84 shard-local
+role titles from `shardIdentity.ts` (Grinder, Oven-keeper, Legman, Asker, Factor, ...). "I
+feel undercut by the Grinder" would have passed. New `test/grammar.invariant.test.ts` derives
+`ROLE_WORDS` from `CANONICAL_ROLE_TITLES` + every `SHARD_CHARACTERS` entry, so it cannot go
+stale when a role or shard character is added.
+
+**Blacklists were the wrong shape entirely — and my own false positives proved it.** The first
+draft banned imperatives/interrogatives/tense by matching word lists. It failed on two
+*legitimate* templates: "I don't trust the people I deal with" (flagged for "don't" and
+"people") and "I feel suspicious of what's happening" (flagged for "what" — a free relative,
+not a question). The templates were right; the test was wrong. Rewrote those three rules as a
+single structural one: **every sentence must open "I ..."**. A sentence that must begin with
+"I" cannot be an imperative and cannot be an interrogative, however many verbs the vocabulary
+later gains. Blacklists go stale by construction; sentence shape doesn't.
+
+**Two rules the user specified directly in conversation, not derived from the brief:**
+
+1. *No external identification signature.* "You can't talk to anyone directly about another
+   person, no matter how much you know" — apart from roles, once reputation is earned, and
+   never individuals. Encoded as: no message may carry a referent that RESOLVES to a specific
+   person — no pronoun aimed at another player, no definite singular description ("the one I
+   met"), no proper noun, no handle. Note "people" is deliberately *allowed*: "the people I
+   deal with" points at nobody. What's banned is resolution, not third-party reference.
+2. *No anaphora.* The user then, in the same conversation, wrote two messages that
+   demonstrated the hole better than any analysis would have: "I think the courier is being
+   difficult" / "I feel that too." The second is not a self-state — it's a **vote** on someone
+   else's, and a chain of votes is a whip count assembled without ever naming anyone. A
+   grammar of pure self-states is safe precisely because messages don't compose; anaphora is
+   how composition sneaks back in. Banned lexically (too/also/same/likewise/agreed/...) AND
+   structurally: `WallPost`/`Envelope` are proven to carry no reply/thread/parent field, plus
+   a source-level grep guard — because the other way to build a whip count is a `replyTo`
+   field the client renders as "N people agreed," with no banned word appearing anywhere.
+
+**One hole flagged, not closed: role-reference cardinality.** The same exchange exposed it.
+Role-level reference is meant to become sayable eventually — but "the Courier" is only a
+*class* if the role has multiple occupants in view. Miller scarcity is a design pillar, so at
+k=1 "the Miller" IS a name, by elimination, and no linguistic dressing fixes that ("a Miller"
+doesn't help). Any future role vocabulary needs a mechanical **k-anonymity guard** (emittable
+only when the referenced role has ≥k live occupants in the recipient's visible scope), not
+just a reputation gate. Recorded in HANDOVER.md; no role vocabulary exists yet, and the base
+grammar bans all role words outright.
+
+17 tests in the new file, 22 across both grammar files, full suite green.
+
+---
+
+## 2026-08-11 — Sprint: addendum items 1, 2, 4 — two real bugs caught by measuring instead of reasoning
+
+Ran in "sprint mode" at the user's instruction (code+tests committed as they land, docs kept
+to breadcrumbs, full BLUEPRINT/HANDOVER pass deferred to the end — that pass is now done).
 
 **Item 1 (Silhouette Shield)**: `engine/identity.ts` — real trigger for `isKnown()`, fed from
-real rumour heardBy/heardFrom events (no per-player trade ledger exists to trigger off yet;
-used the addendum's other offered signal instead of inventing a new subsystem). Deterministic
-`generateFace()`, seeded from player id. 17 tests, asymmetry verified end-to-end through a
-real `stepWorld` run. 327 tests total.
+real rumour `heardBy`/`heardFrom` events. **The interesting decision was which signal to
+use.** The addendum offered "verified trade history (a threshold number of completed
+transactions)" first — but no per-player transaction ledger exists anywhere in this build.
+The market layer is aggregate: a Baker "serves N customers" as a *count*, never tagged with
+counterparty ids. Building one would have been precisely the "new subsystem" the addendum's
+own scope discipline says signals a misread item. Used its second offered trigger instead
+("an established relationship already recorded in existing state") — rumour hearing, which is
+already directional (hearer learns about source; source doesn't learn who heard), so the
+required asymmetry falls out of the existing data rather than needing extra bookkeeping.
+Proximity co-presence would NOT have worked here: it's symmetric by definition. 17 tests.
 
-**Item 2 (Economic Heat)**: `engine/economicHeat.ts` — pure projection function, deliberately
-NOT stored on `World`/`stepWorld` (zero determinism risk). Miller/Baker heat = own existing
-value normalized; support roles = `1 - consolidationFrictionMultiplier` for their district.
-8 tests. Also fixed stale test-count mentions (233/266 -> 335) in README/HANDOVER, caught by
-the user mid-sprint. 335 tests total.
+**Item 2 (Economic Heat)**: `engine/economicHeat.ts` — pure projection, deliberately NOT
+stored on `World` and never called by `stepWorld`, so it structurally cannot affect
+determinism or tick order. Miller/Baker heat = own existing value normalized; the four
+support roles = `1 - consolidationFrictionMultiplier` for their district, the third distinct
+reuse of that same friction primitive. 8 tests. Also fixed stale test-count mentions
+(233/266 → 335) across README/HANDOVER, caught by the user mid-sprint.
 
-**Item 4 (role completion)**: `engine/roleCompletion.ts`. Tried a flat per-completion reward
-first, MEASURED it before trusting it (per constraint 1) — Miller/Baker's zero-sum task
-completes ~54-58% of days, the friction-bar task all four support roles share completes
-~97-100%, so a flat reward would have paid support roles ~1.9x the expected daily bonus.
-Recalibrated per role type (0.5 vs 0.28) so expected reward converges; added the addendum's
-required hard-filter parity test (+-30% band, same discipline as flourRatio<=1.0). Also
-caught and fixed a real bug while wiring it in: completion reward was landing on Miller/
-Baker wealth AFTER wealthCap, silently defeating a supposedly hard bound — moved it into the
-taxed/capped income flow itself. Flagged honestly: Detective's task is NOT literally "catch a
-saboteur" (that's the unshipped pattern-based proposal) — it's the same friction-bar task as
-the other three support roles, using its own resource. 348 tests total.
+**Item 4 (role completion) — where both bugs were.**
+
+*Bug 1, caught by measuring a design I'd already reasoned my way into.* The first version gave
+every role one attempt per FILLED day and one flat reward constant, on the reasoning that
+identical structure = parity for free. That argument is clean and wrong. Measured it before
+trusting it (constraint 1, 1000 days × 5 seeds): Miller/Baker's task is zero-sum against
+rivals and completes ~54-58% of days; the friction-bar task the four support roles share
+completes ~97-100%, because a healthy shard sits at friction=1 almost always — nothing forces
+that rate toward 50% the way Cournot/Bertrand competition does. A flat reward would have paid
+support roles ~1.9x the expected daily bonus for a strictly easier task. **Structural parity
+is not realized parity**, and no amount of reasoning about the structure would have surfaced
+that — only running it did. Recalibrated per role type (0.5 vs 0.28) so *expected daily*
+reward converges (~0.27-0.29 across all six), and added the addendum's required hard-filter
+parity test (±30% band around the cross-role mean, same discipline as `flourRatio <= 1.0`).
+The flat version measures ~1.9x — comfortably outside the band, so the test genuinely would
+have caught it.
+
+*Bug 2, a silent hole through a hard bound.* The completion reward was initially applied
+directly to Miller/Baker wealth — but that code path runs AFTER `applyWealthCap`, so a
+wealth-capped world could exceed its own cap by one reward per tick, forever. Nothing about
+that looks wrong in isolation; it was caught because a pre-existing `wealthCap` regression
+test started failing. Fixed by folding the bonus into the taxed/capped income flow itself,
+before both tax and cap, like every other unit of Miller/Baker income. The four support roles
+are outside tax/cap scope entirely so theirs applies directly — that asymmetry is now
+deliberate and commented at both sites, not accidental.
+
+*Flagged rather than faked*: Detective's task is NOT literally "catch a saboteur," despite
+that being the addendum's own illustrative example. That example describes the **unshipped**
+pattern-based sabotage proposal; the shipped mechanic has no Detective-specific detection
+term at all (`detectionProbability` depends only on witness count). Building it literally
+would have meant either shipping an undecided proposal or inventing a synthetic event the
+model can't verify. Used the same friction-bar task as the other three support roles instead,
+and said so in the code header.
+
+348 tests, typecheck clean, all pushed to `main`. Items 5-8 not started.
 
 ---
 
