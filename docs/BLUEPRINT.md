@@ -2505,3 +2505,131 @@ completion bonus) and its snapshot (wealth totals genuinely shifted — a delibe
 documented change, not drift).
 
 Status: **done**. 348 tests total, typecheck clean.
+
+## 2026-08-12 session — District Weather pressure timing, pressure detection, adversarial
+## containment closure, visual framework, district barriers, and item 5 (nodules)
+
+Several distinct pieces landed this session; documented together because they were built in
+one continuous pass and several depend on each other. Full reasoning for each lives in its
+own doc (`docs/ADVERSARIAL_CONTAINMENT.md`, `docs/VISUAL_FRAMEWORK_2026-08-12.md`,
+`docs/DESIGN_ADDENDUM_2026-08-12.md`) — this section records what's actually shipped.
+
+### District Weather's pressure signal now reflects same-day posts
+
+`world.ts`'s computation point for `stepDistrictWeather()` moved from immediately after
+sabotage resolution to after Stage 5 (comms/Wall posting). The `pressureSignal` argument
+`districtWeather.ts` already accepted was being fed a signal computed BEFORE that day's
+Wall posts existed, so it structurally lagged by one day. No new mechanic — a call-order fix
+that makes an existing parameter mean what its name says.
+
+### `engine/pressureDetection.ts` — Detective/Journalist wall-post pressure detection (2026-08-12
+### addendum item 1)
+
+Detects a cluster of the 5 "pressure" self-states (suspicious/distrustful/uneasy/manipulated/
+exploited out of `grammar.ts`'s 10 `SELF_STATES`) skewing a district's Wall traffic, WITHOUT
+identifying who is posting — the same "mechanical, not behavioural" discipline as the vacancy
+backstop and the Oracle (constraint 3). `recordPost`/`pressureSkew`/`isPressureDetected`
+(`PRESSURE_MIN_POSTS=8`, `PRESSURE_SKEW_THRESHOLD=0.7`) track a rolling window
+(`PRESSURE_WINDOW_POSTS=30`) of self-state counts per district; `knownFraction()` reuses
+`identity.ts`'s ledger (posts from players already resolved via repeated encounter count for
+more, `PRESSURE_KNOWN_AMPLIFICATION=1.5`, on the reasoning that a recognizable pattern reads
+as more deliberate than an anonymous one). Output feeds `pressureContribution()` into
+District Weather's `tension` computation and NOWHERE ELSE — no player-facing signal ever
+names a broadcaster, closing the exact failure mode `docs/DESIGN_ADDENDUM_2026-08-12.md`
+found: naming a pressure-broadcaster in the historical-case model made ambient fear WORSE
+(+60%), not better. `docs/ADVERSARIAL_CONTAINMENT.md`'s "Partially closed 2026-08-12" section
+has the full historical-case reasoning. `test/pressureDetection.test.ts`, 20 tests.
+
+### Visual framework (`docs/VISUAL_FRAMEWORK_2026-08-12.md`) — resolved against two externally-
+### generated concept decks, corrected one privacy error in them
+
+User pushback mid-session ("we're making a game not a thought experiment") reframed reviewing
+two AI-generated concept-art decks from commentary into real design work. Read existing canon
+first (`NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`, `DESIGN_ADDENDUM_2026-08-08.md`) rather than
+inventing fresh, then resolved what those docs had left open:
+- **The Wall** occupies `Shard.hubPlot` (new field on `Shard`, `space.ts` — the previously-
+  implicit hub, now a real named point every district's hub corridor already ran to).
+- **The Market** (central plaza) = the busiest core district's plaza by
+  `economicHeat.ts`'s `districtEconomicHeat()` — no new geometry, a derived label on
+  existing output.
+- **Wall's Emissive Soul** aggregation function (open since 2026-08-08) resolved by reusing
+  `pressureDetection.ts`'s rolling-window shape shard-wide across all 10 `SELF_STATES`
+  (`soulTemperature = tensionCount/totalCount`) — NOT YET BUILT as code, spec only. This
+  also caught and corrected a real error in one concept deck: it depicted the Soul as sourced
+  from Envelopes (private messages), which would violate constraint 4 (personal memory is
+  mortal, and nothing about a private Envelope may become permanent public civic memory) —
+  flagged in the visual framework doc as wrong against both canon and the constraint, not
+  adopted.
+
+Explicitly still open (recorded, not resolved): `WALL_SOUL_WINDOW_POSTS` calibration, the
+Soul's own aggregation code (design-only so far), light-quality visual distinction between
+District Weather and Wall Soul, border-checkpoint visual treatment.
+
+### District barriers (`engine/districtAccess.ts`) — user-specified mid-session, built end-to-end
+
+User's own words: "some barriers restricting flow of movement between districts, so those who
+can move are able to and others have to use the main plaza." Implemented as a shortcut/floor
+pair, not a gate: `space.ts` gained a real side-street mesh (`District.neighborDistrictIds`,
+K-nearest-neighbor by Manhattan distance, `DISTRICT_SIDE_STREET_NEIGHBOR_COUNT=2`, symmetric
+union via `sideStreetPairs()`), and `districtAccess.ts`'s `effectiveRoute(shard, from, to,
+travelerStatus)` returns `'direct'` (the side-street shortcut) only for a FILLED role-holder
+going to a real neighbor, `'viaHub'` (the floor — always available, everyone, constraint 2)
+otherwise. Two design questions the spec would otherwise have left open are closed
+structurally, not by policy, and `test/districtAccess.test.ts` proves both rather than just
+asserting the happy path:
+1. **Consolidation independence** — a CONSOLIDATING/MERGED district's role-holders already
+   pay a trade-route friction penalty; revoking shortcut access too would double-penalize a
+   struggling district. Closed by `space.ts` having zero import of `districtConsolidation.ts`
+   at all, verified by a source-grep guard test — district health has no path to reach
+   corridor geometry even by accident.
+2. **No containment gap** — no player can gate another player's access. `directNeighbors`
+   and `effectiveRoute` take no per-player identity for any district but the traveler's own;
+   proved by a "tampered shard" test that mutates every OTHER district's geometry and confirms
+   the route between two fixed districts is unaffected.
+
+`test/districtAccess.test.ts`, 11 tests; `test/space.regression.test.ts` extended with 6 new
+tests for the hub/neighbor mesh (`hubPlot` exists/deterministic, >=K neighbors, symmetric
+mesh, no self-neighbor, single-district edge case, no plot collisions).
+
+### Item 5 — no money: nodules as the sole root input, closed loop (2026-08-11 addendum)
+
+Nodules were already the economy's real root ("they receive nodules every day to trade with
+the Miller") but only existed implicitly inside `grainDeliveredToday()`'s math — nothing
+tracked them as a named quantity, so "nodules are the sole root input" was prose, not
+structure. `importExport.ts` refactored so `nodulesReceivedToday(filledCount, backstoppedCount,
+activityMultiplier, nodulesPerDay)` is now the primary function and `grainDeliveredToday(...)`
+is DERIVED from it (`nodulesReceivedToday(...) * grainPerNodule`) — the nodule->grain link is
+real code structure, not parallel prose.
+
+**Where nodules live, and why not as a new named resource.** `resources.ts`'s
+`RESOURCE_OWNER` is a strict 1:1 role<->resource bijection, enforced by its own existing test
+(`new Set(Object.values(RESOURCE_OWNER)).size === RESOURCE_NAMES.length`) — and Import/Export
+already owns `'grain'`. Adding `'nodules'` as a seventh `ResourceName` would have broken that
+bijection for no real gain, since nodules and grain share one owner and one origin. Tracked
+instead as a bare `nodulesReceived` field on `ResourceFlows`, the same way `grainDelivered`
+sits alongside `grainConsumed` without being its own named resource. `stepResourceFlows` takes
+it as a new optional parameter (mirrors how `grainDelivered` was already threaded in);
+`world.ts` computes it once (`nodulesReceivedToday(ieFilled, ieBackstopped,
+DAILY_ACTIVITY_MULTIPLIER)`) alongside the existing `grainAvailable` line and passes both into
+`stepResourceFlows`.
+
+**The addendum's explicit, named requirement** — "extend the existing hard-filter coherence
+check to cover the full nodule->grain->flour->bread chain, and treat a break as a build
+failure, not a warning" — is met by a new test in `test/resources.test.ts`, same shape as the
+existing `flourConsumed/flourProduced < 1.05` check one link up: `grainConsumed/grainDelivered
+< 1.05` across 5 seeds x 1500 days, plus a live assertion that `grainDelivered` really does
+equal `nodulesReceived * GRAIN_PER_NODULE` (exact by construction, not independently measured
+— the assertion is there so a future refactor that breaks the derivation fails loudly).
+
+**The "non-fungible, role-locked" hard rule also got a structural test**, not just a design
+note: `resources.ts` is grepped for any `exchange(`/`convert(`/`swap(`/`wallet(`/`currency(`
+function or bare `currency`/`wallet` mention — none exist, and the test fails the moment one
+is added without a deliberate review. Combined with the unchanged bijection test, this is the
+concrete guarantee behind "no generic currency/exchange, ever."
+
+Verified: `npm run typecheck` clean; full suite green, 392 tests (16 in `test/resources.test.ts`,
+up from 8). No constants changed — `NODULES_PER_DAY`, `GRAIN_PER_NODULE`,
+`BACKSTOPPED_NODULE_FRACTION` are untouched, this item only exposed the existing chain as real
+structure and proved it coherent.
+
+Status: **done**.

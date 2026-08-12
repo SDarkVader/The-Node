@@ -117,7 +117,7 @@ import {
   EXPERIENCE_CAP,
 } from '../engine/ecosystem.js';
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
-import { grainDeliveredToday, millingCapacityFactor } from '../engine/importExport.js';
+import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -934,6 +934,7 @@ export function stepWorld(world: World): World {
   // unstaffed Import/Export squeezes the shard, it can never mill it to a dead stop).
   const ieFilled = importExporters.filter((x) => x.slot.state === 'FILLED').length;
   const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED').length;
+  const nodulesReceived = nodulesReceivedToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
   const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
   const intendedMillerSupply = computeMillerSupply(millers);
   const grainDemanded = intendedMillerSupply * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR;
@@ -1102,6 +1103,7 @@ export function stepWorld(world: World): World {
       supportFriction(detectives),
       DAILY_ACTIVITY_MULTIPLIER,
       grainAvailable,
+      nodulesReceived,
     ),
   );
 

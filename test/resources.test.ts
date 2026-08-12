@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   stepResourceFlows,
   accumulate,
   emptyLedger,
   flourBalance,
+  grainBalance,
+  nodulesBalance,
   RESOURCE_NAMES,
   RESOURCE_OWNER,
   GRAIN_PER_FLOUR,
@@ -12,6 +15,7 @@ import {
   STORIES_PER_JOURNALIST_DAY,
   LEADS_PER_DETECTIVE_DAY,
 } from '../src/engine/resources.js';
+import { GRAIN_PER_NODULE } from '../src/engine/importExport.js';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
 
 describe('resources — named per-role variables', () => {
@@ -55,6 +59,20 @@ describe('resources — named per-role variables', () => {
   it('flourBalance reports the real milled-minus-baked gap, signed', () => {
     expect(flourBalance(stepResourceFlows([1], [1], [], [], [], 1))).toBeCloseTo(1 - FLOUR_PER_BREAD, 10);
   });
+
+  it('nodulesReceived flows through stepResourceFlows/accumulate like every other flow', () => {
+    const f = stepResourceFlows([], [], [], [], [], 1, 0, 3.5);
+    expect(f.nodulesReceived).toBe(3.5);
+    let ledger = emptyLedger();
+    for (let i = 0; i < 4; i++) ledger = accumulate(ledger, stepResourceFlows([], [], [], [], [], 1, 0, 2));
+    expect(ledger.cumulative.nodulesReceived).toBeCloseTo(8, 10);
+  });
+
+  it('grainBalance/nodulesBalance report the supply-side gap, signed', () => {
+    const f = { ...stepResourceFlows([1], [], [], [], [], 1), grainDelivered: 2, nodulesReceived: 2 / GRAIN_PER_NODULE };
+    expect(grainBalance(f)).toBeCloseTo(2 - GRAIN_PER_FLOUR, 10);
+    expect(nodulesBalance(f, GRAIN_PER_NODULE)).toBeCloseTo(0, 10);
+  });
 });
 
 describe('resources — wired into the world kernel and trackable over time', () => {
@@ -95,6 +113,24 @@ describe('resources — wired into the world kernel and trackable over time', ()
     }
   });
 
+  it('the full nodule->grain->flour->bread chain is coherent at the shipped rates — extends the flour/bread hard filter down to the root (2026-08-11 item 5)', () => {
+    // grainDelivered is DERIVED from nodulesReceived (grainDeliveredToday calls
+    // nodulesReceivedToday internally), so that link is exact by construction — the real
+    // question this addendum item asks is whether grain SUPPLY (from nodules) actually
+    // covers grain DEMAND (from milling) at the shipped role counts, the same way the
+    // existing flour/bread test asks it one link up the chain. A break here would mean
+    // Millers are structurally grain-starved, silently throttling every downstream flow.
+    for (const seed of [1, 2, 3, 4, 5]) {
+      let w = createWorld(seed, DEFAULT_WORLD_CONFIG);
+      for (let i = 0; i < 1500; i++) w = stepWorld(w);
+      const c = w.resources.cumulative;
+      expect(c.grainConsumed / c.grainDelivered).toBeLessThan(1.05);
+      // Exact by construction — grainDeliveredToday derives from nodulesReceivedToday, so
+      // this is a live assertion of that link rather than an independently-measured ratio.
+      expect(c.grainDelivered).toBeCloseTo(c.nodulesReceived * GRAIN_PER_NODULE, 6);
+    }
+  });
+
   it('resource tracking is deterministic for a given seed', () => {
     const run = () => {
       let w = createWorld(11, DEFAULT_WORLD_CONFIG);
@@ -102,5 +138,26 @@ describe('resources — wired into the world kernel and trackable over time', ()
       return w.resources;
     };
     expect(JSON.stringify(run())).toBe(JSON.stringify(run()));
+  });
+});
+
+describe('non-fungible, role-locked resources — no generic currency exists (2026-08-11 item 5 hard rule)', () => {
+  it('resources.ts defines no cross-resource exchange/conversion function, and no generic "currency"/"wallet" concept', () => {
+    // Structural guard, same pattern as test/districtAccess.test.ts's import-guard tests.
+    // The grain->flour->bread and nodule->grain links are each a fixed one-directional
+    // DERIVATION (a role converting ITS OWN input into ITS OWN output at a shipped rate),
+    // never a player-facing exchange between two named resources, and never routed through
+    // a generic pool. If this ever starts matching, someone has added exactly the generic
+    // currency/exchange this design explicitly forbids, and that has to be a deliberate,
+    // reviewed decision, not something that happens by accident.
+    const src = readFileSync(new URL('../src/engine/resources.ts', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/\b(exchange|convert|swap|wallet|currency)[A-Za-z]*\s*\(/i);
+    expect(src).not.toMatch(/\bcurrency\b/i);
+    expect(src).not.toMatch(/\bwallet\b/i);
+  });
+
+  it('RESOURCE_OWNER stays a strict 1:1 bijection even with nodules tracked outside it', () => {
+    expect(new Set(Object.values(RESOURCE_OWNER)).size).toBe(RESOURCE_NAMES.length);
+    expect(RESOURCE_NAMES).not.toContain('nodules');
   });
 });

@@ -16,36 +16,66 @@ personal memory is mortal, civic memory is immortal; let outcomes be real, don't
 them; reputation may only ever grant, never remove) that apply to everything built from
 here on.
 
-## Current state (as of 2026-08-11, end of session)
+## Current state (as of 2026-08-12, end of session)
 
-**348 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**392 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
 the ecosystem-scale layer (economic floor, migration, sabotage, experience, districting),
 Observatory Phases A-C (spatial primitive, unified `world.ts` kernel, synthetic drivers),
-and the 6-role roster + grifter pool / district consolidation / multi-shard registry /
-named resources / Import-Export-and-nodules work from earlier the same day. Observatory
+the 6-role roster + grifter pool / district consolidation / multi-shard registry / named
+resources / Import-Export-and-nodules work, and 2026-08-11 addendum items 0/3, 1, 2, 4
+(District Weather, Silhouette Shield, Economic Heat, uniform role completion). Observatory
 Phases D-F are not started.
 
-**This session, in order:**
+**This session (2026-08-12), in order:**
 1. **Strengthened the grammar invariants** (`test/grammar.invariant.test.ts`) — closed a
    real coverage gap (the old test's role-word blacklist missed 4 of 6 roles and all 84
    shard-local titles), then added two rules the user specified directly in conversation, not
-   derived from the brief: **no identification signature** (a message may never resolve to a
-   specific person — no pronoun aimed at another player, no definite singular description,
-   no proper noun) and **no anaphora** (a message may never reference another message — no
-   "I feel that too" — which is how repeated agreement becomes a whip count without ever
-   naming anyone). Rewrote the imperative/interrogative/tense checks from word blacklists
-   (which go stale as vocabulary grows) to one structural rule: every sentence must open "I
-   ...". See `test/grammar.invariant.test.ts`'s own header for the full reasoning.
-2. **A 9-item Design Addendum arrived** (`docs/DESIGN_ADDENDUM_2026-08-11.md`, saved
-   verbatim) with an explicit build order (0/3 → 1-2 → 4-8) and scope discipline (role
-   roster stays closed at six; nothing in it adds a role, currency, or subsystem). **Items
-   0/3, 1, 2, and 4 are done** — see below and `docs/BLUEPRINT.md`'s entries for the full
-   reasoning on each. **Items 5-8 are not started.**
+   derived from the brief: **no identification signature** and **no anaphora** ("I feel that
+   too" is a vote on someone else's self-state, which is how agreement becomes a whip count
+   without ever naming anyone). Rewrote imperative/interrogative/tense checks from word
+   blacklists to one structural rule: every sentence must open "I ...".
+2. **District Weather's pressure signal fixed** — its computation point in `world.ts` moved
+   to after Stage 5 (comms), so `pressureSignal` reflects same-day Wall posts, not
+   yesterday's.
+3. **Built `engine/pressureDetection.ts`** (2026-08-12 addendum item 1) — Detective/
+   Journalist pressure-cluster detection over Wall posts, mechanical not behavioural
+   (constraint 3), feeding only District Weather's `tension`, never identifying a
+   broadcaster. Closes a real failure mode from the newly-uploaded
+   `docs/DESIGN_ADDENDUM_2026-08-12.md`: naming a pressure-broadcaster made ambient fear
+   WORSE (+60%) in the historical-case model. See `docs/ADVERSARIAL_CONTAINMENT.md`'s
+   "Partially closed 2026-08-12" section.
+4. **Visual framework** (`docs/VISUAL_FRAMEWORK_2026-08-12.md`) — user firmly redirected a
+   review of two AI-generated concept-art decks from commentary into real, actionable design
+   work ("were making a game not a thought experiment"), and separately ruled out generic
+   aesthetics ("I don't want one shot minecraft"). Resolved The Wall's location
+   (`Shard.hubPlot`), The Market's placement (derived from Economic Heat), and the Wall's
+   Emissive Soul aggregation function (spec only, reuses `pressureDetection.ts`'s window
+   shape — **not yet built as code**). Caught and corrected a real privacy error in one deck
+   (Envelope-sourced Soul would violate constraint 4).
+5. **Built district barriers** (`engine/districtAccess.ts`) — user-specified mid-session
+   ("some barriers restricting flow of movement between districts... those who can move are
+   able to and others have to use the main plaza"), then explicitly instructed to build, not
+   just spec. A FILLED role-holder gets a direct side-street shortcut to a real neighbor
+   district (`space.ts`'s new K-nearest-neighbor mesh); everyone else, always, falls back to
+   the hub route (constraint 2 — never a hard gate). Both open design questions (consolidation
+   independence, no cross-player gating) closed structurally and proved by test, not just
+   argued.
+6. **A 9-item Design Addendum from 2026-08-11 continues** (`docs/DESIGN_ADDENDUM_2026-08-11.md`)
+   with build order 0/3 → 1-2 → 4-8 and scope discipline (role roster closed at six). **Items
+   0/3, 1, 2, 4, and now 5 are done.** **Items 6, 7, 8 are not started** — see below.
+7. **Item 5 — no money: nodules as sole root input, closed loop.** `importExport.ts`
+   refactored so `nodulesReceivedToday()` is the primary function and `grainDeliveredToday()`
+   is derived from it (real code structure, not parallel prose). `resources.ts` tracks
+   `nodulesReceived` as a bare `ResourceFlows` field (not a 7th `ResourceName`, to preserve
+   the existing 1:1 role<->resource bijection test). New hard-filter coherence test extends
+   the flour/bread check down to grain/nodules; new structural test proves `resources.ts`
+   defines no exchange/convert/swap/wallet/currency function. No constants changed. Full
+   reasoning in `docs/BLUEPRINT.md`'s "2026-08-12 session" entry.
 
-### This session's addendum work, briefly (full reasoning in BLUEPRINT.md)
+### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
 
 - **Item 0/3 — District Weather** (`engine/districtWeather.ts`): wired a field
   (`District.weatherHistory`) that had existed since Phase A but was permanently empty —
@@ -128,7 +158,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 348 tests
+npm test                              # 392 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -166,15 +196,15 @@ work below is about making what exists hold up, not adding to it. Resist the pul
 another role or system to solve a balance problem; the last several balance problems were
 solved by fixing a constant or a mechanism, not by adding anything.
 
-**0. FINISH THE ADDENDUM — items 5, 6, 7, 8 are not started.** This is the live piece of
-work; everything else below is longer-horizon. `docs/DESIGN_ADDENDUM_2026-08-11.md` has the
-full brief for each. In its own build order:
-- **Item 5 — no money; nodules as the sole root input, closed conservation loop.** The
-  largest of the four and explicitly the riskiest: it makes the supply chain *longer*
-  (nodule→grain→flour→bread), and the addendum requires extending the hard-filter coherence
-  check across the whole chain, treating a break as a build failure. Resources stay
-  non-fungible and role-locked — no generic currency, no universal exchange, no common
-  "value" field, or money has been reinvented with extra steps.
+**0. FINISH THE ADDENDUM — items 6, 7, 8 are not started (item 5 is now done).** This is the
+live piece of work; everything else below is longer-horizon.
+`docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each. In its own build order:
+- ~~Item 5 — no money; nodules as the sole root input, closed conservation loop.~~ **Done
+  2026-08-12** — see `docs/BLUEPRINT.md`'s "2026-08-12 session" entry. Nodules are now a
+  real tracked flow (`ResourceFlows.nodulesReceived`), `grainDeliveredToday()` derives from
+  `nodulesReceivedToday()` in code, and the hard-filter coherence check now covers
+  grain/nodule parity as well as flour/bread, plus a structural test proving no
+  exchange/convert/swap/wallet/currency function exists anywhere in `resources.ts`.
 - **Item 6 — courier pay: distance/time only, never cargo value**, paid by whoever
   commissioned the delivery. Removes the collusion incentive structurally rather than by
   policing intent. Geography is the expansion cap; don't add a second artificial one.
@@ -367,6 +397,26 @@ a healthy shard, so a flat reward paid support roles ~1.9x. `COMPLETION_REWARD` 
 per role type as a result, and `test/roleCompletion.test.ts`'s hard filter (+-30% band around
 the cross-role mean) is what keeps it honest — the same role `flourRatio <= 1.0` plays for
 the supply chain. Re-measure it if any task's completion condition or the role counts change.
+
+**Nodules are tracked outside `RESOURCE_NAMES`, deliberately.** `resources.ts`'s
+`RESOURCE_OWNER` is a strict 1:1 role<->resource bijection with its own test guarding it.
+Import/Export already owns `'grain'`, so nodules live as a bare `nodulesReceived` field on
+`ResourceFlows` instead of a 7th named resource — don't "fix" this by promoting nodules to
+`RESOURCE_NAMES`, it would break the bijection test for no real gain since nodules and grain
+share one owner and one origin.
+
+**District barriers are a shortcut on top of the hub floor, never a gate — read
+`districtAccess.ts`'s header before changing who gets `hasShortcutAccess`.** The two
+containment questions (does district health affect access; can one player gate another's) are
+closed structurally (no import of `districtConsolidation.ts`; no per-player identity input
+beyond the traveler's own status) and proved by test, not just documented. Any change that
+makes access depend on anything other than the traveler's own FILLED/VACANT/BACKSTOPPED/
+grifter status needs the same structural proof, not just a new comment.
+
+**The Wall's Emissive Soul is specced but not built.** `docs/VISUAL_FRAMEWORK_2026-08-12.md`
+§3 resolves its aggregation function (reuse `pressureDetection.ts`'s rolling-window shape,
+shard-wide across all 10 `SELF_STATES`) but no `soulTemperature` code exists yet, and
+`WALL_SOUL_WINDOW_POSTS` has no measured value. Don't assume it's live.
 
 **Other standing notes:**
 - `multiRoleConscription.ts` is a NEW function; the old 2-role `stepConscriptionDay` is

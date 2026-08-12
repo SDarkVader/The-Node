@@ -142,10 +142,28 @@ export function drawTicketProgress(rand: () => number, completeFraction: number 
 }
 
 /**
- * Grain delivered by the Import/Export layer today. FILLED slots deliver in full;
- * BACKSTOPPED slots deliver `BACKSTOPPED_NODULE_FRACTION` of normal (squeezed, never zero
- * — constraint 2); VACANT slots deliver nothing. `activityMultiplier` is `wealth.ts`'s
- * daily downtime blend, applied for the same reason every other flow takes it.
+ * Nodules delivered by the Import/Export layer today — THE root of the whole economy
+ * (2026-08-12 addendum item 5: "nodules as the foundational input... nothing else enters
+ * the world from outside"). FILLED slots deliver in full; BACKSTOPPED slots deliver
+ * `BACKSTOPPED_NODULE_FRACTION` of normal (squeezed, never zero — constraint 2); VACANT
+ * slots deliver nothing. `activityMultiplier` is `wealth.ts`'s daily downtime blend, applied
+ * for the same reason every other flow takes it.
+ */
+export function nodulesReceivedToday(
+  filledCount: number,
+  backstoppedCount: number,
+  activityMultiplier: number,
+  nodulesPerDay: number = NODULES_PER_DAY,
+): number {
+  const effectiveSlots = filledCount + backstoppedCount * BACKSTOPPED_NODULE_FRACTION;
+  return effectiveSlots * nodulesPerDay * activityMultiplier;
+}
+
+/**
+ * Grain delivered by the Import/Export layer today — DERIVED from `nodulesReceivedToday`,
+ * not computed independently, so "nodules arrive -> Import/Export converts" (item 5) is real
+ * code structure, not just prose repeated over an unrelated calculation. Nothing else in
+ * this codebase produces grain from nothing; this is its only source.
  */
 export function grainDeliveredToday(
   filledCount: number,
@@ -154,8 +172,7 @@ export function grainDeliveredToday(
   nodulesPerDay: number = NODULES_PER_DAY,
   grainPerNodule: number = GRAIN_PER_NODULE,
 ): number {
-  const effectiveSlots = filledCount + backstoppedCount * BACKSTOPPED_NODULE_FRACTION;
-  return effectiveSlots * nodulesPerDay * grainPerNodule * activityMultiplier;
+  return nodulesReceivedToday(filledCount, backstoppedCount, activityMultiplier, nodulesPerDay) * grainPerNodule;
 }
 
 /**

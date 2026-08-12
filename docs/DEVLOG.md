@@ -6,6 +6,88 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — District barriers, visual framework, pressure detection, and item 5 (nodules root input)
+
+**Context.** Continuation session. Started by fixing 3 false-positive failures in
+`test/grammar.invariant.test.ts` (word-blacklist regexes flagging legitimate "I"-opening
+templates), then the user specified two new grammar invariants directly in conversation — no
+external identification signature, and no anaphora — demonstrated live with "I think the
+courier is being difficult" / "I feel that too" (the second is a vote on someone else's
+self-state, not one of its own; a grammar of pure self-states stays safe only if messages
+don't compose). Both closed structurally, not just by word list: `WallPost`/`Envelope` proven
+via source-grep to carry no reply/thread/parent field.
+
+**District Weather's pressure signal fixed a one-day lag.** `stepDistrictWeather()`'s call
+site in `world.ts` moved from right after sabotage resolution to after Stage 5 (comms), so the
+`pressureSignal` it receives reflects that SAME day's Wall posts, not yesterday's.
+
+**Built `engine/pressureDetection.ts`** (2026-08-12 addendum item 1): Detective/Journalist
+pressure detection over Wall posts, mechanical not behavioural (constraint 3) — detects a
+skew toward the 5 "pressure" self-states in a district's rolling post window WITHOUT ever
+identifying who's posting. Feeds only into District Weather's `tension`, nowhere
+player-facing. This closes a real failure mode found while reading the newly-uploaded
+`docs/DESIGN_ADDENDUM_2026-08-12.md` (a 35-page social-layer failure-mode analysis): naming a
+pressure-broadcaster made ambient fear WORSE in the historical-case model (+60%, not -60%) —
+recorded in `docs/ADVERSARIAL_CONTAINMENT.md`'s new "Partially closed" section.
+
+**Visual framework work — a real correction from the user, then real design output.** Two
+AI-generated ("Gemini Notebook") concept-art decks were uploaded for review. First pass
+treated this as commentary; user firmly corrected that framing ("were making a game not a
+thought experiment... I'm looking for the best cohesive visual framework") and separately
+ruled out generic aesthetics ("I don't want one shot minecraft"). Re-read existing canon
+(`NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md`, `DESIGN_ADDENDUM_2026-08-08.md`) before writing
+anything, then wrote `docs/VISUAL_FRAMEWORK_2026-08-12.md`, resolving: The Wall's location
+(`Shard.hubPlot`, a real new field exposing the previously-implicit hub), The Market's
+placement (derived from `economicHeat.ts`, no new geometry), and the Wall's Emissive Soul
+aggregation function (reuses `pressureDetection.ts`'s rolling-window shape — spec only, not
+yet built as code). Caught a real privacy error in one deck along the way: it depicted the
+Soul as sourced from private Envelopes, which would violate constraint 4 — flagged as wrong
+against canon, not adopted. A third uploaded PDF was checked for "hidden data" per the user's
+instruction (PDF metadata/XMP/embedded streams inspected) — nothing found beyond ordinary
+AI-generated decorative chrome text; user confirmed afterward this wasn't an alarm, just
+"visual fixes."
+
+**Built district barriers** (`engine/districtAccess.ts`) — user-specified mid-session: "some
+barriers restricting flow of movement between districts, so those who can move are able to
+and others have to use the main plaza," then explicitly instructed to build it, not just spec
+it. Implemented as a grant-on-a-floor, never a gate: `space.ts` gained a real side-street mesh
+(`District.neighborDistrictIds`, K-nearest-neighbor, symmetric union) and
+`effectiveRoute(shard, from, to, travelerStatus)` returns the direct shortcut only for a
+FILLED role-holder to a real neighbor; everyone else, and every non-neighbor pair, falls back
+to the always-available hub route (constraint 2). Both open design questions the spec would
+otherwise have left unresolved were closed STRUCTURALLY and proved by test, not just argued:
+consolidation state cannot reach corridor geometry (`space.ts` has zero import of
+`districtConsolidation.ts` — source-grep guard test), and no player can gate another's access
+(a "tampered shard" test mutates every other district's geometry and confirms one fixed
+route is unaffected). 11 new tests in `test/districtAccess.test.ts`, 6 more added to
+`test/space.regression.test.ts` for the new mesh.
+
+**Item 5 — no money: nodules as the sole root input, closed loop.** Nodules were already the
+intended root of the economy in prose but existed nowhere as a tracked quantity — only
+implicit inside `grainDeliveredToday()`'s internal math. Refactored `importExport.ts` so
+`nodulesReceivedToday()` is now the primary function and `grainDeliveredToday()` is DERIVED
+from it, making "nodules arrive -> Import/Export converts to grain" real code structure.
+Decided to track `nodulesReceived` as a bare field on `ResourceFlows` rather than a 7th
+`ResourceName` entry, specifically to avoid breaking `resources.ts`'s existing 1:1
+role<->resource bijection test (Import/Export already owns `'grain'`) — the same "extend an
+existing shape, don't invent a parallel one" instinct as `grainDelivered` sitting next to
+`grainConsumed`. Wired into `world.ts` alongside the existing grain-availability computation.
+Added the addendum's own explicitly-named requirement: a hard-filter coherence test extending
+the existing flour/bread ratio check down to grain/nodules (`grainConsumed/grainDelivered <
+1.05` across 5 seeds x 1500 days, plus a live assertion `grainDelivered ==
+nodulesReceived * GRAIN_PER_NODULE`), and a structural test that `resources.ts` defines no
+`exchange`/`convert`/`swap`/`wallet`/`currency` function or bare mention — the concrete
+guarantee behind "non-fungible, role-locked, no generic currency ever."
+
+**No constants changed.** `NODULES_PER_DAY`, `GRAIN_PER_NODULE`, `BACKSTOPPED_NODULE_FRACTION`
+untouched — this item only exposed the existing chain as real structure and proved it
+coherent, which it already was.
+
+Full suite green: 392 tests (up from 348 at the start of this session), `npm run typecheck`
+clean throughout.
+
+---
+
 ## 2026-08-11 — Grammar invariants rewritten to survive a vocabulary that's about to grow
 
 **Context.** The user stated plainly that vocabulary WILL expand — envelopes, voice chat, and

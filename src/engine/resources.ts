@@ -84,6 +84,17 @@ export const LEADS_PER_DETECTIVE_DAY = 2.5;
 
 /** One day's resource flows for a whole shard. All values are per-day, not cumulative. */
 export interface ResourceFlows {
+  /**
+   * Nodules received by Import/Export — the sole root input to the whole economy
+   * (2026-08-11 addendum item 5: "no money — nodules as sole root input, closed loop").
+   * Not a `ResourceName`/`RESOURCE_OWNER` entry: Import/Export already owns 'grain', and
+   * `RESOURCE_OWNER` is a strict 1:1 role<->resource bijection (`test/resources.test.ts`).
+   * Tracked here instead, the same way `grainDelivered` sits alongside `grainConsumed`
+   * without needing to be its own named resource. `grainDelivered` is DERIVED from this in
+   * `importExport.ts` (`grainDeliveredToday` calls `nodulesReceivedToday` internally), so
+   * "nodules arrive -> Import/Export converts to grain" is real code structure.
+   */
+  nodulesReceived: number;
   /** Grain delivered by Import/Export — the supply side, real since 2026-08-11. */
   grainDelivered: number;
   grainConsumed: number;
@@ -103,6 +114,7 @@ export interface ResourceLedger {
 
 export function emptyFlows(): ResourceFlows {
   return {
+    nodulesReceived: 0,
     grainDelivered: 0,
     grainConsumed: 0,
     flourProduced: 0,
@@ -137,6 +149,7 @@ export function stepResourceFlows(
   detectiveFrictions: readonly number[],
   activityMultiplier: number,
   grainDelivered = 0,
+  nodulesReceived = 0,
 ): ResourceFlows {
   const sum = (a: readonly number[]) => a.reduce((x, y) => x + y, 0);
 
@@ -144,6 +157,7 @@ export function stepResourceFlows(
   const breadProduced = sum(bakerServedCustomers) * activityMultiplier;
 
   return {
+    nodulesReceived,
     grainDelivered,
     flourProduced,
     grainConsumed: flourProduced * GRAIN_PER_FLOUR,
@@ -160,6 +174,7 @@ export function accumulate(ledger: ResourceLedger, today: ResourceFlows): Resour
   return {
     today,
     cumulative: {
+      nodulesReceived: c.nodulesReceived + today.nodulesReceived,
       grainDelivered: c.grainDelivered + today.grainDelivered,
       grainConsumed: c.grainConsumed + today.grainConsumed,
       flourProduced: c.flourProduced + today.flourProduced,
@@ -187,4 +202,15 @@ export function flourBalance(flows: ResourceFlows): number {
 /** Grain delivered by Import/Export minus grain Millers drew. Positive = supply covers milling. */
 export function grainBalance(flows: ResourceFlows): number {
   return flows.grainDelivered - flows.grainConsumed;
+}
+
+/**
+ * Nodules received minus the grain they were converted to, expressed in nodule units
+ * (`grainDelivered / GRAIN_PER_NODULE`). Always exactly 0 by construction, since
+ * `grainDeliveredToday` derives from `nodulesReceivedToday` with no other grain source —
+ * this exists as a live assertion of that fact (`test/resources.test.ts`), not a real
+ * economic diagnostic the way `grainBalance`/`flourBalance` are.
+ */
+export function nodulesBalance(flows: ResourceFlows, grainPerNodule: number): number {
+  return flows.nodulesReceived - flows.grainDelivered / grainPerNodule;
 }

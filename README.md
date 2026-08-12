@@ -339,7 +339,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 348 automated tests cover all of it.
+citations, and open questions left. 392 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -357,21 +357,41 @@ well from merely occupying it, uniformly across all six roles — with a hard
 test enforcing that the reward lands at real parity across them, which
 caught the first attempt paying some roles nearly twice what others got.
 
+Since then, the addendum's District Weather has also had its pressure
+signal fixed to reflect the same day's Wall posts rather than lagging by
+one, and a new **pressure detection** mechanic (`engine/pressureDetection.ts`)
+lets Wall traffic skewing toward suspicion/distrust/unease/manipulation/
+exploitation feed District Weather's tension — mechanically, never by
+identifying who posted, closing a real failure mode where naming a
+pressure-broadcaster made things worse rather than better. **District
+barriers** now give role-holders with real standing in a district a direct
+side-street shortcut to a neighbouring district, while everyone else — and
+every non-neighbour trip — always has the unblocked route through the
+central hub; no district's health and no other player can ever affect that
+access, which is proven by test, not just asserted. And **item 5 of the
+addendum is done**: nodules are now the economy's real, tracked root input
+(`ResourceFlows.nodulesReceived`), with grain delivery derived from them in
+code rather than in prose, and a hard-filter test guaranteeing the whole
+nodule→grain→flour→bread chain stays coherent. A visual framework
+(`docs/VISUAL_FRAMEWORK_2026-08-12.md`) also resolves where The Wall and The
+Market sit and how the Wall's ambient "Emissive Soul" mood should be
+computed — design only, not yet rendered anywhere.
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
 mechanics are built on top of it), the Oracle, the private diary,
 face-to-face conversation, real Phase 4 visual rendering (today's client is
 plain text — it proves the wiring works, not what the world looks like),
-the voice/safety architecture, the closed no-money economy and the
-remaining addendum items (courier pay, shift cover, throttle windows), and
-the multi-shard ecosystem's actual playable form — the mechanics above are
-real and tested, but nothing about them is something a player can walk into
-yet.
+the voice/safety architecture, the Wall's Emissive Soul rendering itself,
+the remaining addendum items (courier pay, shift cover, throttle windows),
+and the multi-shard ecosystem's actual playable form — the mechanics above
+are real and tested, but nothing about them is something a player can walk
+into yet.
 
 ```
 npm install
-npm test               # 348 tests
+npm test               # 392 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -395,7 +415,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (348 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (392 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
