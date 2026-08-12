@@ -33,6 +33,17 @@ describe('generateShardLayout — determinism', () => {
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
   });
 
+  it('exposes hubPlot at the origin — the point every district corridor connects back to and none owns', () => {
+    // Real value, not a magic implicit convention — see VISUAL_FRAMEWORK_2026-08-12.md §1:
+    // this is where the Wall (the visual brief's shard-wide landmark) belongs.
+    const shard = generateShardLayout(7);
+    expect(shard.hubPlot).toEqual({ x: 0, y: 0 });
+  });
+
+  it('hubPlot is identical across every seed and config — one fixed shard-wide point', () => {
+    expect(generateShardLayout(1).hubPlot).toEqual(generateShardLayout(999).hubPlot);
+  });
+
   it('every district has exactly one plaza plot', () => {
     const shard = generateShardLayout(7);
     for (const district of shard.districts) {
@@ -102,6 +113,7 @@ describe('occupantsWithin / plotsWithin — hand-computed ground truth', () => {
   const shard: Shard = {
     id: 'test-shard',
     seed: 0,
+    hubPlot: { x: 0, y: 0 },
     districts: [
       {
         id: 'core-0',
@@ -256,7 +268,7 @@ describe('placeArrival — closes districtArrivalChoice()\'s "nothing persists" 
   });
 
   it('returns null when no district of the requested classification exists', () => {
-    const emptyShard: Shard = { id: 'x', seed: 0, districts: [] };
+    const emptyShard: Shard = { id: 'x', seed: 0, districts: [], hubPlot: { x: 0, y: 0 } };
     expect(placeArrival(emptyShard, 'core')).toBeNull();
   });
 });

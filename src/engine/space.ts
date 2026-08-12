@@ -96,6 +96,14 @@ export interface Shard {
   id: string;
   seed: number;
   districts: District[];
+  /** The one point every district's corridor connects back to and none of them own —
+   *  always (0,0), same for every shard, per `generateShardLayout`'s own hub placement.
+   *  Exposed as a named field (2026-08-12, `docs/VISUAL_FRAMEWORK_2026-08-12.md` §1) rather
+   *  than left as an implicit convention: this is where "the Wall" (the visual brief's
+   *  shard-wide landmark, `NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §5 — "true center,
+   *  equidistant from all districts, never belonging to one") belongs. Not a new placement
+   *  decision; a real one `generateShardLayout` already made, now given a name. */
+  hubPlot: { x: number; y: number };
 }
 
 export interface PlayerPosition {
@@ -410,5 +418,5 @@ export function generateShardLayout(seed: number, config: ShardLayoutConfig = DE
     };
   });
 
-  return { id: `shard-${seed}`, seed, districts };
+  return { id: `shard-${seed}`, seed, districts, hubPlot: hub };
 }

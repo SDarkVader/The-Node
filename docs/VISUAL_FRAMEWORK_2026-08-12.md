@@ -1,0 +1,230 @@
+# Visual Framework — 2026-08-12
+
+Closes both `[OPEN]` items from `docs/DESIGN_ADDENDUM_2026-08-08.md` §4, corrects a stale role
+list in `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §3, and locks the district/plaza layout
+concretely against real generated geometry rather than leaving it as an unplaced landmark.
+This is a design document — no Godot code changes here — but every rule below is written to
+be directly implementable against fields that already exist in the shipped engine, not
+aspirational language. Where something needs a small new field to be buildable, that's called
+out explicitly as a deliverable, not glossed over.
+
+**Standing doctrine, restated because it's the whole point**: this is not a generic city. Not
+a voxel block-world, not a reskin, not a "one-shot" throwaway aesthetic — a specific, organic,
+node-shaped settlement whose every visible signal is a real number from the simulation. The
+2026-08-07 brief's §3 table is the founding law of this project's visual design and nothing
+below overrides it — this document extends it to cover everything built since.
+
+---
+
+## 1. The central landmark question, resolved: the Wall occupies the shard hub
+
+`docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §5 specified the Wall must sit "at true center,
+equidistant from all districts, never belonging to one." At the time that was aspirational —
+no such point existed in the generated geometry. It does now, and has since Phase A:
+
+`src/engine/space.ts`'s `generateShardLayout()` already computes `const hub = { x: 0, y: 0 }`
+and routes every district's plaza back to it via `corridorPlots()` — literally the one point
+every district connects to and none of them own. This is not a coincidence worth reusing;
+it's the same shape the brief specified, already built for an unrelated reason (keeping the
+shard one walkable graph). The Wall's location is not a new design decision — it's recognizing
+a decision space.ts already made.
+
+**Deliverable, small and mechanical**: `Shard` doesn't currently expose the hub as a named
+field — it's an implicit convention (`(0,0)`, same for every shard) rather than documented
+state. Add `Shard.hubPlot: { x: 0; y: 0 }` (or equivalent) so a renderer — or any future
+consumer — reads it as a real field, not tribal knowledge of what `generateShardLayout`
+happens to do internally. This is the one piece of this document that's an actual code change,
+not just a reading of what exists; everything else below is real today.
+
+## 2. The Market, resolved: it is not a new landmark, it is the busiest core district's plaza
+
+The brief's §5 also named "The Market/central plaza" as a separate landmark from the Wall —
+"an open gathering space... where trade and Importer/Exporter activity is visually implied."
+Building a second shard-level structure alongside the Wall would duplicate geometry `space.ts`
+already generates per-district (`District.plazaPlot`, one per district, real today).
+
+**Resolution**: the Market is not a distinct structure. It is whichever CORE district's own
+plaza currently reads hottest on Economic Heat (`engine/economicHeat.ts`'s `districtEconomicHeat()`,
+shipped 2026-08-11) — the "first-mover density" effect the brief's §3 table already calls for
+("the oldest/most-established cluster should visually read as denser and hotter... without
+being labeled as such") falls out of this for free, because a genuinely busier district *is*
+economically hotter, not by authorial fiat. No new mechanic, no new geometry — a rendering rule
+that reads two fields that already exist (`District.classification === 'core'`,
+`districtEconomicHeat()`'s output) and picks the max. If two core districts tie, break by lower
+district array index — deterministic, matching this project's own convention everywhere else.
+
+This also fixes an implicit assumption in the original brief that doesn't hold at the shipped
+scale: the brief pictured one obvious center. The shipped default config has **2 core
+districts**, not one (`DEFAULT_SHARD_CONFIG.coreDistrictCount = 2`). The Market can genuinely
+move between them over a shard's life as one core district out-trades the other — which is a
+better, more alive result than a landmark nailed to one place forever, and it costs nothing to
+compute.
+
+## 3. The Wall's Emissive Soul, resolved: the open aggregation function
+
+`DESIGN_ADDENDUM_2026-08-08.md` §4.1 left the damping/aggregation function undecided — "tone
+down the colours" was directional, not a formula, and flagged that a raw unweighted aggregate
+skews warm/negative by default (7 of 10 `SELF_STATES` are tension-cluster, only 3 are
+positive). That document's own candidate was "recency-weighted decay, the same shape as the
+rumour mill's clarity decay" — and this session built exactly that shape for a different
+purpose (`engine/pressureDetection.ts`'s rolling-window skew, 2026-08-12), which is directly
+reusable rather than needing a second decay system:
+
+**Mechanic**: a shard-wide rolling window of the most recent N Wall posts (not
+per-author — this is explicitly the aggregate, unlike `pressureDetection.ts`, which is
+deliberately per-author and never surfaces an aggregate reading). For each post in the window,
+classify by the same tension/positive split `pressureDetection.ts` already established:
+- **Tension cluster** (7 states): isolated, manipulated, distrustful, exploited, suspicious,
+  uneasy, overwhelmed.
+- **Positive cluster** (3 states): hopeful, secure, grateful.
+
+`soulTemperature = tensionCount / totalCount` in the window, 0 (all positive → gold) to 1 (all
+tension → red) — same [0,1] contract every other ambient signal in this codebase already uses
+(`tension`, `heat`), so a renderer treats them identically rather than needing per-signal
+special-casing.
+
+**This directly answers the addendum's own flagged skew risk** by NOT weighting the raw
+10-state split (which would default warm) — it reads recent behavior only, through a bounded
+window, the same "recency beats lifetime average" fix `pressureDetection.ts` already proved
+out. A shard that's currently calm reads gold regardless of its history; the window is the
+mechanism, same as it is everywhere else signal-decay is used in this codebase.
+
+**Load-bearing correction, confirmed against source canon, not just inferred**: the Wall's
+Emissive Soul reads **Wall posts only** — `DESIGN_ADDENDUM_2026-08-08.md` §2 states this
+explicitly ("Every Wall post is already built from one of ten fixed SELF_STATES... the Wall's
+core glow aggregates recently-posted tones"). It was never specified to read Envelopes, and it
+must not: Envelopes are the private 1:1 channel (`comms/grammar.ts`) constraint 4 protects.
+Aggregating Envelope content into any public signal — even fully anonymized down to one
+number — would turn private exchanges into an inferable public broadcast, which is exactly
+what constraint 4 rules out. Flagging this explicitly because an externally-generated concept
+render (a Gemini Notebook visual deck reviewed this session) depicted an Envelope-sourced
+pipeline for this exact mechanic; that depiction is wrong against both the original design
+canon and constraint 4, not just an alternate interpretation.
+
+**Suggested window size** (not yet calibrated in-engine, flagged per this project's own
+"measure before trusting" discipline): `WALL_SOUL_WINDOW_POSTS = 50`, roughly matching
+`pressureDetection.ts`'s `PRESSURE_WINDOW_POSTS = 30` scaled up for a shard-wide (not
+per-author) population of posters. Needs a real measurement pass against actual Wall-posting
+cadence before shipping, same discipline `FLOUR_PER_BREAD`/`NODULES_PER_DAY` were held to —
+not guessed and left alone.
+
+## 4. Structural beauty stays constant; colour is the only honest variable
+
+Restating `DESIGN_ADDENDUM_2026-08-08.md` §2's locked rule because it's easy to lose when
+translating to an actual renderer: the Wall and the district plazas stay open, bright, and
+architecturally beautiful regardless of `soulTemperature` or `tension`. Brightness and
+structural integrity are never the signal. Only **hue** carries the truth — gold-to-red for
+the Wall, cool-to-warm for District Weather. A shard in genuine crisis should look like a
+beautiful place having a bad day, never like a broken asset. This is the single rule most
+likely to get quietly violated by an artist reaching for "distressed" textures under time
+pressure — worth stating as a hard constraint for whoever builds the renderer, not just a
+vibe.
+
+## 5. The full data-to-visual mapping, current as of this session
+
+`NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §3's table is the founding law; everything below is
+additive to it, and one row in the original table is corrected.
+
+| Signal | Real source (field, [0,1] unless noted) | Visual encoding |
+|---|---|---|
+| Role type | `RoleType` (`world.ts`) — **miller, baker, courier, journalist, detective, importExport** — corrects the original brief's stale 8-role list (farmer/smith/miner/healer/watchman don't exist; the roster closed at 6, 2026-08-11) | Distinct hue per role, 6 clearly separable colors |
+| District Weather (local mood) | `District.weatherHistory` latest `tension` (`districtWeather.ts`, shipped) | Cool blue → warm amber/red, per-district, independently moving |
+| Wall's Emissive Soul (global mood) | `soulTemperature` per §3 above — **not yet built**, this document is the spec | Gold → red glow on the Wall structure at the shard hub |
+| Economic Heat (station-level) | `computeEconomicHeat()` per-building `heat` (`economicHeat.ts`, shipped) | Glow intensity/radiating paths per station — Miller/Baker read their own value; support roles read district friction |
+| Economic Heat (district/"Market") | `districtEconomicHeat()` (shipped) | Foot-traffic density in the plaza; also selects which core district is currently "the Market," per §2 above |
+| Identity resolution | `isKnown()` / `resolvedSubjects()` (`identity.ts`, shipped) | Silhouette + role icon (unknown) → deterministic procedural face (`generateFace()`, shipped) once resolved, per-observer |
+| Player-held vs. backstopped slot | `RoleSlot.state` (`vacancy.ts`) — FILLED vs BACKSTOPPED | Solid saturated outline (FILLED) vs. dashed/desaturated (BACKSTOPPED) — quieter, never broken, per original brief |
+| Core vs. periphery density | `District.classification`, `coreSpacing`/`peripherySpacing` (`space.ts`, shipped) | Density gradient — already generated, not yet rendered |
+| Detection / witness density | `occupantsWithin()`, `detectionProbability()` (`space.ts`/`ecosystem.ts`, shipped) | Ambient light/activity noise scales with real witness count, not a decorative crowd |
+| Consolidation decline | `DistrictHealth.state` (`districtConsolidation.ts`, shipped) — ACTIVE/CONSOLIDATING/MERGED | Feeds District Weather already (§ above); a renderer may additionally desaturate/thin a CONSOLIDATING district's own structures, distinct from its color |
+| Pressure detection (Detective/Journalist sensor) | `pressureContribution()` (`pressureDetection.ts`, shipped 2026-08-12) | Already folded into District Weather's `tension` — no separate visual, by design (never a name, never a second signal to read) |
+
+## 6. District barriers — gated movement, not just gated rendering
+
+**[DESIGN — not yet built]**. User's own framing, kept close to verbatim as the source of the
+decision: barriers restricting movement between districts, so that those who can move are
+able to, and everyone else has to use the main plaza. This is a real spatial/gameplay
+mechanic, not a rendering choice — it changes who can reach whom, not just what it looks like
+— so it gets specified here but deliberately not implemented in this pass; it touches pathing,
+which nothing else in this document does, and deserves its own build+test cycle the way every
+other mechanic in this project has gotten, not a same-session bolt-on.
+
+**The gap this closes in the existing geometry**: `NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §2
+already wanted "side streets: connective paths between neighborhoods that don't pass through
+the center — genuine alternate routes, not just spokes." `space.ts`'s `generateShardLayout()`
+never actually built these — it only generates hub-spoke corridors (§1 above), one path per
+district straight to the hub, nothing district-to-district. The barrier mechanic and the
+missing side streets are the same gap: side streets are the thing being gated.
+
+**Who gets the shortcut, decided from what already exists rather than invented fresh**: a
+FILLED role-holder has a real building and a real, fixed position in a specific district —
+they have standing there. A grifter has neither; `world.ts`'s own header already documents
+this exact asymmetry for an unrelated reason ("grifters have no fixed position in this
+model... not part of the proximity graph"). Extending that same asymmetry to movement is not
+a new invention, it's the same distinction the engine already draws, applied to a second
+system. Proposed rule: **a FILLED role-holder may use direct district-to-district side
+streets between their home district and its nearest neighbours; a grifter (or anyone in a
+BACKSTOPPED/VACANT slot's former position) must route through the hub/plaza to reach any
+other district.**
+
+**Why this is additive, not subtractive, and so doesn't touch constraint 6**: the baseline —
+everyone can always reach every district via the hub — is never removed for anyone; the hub
+route is the floor, and it always works (constraint 2, no permanent zero-state). What
+role-holders get is a genuine shortcut on top of that floor, not a penalty subtracted from
+someone else's access. This is the identical shape constraint 6 already requires of
+reputation — a grant on top of an untouchable baseline — applied to geography instead of
+standing. It also gives grifters a second, concrete, felt reason to want a role beyond
+income — this project has already established the role ladder as real (~22-day mean wait,
+`docs/HANDOVER.md`) — mobility is now part of what a role is worth, not just wage.
+
+**Composes with, but does not require, Courier/item 6**: the pending addendum item 6 (courier
+pay, distance-indexed, not yet built) already establishes that moving things between districts
+has a real cost. A grifter needing to reach a specific district could plausibly pay a Courier
+to close the gap the direct shortcut denies them — that's a natural extension once item 6
+ships, not a dependency; the barrier mechanic stands on its own without it.
+
+**What "nearest neighbours" means, concretely**: district centers (`plazaPlot`) already have
+real coordinates; "adjacent" is computable today via `space.ts`'s own `distance()` between
+plaza plots, no new spatial primitive needed — e.g. each district's side street connects to
+its K nearest other districts by that distance, K itself a design choice (2-3, matching the
+brief's "genuine alternate routes," not a fully-connected mesh which would make the hub
+pointless).
+
+**Visually**: a barrier is not a wall in the "MERGED district" sense — it doesn't degrade or
+look broken (§4's rule about structural beauty staying constant applies here too). It should
+read as a real, physical checkpoint or gate at the district edge — the brief's own optional
+"border checkpoint" landmark (§5 of the 2026-08-07 brief, previously tied only to the
+cross-shard exit-ticket mechanic) is the natural visual language to reuse here, scaled down to
+a district-to-district gate rather than a shard-exit one. A grifter standing at a gate they
+can't use should read as "not for you yet," not "broken" or "hostile."
+
+**Deliberately not decided here, flagged for the actual build pass**: whether a district's
+CONSOLIDATING/MERGED state affects who can use its shortcuts (a declining district's own
+role-holders losing standing there would double-penalize an already-struggling district,
+which cuts against "the floor protects everyone" — probably shouldn't, but not yet argued
+through); whether this needs its own simulation pass to check it doesn't create a new
+containment gap (a well-connected role-holder isolating a grifter by controlling which
+shortcuts exist is exactly the kind of thing `ADVERSARIAL_CONTAINMENT.md` would want checked
+before shipping, not assumed safe).
+
+## 7. What this still leaves open, per the original brief's own §9 discipline
+
+Not everything needs deciding now, and the 2026-08-07 brief was explicit that execution
+details (exact structure shapes per role, precise street-generation logic, weather-particle
+behavior) are for whoever builds the renderer, not this layer of design. Genuinely still open:
+
+1. **`Shard.hubPlot` as a named field** — the one real code change this document calls for
+   (§1). Small, mechanical, not yet done.
+2. **Wall Soul window size calibration** — `WALL_SOUL_WINDOW_POSTS` is a starting guess (§3),
+   needs measuring against real posting cadence before it's trusted.
+3. **Visual *quality* of light distinguishing District Weather from the Wall's Soul** — the
+   addendum's own open question 2, still open. Both are hue-on-[0,1], but a player needs to
+   tell "my district" from "the whole shard" at a glance without reading two legends. An
+   art-direction question, not a mechanics one — candidate: District Weather as ambient/diffuse
+   haze in the air, the Wall's Soul as a hard-edged emissive glow on one specific structure,
+   so the *shape* of the light differs even when the *hue* logic is identical.
+4. **The border checkpoint landmark** the original brief flagged as optional, tied to the
+   still-undecided legality/border-risk mechanic (Import/Export's illegal-route interception,
+   `importExport.ts`, exists mechanically but has no visual treatment specified).
+5. **Structure shapes per role** — unchanged from the original brief's own scope: still an
+   execution decision for whoever builds this, once the 6-role roster's shapes are chosen.
