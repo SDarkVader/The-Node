@@ -18,7 +18,7 @@ here on.
 
 ## Current state (as of 2026-08-12, end of session)
 
-**418 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**427 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 **The entire 2026-08-11 Design Addendum's build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) is now
 built and tested.** What's left from it is only its own "report back explicitly on" section —
@@ -196,7 +196,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 418 tests
+npm test                              # 427 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -263,9 +263,15 @@ not still open:
   alternation pattern — a stronger guarantee than a simulated scenario could give.
 - Do cross-role completion rewards land at real parity? Already answered by item 4's hard
   filter (+-30% band around the cross-role mean).
-- **Genuinely still open, needs a real measurement pass**: does identity resolution
-  (`identity.ts`) produce a meaningful core-vs-periphery difference in how fast players become
-  known, or is the effect too small to feel? No sweep script exists for this yet.
+- ~~Does identity resolution produce a meaningful core-vs-periphery difference?~~ **Answered
+  2026-08-12** — see `docs/BLUEPRINT.md`'s "Identity resolution core-vs-periphery sweep"
+  entry. `sim/identityResolutionHarness.ts` + `npm run identity-resolution-report`: averaged
+  across 5 seeds at the shipped default, periphery role-holders take **~35% longer** to
+  resolve than core ones (measured ~30.1 vs ~40.4 days) — real and worth feeling, not
+  negligible, though noisy per-seed (one seed of five reversed the direction). The effect is
+  on SPEED only: given enough time (250 days), periphery resolution reaches >85% too, so this
+  is a pacing difference, not a structural exclusion (constraint 2/6 both still hold). The
+  addendum's own build order and its entire "report back" section are now fully closed.
 
 **1. Answer the research questions that simulation cannot.** See
 `docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to

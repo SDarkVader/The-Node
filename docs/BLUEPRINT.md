@@ -2796,5 +2796,61 @@ Status: **done**. **All nine items of the 2026-08-11 Design Addendum (0/3, 1, 2,
 explicitly on" section (nodule-loop long-run balance, Shift Cover's real numbers — now
 answerable from `test/shiftCover.test.ts`'s structural proof, cross-role completion parity —
 already answered by item 4's hard filter, and identity-resolution's core-vs-periphery effect
-size) plus the separate 2026-08-12 addendum's own remaining open items (Wall Soul calibration,
-two-tier proximity speech, light-quality visual distinction, border checkpoint art).
+size — see the next entry) plus the separate 2026-08-12 addendum's own remaining open items
+(Wall Soul calibration, two-tier proximity speech, light-quality visual distinction, border
+checkpoint art).
+
+### Identity resolution core-vs-periphery sweep (2026-08-12) — the addendum's last open
+### "report back" question, answered with real numbers
+
+`identity.ts`'s own header already predicted the DIRECTION of the effect ("identity resolves
+faster in the core than the periphery, because trade density is higher there") but the
+addendum's own "report back explicitly on" section asks the actual question: is that a
+meaningful effect, or too small to feel? Nothing measured it until now.
+
+**Why a synthetic driver was needed, and why it's flagged rather than quietly added.**
+`world.ts`'s `pendingWallPosts` defaults to empty and is cleared every tick — nothing in the
+shipped kernel ever populates it; every existing comms test injects posts by hand for exactly
+one tick. Measuring resolution over a real multi-day run needed SOME ongoing stream of Wall
+posts, and no driver for comms content exists anywhere (`src/sim/drivers/` only covers
+market-role decisions). `sim/identityResolutionHarness.ts` adds one — `injectSyntheticPosts`,
+a per-day Bernoulli draw per FILLED role-holder — explicitly flagged as measurement-only,
+never wired into `stepWorld` or any shipped path, the same discipline `src/sim/drivers/`'s own
+README already states for its own synthetic policies.
+
+**Split the same way `multiShardHarness.ts`/`multiShardValidation.ts` already established**:
+`identityResolutionHarness.ts` holds pure, exported, tested functions (`injectSyntheticPosts`,
+`runIdentityResolutionSweep`, `summarizeByClassification`); `identityResolutionReport.ts`
+(`npm run identity-resolution-report`) is the thin printing driver that imports it. Unlike
+most other `src/sim/` scripts (which are pure top-level-executing reports, never imported by
+tests), this harness is directly imported and asserted against in
+`test/identityResolutionHarness.test.ts` — the same pattern the two multi-shard files use.
+
+**The measurement**: for each FILLED role-holder at day 0 (a Wall-post "subject"), the first
+day ANY observer accumulates `IDENTITY_RESOLUTION_THRESHOLD` real encounters with them, split
+by whether their building sits in a core or periphery district.
+
+**Result, averaged across 5 seeds at the shipped default (120-day horizon)**: core role-holders
+resolve at a mean of ~30.1 days, periphery at ~40.4 days — **periphery role-holders take ~35%
+longer to become known**. Real and worth feeling, not negligible — but genuinely noisy
+per-seed: one seed out of five measured actually reversed the direction (periphery resolved
+slightly faster than core that run). The honest claim this result supports is a multi-seed
+AVERAGE trend, not a per-seed guarantee, and `test/identityResolutionHarness.test.ts`'s hard
+filter is written that way (`peripheryMean > coreMean * 1.15`, a real margin below the ~35%
+actually measured, so it stays a genuine filter without being brittle to ordinary noise).
+
+**A second question answered alongside the first, not assumed**: is this a pacing difference
+or a structural exclusion? Extended the horizon to 250 days and confirmed periphery resolution
+reaches >85% too — the gap is entirely about SPEED, not final reach. That distinction matters
+directly against constraint 2 (no permanent zero-state) and constraint 6 (reputation may only
+grant, never remove): a periphery role-holder is never permanently unknown, only known later,
+which is a real but bounded cost of the density gradient rather than an exclusion the standing
+constraints would flag.
+
+Verified: `npm run typecheck` clean; `test/identityResolutionHarness.test.ts`, 9 tests (driver
+correctness, sweep-function determinism and consistency, and the two "report back" findings
+themselves as hard filters). Full suite 427 tests (up from 418).
+
+**This closes the last open item from the 2026-08-11 addendum's "report back explicitly on"
+section.** Every question that section asked is now answered, either structurally (items 5, 7)
+or by direct measurement (items 4, and now identity resolution).

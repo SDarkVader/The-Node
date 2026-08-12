@@ -6,6 +6,51 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — Identity resolution core-vs-periphery sweep: the addendum's last open question, answered
+
+**Context.** User: "script and test identify resolution" — the one genuinely open item left
+from the 2026-08-11 addendum's "report back explicitly on" section, flagged in the previous
+session entry as "needs a real measurement pass, no sweep script exists for this yet."
+
+**No driver existed to even run the measurement.** `world.ts`'s `pendingWallPosts` is cleared
+every tick and nothing in the shipped kernel ever populates it — every comms test injects a
+post by hand for one tick at a time. To measure resolution over a real multi-day run, wrote a
+synthetic Wall-posting driver (`injectSyntheticPosts` in the new `sim/identityResolutionHarness.ts`),
+explicitly flagged as measurement-only and never wired into `stepWorld`, the same "never
+shipped, structurally guarded" discipline `src/sim/drivers/`'s own README already states for
+its own synthetic role-decision policies.
+
+**Followed the exact split `multiShardHarness.ts`/`multiShardValidation.ts` already
+established**, rather than inventing a new convention: a pure, exported, TESTED harness file
+plus a thin printing report script that imports it (`npm run identity-resolution-report`).
+Most `src/sim/` scripts are pure top-level-executing reports never imported by tests — this
+one is directly imported by `test/identityResolutionHarness.test.ts`, matching the two
+multi-shard files rather than the majority pattern, because "script AND test" was the actual
+ask.
+
+**Measured, not assumed.** For each FILLED role-holder at day 0, tracked the first day ANY
+observer accumulated `IDENTITY_RESOLUTION_THRESHOLD` real encounters with them, split by core
+vs periphery district. Averaged across 5 seeds at 120 days: core resolves at ~30.1 days,
+periphery at ~40.4 — periphery role-holders take **~35% longer** to become known. Real, worth
+feeling. But genuinely noisy per-seed — one seed of five reversed the direction during
+development, so the test asserts the multi-seed AVERAGE (`peripheryMean > coreMean * 1.15`,
+a margin well below the ~35% actually measured) rather than a per-seed guarantee, which would
+be a false claim the data doesn't support.
+
+**A second question answered alongside the first, not left implicit**: is this a pacing
+difference or a structural exclusion? Extended the horizon to 250 days and confirmed periphery
+resolution reaches >85% too — entirely a speed difference, never a permanent unknowing. Checked
+this deliberately against constraint 2 (no permanent zero-state) and constraint 6 (reputation
+may only grant, never remove) before calling the finding acceptable rather than a design
+problem to flag.
+
+New `sim/identityResolutionHarness.ts`, `sim/identityResolutionReport.ts`,
+`test/identityResolutionHarness.test.ts` (9 tests). Full suite: 427 tests (up from 418),
+`npm run typecheck` clean. **This closes the last open item from the 2026-08-11 addendum's
+"report back explicitly on" section — every question it asked is now answered.**
+
+---
+
 ## 2026-08-12 — Item 8: economic throttle windows, and the addendum's build order is complete
 
 **Context.** Last item in the 2026-08-11 addendum's build order. Item 8: "two windows per

@@ -339,7 +339,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 418 automated tests cover all of it.
+citations, and open questions left. 427 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -388,7 +388,13 @@ window (roughly a third of every day, dampened to a tenth of normal
 output rather than stopping) — verified point by point against what the
 addendum actually asked for, and restructured as two explicit windows
 that add up to the exact same total, so nothing about the shard's
-existing balance moved. A visual framework
+existing balance moved. And the addendum's own last open question —
+whether identity resolving faster in the core than the periphery is a
+real, feelable difference or too small to notice — now has a measured
+answer: averaged across seeds, a periphery role-holder takes roughly a
+third longer to become known than a core one, a real gap, though it
+narrows the longer anyone actually watches — nobody stays a stranger
+forever just for standing somewhere quieter. A visual framework
 (`docs/VISUAL_FRAMEWORK_2026-08-12.md`) also resolves where The Wall and The
 Market sit and how the Wall's ambient "Emissive Soul" mood should be
 computed — design only, not yet rendered anywhere.
@@ -406,7 +412,7 @@ into yet.
 
 ```
 npm install
-npm test               # 418 tests
+npm test               # 427 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -430,7 +436,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (418 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (427 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
