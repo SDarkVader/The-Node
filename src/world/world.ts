@@ -121,6 +121,7 @@ import {
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
+import { shiftCoverPay, shiftCoverNoticedIndices } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -1102,6 +1103,55 @@ export function stepWorld(world: World): World {
   detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
   importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId) } : x));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
+
+  // Shift Cover (2026-08-11 addendum item 7) — every BACKSTOPPED slot across all six roles is
+  // a real opportunity for a grifter to notice and cover for the day, at
+  // SHIFT_COVER_FRACTION of what that exact slot would have earned genuinely FILLED that
+  // exact day. See engine/shiftCover.ts's header for why this is the honest reshaping of the
+  // brief's session-based §2.6, and why "worse than holding the role properly" is structural
+  // (fraction < 1) rather than a separately-measured constant.
+  const meanOf = (vals: readonly number[]) => {
+    const positive = vals.filter((v) => v > 0);
+    return positive.length ? positive.reduce((a, b) => a + b, 0) / positive.length : 0;
+  };
+  const meanFilledMillerIncome = meanOf(millerIncomes);
+  const meanFilledBakerIncome = meanOf(bakerIncomes);
+  const shiftCoverOpportunities: number[] = [];
+  millers.forEach((m) => {
+    if (m.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(meanFilledMillerIncome);
+  });
+  bakers.forEach((b) => {
+    if (b.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(meanFilledBakerIncome);
+  });
+  couriers.forEach((c) => {
+    if (c.slot.state === 'BACKSTOPPED') {
+      const dist = courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? '');
+      shiftCoverOpportunities.push(courierDailyPay(dist, DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)));
+    }
+  });
+  journalists.forEach((j) => {
+    if (j.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(j.buildingId));
+  });
+  detectives.forEach((d) => {
+    if (d.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(d.buildingId));
+  });
+  importExporters.forEach((x) => {
+    if (x.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(x.buildingId));
+  });
+  const noticedIdx = shiftCoverNoticedIndices(shiftCoverOpportunities.length, grifters.length, rng);
+  if (noticedIdx.length > 0) {
+    // Neediest grifters (lowest current wealth) get first pick — deterministic, no scheduler,
+    // no per-grifter notice draw beyond the aggregate noticedIdx above.
+    const grifterOrder = grifters
+      .map((g, i) => ({ i, wealth: g.wealth }))
+      .sort((a, b) => a.wealth - b.wealth || a.i - b.i)
+      .slice(0, noticedIdx.length);
+    const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!));
+    grifters = grifters.map((g, i) => {
+      const pos = grifterOrder.findIndex((o) => o.i === i);
+      return pos >= 0 ? { ...g, wealth: g.wealth + payouts[pos]! } : g;
+    });
+  }
 
   // Named per-role resource flows (2026-08-11). Miller/Baker figures are the quantities
   // those layers ALREADY computed above (Cournot quantity, served customers) — named and

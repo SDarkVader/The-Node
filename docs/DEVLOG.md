@@ -6,6 +6,56 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — Item 7: Shift Cover, closing the brief's long-open §2.6
+
+**Context.** Continuing the addendum's build order after item 6. Item 7: "offline slots as
+opportunity, not just backstop" — the brief's original §2.6 has sat blocked since Phase 2
+first shipped, flagged in BLUEPRINT.md's own phase table as needing "a player-session concept
+that doesn't exist in this headless engine yet."
+
+**The reshaping insight, not invented but read carefully out of the addendum's own examples.**
+"A Courier running an uncovered route, a player working a vacant bakery" maps directly onto
+`vacancy.ts`'s existing `BACKSTOPPED` state, not a new presence/session concept. "Offline
+slot" IS "BACKSTOPPED slot" — the addendum's own title ("not just backstop") says as much.
+Built `engine/shiftCover.ts` around that reading: only grifters are eligible, "noticing" is a
+stateless per-day Bernoulli draw per BACKSTOPPED slot (no scheduler, queue, or notification —
+explicitly banned in the addendum's own text), and coverage never changes the slot's state —
+it's a one-day side-payment, not a role transfer.
+
+**Rejected a flat-rate calibration in favor of a structural one.** First instinct: pick a flat
+Shift Cover rate and verify it stays below every role's measured minimum FILLED wage — same
+shape as earlier calibration work this session. Caught the flaw before building it: Courier's
+wage (item 6, shipped the same day) is now real-geometry-indexed with no proven analytic
+floor, so a flat number could silently drift above it later without anyone noticing. Instead
+`shiftCoverPay(referenceFilledWage)` returns a fixed fraction (`SHIFT_COVER_FRACTION=0.4`) of
+what that EXACT slot would have earned FILLED that EXACT day, reusing each role's own
+already-computed real daily income (`millerIncomes`/`bakerIncomes`'s FILLED mean, Courier's
+own `courierDailyPay`, the flat support wage). Since the fraction is unconditionally under 1,
+"always worse than holding the role properly" holds by construction, for every role, forever
+— no cross-role numeric comparison to keep re-verifying as other constants move.
+
+**The coordinated-abuse proof — honest about what could and couldn't be simulated.** The
+addendum asks to prove the alternating-slot-farming exploit is net-negative "in simulation,
+with numbers." There is no player-controlled "leave my role on purpose" action anywhere in
+this engine — churn is a stochastic hazard, never a choice — so the literal collusion pattern
+isn't a constructible player action here. Rather than force a fake simulation of an action
+that doesn't exist, proved the underlying economics exactly instead: substituting Shift Cover
+for genuine occupancy earns 0.4x the wage instead of the wage, strictly less on EVERY single
+day, for ANY pattern of alternation — a stronger guarantee than one simulated scenario could
+give, since it holds regardless of timing. Stated with real numbers in
+`test/shiftCover.test.ts` (a representative 2.2/day Baker wage forfeits 1.32/day, 60%, every
+day covered) alongside the structural argument.
+
+**Expected snapshot shift, not a bug.** Adding Shift Cover's per-BACKSTOPPED-slot RNG draws
+shifts every subsequent draw in the shared deterministic stream, changing the tick-25 golden
+snapshot the same way item 6's courier-pay draws did earlier the same session. Regenerated
+deliberately after confirming only that one test failed.
+
+New `engine/shiftCover.ts` + `test/shiftCover.test.ts` (12 tests). Full suite: 414 tests (up
+from 402), `npm run typecheck` clean.
+
+---
+
 ## 2026-08-12 — Item 6: Courier pay, distance-indexed
 
 **Context.** Continuing straight through the addendum's build order after item 5. Item 6:

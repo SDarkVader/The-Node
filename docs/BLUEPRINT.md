@@ -53,7 +53,7 @@ The Godot project (`client/`) is a **thin renderer** talking to it over WebSocke
 | Phase | Contents | Status |
 |---|---|---|
 | 1 | Economic core (Miller/Baker reaction engine) | **Built, tested.** One deviation from the brief's literal equations — see "Open deviations" below. |
-| 2 | Vacancy, churn, backstop system | **Core built, tested** (§2.1-2.5: semi-Markov engine, hazard function, mechanical-backstop state). Not integrated with the Phase 1 market yet (a BACKSTOPPED Baker doesn't yet participate in pricing) — see "Open deviations." §2.6 (Shift Cover) not started — needs a player-session concept that doesn't exist in this headless engine yet. |
+| 2 | Vacancy, churn, backstop system | **Core built, tested** (§2.1-2.5: semi-Markov engine, hazard function, mechanical-backstop state). Not integrated with the Phase 1 market yet (a BACKSTOPPED Baker doesn't yet participate in pricing) — see "Open deviations." §2.6 (Shift Cover) **built 2026-08-12** as the 2026-08-11 addendum's item 7, reshaped around this engine's real BACKSTOPPED state rather than the brief's original player-session concept — see `engine/shiftCover.ts`. |
 | 3 | Communication layer (Wall, Envelopes, rumour mill) | **MVP slice built, tested** — grammar-constrained Wall/Envelope + rumour mill. No moderation pipeline (that's Phase 5), no persistence. |
 | 4 | Identity, camera, ambient visual system | Not started — a scaffold client exists (`client/`) that proves the network wire-up with a plain-text UI, not real Phase 4 rendering. Godot locked in as the engine (see above). |
 | 5 | Voice & safety architecture | Not started |
@@ -2686,5 +2686,61 @@ earnings stay within the same order of magnitude as the wage they replaced, and 
 negative or non-finite across a long run.
 
 Verified: `npm run typecheck` clean; full suite 402 tests (up from 392).
+
+Status: **done**.
+
+### Item 7 — Shift Cover: BACKSTOPPED slots as opportunity, not just backstop (2026-08-11
+### addendum, closing the brief's long-open §2.6)
+
+The brief's original §2.6 needed a real player-session/presence concept ("is this specific
+player currently active") this headless, deterministic day-tick kernel has never had and
+isn't gaining here — flagged as the blocker in this table since Phase 2 first shipped. The
+addendum's own reshaping closes the gap without that concept: its examples ("a Courier
+running an uncovered route, a player working a vacant bakery in another district") map
+cleanly onto `vacancy.ts`'s existing `BACKSTOPPED` state — a slot the mechanical backstop
+already keeps alive at reduced productivity with nobody real credited for it. "Offline slot"
+IS "BACKSTOPPED slot." `engine/shiftCover.ts` doesn't touch slot state at all — a covered
+slot stays BACKSTOPPED the next day; this is a one-day side-payment to a grifter, not a role
+transfer (that's the existing, untouched conscription/draft mechanic).
+
+**Only grifters are eligible** (an existing role-holder covering a second role at once is a
+bigger design question the addendum never raises — out of scope, not silently allowed).
+**"Noticing" is one independent Bernoulli draw per BACKSTOPPED slot per day**
+(`SHIFT_COVER_NOTICE_PROBABILITY=0.15`) — the addendum explicitly bans building a scheduler,
+queue, or notification system, and there's no real per-player attention signal to read in a
+deterministic sim, so a stateless per-day draw is the honest stand-in (same "no learnable
+pattern" discipline `importExport.ts`'s interception already uses). Capped at how many
+grifters are available that day — one grifter covers at most one slot, since a real player can
+only work one shift.
+
+**"Covering must always be a worse deal than holding the role properly" — made structural, not
+measured.** The first instinct was a flat rate checked against every role's measured minimum
+wage, rejected because Courier's wage (item 6) is now real-geometry-indexed with no proven
+analytic floor — a flat number could silently drift above it as geometry or constants move.
+Instead `shiftCoverPay(referenceFilledWage)` returns `SHIFT_COVER_FRACTION` (0.4) of what that
+EXACT slot would have earned genuinely FILLED that EXACT day — reusing each role's own
+already-computed real income for the day (`millerIncomes`/`bakerIncomes`'s mean among FILLED
+slots for Miller/Baker, `courierDailyPay` for Courier, the flat support wage for
+Journalist/Detective/Import-Export) rather than inventing a parallel formula. Since the
+fraction is unconditionally `< 1`, Shift Cover pay is strictly less than the real thing for
+every role, every day, by construction — no cross-role calibration needed, and nothing here
+can go stale as other constants change.
+
+**The coordinated-abuse case, proved rather than simulated.** The addendum asks to "prove [the
+alternating-slot-farming case is net-negative] in simulation, with numbers" — but there is no
+player-controlled "leave my role on purpose" action anywhere in this engine (churn is a
+stochastic hazard, not a choice), so the literal collusion pattern isn't a constructible
+player action to simulate. What IS provable exactly: substituting Shift Cover for genuine
+occupancy earns `0.4 x wage` instead of `wage`, strictly less on EVERY single day, for ANY
+pattern of alternation whatsoever — a stronger guarantee than one simulated scenario could
+give. `test/shiftCover.test.ts` states this with real numbers (a representative 2.2/day Baker
+wage forfeits 1.32/day, i.e. 60%, every day) alongside the structural proof, honouring the
+addendum's "with numbers" instruction without pretending to simulate an action the model can't
+represent.
+
+Verified: `npm run typecheck` clean; new `test/shiftCover.test.ts` (12 tests) plus a
+regenerated tick-25 golden snapshot (Shift Cover's new RNG draws shift the deterministic
+sequence downstream, same expected class of change as item 6's snapshot regen). Full suite
+414 tests (up from 402).
 
 Status: **done**.

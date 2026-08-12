@@ -18,7 +18,7 @@ here on.
 
 ## Current state (as of 2026-08-12, end of session)
 
-**402 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**414 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
@@ -65,7 +65,7 @@ Phases D-F are not started.
    argued.
 6. **A 9-item Design Addendum from 2026-08-11 continues** (`docs/DESIGN_ADDENDUM_2026-08-11.md`)
    with build order 0/3 → 1-2 → 4-8 and scope discipline (role roster closed at six). **Items
-   0/3, 1, 2, 4, 5, and now 6 are done.** **Items 7, 8 are not started** — see below.
+   0/3, 1, 2, 4, 5, 6, and now 7 are done.** **Item 8 is not started** — see below.
 7. **Item 5 — no money: nodules as sole root input, closed loop.** `importExport.ts`
    refactored so `nodulesReceivedToday()` is the primary function and `grainDeliveredToday()`
    is derived from it (real code structure, not parallel prose). `resources.ts` tracks
@@ -85,6 +85,17 @@ Phases D-F are not started.
    measured that a literal debit would remove roughly a third of their COMBINED daily income,
    which is a new kind of mechanic outside this item's scope, not a fee line. See below and
    `docs/BLUEPRINT.md`'s "Item 6" entry for the full reasoning and what's left open.
+9. **Item 7 — Shift Cover**, closing the brief's long-open §2.6 (`engine/shiftCover.ts`).
+   Reshaped around this engine's real `BACKSTOPPED` state rather than the brief's original
+   player-session concept: any grifter can be probabilistically "noticed" covering a
+   BACKSTOPPED slot for one day, earning `SHIFT_COVER_FRACTION=0.4` of what that exact slot
+   would have earned genuinely FILLED that day — structurally, not just measured, always a
+   worse deal than holding the role, because the fraction is unconditionally under 1. The
+   coordinated-abuse case the addendum asks to prove net-negative "in simulation" has no
+   constructible player action to simulate (churn is a stochastic hazard, not a player
+   choice, anywhere in this engine) — proved the underlying economics exactly instead
+   (0.4x wage forfeits 60% of it, every single day, for any alternation pattern). See
+   `docs/BLUEPRINT.md`'s "Item 7" entry for the full reasoning.
 
 ### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
 
@@ -169,7 +180,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 402 tests
+npm test                              # 414 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -207,7 +218,7 @@ work below is about making what exists hold up, not adding to it. Resist the pul
 another role or system to solve a balance problem; the last several balance problems were
 solved by fixing a constant or a mechanism, not by adding anything.
 
-**0. FINISH THE ADDENDUM — items 7, 8 are not started (items 5 and 6 are now done).** This is
+**0. FINISH THE ADDENDUM — only item 8 is not started (items 5, 6, 7 are now done).** This is
 the live piece of work; everything else below is longer-horizon.
 `docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each. In its own build order:
 - ~~Item 5 — no money; nodules as the sole root input, closed conservation loop.~~ **Done
@@ -224,11 +235,15 @@ the live piece of work; everything else below is longer-horizon.
   from real geometry) rather than a literal Miller/Baker wealth debit, because the debit
   would remove ~1/3 of their combined income and is a new mechanic outside one item's scope.
   If a literal transfer is ever wanted, it needs its own calibration pass, not a quick patch.
-- **Item 7 — Shift Cover** (also closes Phase 2's long-open §2.6): player-initiated opt-in
-  coverage of an offline role-holder's slot. Nothing assigns/notifies/schedules it —
-  noticing is the skill being rewarded. Must be verified net-negative against the
-  coordinated-abuse case (two players alternating self-created gaps to farm each other's
-  slots) **in simulation, with numbers**, not assumed away.
+- ~~Item 7 — Shift Cover.~~ **Done 2026-08-12** — see `docs/BLUEPRINT.md`'s "Item 7" entry.
+  `engine/shiftCover.ts` reshapes it around this engine's real `BACKSTOPPED` state (rather
+  than the brief's original player-session concept, which this headless kernel still doesn't
+  have): a grifter can be probabilistically "noticed" covering a BACKSTOPPED slot for one day,
+  at `SHIFT_COVER_FRACTION=0.4` of that exact slot's real FILLED-that-day wage — structurally
+  always worse than holding the role (fraction < 1 by construction), not a separately-measured
+  rate. The coordinated-abuse case has no constructible player action to literally simulate in
+  this engine (churn is a hazard, never a player choice) — proved the underlying economics
+  exactly instead (0.4x wage forfeits 60% every single day, for any alternation pattern).
 - **Item 8 — two daily economic throttle windows** at ~10% output, economy only. Public,
   predictable, deterministic — deliberately the *opposite* rule from sabotage's covert
   hazard timing (see "covert mechanics must not run on learnable clocks" below; this is an
@@ -281,8 +296,7 @@ target; the sabotage model decision (act-based vs the simulated pattern-based pr
 this one now blocks a *second* thing, since item 4's Detective task had to use a friction bar
 rather than the addendum's own "catch a saboteur" example precisely because the pattern-based
 model isn't shipped); real Phase 4 rendering; Phase 5 voice/safety (hard-gated on legal
-review). Phase 2's §2.6 Shift Cover is no longer open-ended — it is now scoped as addendum
-item 7 above.
+review). Phase 2's §2.6 Shift Cover is **done** — see addendum item 7 above.
 
 ## Things to know before you touch this
 

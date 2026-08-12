@@ -339,7 +339,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 402 automated tests cover all of it.
+citations, and open questions left. 414 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -376,7 +376,13 @@ nodule→grain→flour→bread chain stays coherent. **Item 6 is also done**:
 Courier pay is now distance-indexed — the real Manhattan distance from a
 Courier's own district to the shard hub, calibrated against the actual
 measured geometry of the shipped district layout rather than the flat wage
-every support role used to share alike. A visual framework
+every support role used to share alike. **And item 7, Shift Cover, closes
+a gap the design has carried since Phase 2**: any community player can now
+be probabilistically "noticed" covering a role-slot nobody is actually
+staffing that day, earning a real but always-smaller share of what holding
+that role properly pays — an opportunity built entirely from the shard's
+existing mechanical-backstop state, needing no new concept of a player
+being online or offline. A visual framework
 (`docs/VISUAL_FRAMEWORK_2026-08-12.md`) also resolves where The Wall and The
 Market sit and how the Wall's ambient "Emissive Soul" mood should be
 computed — design only, not yet rendered anywhere.
@@ -388,14 +394,14 @@ mechanics are built on top of it), the Oracle, the private diary,
 face-to-face conversation, real Phase 4 visual rendering (today's client is
 plain text — it proves the wiring works, not what the world looks like),
 the voice/safety architecture, the Wall's Emissive Soul rendering itself,
-the remaining addendum items (shift cover, throttle windows), and the
+the one remaining addendum item (economic throttle windows), and the
 multi-shard ecosystem's actual playable form — the mechanics above
 are real and tested, but nothing about them is something a player can walk
 into yet.
 
 ```
 npm install
-npm test               # 402 tests
+npm test               # 414 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -419,7 +425,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (402 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (414 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
