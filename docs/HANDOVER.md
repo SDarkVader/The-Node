@@ -18,27 +18,71 @@ here on.
 
 ## Current state (as of 2026-08-11, end of session)
 
-**335 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**348 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
 the ecosystem-scale layer (economic floor, migration, sabotage, experience, districting),
-and Observatory Phases A-C (spatial primitive, unified `world.ts` kernel, synthetic
-drivers). Observatory Phases D-F are not started.
+Observatory Phases A-C (spatial primitive, unified `world.ts` kernel, synthetic drivers),
+and the 6-role roster + grifter pool / district consolidation / multi-shard registry /
+named resources / Import-Export-and-nodules work from earlier the same day. Observatory
+Phases D-F are not started.
 
-This session added, in order: the **6-role roster + grifter pool**, **district consolidation
-+ a multi-shard registry**, the **opportunity valve** (the population fix), **named per-role
-resources**, the **Import/Export role and nodules**, and a **joint grid search** that derived
-the shipped allocation. Each is summarised below.
+**This session, in order:**
+1. **Strengthened the grammar invariants** (`test/grammar.invariant.test.ts`) — closed a
+   real coverage gap (the old test's role-word blacklist missed 4 of 6 roles and all 84
+   shard-local titles), then added two rules the user specified directly in conversation, not
+   derived from the brief: **no identification signature** (a message may never resolve to a
+   specific person — no pronoun aimed at another player, no definite singular description,
+   no proper noun) and **no anaphora** (a message may never reference another message — no
+   "I feel that too" — which is how repeated agreement becomes a whip count without ever
+   naming anyone). Rewrote the imperative/interrogative/tense checks from word blacklists
+   (which go stale as vocabulary grows) to one structural rule: every sentence must open "I
+   ...". See `test/grammar.invariant.test.ts`'s own header for the full reasoning.
+2. **A 9-item Design Addendum arrived** (`docs/DESIGN_ADDENDUM_2026-08-11.md`, saved
+   verbatim) with an explicit build order (0/3 → 1-2 → 4-8) and scope discipline (role
+   roster stays closed at six; nothing in it adds a role, currency, or subsystem). **Items
+   0/3, 1, 2, and 4 are done** — see below and `docs/BLUEPRINT.md`'s entries for the full
+   reasoning on each. **Items 5-8 are not started.**
+
+### This session's addendum work, briefly (full reasoning in BLUEPRINT.md)
+
+- **Item 0/3 — District Weather** (`engine/districtWeather.ts`): wired a field
+  (`District.weatherHistory`) that had existed since Phase A but was permanently empty —
+  `world.ts` never wrote to it. `tension` derives from vacancy pressure + consolidation
+  state + same-day sabotage, decaying by distance, taking the strongest signal reaching a
+  district rather than summing.
+- **Item 1 — the Silhouette Shield** (`engine/identity.ts`): a real trigger for
+  `isKnown()`, fed from real rumour-hearing events (no per-player trade ledger exists to
+  trigger off instead — flagged, not invented). Deterministic procedural faces.
+- **Item 2 — Economic Heat** (`engine/economicHeat.ts`): pure rendering layer over
+  existing Miller/Baker/friction state — deliberately NOT stored on `World`, zero
+  determinism risk.
+- **Item 4 — uniform role completion** (`engine/roleCompletion.ts`): one attempt per
+  FILLED day, one career ratio, for all six roles. **Caught two real bugs by measuring
+  before trusting**: a flat reward-per-completion would have paid support roles ~1.9x
+  Miller/Baker's expected daily bonus (their tasks have very different natural completion
+  rates — 54-58% vs 97-100% — so reward had to be calibrated per role, not left flat); and
+  the reward was initially applied to Miller/Baker wealth AFTER `wealthCap`, silently
+  defeating a supposedly hard bound. Both fixed; see BLUEPRINT.md for the numbers.
+
+**A user idea logged but not built**: reputation-earned plaza statues, updating on real
+completion events — composes cleanly with constraint 4 (civic memory/monuments) and
+constraint 6 (additive-only reputation), and naturally keys off item 4's completion signal
+once that existed. Recorded in `docs/DESIGN_ADDENDUM_2026-08-11.md`'s "addendum to the
+addendum" section — not scoped or built, a real forward candidate for whenever roster/scope
+discipline allows revisiting rendering-layer work.
 
 ### The roles, and what each actually does economically
 
 **Miller** (Cournot quantity) and **Baker** (Bertrand price) keep their original validated
-market mechanics. **Courier, Journalist, Detective** have no differentiated market mechanic
-designed anywhere in the project — they share a flat `SUPPORT_ROLE_DAILY_WAGE`, an
-explicitly flagged placeholder. **Import/Export** receives nodules daily and automatically
-(no player action — "automated to the miller if offline"), converting them to grain, which
-Millers now genuinely require in order to mill.
+market mechanics. **Courier, Journalist, Detective** still share a flat
+`SUPPORT_ROLE_DAILY_WAGE` as their base wage — but as of item 4 that is no longer the
+*whole* story: all six roles now also earn a per-role-calibrated completion reward on top,
+so holding a role well is finally distinguishable from merely occupying it (see item 4
+above). **Import/Export** receives nodules daily and automatically (no player action —
+"automated to the miller if offline"), converting them to grain, which Millers now genuinely
+require in order to mill.
 
 **Grifters** are roleless community players — the newbie, the camper, the socially isolated.
 Individually tracked (`GrifterSlot: { id, wealth, daysAsGrifter, consolidationDeadline? }`),
@@ -84,7 +128,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 335 tests
+npm test                              # 348 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -122,23 +166,54 @@ work below is about making what exists hold up, not adding to it. Resist the pul
 another role or system to solve a balance problem; the last several balance problems were
 solved by fixing a constant or a mechanism, not by adding anything.
 
+**0. FINISH THE ADDENDUM — items 5, 6, 7, 8 are not started.** This is the live piece of
+work; everything else below is longer-horizon. `docs/DESIGN_ADDENDUM_2026-08-11.md` has the
+full brief for each. In its own build order:
+- **Item 5 — no money; nodules as the sole root input, closed conservation loop.** The
+  largest of the four and explicitly the riskiest: it makes the supply chain *longer*
+  (nodule→grain→flour→bread), and the addendum requires extending the hard-filter coherence
+  check across the whole chain, treating a break as a build failure. Resources stay
+  non-fungible and role-locked — no generic currency, no universal exchange, no common
+  "value" field, or money has been reinvented with extra steps.
+- **Item 6 — courier pay: distance/time only, never cargo value**, paid by whoever
+  commissioned the delivery. Removes the collusion incentive structurally rather than by
+  policing intent. Geography is the expansion cap; don't add a second artificial one.
+- **Item 7 — Shift Cover** (also closes Phase 2's long-open §2.6): player-initiated opt-in
+  coverage of an offline role-holder's slot. Nothing assigns/notifies/schedules it —
+  noticing is the skill being rewarded. Must be verified net-negative against the
+  coordinated-abuse case (two players alternating self-created gaps to farm each other's
+  slots) **in simulation, with numbers**, not assumed away.
+- **Item 8 — two daily economic throttle windows** at ~10% output, economy only. Public,
+  predictable, deterministic — deliberately the *opposite* rule from sabotage's covert
+  hazard timing (see "covert mechanics must not run on learnable clocks" below; this is an
+  overt civic timer, and the contrast is intentional). Implement as a scheduled multiplier
+  on existing market equations, not a new subsystem.
+
+Then the addendum's **"report back explicitly on"** questions, which are the actual
+acceptance criteria and need real numbers: does the closed nodule loop balance long-run or
+accumulate/starve; is coordinated slot-farming genuinely net-negative; do cross-role
+completion rewards land at real parity (item 4's hard-filter test already answers a version
+of this — extend it if item 5 changes reward flows); does identity resolution produce a
+meaningful core-vs-periphery difference or one too small to feel.
+
 **1. Answer the research questions that simulation cannot.** See
 `docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to
 us, because **the simulation models compliance as certain** — conscripted players always
 accept, grifters always wait, displaced players always take the new role. Nothing in the
 model can output "the player just quit". Question 1 (how long will someone tolerate having
 no role — we currently make them wait ~22 days mean, 100+ worst case) is the single largest
-untested assumption in the design.
+untested assumption in the design, and the addendum explicitly does not address it.
 
 **2. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
 draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
 per-player postcard holdings. The last placeholder in an otherwise complete mechanic.
 
-**3. Courier/Journalist/Detective share one flat wage.** They produce differentiated
-resources (parcels/stories/leads) that nothing consumes yet. This is *deepening three
-existing roles*, not expanding the roster — but it is also the easiest place to accidentally
-over-build, so keep it to whatever makes them distinct and fun to hold, not a full economy
-each.
+**3. Courier/Journalist/Detective's differentiated resources still feed nothing.** Item 4
+gave all six roles a real completion signal and reward, so "nothing distinguishes holding
+the role well" is **resolved** — but parcels/stories/leads are still produced and tracked
+with no consumer. Item 5's closed loop is the natural place to decide whether they should
+have one. Easiest place in the project to accidentally over-build; keep it to whatever makes
+them distinct and fun to hold, not a full economy each.
 
 **4. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ
 in name and local role framing (`engine/shardIdentity.ts`, `npm run shard-identity-report`) —
@@ -156,9 +231,12 @@ permanently friction-penalised, rather than relocating capacity into a surviving
 monuments) — not started.
 
 **Still open from before, unchanged:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8 week
-target; the sabotage model decision (act-based vs the simulated pattern-based proposal);
-Phase 2's §2.6 Shift Cover; real Phase 4 rendering; Phase 5 voice/safety (hard-gated on legal
-review).
+target; the sabotage model decision (act-based vs the simulated pattern-based proposal — note
+this one now blocks a *second* thing, since item 4's Detective task had to use a friction bar
+rather than the addendum's own "catch a saboteur" example precisely because the pattern-based
+model isn't shipped); real Phase 4 rendering; Phase 5 voice/safety (hard-gated on legal
+review). Phase 2's §2.6 Shift Cover is no longer open-ended — it is now scoped as addendum
+item 7 above.
 
 ## Things to know before you touch this
 
@@ -183,6 +261,35 @@ single `SelfState` — ten first-person feelings, no free text, no subject, no t
 reference. Tapping every private channel yields a distribution of moods, never intentions.
 Adding free text or a subject slot for "expressiveness" would convert direct channels into an
 information-brokering vector; treat that request as a containment change, not a UX one.
+
+**The grammar's safety is STRUCTURAL, not scarcity — which is why the vocabulary can grow.**
+The user has said vocabulary WILL expand (envelopes, voice, the Wall). That is fine, and
+`test/grammar.invariant.test.ts` is what makes it safe: it enforces sentence *shapes* against
+the whole template table, derived from source, rather than blacklisting today's ten entries.
+Three rules there are load-bearing and must survive any expansion:
+- **No external identification signature.** A message may never carry a referent that
+  *resolves* to a specific person — no pronoun aimed at another player, no definite singular
+  description ("the one I met"), no proper noun, no handle. This holds regardless of what the
+  sender knows. It is the mechanical form of constraint 4 (remove the referent and no private
+  dossier can be built, because nothing is captured), and what makes constraint 6 enforceable
+  (the way you bury someone is by naming them to third parties).
+- **No anaphora — no message may reference another message.** "I feel that too" is not a
+  self-state, it's a *vote* on someone else's, and a chain of votes is a whip count built
+  without ever naming anyone. Enforced lexically AND structurally: `WallPost`/`Envelope` are
+  proven to carry no reply/thread/parent field, plus a source-level grep guard, because the
+  other way to build a whip count is a `replyTo` field the client renders as "N people agreed."
+- **Every sentence opens "I ..."** — which structurally excludes imperatives (can't instruct
+  an ally) and interrogatives (can't ask a direct question), and stays true however many verbs
+  the vocabulary gains. This replaced word blacklists, which go stale by construction.
+
+**Known open hole in the above, flagged not solved: role-reference cardinality.** The design
+intends role-level reference to become sayable eventually, gated on relationship-earned
+reputation ("the courier is being difficult"). That is only safe when the role has enough
+occupants to not resolve to a person — and Miller scarcity is a *design pillar*, so at k=1
+"the Miller" IS a name, by elimination, and no linguistic dressing fixes it. Any future role
+vocabulary needs a mechanical **k-anonymity guard** (only emittable when the referenced role
+has ≥k live occupants in the recipient's visible scope), not just a reputation gate. No role
+vocabulary exists yet; the base grammar bans all role words outright and a test proves it.
 
 **The untouchable floor protects the powerful player as much as everyone else** — read
 `docs/ADVERSARIAL_CONTAINMENT.md`'s closing section before ever weakening constraint 2 or 6
@@ -243,9 +350,33 @@ collapsing shards giving identical results. The working fix smooths the signal f
 EMA), then applies the unchanged tipping point. **Irreversibility is untouched** — only the
 definition of "passed a tipping point" changed, from one bad day to sustained decline.
 
+**A completion reward must never be applied outside the taxed/capped income flow.** Found and
+fixed while building item 4: the reward was first added to Miller/Baker wealth *after*
+`applyWealthCap`, so a wealth-capped world could exceed its own cap by one reward per tick —
+a silent hole through a supposedly hard bound. It is now folded into the income flow itself,
+before tax and cap, like every other unit of Miller/Baker income. Any future bonus, grant, or
+payout on those two roles must go in at the same place. (The four support roles are outside
+tax/cap scope entirely, so theirs applies directly to wealth — that asymmetry is deliberate
+and commented at both sites.)
+
+**Structural parity is not the same as realized parity — measure it.** Item 4's first design
+gave every role one attempt per FILLED day and one flat reward, which *looks* like equal
+opportunity by construction. Measured, it wasn't: Miller/Baker's task is zero-sum against
+rivals (~54-58% completion) while the support roles' friction-bar task completes ~97-100% on
+a healthy shard, so a flat reward paid support roles ~1.9x. `COMPLETION_REWARD` is calibrated
+per role type as a result, and `test/roleCompletion.test.ts`'s hard filter (+-30% band around
+the cross-role mean) is what keeps it honest — the same role `flourRatio <= 1.0` plays for
+the supply chain. Re-measure it if any task's completion condition or the role counts change.
+
 **Other standing notes:**
 - `multiRoleConscription.ts` is a NEW function; the old 2-role `stepConscriptionDay` is
   untouched and still covered by its own tests. Don't merge them without checking both.
+- `engine/economicHeat.ts` is deliberately NOT on `World` and NOT called by `stepWorld` — it
+  is a pure projection over a `World` snapshot, so it cannot affect determinism or tick
+  order. Keep it that way; if it ever needs to be stored, that is a real design decision.
+- `engine/shardIdentity.ts` and now `engine/economicHeat.ts` are both consumed *outward*
+  only. The `drivers.importGuard.test.ts` pattern (structurally proving a module isn't
+  imported where it shouldn't be) exists for exactly this class of guarantee.
 - `vacancyParamsFor`'s `N` uses live `world.population`, not the static target (fixed this
   session). This makes single-shard collapse look worse in isolation — expected, not a
   regression; the multi-shard registry is the actual fix.
