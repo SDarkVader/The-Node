@@ -11,6 +11,7 @@ import {
 import { BACKSTOP_PRODUCTIVITY } from '../src/engine/ecosystem.js';
 import { flourPrice } from '../src/engine/millers.js';
 import { giniCoefficient, SUPPORT_ROLE_DAILY_WAGE, GRIFTER_DAILY_INCOME, DAILY_ACTIVITY_MULTIPLIER } from '../src/engine/wealth.js';
+import { COMPLETION_REWARD } from '../src/engine/roleCompletion.js';
 
 /**
  * Regression tests for Phase B of the Observatory build spec (`src/world/world.ts`).
@@ -573,18 +574,25 @@ describe('stepWorld — grifter income floor and daysAsGrifter wait-time trackin
 });
 
 describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () => {
-  it('a FILLED support-role slot accrues exactly SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day', () => {
+  it('a FILLED support-role slot accrues SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day, plus a completion bonus when it clears the friction bar', () => {
+    // A freshly created world has every district ACTIVE (friction === 1), which always
+    // clears roleCompletion.ts's SUPPORT_TASK_FRICTION_BAR (0.9) — so on day 1 the
+    // completion bonus is not just possible but deterministic, and belongs in the exact
+    // expected total rather than a tolerance (Design Addendum item 4, 2026-08-11).
     let world = createWorld(1);
     const before = { c: world.couriers.map((c) => c.wealth), j: world.journalists.map((j) => j.wealth), d: world.detectives.map((d) => d.wealth) };
     world = stepWorld(world);
     world.couriers.forEach((c, i) => {
-      if (c.slot.state === 'FILLED') expect(c.wealth).toBeCloseTo(before.c[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+      if (c.slot.state === 'FILLED')
+        expect(c.wealth).toBeCloseTo(before.c[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.courier, 10);
     });
     world.journalists.forEach((j, i) => {
-      if (j.slot.state === 'FILLED') expect(j.wealth).toBeCloseTo(before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+      if (j.slot.state === 'FILLED')
+        expect(j.wealth).toBeCloseTo(before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.journalist, 10);
     });
     world.detectives.forEach((d, i) => {
-      if (d.slot.state === 'FILLED') expect(d.wealth).toBeCloseTo(before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER, 10);
+      if (d.slot.state === 'FILLED')
+        expect(d.wealth).toBeCloseTo(before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.detective, 10);
     });
   });
 
@@ -599,12 +607,16 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         const wasFilled = before[idx]!.slot.state === 'FILLED';
         const isFilled = world.couriers[idx]!.slot.state === 'FILLED';
         if (!wasFilled && isFilled) {
-          // Reset to 0, then this same day's wage accrues on top — bounded above by one
-          // day's SUPPORT_ROLE_DAILY_WAGE (trade-route friction can only ever reduce it,
-          // never exceed the base rate — see districtConsolidation.ts), and strictly
-          // positive, not some larger carried-forward balance from a previous occupant.
+          // Reset to 0, then this same day's wage accrues on top, plus a possible
+          // completion bonus if this district's friction clears the bar today — bounded
+          // above by one day's SUPPORT_ROLE_DAILY_WAGE (trade-route friction can only ever
+          // reduce it, never exceed the base rate — see districtConsolidation.ts) plus
+          // COMPLETION_REWARD.courier, and strictly positive, not some larger
+          // carried-forward balance from a previous occupant.
           expect(world.couriers[idx]!.wealth).toBeGreaterThan(0);
-          expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + 1e-9);
+          expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(
+            SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.courier + 1e-9,
+          );
           checkedReset = true;
         }
       }

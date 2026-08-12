@@ -7,75 +7,75 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.6945053649948267,
-      "wealth": 4.1602265134338605,
+      "wealth": 7.660226513433861,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.6702482428075116,
-      "wealth": 4.063999450934903,
+      "wealth": 11.063999450934903,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.6911616052449897,
-      "wealth": 3.907475954718063,
+      "wealth": 12.907475954718063,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.6878228267441606,
-      "wealth": 4.052600762666343,
+      "wealth": 10.052600762666343,
     },
     {
       "exp": 0.17,
       "state": "FILLED",
       "value": 0.6903823711239641,
-      "wealth": 2.5252341367295754,
+      "wealth": 8.525234136729576,
     },
   ],
   "courierValues": [
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "BACKSTOPPED",
-      "wealth": 14.700000000000003,
+      "wealth": 18.619999999999994,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
   ],
   "detectiveValues": [
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "BACKSTOPPED",
-      "wealth": 14.700000000000003,
+      "wealth": 18.619999999999994,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
   ],
   "economicHealth": 0.9142857142857144,
@@ -87,37 +87,37 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "importExportValues": [
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
   ],
   "journalistValues": [
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
-      "wealth": 26.25000000000001,
+      "wealth": 33.250000000000014,
     },
   ],
   "millerValues": [
@@ -131,30 +131,30 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "exp": 0.5,
       "state": "BACKSTOPPED",
       "value": 0.5279836824854629,
-      "wealth": 2.255772503252895,
+      "wealth": 7.755772503252894,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.49978907794193045,
-      "wealth": 4.233099951884479,
+      "wealth": 7.233099951884477,
     },
     {
       "exp": 0.5,
       "state": "BACKSTOPPED",
       "value": 0.5043223204814031,
-      "wealth": 2.261852764030239,
+      "wealth": 8.261852764030237,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
       "value": 0.49371905592673804,
-      "wealth": 4.239478475449369,
+      "wealth": 7.239478475449369,
     },
   ],
   "population": 54,
   "tick": 25,
-  "wealthGini": 0.38227682598402524,
-  "wealthTop10Share": 0.19514367546221714,
+  "wealthGini": 0.3907639409417374,
+  "wealthTop10Share": 0.20223059015509798,
 }
 `;

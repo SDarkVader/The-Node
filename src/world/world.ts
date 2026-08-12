@@ -86,6 +86,16 @@ import {
 } from '../engine/districtConsolidation.js';
 import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
 import { emptyIdentityLedger, recordEncounter, type IdentityLedger } from '../engine/identity.js';
+import {
+  emptyCompletionStats,
+  recordAttempt,
+  averageRivalValue,
+  millerTaskCompleted,
+  bakerTaskCompleted,
+  supportTaskCompleted,
+  COMPLETION_REWARD,
+  type CompletionStats,
+} from '../engine/roleCompletion.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
 import { stepBakers } from '../engine/bakers.js';
 import {
@@ -347,6 +357,11 @@ export interface World {
    *  by `player.ts`'s `isKnown()` directly — derive an observer's known-set via
    *  `identity.ts`'s `resolvedSubjects()` first. */
   identityLedger: IdentityLedger;
+  /** Design Addendum item 4 (2026-08-11) — uniform role-completion career stats, keyed by
+   *  buildingId (the same identity granularity every other per-slot map in this file
+   *  already uses). Reset to empty the moment a slot is freshly (re)FILLED — see
+   *  engine/roleCompletion.ts's header. */
+  completionStats: Readonly<Record<string, CompletionStats>>;
 }
 
 /**
@@ -510,6 +525,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastRumourEvents: [],
     lastSabotage: null,
     identityLedger: emptyIdentityLedger(),
+    completionStats: {},
   };
 }
 
@@ -966,22 +982,57 @@ export function stepWorld(world: World): World {
     return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(b.buildingId);
   });
 
+  // ---- Stage 3a-2: role completion, Miller/Baker half (2026-08-11, item 4) -------------
+  // Folded into the income FLOW here (not applied to wealth directly further down), so a
+  // completion bonus is taxed/redistributed and wealth-capped exactly like every other
+  // wealth increment — applying it after either step would silently poke a hole through a
+  // supposedly hard bound, or dodge a tax every other unit of income pays. See
+  // roleCompletion.ts's header for why each role's completion condition is what it is; the
+  // support-role half of this same stats object is completed further down (Stage 3c), after
+  // their own wage accrual, since wealthCap/tax never apply to those four roles anyway.
+  const completionStatsWorking: Record<string, CompletionStats> = { ...world.completionStats };
+  const resetCompletionIfJustFilled = (buildingId: string, justFilled: Set<string>) => {
+    if (justFilled.has(buildingId)) completionStatsWorking[buildingId] = emptyCompletionStats();
+  };
+
+  const millerValuesForCompletion = millers.map((m) => m.value);
+  const millerCompleted = millers.map((m, i) => {
+    if (m.slot.state !== 'FILLED') return false;
+    resetCompletionIfJustFilled(m.buildingId, millerJustFilled);
+    const completed = millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i));
+    completionStatsWorking[m.buildingId] = recordAttempt(completionStatsWorking[m.buildingId] ?? emptyCompletionStats(), completed);
+    return completed;
+  });
+  const bakerValuesForCompletion = bakers.map((b) => b.value);
+  const bakerCompleted = bakers.map((b, i) => {
+    if (b.slot.state !== 'FILLED') return false;
+    resetCompletionIfJustFilled(b.buildingId, bakerJustFilled);
+    const completed = bakerTaskCompleted(b.value, averageRivalValue(bakerValuesForCompletion, i));
+    completionStatsWorking[b.buildingId] = recordAttempt(completionStatsWorking[b.buildingId] ?? emptyCompletionStats(), completed);
+    return completed;
+  });
+  const millerIncomesWithCompletion = millerIncomes.map((inc, i) => (millerCompleted[i] ? inc + COMPLETION_REWARD.miller : inc));
+  const bakerIncomesWithCompletion = bakerIncomes.map((inc, i) => (bakerCompleted[i] ? inc + COMPLETION_REWARD.baker : inc));
+
   // Income is computed as a flow first (0 for non-FILLED slots), optionally taxed and
   // redistributed across the combined Miller+Baker FILLED pool (one shared pool, not two
   // separate ones — matches "daily resource allocation" as untargeted and unconditional),
   // THEN accrued onto wealth. The wealth cap, if enabled, then bounds the resulting stock.
   // Both are PROPOSALS, simulated and reported in docs/BLUEPRINT.md, neither shipped as a
   // default, and deliberately scoped to Miller+Baker only — see this file's header note.
-  let finalMillerIncomes = millerIncomes;
-  let finalBakerIncomes = bakerIncomes;
+  let finalMillerIncomes = millerIncomesWithCompletion;
+  let finalBakerIncomes = bakerIncomesWithCompletion;
   if (config.wealthTaxRate > 0) {
     const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
     const bakerFilledIdx = bakers.map((b, i) => (b.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
-    const combinedIncomes = [...millerFilledIdx.map((i) => millerIncomes[i]!), ...bakerFilledIdx.map((i) => bakerIncomes[i]!)];
+    const combinedIncomes = [
+      ...millerFilledIdx.map((i) => millerIncomesWithCompletion[i]!),
+      ...bakerFilledIdx.map((i) => bakerIncomesWithCompletion[i]!),
+    ];
     if (combinedIncomes.length > 0) {
       const afterTax = taxAndRedistributeIncome(combinedIncomes, config.wealthTaxRate);
-      finalMillerIncomes = [...millerIncomes];
-      finalBakerIncomes = [...bakerIncomes];
+      finalMillerIncomes = [...millerIncomesWithCompletion];
+      finalBakerIncomes = [...bakerIncomesWithCompletion];
       millerFilledIdx.forEach((idx, k) => {
         finalMillerIncomes[idx] = afterTax[k]!;
       });
@@ -1040,6 +1091,37 @@ export function stepWorld(world: World): World {
       grainAvailable,
     ),
   );
+
+  // ---- Stage 3c: role completion, support-role half (2026-08-11, item 4) ---------------
+  // Same completionStatsWorking object the Miller/Baker half above already started —
+  // continues it rather than keeping two separate ledgers. Placed after the support wage
+  // accrual above (Stage 3), since wealthCap never applies to these four roles — no
+  // ordering hazard to guard against here the way there was for Miller/Baker.
+  {
+    // No tax/cap system touches these four roles at all (see header scoping note above),
+    // so — unlike the Miller/Baker half — applying the reward straight to wealth here,
+    // rather than folding it into a taxed/capped income flow, is not a hole through
+    // anything: there is no bound here for it to poke through.
+    const grantIfTaskCompleted = <T extends { wealth: number }>(slot: T, completed: boolean, reward: number): T =>
+      completed ? { ...slot, wealth: slot.wealth + reward } : slot;
+    const supportRoleCompletion = <T extends { slot: RoleSlot; buildingId: string; wealth: number }>(
+      arr: T[],
+      justFilled: Set<string>,
+      reward: number,
+    ): T[] =>
+      arr.map((s) => {
+        if (s.slot.state !== 'FILLED') return s;
+        resetCompletionIfJustFilled(s.buildingId, justFilled);
+        const completed = supportTaskCompleted(frictionFor(s.buildingId));
+        completionStatsWorking[s.buildingId] = recordAttempt(completionStatsWorking[s.buildingId] ?? emptyCompletionStats(), completed);
+        return grantIfTaskCompleted(s, completed, reward);
+      });
+    couriers = supportRoleCompletion(couriers, courierJustFilled, COMPLETION_REWARD.courier);
+    journalists = supportRoleCompletion(journalists, journalistJustFilled, COMPLETION_REWARD.journalist);
+    detectives = supportRoleCompletion(detectives, detectiveJustFilled, COMPLETION_REWARD.detective);
+    importExporters = supportRoleCompletion(importExporters, importExportJustFilled, COMPLETION_REWARD.importExport);
+  }
+  const completionStats: Readonly<Record<string, CompletionStats>> = completionStatsWorking;
 
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
   // Sabotage-before-arrival order matches design/tick_order_check.py's own validated
@@ -1264,5 +1346,6 @@ export function stepWorld(world: World): World {
     lastRumourEvents,
     lastSabotage,
     identityLedger,
+    completionStats,
   };
 }
