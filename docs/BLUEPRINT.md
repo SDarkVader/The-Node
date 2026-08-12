@@ -2354,3 +2354,154 @@ whole feature exists to produce, checked against simulation rather than asserted
 formula alone.
 
 Status: **done**. 310 tests total, typecheck clean.
+
+### Item 1 — the Silhouette Shield: a real trigger for `isKnown()`, plus deterministic faces
+
+`src/engine/player.ts`'s `isKnown(subject, knownByObserver)` was a binary lookup with no rule
+for what populates an observer's known-set — correct in shape (its own test file already
+documented "not symmetric by construction — only reflects the observer's own set"), but
+nothing decided what belonged in that set. `isKnown()` itself is untouched; item 1 gives it a
+trigger, in a new `src/engine/identity.ts`.
+
+**Which real event feeds it, decided explicitly, not left implicit**: the addendum offers two
+triggers — "verified trade history... (a threshold number of completed transactions)," or
+"an established relationship already recorded in existing state." No per-player buyer/seller
+transaction ledger exists anywhere in this build — the market layer
+(`millers.ts`/`bakers.ts`/`wealth.ts`) is aggregate, never counterparty-tagged (a Baker
+"serves N customers" as a count, not specific ids) — so building one from scratch here would
+have been exactly the "new subsystem" the addendum's own scope discipline flags as a sign an
+item has been misread. Used the second trigger instead: `world.ts`'s `RumourEventLite`
+(`heardBy` heard something FROM `heardFrom`) is real, per-tick, already-recorded state, and —
+unlike proximity co-presence, which is symmetric by definition and so cannot produce
+asymmetric resolution on its own — genuinely directional: the hearer learns something about
+the source, the source does not automatically learn who heard.
+
+**`IdentityLedger`** — directional per-observer encounter counts (`observer -> subject ->
+count`), asymmetric by construction. `recordEncounter`/`encounterCount`/`resolvedSubjects`
+(threshold-crossing, default `IDENTITY_RESOLUTION_THRESHOLD = 5`) are pure, immutable-update
+functions in the same style as every other engine module. `resolvedSubjects()` is exactly the
+known-set `isKnown()` expects — composes directly, no adapter needed.
+
+**Density-gradient consequence preserved for free**: rumour propagation already runs over
+`comms/connections.ts`'s proximity graph, denser in core districts (`space.ts`'s
+`coreSpacing` vs `peripherySpacing`) — so resolution happens faster in the core without a
+second mechanic computing that on purpose, exactly the "safety of the crowd" effect the
+addendum asked for.
+
+**Deterministic procedural faces**: `generateFace(playerId)` seeds `mulberry32` (the same
+PRNG every other deterministic system here uses) from an FNV-1a hash of the id — same id
+always produces the same face for every observer who has resolved them, no art pipeline, no
+uploads, no user-configurable appearance (explicitly rejected: configurability is a
+combinatorial identity-management problem the design does not want).
+
+**Wired into `world.ts`**: new `World.identityLedger` field, folded from real
+`lastRumourEvents` each tick (`recordEncounter(ledger, event.heardBy, event.heardFrom)`).
+
+Verified: `test/identity.test.ts`, 17 tests, including an end-to-end integration check that
+repeated real rumour-hearing resolves the hearer toward the source while leaving the source's
+own ledger about the hearer untouched — the asymmetry the addendum requires, checked against
+a real `stepWorld` run, not just the ledger functions in isolation.
+
+Status: **done**. 327 tests total (at the time), typecheck clean.
+
+### Item 2 — Economic Heat: pure rendering layer, zero determinism risk
+
+Pure presentation over data that already exists in `millers.ts`/`bakers.ts`/
+`districtConsolidation.ts`. No new game logic, no new hidden modifiers — and deliberately
+**not** stored on `World` or touched by `stepWorld` at all: `src/engine/economicHeat.ts`'s
+`computeEconomicHeat(world)` is a read-only projection a renderer or report script calls
+against a `World` snapshot (the same relationship `sim/resourceReport.ts` already has with
+`World.resources`), so it cannot affect determinism, tick order, or any existing test — the
+safest way to satisfy "pure rendering" as a design property, not just a description.
+
+`heat` (0 cool/calm .. 1 warm/tense — the same scale District Weather's `tension` uses,
+deliberately, since both feed the same visual contract) tracks economic PRESSURE, per the
+addendum's own stated purpose ("a player should be able to *read* scarcity from the plaza
+rather than computing it from numbers"), not raw throughput:
+- **Miller/Baker**: own already-existing `value` (Cournot quantity, clipped [0.01,1] by
+  `millers.ts`; Bertrand price, clipped [0,2] by `bakers.ts`, normalized to that same
+  ceiling) — "station-level output visibility," literally, per-building.
+- **Courier/Journalist/Detective/Import-Export** (no differentiated per-slot market value):
+  `1 - consolidationFrictionMultiplier` for the building's own district — reusing
+  `districtConsolidation.ts`'s real degradation signal for a second, different purpose than
+  District Weather uses it for (item 4's role-completion friction bar is the third reuse).
+- VACANT/BACKSTOPPED slots and role-less buildings read 0 — no occupant, nothing to show,
+  same "missing reads as absent" convention `districtWeather.ts` established.
+
+`districtEconomicHeat(world, heat)` is the district-level "plaza" aggregate (mean of that
+district's own buildings) — the addendum's "foot traffic density" framing.
+
+Verified: `test/economicHeat.test.ts`, 8 tests, including one proving a support-role building
+reads measurably hotter once its district is actually degraded (not just algebraically
+plausible), and one proving the function never mutates or depends on anything beyond the
+`World` snapshot passed in.
+
+Status: **done**. 335 tests total (at the time), typecheck clean.
+
+### Item 4 — uniform role completion across all six roles
+
+Closes the gap the handover had flagged: Courier, Journalist and Detective shared one flat
+`SUPPORT_ROLE_DAILY_WAGE` with nothing distinguishing holding the role well from merely
+occupying it. `src/engine/roleCompletion.ts` gives all SIX roles one attempt per FILLED day,
+one career ratio (`completions / attempts` — the addendum's explicit "career ratio, not
+per-attempt" instruction), and one reward mechanism — structure uniform, content
+role-specific, and only where a real already-modeled mechanic gives it something genuine to
+differ on:
+- **Miller/Baker**: a real, already-computed rival comparison. `averageRivalValue(values,
+  index)` reproduces the "average of the OTHER n-1 entries" `millers.ts`/`bakers.ts` already
+  compute internally. Miller completes by out-producing the field (`ownQuantity >
+  avgRivalQuantity`); Baker by pricing at or below it (`ownPrice <= avgRivalPrice` — a tie
+  counts, since matching the field's price is a real competitive outcome, unlike a tie in
+  quantity).
+- **Courier/Journalist/Detective/Import-Export**: no differentiated market mechanic exists
+  anywhere in this project for these four (see `world.ts`'s own header), so their only real
+  per-tick, role-differentiated signal is trade-route friction against their own district —
+  the same primitive `economicHeat.ts` (item 2) already reuses for a different purpose.
+  Uniformly "beat your district's friction bar today" (`SUPPORT_TASK_FRICTION_BAR = 0.9`),
+  differentiated only by which named resource keeps accruing alongside it — "different only
+  in content," per the addendum.
+
+**Flagged honestly, not silently narrowed**: the addendum's own illustrative Detective
+example — "investigating a sabotage pattern that is genuinely running" — describes the
+UNSHIPPED pattern-based sabotage proposal (`sim/sabotagePattern.proposal.ts`), not the
+shipped `world.ts` sabotage mechanic, which has no Detective-specific detection term at all
+(`ecosystem.ts`'s `detectionProbability` depends only on witness count). A literal "catch a
+saboteur" task would have meant either shipping that unshipped proposal (a different,
+undecided change) or inventing a synthetic Detective-only event the shipped model can't
+verify. Built the honest choice against what actually exists; revisit if the sabotage
+proposal ever ships.
+
+**Reward calibration — measured, not guessed, per constraint 1**: reward is wealth ("wealth
+stays a scoreboard," per the addendum), not a second currency. A single flat
+reward-per-completion was the first thing tried, on the reasoning that "one attempt per
+FILLED day, one constant" gives structural parity for free — measured against the shipped
+config before trusting that reasoning (scratchpad sweep, 1000 days x 5 seeds), and it failed:
+Miller/Baker's zero-sum task completes ~54-58% of days; the friction-bar task, ~97-100%,
+because a healthy shard sits at friction=1 almost always — there is no scarcity forcing that
+completion rate toward 50% the way Cournot/Bertrand competition does. A flat reward would
+have paid support roles roughly 1.7-1.9x the expected daily bonus for a genuinely easier
+task — precisely the kind of silent disparity `flourRatio`'s three-strikes history is the
+standing warning about. `COMPLETION_REWARD` is calibrated PER ROLE TYPE instead (`miller:
+0.5, baker: 0.5, courier/journalist/detective/importExport: 0.28`) so expected DAILY reward
+converges (~0.27-0.29 across all six), not reward-per-completion.
+
+**A real bug found and fixed while wiring this in**: the reward was first applied to
+Miller/Baker wealth AFTER `wealthCap`, silently poking a hole through a supposedly hard
+bound — a wealth-capped world could still exceed the cap by up to one completion reward per
+tick. Fixed by folding the completion bonus into the same taxed/capped income flow every
+other unit of Miller/Baker income already goes through, so it is bounded and taxed exactly
+like everything else, not a side channel.
+
+**Required test discipline, not a design promise, per the addendum's own words**: a hard
+filter test (`test/roleCompletion.test.ts`, same spirit as `flourRatio <= 1.0`) measures
+real per-role completion rates from a `stepWorld` run and asserts expected daily reward stays
+within +-30% of the cross-role mean — tight enough to have caught the flat-reward failure
+(which measured ~1.9x outside this band), loose enough to tolerate ordinary run-to-run
+simulation noise.
+
+Verified: `test/roleCompletion.test.ts`, 13 tests (unit + integration + the hard filter),
+plus updates to `test/world.regression.test.ts`'s support-wage tests (now account for the
+completion bonus) and its snapshot (wealth totals genuinely shifted — a deliberate,
+documented change, not drift).
+
+Status: **done**. 348 tests total, typecheck clean.
