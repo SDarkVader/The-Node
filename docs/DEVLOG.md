@@ -14,6 +14,12 @@ used the addendum's other offered signal instead of inventing a new subsystem). 
 `generateFace()`, seeded from player id. 17 tests, asymmetry verified end-to-end through a
 real `stepWorld` run. 327 tests total.
 
+**Item 2 (Economic Heat)**: `engine/economicHeat.ts` — pure projection function, deliberately
+NOT stored on `World`/`stepWorld` (zero determinism risk). Miller/Baker heat = own existing
+value normalized; support roles = `1 - consolidationFrictionMultiplier` for their district.
+8 tests. Also fixed stale test-count mentions (233/266 -> 335) in README/HANDOVER, caught by
+the user mid-sprint. 335 tests total.
+
 ---
 
 ## 2026-08-11 — Design Addendum received; item 0/3 (District Weather) wired first, as instructed
