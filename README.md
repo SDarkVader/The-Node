@@ -339,21 +339,39 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 335 automated tests cover all of it.
+citations, and open questions left. 348 automated tests cover all of it.
+
+Since then, a design addendum has added four more tested mechanics. **District
+Weather** gives every district a real per-tick tension reading derived from
+its own vacancy pressure, consolidation state, and same-day sabotage,
+thinning with distance — the field it writes to had existed in the code for
+days but nothing had ever written to it. The **Silhouette Shield** gives
+identity resolution a real trigger: an unknown player is a silhouette until
+enough genuine shared history accumulates, per-pair and asymmetric (you
+knowing someone doesn't mean they know you), with deterministic procedural
+faces seeded from player id. **Economic Heat** turns existing market and
+trade-friction state into something readable at a glance rather than
+computed from numbers, as a pure projection that can't affect the
+simulation. And **role completion** finally distinguishes holding a role
+well from merely occupying it, uniformly across all six roles — with a hard
+test enforcing that the reward lands at real parity across them, which
+caught the first attempt paying some roles nearly twice what others got.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
-uses the same "visible before forced" principle), the Oracle, the private
-diary, face-to-face conversation, real Phase 4 visual rendering (today's
-client is plain text — it proves the wiring works, not what the world looks
-like), the voice/safety architecture, the Import/Export role (moving goods
-and people between shards, mid-design, not started), and the multi-shard
-ecosystem's actual playable form — the mechanics above are real and tested,
-but nothing about them is something a player can walk into yet.
+uses the same "visible before forced" principle, and Import/Export's route
+mechanics are built on top of it), the Oracle, the private diary,
+face-to-face conversation, real Phase 4 visual rendering (today's client is
+plain text — it proves the wiring works, not what the world looks like),
+the voice/safety architecture, the closed no-money economy and the
+remaining addendum items (courier pay, shift cover, throttle windows), and
+the multi-shard ecosystem's actual playable form — the mechanics above are
+real and tested, but nothing about them is something a player can walk into
+yet.
 
 ```
 npm install
-npm test               # 335 tests
+npm test               # 348 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -377,7 +395,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (335 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (348 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
