@@ -28,11 +28,13 @@
  *
  * ROLE ROSTER (2026-08-11, user-specified, replacing the earlier 2-role-only scope):
  * Miller and Baker keep their existing competitive (Cournot/Bertrand) market mechanics,
- * unchanged. Courier, Journalist, and Detective have no differentiated economic mechanic
- * designed anywhere in this project's lore/brief — each gets a flat `SUPPORT_ROLE_DAILY_WAGE`
- * (`wealth.ts`), explicitly flagged as an undifferentiated placeholder standing in for
- * three genuinely different unbuilt economies, not a claim that couriering, reporting, and
- * detective work are actually economically identical.
+ * unchanged. Journalist and Detective have no differentiated economic mechanic designed
+ * anywhere in this project's lore/brief — each gets a flat `SUPPORT_ROLE_DAILY_WAGE`
+ * (`wealth.ts`), explicitly flagged as an undifferentiated placeholder standing in for two
+ * genuinely different unbuilt economies, not a claim that reporting and detective work are
+ * actually economically identical. Courier is the one support role the addendum DOES
+ * differentiate (item 6, 2026-08-11): pay is distance-indexed, not the flat wage — see
+ * `engine/courierPay.ts`.
  *
  * "Grifters" (2026-08-11, user's own term) are roleless community players — individually
  * tracked (`GrifterSlot`, unlike the prior "gossip layer," which was only ever an aggregate
@@ -118,6 +120,7 @@ import {
 } from '../engine/ecosystem.js';
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
+import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -142,7 +145,9 @@ export interface WorldConfig {
   shardConfig: ShardLayoutConfig;
   rMiller: number;
   rBaker: number;
-  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
+  /** Support role, no competitive market mechanic. Pay is distance-indexed (see
+   *  engine/courierPay.ts), not the flat SUPPORT_ROLE_DAILY_WAGE the other two support roles
+   *  use — 2026-08-11 addendum item 6. [ILLUSTRATIVE] */
   rCourier: number;
   /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
   rJournalist: number;
@@ -1080,7 +1085,19 @@ export function stepWorld(world: World): World {
   // Support wages get the same trade-route friction as Miller/Baker; the grifter floor
   // doesn't (grifters have no fixed position — see frictionFor's own comment above).
   const supportDaily = SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER;
-  couriers = couriers.map((c) => (c.slot.state === 'FILLED' ? { ...c, wealth: c.wealth + supportDaily * frictionFor(c.buildingId) } : c));
+  // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
+  // — see engine/courierPay.ts's header for the full reasoning, including why a literal
+  // commissioner-debit was measured and deliberately NOT built at this scale.
+  couriers = couriers.map((c) =>
+    c.slot.state === 'FILLED'
+      ? {
+          ...c,
+          wealth:
+            c.wealth +
+            courierDailyPay(courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? ''), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)),
+        }
+      : c,
+  );
   journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId) } : j));
   detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
   importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId) } : x));

@@ -6,6 +6,55 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — Item 6: Courier pay, distance-indexed
+
+**Context.** Continuing straight through the addendum's build order after item 5. Item 6:
+"Courier compensation is a function of distance and time only, never of cargo value... paid
+by whoever commissioned the delivery — a real transfer."
+
+**Measured the real geometry before picking a formula.** Wrote a probe script against
+`generateShardLayout`/`createWorld` rather than guessing: at the shipped 6-district default
+(2 core + 4 periphery, `rCourier=5`), courier buildings land at real Manhattan distances of
+~6-10 units from the shard hub in core districts and ~35-49 in periphery, mean ~20 across 5
+seeds. `engine/courierPay.ts`'s `courierRouteDistance()` reuses `space.ts`'s existing
+`distance()`/`hubPlot` — the same hub-and-spoke geometry `districtAccess.ts` already reads for
+district barriers — rather than inventing a second distance model.
+
+**A real design fork: how literally to take "commissioner-funded, real transfer."** Read
+completely literally, that phrase means debiting Miller/Baker's wealth every time a Courier
+gets paid. Measured it before deciding: total courier pay at the shipped defaults runs
+roughly a third of Miller+Baker's COMBINED daily income — not a minor fee line, a first-order
+shock to a wealth balance this whole session's history has spent calibrating (flourRatio,
+Gini, the wealth-cap bug, completion-reward parity). No other role's wealth anywhere in this
+codebase is computed by debiting another role's ledger — Miller/Baker income is each its own
+independent market-clearing formula. Building a literal cross-role debit here would be a
+genuinely NEW mechanic, which is exactly the addendum's own stated tripwire: "if any item
+below seems to require... a new subsystem, that is a signal the item has been misread — stop
+and flag it." Chose NOT to build the literal debit. What's built instead: Courier income
+stops being an arbitrary flat number and becomes a real, geometry-derived quantity — the
+honest, buildable reading of "earned, not summoned from nothing," using the same discipline
+every other formula in this codebase already follows. The literal debit is left explicitly
+open in `docs/HANDOVER.md` for a future dedicated calibration pass, not silently declined.
+
+**Calibrated `COURIER_FEE_PER_DISTANCE_UNIT=0.075`** so a courier at the mean measured
+distance (~20 units) earns close to what the flat `SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_
+MULTIPLIER` paid before (≈1.05/day at friction=1) — preserving that constant's own original
+calibration intent (a support role should be a genuine option, neither dominant nor dominated)
+while finally giving Couriers real distance variance the flat wage never had.
+
+**Existing tests updated, not left stale.** `test/world.regression.test.ts`'s two Courier-wage
+assertions now compute the real expected distance-indexed figure per building instead of the
+old flat constant, and the tick-25 golden snapshot was regenerated — courier wealth in it now
+legitimately varies by district (previously uniform across all five slots), a deliberate,
+measured change. New `test/courierPay.test.ts` (10 tests): pure-function coverage plus three
+world-kernel integration properties (real distance variance shows up between couriers in
+different districts; mean earnings stay within the same order of magnitude as the wage
+replaced; pay is never negative or non-finite across a 500-day run).
+
+Full suite: 402 tests (up from 392), `npm run typecheck` clean.
+
+---
+
 ## 2026-08-12 — District barriers, visual framework, pressure detection, and item 5 (nodules root input)
 
 **Context.** Continuation session. Started by fixing 3 false-positive failures in

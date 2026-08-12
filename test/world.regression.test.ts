@@ -12,6 +12,13 @@ import { BACKSTOP_PRODUCTIVITY } from '../src/engine/ecosystem.js';
 import { flourPrice } from '../src/engine/millers.js';
 import { giniCoefficient, SUPPORT_ROLE_DAILY_WAGE, GRIFTER_DAILY_INCOME, DAILY_ACTIVITY_MULTIPLIER } from '../src/engine/wealth.js';
 import { COMPLETION_REWARD } from '../src/engine/roleCompletion.js';
+import { courierDailyPay, courierRouteDistance } from '../src/engine/courierPay.js';
+
+/** Test-only helper: real district-for-a-building lookup, same shape world.ts builds internally. */
+function districtIdForBuilding(world: World, buildingId: string): string {
+  for (const d of world.shard.districts) if (d.buildings.some((b) => b.id === buildingId)) return d.id;
+  throw new Error(`no district found for building ${buildingId}`);
+}
 
 /**
  * Regression tests for Phase B of the Observatory build spec (`src/world/world.ts`).
@@ -583,8 +590,14 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
     const before = { c: world.couriers.map((c) => c.wealth), j: world.journalists.map((j) => j.wealth), d: world.detectives.map((d) => d.wealth) };
     world = stepWorld(world);
     world.couriers.forEach((c, i) => {
-      if (c.slot.state === 'FILLED')
-        expect(c.wealth).toBeCloseTo(before.c[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.courier, 10);
+      if (c.slot.state === 'FILLED') {
+        // Courier pay is distance-indexed (2026-08-11 addendum item 6), not the flat
+        // support wage — see engine/courierPay.ts's header. District friction is 1 on a
+        // freshly created world, so this is the exact expected total, not a tolerance.
+        const routeDistance = courierRouteDistance(world.shard, districtIdForBuilding(world, c.buildingId));
+        const expectedPay = courierDailyPay(routeDistance, DAILY_ACTIVITY_MULTIPLIER, 1);
+        expect(c.wealth).toBeCloseTo(before.c[i]! + expectedPay + COMPLETION_REWARD.courier, 10);
+      }
     });
     world.journalists.forEach((j, i) => {
       if (j.slot.state === 'FILLED')
@@ -607,16 +620,16 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         const wasFilled = before[idx]!.slot.state === 'FILLED';
         const isFilled = world.couriers[idx]!.slot.state === 'FILLED';
         if (!wasFilled && isFilled) {
-          // Reset to 0, then this same day's wage accrues on top, plus a possible
-          // completion bonus if this district's friction clears the bar today — bounded
-          // above by one day's SUPPORT_ROLE_DAILY_WAGE (trade-route friction can only ever
-          // reduce it, never exceed the base rate — see districtConsolidation.ts) plus
-          // COMPLETION_REWARD.courier, and strictly positive, not some larger
-          // carried-forward balance from a previous occupant.
+          // Reset to 0, then this same day's distance-indexed pay accrues on top (2026-08-11
+          // addendum item 6), plus a possible completion bonus if this district's friction
+          // clears the bar today — bounded above by one day's pay AT friction=1 (trade-route
+          // friction can only ever reduce it, never exceed the base rate — see
+          // districtConsolidation.ts) plus COMPLETION_REWARD.courier, and strictly positive,
+          // not some larger carried-forward balance from a previous occupant.
+          const routeDistance = courierRouteDistance(world.shard, districtIdForBuilding(world, world.couriers[idx]!.buildingId));
+          const maxPay = courierDailyPay(routeDistance, DAILY_ACTIVITY_MULTIPLIER, 1);
           expect(world.couriers[idx]!.wealth).toBeGreaterThan(0);
-          expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(
-            SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.courier + 1e-9,
-          );
+          expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(maxPay + COMPLETION_REWARD.courier + 1e-9);
           checkedReset = true;
         }
       }

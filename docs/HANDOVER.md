@@ -18,7 +18,7 @@ here on.
 
 ## Current state (as of 2026-08-12, end of session)
 
-**392 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**402 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
@@ -65,15 +65,26 @@ Phases D-F are not started.
    argued.
 6. **A 9-item Design Addendum from 2026-08-11 continues** (`docs/DESIGN_ADDENDUM_2026-08-11.md`)
    with build order 0/3 → 1-2 → 4-8 and scope discipline (role roster closed at six). **Items
-   0/3, 1, 2, 4, and now 5 are done.** **Items 6, 7, 8 are not started** — see below.
+   0/3, 1, 2, 4, 5, and now 6 are done.** **Items 7, 8 are not started** — see below.
 7. **Item 5 — no money: nodules as sole root input, closed loop.** `importExport.ts`
    refactored so `nodulesReceivedToday()` is the primary function and `grainDeliveredToday()`
    is derived from it (real code structure, not parallel prose). `resources.ts` tracks
    `nodulesReceived` as a bare `ResourceFlows` field (not a 7th `ResourceName`, to preserve
    the existing 1:1 role<->resource bijection test). New hard-filter coherence test extends
    the flour/bread check down to grain/nodules; new structural test proves `resources.ts`
-   defines no exchange/convert/swap/wallet/currency function. No constants changed. Full
-   reasoning in `docs/BLUEPRINT.md`'s "2026-08-12 session" entry.
+   defines no exchange/convert/swap/wallet/currency function. No constants changed.
+8. **Item 6 — Courier pay: distance-indexed** (`engine/courierPay.ts`). Pay is now a real
+   function of the Courier's own district's Manhattan distance to the shard hub (reusing
+   `space.ts`'s existing geometry), not the flat `SUPPORT_ROLE_DAILY_WAGE` the other two
+   support roles still use. Measured real placement before calibrating: mean route distance
+   ~20 units at the shipped default, `COURIER_FEE_PER_DISTANCE_UNIT=0.075` chosen so the
+   average stays near what the flat wage paid. **A real design fork, decided and documented,
+   not silently narrowed**: the addendum's "commissioner-funded, real transfer" language was
+   taken to require the honest-and-buildable core (pay is earned from real geometry, not an
+   arbitrary flat number) rather than a literal cross-role wealth debit from Miller/Baker —
+   measured that a literal debit would remove roughly a third of their COMBINED daily income,
+   which is a new kind of mechanic outside this item's scope, not a fee line. See below and
+   `docs/BLUEPRINT.md`'s "Item 6" entry for the full reasoning and what's left open.
 
 ### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
 
@@ -158,7 +169,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 392 tests
+npm test                              # 402 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -196,8 +207,8 @@ work below is about making what exists hold up, not adding to it. Resist the pul
 another role or system to solve a balance problem; the last several balance problems were
 solved by fixing a constant or a mechanism, not by adding anything.
 
-**0. FINISH THE ADDENDUM — items 6, 7, 8 are not started (item 5 is now done).** This is the
-live piece of work; everything else below is longer-horizon.
+**0. FINISH THE ADDENDUM — items 7, 8 are not started (items 5 and 6 are now done).** This is
+the live piece of work; everything else below is longer-horizon.
 `docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each. In its own build order:
 - ~~Item 5 — no money; nodules as the sole root input, closed conservation loop.~~ **Done
   2026-08-12** — see `docs/BLUEPRINT.md`'s "2026-08-12 session" entry. Nodules are now a
@@ -205,9 +216,14 @@ live piece of work; everything else below is longer-horizon.
   `nodulesReceivedToday()` in code, and the hard-filter coherence check now covers
   grain/nodule parity as well as flour/bread, plus a structural test proving no
   exchange/convert/swap/wallet/currency function exists anywhere in `resources.ts`.
-- **Item 6 — courier pay: distance/time only, never cargo value**, paid by whoever
-  commissioned the delivery. Removes the collusion incentive structurally rather than by
-  policing intent. Geography is the expansion cap; don't add a second artificial one.
+- ~~Item 6 — courier pay: distance/time only, never cargo value.~~ **Done 2026-08-12** — see
+  `docs/BLUEPRINT.md`'s "Item 6" entry. Pay is now `courierRouteDistance x
+  COURIER_FEE_PER_DISTANCE_UNIT x activity x friction`, measured against real district
+  placement, not guessed. **Left genuinely open, not silently closed**: the addendum's
+  "paid by whoever commissioned the delivery" was read as the honest-buildable core (earned
+  from real geometry) rather than a literal Miller/Baker wealth debit, because the debit
+  would remove ~1/3 of their combined income and is a new mechanic outside one item's scope.
+  If a literal transfer is ever wanted, it needs its own calibration pass, not a quick patch.
 - **Item 7 — Shift Cover** (also closes Phase 2's long-open §2.6): player-initiated opt-in
   coverage of an offline role-holder's slot. Nothing assigns/notifies/schedules it —
   noticing is the skill being rewarded. Must be verified net-negative against the

@@ -37,23 +37,23 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "courierValues": [
     {
       "state": "FILLED",
-      "wealth": 33.250000000000014,
+      "wealth": 20.124999999999993,
     },
     {
       "state": "BACKSTOPPED",
-      "wealth": 18.619999999999994,
+      "wealth": 11.269999999999996,
     },
     {
       "state": "FILLED",
-      "wealth": 33.250000000000014,
+      "wealth": 18.8125,
     },
     {
       "state": "FILLED",
-      "wealth": 33.250000000000014,
+      "wealth": 52.93749999999999,
     },
     {
       "state": "FILLED",
-      "wealth": 33.250000000000014,
+      "wealth": 45.06250000000002,
     },
   ],
   "detectiveValues": [
@@ -154,7 +154,7 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   ],
   "population": 54,
   "tick": 25,
-  "wealthGini": 0.3907639409417374,
-  "wealthTop10Share": 0.20223059015509798,
+  "wealthGini": 0.41099936155127215,
+  "wealthTop10Share": 0.23940131140447687,
 }
 `;

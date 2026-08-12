@@ -2633,3 +2633,58 @@ up from 8). No constants changed — `NODULES_PER_DAY`, `GRAIN_PER_NODULE`,
 structure and proved it coherent.
 
 Status: **done**.
+
+### Item 6 — Courier pay: distance-indexed, commissioner-funded (2026-08-11 addendum)
+
+`engine/courierPay.ts` replaces Courier's share of the flat `SUPPORT_ROLE_DAILY_WAGE` with a
+real per-district figure: `courierRouteDistance(shard, districtId)` is the Manhattan distance
+from a Courier's own district's plaza to the shard hub (`space.ts`'s `distance()`/`hubPlot` —
+the same hub-and-spoke corridor geometry `districtAccess.ts` already reads for district
+barriers, reused a second way, not reinvented). `courierDailyPay(routeDistance,
+activityMultiplier, frictionMultiplier)` composes with the existing activity/friction shape
+every other role's income already uses. Journalist, Detective, and Import/Export are
+unaffected — the addendum names Courier specifically, and none of the other three has a
+distance component anywhere in the brief to derive one from.
+
+**Measured before building, per constraint 1**: real courier-building placement under the
+shipped 6-district default (2 core + 4 periphery, `rCourier=5`) puts couriers at real
+distances of ~6-10 (core) to ~35-49 (periphery), mean ~20 across 5 seeds — a probe script, not
+a guess. `COURIER_FEE_PER_DISTANCE_UNIT=0.075` is chosen so a courier at the mean distance
+earns close to what `SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER` paid before
+(≈1.05/day at friction=1), preserving that constant's own calibration intent (a support role
+should be a genuine option, not strictly dominant or dominated by Miller/Baker) while
+introducing real distance variance the flat wage never had — a periphery courier now
+genuinely earns more than a core one for the same day worked, which composes with (not
+duplicates) the trade-route friction their own district's health may already impose.
+
+**"Commissioner-funded, real transfer" — what was built, and what wasn't, flagged honestly**,
+same discipline item 4 used for its own Detective-task gap. The addendum's literal words ask
+for the fee to be "paid by whoever commissioned the delivery... a real transfer." Taken
+completely literally that would mean debiting Miller/Baker's wealth every time a Courier is
+paid. Measured before building: total courier pay at the shipped defaults runs roughly a
+third of Miller+Baker's COMBINED daily income — not a minor fee line but a first-order shock
+to a wealth balance this whole session's history spent calibrating (flourRatio, Gini, wealth
+cap, completion-reward parity), and no other role's wealth anywhere in this codebase is
+computed by debiting another role's ledger. Building that would be a genuinely NEW kind of
+mechanic — exactly what the addendum's own scope discipline says to stop and flag rather than
+build ("if any item below seems to require... a new subsystem, that is a signal the item has
+been misread"). What's built instead is the honest, buildable core of "commissioner-funded":
+Courier income is now a real, geometry-derived quantity — earned, not an arbitrary flat
+number — the same discipline every other formula in this codebase already follows. The
+literal cross-role debit is left explicitly OPEN in `docs/HANDOVER.md`, to be revisited only
+alongside a dedicated calibration pass (the `FLOUR_PER_BREAD` precedent), never folded in at
+throwaway scale.
+
+**Existing tests updated, not silently left stale**: `test/world.regression.test.ts`'s two
+Courier-wage tests now compute the real expected distance-indexed figure per building rather
+than asserting the old flat constant, and the tick-25 golden snapshot was regenerated —
+courier wealth in that snapshot now legitimately varies by district instead of being uniform
+across all five slots, a deliberate, measured change, not drift. New `test/courierPay.test.ts`
+(10 tests) covers the pure functions directly plus three world-kernel integration properties:
+real distance variance actually shows up between couriers in different districts, mean
+earnings stay within the same order of magnitude as the wage they replaced, and pay is never
+negative or non-finite across a long run.
+
+Verified: `npm run typecheck` clean; full suite 402 tests (up from 392).
+
+Status: **done**.
