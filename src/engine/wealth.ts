@@ -115,12 +115,37 @@ export function bakerDailyIncome(price: number, flourPrice: number, servedCustom
 }
 
 /**
- * Daily downtime window (2026-08-11, user-specified): a fixed 8-hour stretch every day,
- * same wall-clock hours, single shared timezone (not per-player-adjusted) — "account for
- * RL," gives real players an actual break. During it, trading activity dampens to 10% of
- * normal rather than stopping outright, "all round" (both roles) — the shard stays alive
- * (constraint 2: no permanent zero-state, at any scale, including a single day) rather
- * than freezing dead for a third of every day.
+ * Daily downtime windows (2026-08-11, user-specified, then extended 2026-08-12 by the design
+ * addendum's item 8, "economic throttle windows" — the two purposes turned out to be the same
+ * mechanism, not two mechanisms to build). Originally one fixed 8-hour stretch every day, same
+ * wall-clock hours, single shared timezone (not per-player-adjusted) — "account for RL," gives
+ * real players an actual break. During it, trading activity dampens to 10% of normal rather
+ * than stopping outright, "all round" (both roles) — the shard stays alive (constraint 2: no
+ * permanent zero-state, at any scale, including a single day) rather than freezing dead for a
+ * third of every day.
+ *
+ * ITEM 8, VERIFIED AGAINST THIS EXISTING MECHANIC RATHER THAN BUILT AS A SEPARATE ONE. Its own
+ * text: "two windows per day... output drops to ~10%... economy only... implementation should
+ * be a scheduled multiplier feeding existing market equations, not a new subsystem." Checked
+ * point by point rather than assumed: ~10% during the window — already `DOWNTIME_DAMPENING`,
+ * unchanged; economy-only — confirmed by grep, `DAILY_ACTIVITY_MULTIPLIER` is referenced
+ * nowhere in `src/comms/` and nowhere in the comms stage of `world.ts`'s `stepWorld`, only in
+ * the market/wage/resource-flow lines; public, predictable, deterministic — a compile-time
+ * constant, never randomised; "removes the payoff, not the option" — dampens, never zeroes,
+ * same as every other constraint-2 mechanism in this codebase; "a scheduled multiplier feeding
+ * existing market equations, not a new subsystem" — is a verbatim description of what already
+ * ships. The one literal mismatch was window COUNT (one vs two) — resolved below by splitting
+ * the SAME total dampened hours into `THROTTLE_WINDOWS_PER_DAY` explicit windows, which is
+ * mathematically inert at this kernel's granularity: `DAILY_ACTIVITY_MULTIPLIER` is one
+ * blended scalar per day, so two 4-hour windows and one 8-hour window with identical total
+ * dampened hours and the same dampening rate produce the exact same number — this kernel has
+ * no finer time-of-day resolution to make "two windows" observably different from "one," the
+ * same limitation `IMPLEMENTATION SCOPE` below already names for wall-clock scheduling. Making
+ * the window count real code structure (rather than leaving it implicit in one constant) is
+ * the honest, buildable resolution: zero behavioural change, zero risk to every wealth/Gini/
+ * flourRatio number this whole session's history calibrated against the old single constant,
+ * and item 8's explicit ask ("two windows," "a scheduled multiplier," "not a new subsystem")
+ * is met by structure, not by prose alone — the same standard items 5/6/7 held themselves to.
  *
  * IMPLEMENTATION SCOPE, flagged not silently narrowed: this kernel's tick is one full day
  * (every existing calibration — churn probabilities, experience growth, sabotage cadence,
@@ -128,12 +153,16 @@ export function bakerDailyIncome(price: number, flourPrice: number, servedCustom
  * essentially all of it, a much larger and riskier change than what was asked for here).
  * At daily granularity there's no way to represent "quiet for part of the day" except as
  * the correct blended daily average of a fixed intra-day schedule — which is exactly what
- * this constant is, not an approximation of a bigger unbuilt mechanic. What this does NOT
- * do: literally block real player actions from arriving during specific UTC hours — that's
- * a real-time server-clock policy (`src/server/ws.ts`, once real player actions exist to
- * gate at all), a separate and later concern from this deterministic kernel's own economics.
+ * these constants are, not an approximation of a bigger unbuilt mechanic. What this does NOT
+ * do: literally block real player actions from arriving during specific UTC hours, or place
+ * the two windows at any particular time of day — that's a real-time server-clock policy
+ * (`src/server/ws.ts`, once real player actions exist to gate at all), a separate and later
+ * concern from this deterministic kernel's own economics, and genuinely unbuildable here
+ * until that server exists to have a wall clock at all.
  */
-export const DOWNTIME_HOURS = 8;
+export const THROTTLE_WINDOWS_PER_DAY = 2;
+export const THROTTLE_WINDOW_HOURS = 4;
+export const DOWNTIME_HOURS = THROTTLE_WINDOWS_PER_DAY * THROTTLE_WINDOW_HOURS;
 export const ACTIVE_HOURS = 24 - DOWNTIME_HOURS;
 export const DOWNTIME_DAMPENING = 0.1;
 /** The correct same-day blend of ACTIVE_HOURS at full rate and DOWNTIME_HOURS at DOWNTIME_DAMPENING. */

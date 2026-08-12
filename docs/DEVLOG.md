@@ -6,6 +6,53 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-12 — Item 8: economic throttle windows, and the addendum's build order is complete
+
+**Context.** Last item in the 2026-08-11 addendum's build order. Item 8: "two windows per
+day during which economic output drops to ~10%... economy only... implementation should be
+a scheduled multiplier feeding existing market equations, not a new subsystem."
+
+**Checked against an existing mechanic before writing a line of new logic.** `wealth.ts`
+already had `DAILY_ACTIVITY_MULTIPLIER` — an 8-hour daily downtime window at 10% dampening,
+built 2026-08-11 for a different stated reason ("account for RL," not anti-grinding). Went
+through item 8's requirements one at a time against it rather than assuming a gap: ~10%
+dampening — already there. Economy-only — grepped `src/comms/` for any reference to the
+multiplier and found none, confirming rather than assuming it. Public/deterministic — it's a
+compile-time constant. "A scheduled multiplier... not a new subsystem" — a literal
+description of what already existed. The single mismatch was window COUNT: one continuous
+block, not two.
+
+**Resolved the count mismatch as real code structure, with zero behavioural risk.** Split the
+same total dampened hours into `THROTTLE_WINDOWS_PER_DAY=2` x `THROTTLE_WINDOW_HOURS=4`, with
+`DOWNTIME_HOURS` now literally their product instead of a bare 8. This is mathematically
+inert at this kernel's one-scalar-per-day granularity — confirmed, not just reasoned about:
+after the edit, `DAILY_ACTIVITY_MULTIPLIER`'s value was bit-identical, and neither
+`test/wealth.regression.test.ts`'s existing golden values nor the tick-25 world snapshot
+needed to change. Deliberately did NOT build a genuinely second throttle mechanism on top of
+the first — that would have doubled total dampened hours and silently invalidated every
+wealth/Gini/flourRatio number this whole session's history calibrated, without re-measuring
+anything, which is exactly the failure mode constraint 1 ("simulate before trusting") exists
+to catch.
+
+Extended `test/wealth.regression.test.ts` with 4 new tests: the window-count structure itself,
+that the literal ask ("two windows... ~10%") holds without changing `DAILY_ACTIVITY_
+MULTIPLIER`'s value, a structural guard proving the multiplier is never referenced in
+`src/comms/` (economy-only, proved not asserted), and the hours-sum identity.
+
+**The 2026-08-11 Design Addendum's entire build order (0/3, 1, 2, 4, 5, 6, 7, 8) is now
+built and tested.** What remains from it is its own "report back explicitly on" section —
+several of those questions are now directly answerable from work already done this session
+(Shift Cover's coordinated-abuse numbers, item 4's completion-parity hard filter) rather than
+still open. The separate 2026-08-12 addendum (pressure detection, visual framework, district
+barriers) still has its own remaining open items (Wall Soul calibration, two-tier proximity
+speech, light-quality distinction, border checkpoint art) — unaffected by today's work, not
+resolved by it.
+
+Full suite: 418 tests (up from 414), `npm run typecheck` clean, no snapshot regeneration
+needed.
+
+---
+
 ## 2026-08-12 — Item 7: Shift Cover, closing the brief's long-open §2.6
 
 **Context.** Continuing the addendum's build order after item 6. Item 7: "offline slots as

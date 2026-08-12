@@ -18,7 +18,11 @@ here on.
 
 ## Current state (as of 2026-08-12, end of session)
 
-**414 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**418 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+
+**The entire 2026-08-11 Design Addendum's build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) is now
+built and tested.** What's left from it is only its own "report back explicitly on" section —
+see below, several of those questions are now directly answerable from work already done.
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
@@ -63,9 +67,10 @@ Phases D-F are not started.
    the hub route (constraint 2 — never a hard gate). Both open design questions (consolidation
    independence, no cross-player gating) closed structurally and proved by test, not just
    argued.
-6. **A 9-item Design Addendum from 2026-08-11 continues** (`docs/DESIGN_ADDENDUM_2026-08-11.md`)
-   with build order 0/3 → 1-2 → 4-8 and scope discipline (role roster closed at six). **Items
-   0/3, 1, 2, 4, 5, 6, and now 7 are done.** **Item 8 is not started** — see below.
+6. **A 9-item Design Addendum from 2026-08-11 is now fully built**
+   (`docs/DESIGN_ADDENDUM_2026-08-11.md`), build order 0/3 → 1-2 → 4-8, scope discipline
+   (role roster closed at six) held throughout. **Items 0/3, 1, 2, 4, 5, 6, 7, and now 8 are
+   all done.**
 7. **Item 5 — no money: nodules as sole root input, closed loop.** `importExport.ts`
    refactored so `nodulesReceivedToday()` is the primary function and `grainDeliveredToday()`
    is derived from it (real code structure, not parallel prose). `resources.ts` tracks
@@ -96,6 +101,17 @@ Phases D-F are not started.
    choice, anywhere in this engine) — proved the underlying economics exactly instead
    (0.4x wage forfeits 60% of it, every single day, for any alternation pattern). See
    `docs/BLUEPRINT.md`'s "Item 7" entry for the full reasoning.
+10. **Item 8 — economic throttle windows**, the addendum's last item. Verified against the
+    EXISTING `DAILY_ACTIVITY_MULTIPLIER` downtime mechanic (built 2026-08-11 for a different
+    stated reason) point by point rather than assumed to need new code — every requirement
+    already held except window COUNT (one vs two). Resolved by splitting the same total
+    dampened hours into `THROTTLE_WINDOWS_PER_DAY=2 x THROTTLE_WINDOW_HOURS=4` as real code
+    structure — mathematically inert at this kernel's one-scalar-per-day granularity,
+    confirmed (not just reasoned) by the fact that no existing golden value or snapshot
+    needed to change. Deliberately did NOT build a second throttle mechanism on top of the
+    first, which would have silently doubled dampened hours and invalidated every wealth/
+    Gini/flourRatio calibration this session's history depends on. See `docs/BLUEPRINT.md`'s
+    "Item 8" entry for the full reasoning.
 
 ### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
 
@@ -180,7 +196,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 414 tests
+npm test                              # 418 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
@@ -218,44 +234,38 @@ work below is about making what exists hold up, not adding to it. Resist the pul
 another role or system to solve a balance problem; the last several balance problems were
 solved by fixing a constant or a mechanism, not by adding anything.
 
-**0. FINISH THE ADDENDUM — only item 8 is not started (items 5, 6, 7 are now done).** This is
-the live piece of work; everything else below is longer-horizon.
-`docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each. In its own build order:
-- ~~Item 5 — no money; nodules as the sole root input, closed conservation loop.~~ **Done
-  2026-08-12** — see `docs/BLUEPRINT.md`'s "2026-08-12 session" entry. Nodules are now a
-  real tracked flow (`ResourceFlows.nodulesReceived`), `grainDeliveredToday()` derives from
-  `nodulesReceivedToday()` in code, and the hard-filter coherence check now covers
-  grain/nodule parity as well as flour/bread, plus a structural test proving no
-  exchange/convert/swap/wallet/currency function exists anywhere in `resources.ts`.
-- ~~Item 6 — courier pay: distance/time only, never cargo value.~~ **Done 2026-08-12** — see
-  `docs/BLUEPRINT.md`'s "Item 6" entry. Pay is now `courierRouteDistance x
-  COURIER_FEE_PER_DISTANCE_UNIT x activity x friction`, measured against real district
-  placement, not guessed. **Left genuinely open, not silently closed**: the addendum's
-  "paid by whoever commissioned the delivery" was read as the honest-buildable core (earned
-  from real geometry) rather than a literal Miller/Baker wealth debit, because the debit
-  would remove ~1/3 of their combined income and is a new mechanic outside one item's scope.
-  If a literal transfer is ever wanted, it needs its own calibration pass, not a quick patch.
-- ~~Item 7 — Shift Cover.~~ **Done 2026-08-12** — see `docs/BLUEPRINT.md`'s "Item 7" entry.
-  `engine/shiftCover.ts` reshapes it around this engine's real `BACKSTOPPED` state (rather
-  than the brief's original player-session concept, which this headless kernel still doesn't
-  have): a grifter can be probabilistically "noticed" covering a BACKSTOPPED slot for one day,
-  at `SHIFT_COVER_FRACTION=0.4` of that exact slot's real FILLED-that-day wage — structurally
-  always worse than holding the role (fraction < 1 by construction), not a separately-measured
-  rate. The coordinated-abuse case has no constructible player action to literally simulate in
-  this engine (churn is a hazard, never a player choice) — proved the underlying economics
-  exactly instead (0.4x wage forfeits 60% every single day, for any alternation pattern).
-- **Item 8 — two daily economic throttle windows** at ~10% output, economy only. Public,
-  predictable, deterministic — deliberately the *opposite* rule from sabotage's covert
-  hazard timing (see "covert mechanics must not run on learnable clocks" below; this is an
-  overt civic timer, and the contrast is intentional). Implement as a scheduled multiplier
-  on existing market equations, not a new subsystem.
+**0. THE ADDENDUM'S BUILD ORDER IS COMPLETE (items 0/3, 1, 2, 4, 5, 6, 7, 8 all done,
+2026-08-12).** `docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each;
+`docs/BLUEPRINT.md` has a dedicated entry for every one under its own "Item N" heading. Two
+things flagged as genuinely open rather than silently closed while building this, worth
+reading before touching either area again:
+- **Item 6 (Courier pay)**: the addendum's "paid by whoever commissioned the delivery" was
+  read as its honest-buildable core (pay earned from real geometry) rather than a literal
+  Miller/Baker wealth debit — a literal debit would remove ~1/3 of their combined income and
+  is a new cross-role mechanic outside one item's scope. If a literal transfer is ever
+  wanted, it needs its own calibration pass, not a quick patch.
+- **Item 8 (throttle windows)**: verified against the pre-existing `DAILY_ACTIVITY_MULTIPLIER`
+  downtime mechanic rather than building a second one — deliberately, since a genuinely
+  second throttle would have doubled dampened hours and silently invalidated every wealth/
+  Gini/flourRatio number calibrated against the single-window value. If item 8 is ever read
+  as needing REAL wall-clock scheduling (specific windows at specific UTC hours, distinct
+  from the daily-average blend this kernel can represent), that's `src/server/ws.ts` work
+  once a real-time server exists, not something this deterministic kernel can do at all.
 
-Then the addendum's **"report back explicitly on"** questions, which are the actual
-acceptance criteria and need real numbers: does the closed nodule loop balance long-run or
-accumulate/starve; is coordinated slot-farming genuinely net-negative; do cross-role
-completion rewards land at real parity (item 4's hard-filter test already answers a version
-of this — extend it if item 5 changes reward flows); does identity resolution produce a
-meaningful core-vs-periphery difference or one too small to feel.
+**What's left from the addendum is only its own "report back explicitly on" section** — and
+several of those questions are now directly answerable from work already done this session,
+not still open:
+- Does the closed nodule loop balance long-run or accumulate/starve? Answered structurally by
+  item 5's hard-filter test (`grainConsumed/grainDelivered < 1.05` across seeds/1500 days) —
+  it balances, by construction and by measurement both.
+- Is coordinated slot-farming genuinely net-negative? Answered exactly, not just simulated, by
+  item 7: `SHIFT_COVER_FRACTION < 1` makes it net-negative on every single day, for any
+  alternation pattern — a stronger guarantee than a simulated scenario could give.
+- Do cross-role completion rewards land at real parity? Already answered by item 4's hard
+  filter (+-30% band around the cross-role mean).
+- **Genuinely still open, needs a real measurement pass**: does identity resolution
+  (`identity.ts`) produce a meaningful core-vs-periphery difference in how fast players become
+  known, or is the effect too small to feel? No sweep script exists for this yet.
 
 **1. Answer the research questions that simulation cannot.** See
 `docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to

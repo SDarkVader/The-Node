@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   millerDailyIncome,
   bakerDailyIncome,
@@ -9,6 +10,11 @@ import {
   taxAndRedistributeIncome,
   applyWealthCap,
   DAILY_ACTIVITY_MULTIPLIER,
+  THROTTLE_WINDOWS_PER_DAY,
+  THROTTLE_WINDOW_HOURS,
+  DOWNTIME_HOURS,
+  ACTIVE_HOURS,
+  DOWNTIME_DAMPENING,
   BAKER_MAX_DAILY_CUSTOMERS,
   PURCHASE_CYCLE_DAYS,
   SUPPORT_ROLE_DAILY_WAGE,
@@ -103,7 +109,7 @@ describe('splitBakerDemand — population-bound, price-weighted, capacity-capped
   });
 });
 
-describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the 8-hour downtime window', () => {
+describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the throttle windows', () => {
   it('equals the correct blended average: 16/24 at full rate, 8/24 at 10%', () => {
     expect(DAILY_ACTIVITY_MULTIPLIER).toBeCloseTo((16 / 24) * 1 + (8 / 24) * 0.1, 10);
   });
@@ -111,6 +117,41 @@ describe('DAILY_ACTIVITY_MULTIPLIER — the daily blend of the 8-hour downtime w
   it('is strictly less than 1 — the window genuinely reduces daily totals, not a no-op', () => {
     expect(DAILY_ACTIVITY_MULTIPLIER).toBeLessThan(1);
     expect(DAILY_ACTIVITY_MULTIPLIER).toBeGreaterThan(0);
+  });
+});
+
+describe('THROTTLE_WINDOWS_PER_DAY / THROTTLE_WINDOW_HOURS — item 8 (2026-08-12 addendum), verified against the existing downtime mechanic rather than built as a second one', () => {
+  it('is real code structure: DOWNTIME_HOURS is literally windows x hours-per-window, not a bare constant', () => {
+    expect(THROTTLE_WINDOWS_PER_DAY).toBe(2);
+    expect(DOWNTIME_HOURS).toBe(THROTTLE_WINDOWS_PER_DAY * THROTTLE_WINDOW_HOURS);
+  });
+
+  it('item 8\'s literal ask ("two windows... ~10% output") holds without changing the daily total', () => {
+    expect(THROTTLE_WINDOWS_PER_DAY).toBe(2);
+    expect(DOWNTIME_DAMPENING).toBeCloseTo(0.1, 10);
+    // Splitting the same total dampened hours into two windows is mathematically inert at
+    // this kernel's one-scalar-per-day granularity — the blended multiplier is unchanged
+    // from the pre-item-8 single-window value, which is the whole point: no risk to any
+    // wealth/Gini/flourRatio number this session's history calibrated against it.
+    expect(DAILY_ACTIVITY_MULTIPLIER).toBeCloseTo((16 / 24) * 1 + (8 / 24) * 0.1, 10);
+  });
+
+  it('is economy-only, structurally: DAILY_ACTIVITY_MULTIPLIER is never referenced in src/comms/', () => {
+    // Structural guard, same pattern test/districtAccess.test.ts's import-guard test uses —
+    // item 8's "economy only... every social layer continues at full function" is proved,
+    // not just documented.
+    const commsDir = new URL('../src/comms/', import.meta.url);
+    const files = readdirSync(commsDir).filter((f) => f.endsWith('.ts'));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const src = readFileSync(new URL(file, commsDir), 'utf8');
+      expect(src).not.toMatch(/DAILY_ACTIVITY_MULTIPLIER|DOWNTIME_DAMPENING|THROTTLE_WINDOW/);
+    }
+  });
+
+  it('the window count has no observable effect on ACTIVE_HOURS/downtime math beyond the total', () => {
+    expect(ACTIVE_HOURS).toBe(24 - DOWNTIME_HOURS);
+    expect(ACTIVE_HOURS + DOWNTIME_HOURS).toBe(24);
   });
 });
 

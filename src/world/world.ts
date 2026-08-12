@@ -965,8 +965,9 @@ export function stepWorld(world: World): World {
   // dilutes it by a multi-day purchase cycle, splits it toward whoever's priced lower, and
   // caps any one baker's daily customers at a realistic ceiling. BACKSTOPPED slots earn
   // nothing — nobody is there to receive it. Every income stream is scaled by
-  // DAILY_ACTIVITY_MULTIPLIER — the daily blended consequence of an 8-hour low-activity
-  // window every day, "all round." See wealth.ts's header for the full reasoning.
+  // DAILY_ACTIVITY_MULTIPLIER — the daily blended consequence of two 4-hour throttle windows
+  // every day (2026-08-11 downtime + 2026-08-12 addendum item 8, one mechanism), "all round."
+  // See wealth.ts's header for the full reasoning.
   //
   // Trade-route friction (2026-08-11) — "underpopulated areas can't access certain
   // services without greater effort": a role-holder physically in a CONSOLIDATING or

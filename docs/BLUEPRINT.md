@@ -2744,3 +2744,57 @@ sequence downstream, same expected class of change as item 6's snapshot regen). 
 414 tests (up from 402).
 
 Status: **done**.
+
+### Item 8 — economic throttle windows (2026-08-11 addendum) — verified against an existing
+### mechanic rather than built as a second one; the addendum's build order is now complete
+
+Item 8 asks for "two windows per day during which economic output drops to ~10%... economy
+only... implementation should be a scheduled multiplier feeding existing market equations,
+not a new subsystem." Checked point by point against `wealth.ts`'s existing
+`DAILY_ACTIVITY_MULTIPLIER` (built 2026-08-11, before this addendum, for a different stated
+reason — "account for RL") rather than assumed to need new code:
+
+- **~10% during the window** — already `DOWNTIME_DAMPENING=0.1`, unchanged.
+- **Economy only, every social layer at full function** — confirmed, not assumed: grepped
+  `src/comms/` for any reference to `DAILY_ACTIVITY_MULTIPLIER`/`DOWNTIME_DAMPENING`/
+  `THROTTLE_WINDOW` and found none; the multiplier is only ever applied in `world.ts`'s
+  market/wage/resource-flow lines.
+- **Public, predictable, deterministic** — a compile-time constant, never randomised.
+- **"Removes the payoff, not the option"** — dampens, never zeroes, the same constraint-2
+  shape every other mechanism in this codebase already follows.
+- **"A scheduled multiplier feeding existing market equations, not a new subsystem"** — a
+  verbatim description of what already shipped.
+
+The one literal mismatch was window COUNT: one continuous 8-hour block, not two. Resolved by
+splitting the same total dampened hours into `THROTTLE_WINDOWS_PER_DAY=2` x
+`THROTTLE_WINDOW_HOURS=4`, with `DOWNTIME_HOURS` now literally derived as their product rather
+than a bare constant — real code structure, not just a renamed comment, matching the standard
+items 5/6/7 already held themselves to. This is mathematically inert at this kernel's
+granularity: `DAILY_ACTIVITY_MULTIPLIER` is one blended scalar per day, so two 4-hour windows
+and one 8-hour window with identical total dampened hours and the same dampening rate produce
+the exact same number — confirmed, not just argued, by the fact that `test/wealth.regression.
+test.ts`'s existing golden values and the tick-25 world snapshot needed zero changes after
+this edit. There is no finer time-of-day resolution in this kernel to make "two windows"
+observably different from "one" — the same limitation `wealth.ts`'s own header already named
+for wall-clock scheduling ("a real-time server-clock policy... a separate and later concern
+from this deterministic kernel's own economics").
+
+**Why zero risk was the right call here, not a shortcut.** Every wealth, Gini, and flourRatio
+number this whole session's history calibrated depends on `DAILY_ACTIVITY_MULTIPLIER`'s exact
+value. Building a genuinely SECOND throttle mechanism on top of the first (rather than
+recognizing the addendum's own item as already satisfied) would have doubled total dampened
+hours, silently invalidating every one of those calibrations without re-measuring anything —
+exactly the kind of unmeasured change constraint 1 exists to prevent.
+
+Verified: `npm run typecheck` clean; extended `test/wealth.regression.test.ts` with 4 new
+tests (window-count structure, the literal-ask-holds-without-behaviour-change check, the
+comms-independence structural guard, and the hours-sum check). Full suite 418 tests (up from
+414) — no golden-snapshot regeneration needed, confirming the zero-behavioural-change claim.
+
+Status: **done**. **All nine items of the 2026-08-11 Design Addendum (0/3, 1, 2, 4, 5, 6, 7,
+8) are now built and tested.** What's left from that addendum is its own "report back
+explicitly on" section (nodule-loop long-run balance, Shift Cover's real numbers — now
+answerable from `test/shiftCover.test.ts`'s structural proof, cross-role completion parity —
+already answered by item 4's hard filter, and identity-resolution's core-vs-periphery effect
+size) plus the separate 2026-08-12 addendum's own remaining open items (Wall Soul calibration,
+two-tier proximity speech, light-quality visual distinction, border checkpoint art).
