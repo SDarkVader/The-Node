@@ -339,7 +339,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 233 automated tests cover all of it.
+citations, and open questions left. 335 automated tests cover all of it.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
@@ -353,7 +353,7 @@ but nothing about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 233 tests
+npm test               # 335 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -377,7 +377,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (233 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (335 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

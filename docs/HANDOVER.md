@@ -18,7 +18,7 @@ here on.
 
 ## Current state (as of 2026-08-11, end of session)
 
-**266 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**335 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 Built and tested before this session: Phase 1 (economic core), Phase 2 (vacancy +
 conscription), the §8 MVP mechanic, the client/server scaffold with real targeted delivery,
@@ -84,7 +84,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 266 tests
+npm test                              # 335 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
