@@ -9,6 +9,7 @@ import {
   proximityCloseness,
   placeArrival,
   DEFAULT_SHARD_CONFIG,
+  DISTRICT_SIDE_STREET_NEIGHBOR_COUNT,
   type Shard,
   type PlayerPosition,
 } from '../src/engine/space.js';
@@ -42,6 +43,57 @@ describe('generateShardLayout — determinism', () => {
 
   it('hubPlot is identical across every seed and config — one fixed shard-wide point', () => {
     expect(generateShardLayout(1).hubPlot).toEqual(generateShardLayout(999).hubPlot);
+  });
+
+  it('every district has at least DISTRICT_SIDE_STREET_NEIGHBOR_COUNT side-street neighbours, given enough other districts to choose from', () => {
+    const shard = generateShardLayout(7); // default config: 6 districts
+    for (const d of shard.districts) {
+      expect(d.neighborDistrictIds.length).toBeGreaterThanOrEqual(DISTRICT_SIDE_STREET_NEIGHBOR_COUNT);
+    }
+  });
+
+  it('the side-street mesh is symmetric — if A lists B, B lists A', () => {
+    const shard = generateShardLayout(11);
+    for (const a of shard.districts) {
+      for (const bId of a.neighborDistrictIds) {
+        const b = shard.districts.find((d) => d.id === bId)!;
+        expect(b.neighborDistrictIds).toContain(a.id);
+      }
+    }
+  });
+
+  it('no district lists itself as a neighbour', () => {
+    const shard = generateShardLayout(13);
+    for (const d of shard.districts) {
+      expect(d.neighborDistrictIds).not.toContain(d.id);
+    }
+  });
+
+  it('a single-district shard has no side streets, and generation does not throw', () => {
+    const shard = generateShardLayout(1, { ...DEFAULT_SHARD_CONFIG, coreDistrictCount: 1, peripheryDistrictCount: 0 });
+    expect(shard.districts.length).toBe(1);
+    expect(shard.districts[0]!.neighborDistrictIds).toEqual([]);
+  });
+
+  it('side-street generation is deterministic under a fixed seed, same as everything else in this module', () => {
+    const a = generateShardLayout(42, DEFAULT_SHARD_CONFIG);
+    const b = generateShardLayout(42, DEFAULT_SHARD_CONFIG);
+    expect(a.districts.map((d) => d.neighborDistrictIds)).toEqual(b.districts.map((d) => d.neighborDistrictIds));
+  });
+
+  it('side streets never collide with an existing plot — no two plots share a coordinate, mesh included', () => {
+    // Same invariant the pre-existing "no two plots" test already checks for hub corridors —
+    // re-run against a shard whose side-street mesh is real (default multi-district config)
+    // to prove the new corridor pass doesn't reintroduce the exact bug that test guards.
+    const shard = generateShardLayout(23, DEFAULT_SHARD_CONFIG);
+    const seen = new Set<string>();
+    for (const district of shard.districts) {
+      for (const plot of district.plots) {
+        const key = `${plot.x},${plot.y}`;
+        expect(seen.has(key)).toBe(false);
+        seen.add(key);
+      }
+    }
   });
 
   it('every district has exactly one plaza plot', () => {
@@ -132,6 +184,7 @@ describe('occupantsWithin / plotsWithin — hand-computed ground truth', () => {
         economicHealthHistory: [],
         detectionHistory: [],
         weatherHistory: [],
+        neighborDistrictIds: [],
       },
     ],
   };

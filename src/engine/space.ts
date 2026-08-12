@@ -90,6 +90,12 @@ export interface District {
   economicHealthHistory: number[];
   detectionHistory: number[];
   weatherHistory: WeatherSample[];
+  /** Districts this one connects to directly via a side street, generated once at shard
+   *  creation from geometry alone (2026-08-12, `docs/VISUAL_FRAMEWORK_2026-08-12.md` §6 —
+   *  district barriers). Static for the shard's whole life; see `engine/districtAccess.ts`
+   *  for who actually gets to use these. Empty for a district with no side streets (e.g. a
+   *  single-district shard) — the hub route always still works regardless. */
+  neighborDistrictIds: DistrictId[];
 }
 
 export interface Shard {
@@ -362,6 +368,45 @@ function corridorPlots(
   return plots;
 }
 
+/** How many nearest OTHER districts each district connects directly to via a side street,
+ *  bypassing the hub. [ILLUSTRATIVE] — deliberately small: "genuine alternate routes, not a
+ *  fully-connected mesh," per `NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §2. The final mesh is
+ *  the UNION of every district's own K choices (see `sideStreetPairs`), so a district often
+ *  ends up with more than K neighbours once other districts' own choices include it too. */
+export const DISTRICT_SIDE_STREET_NEIGHBOR_COUNT = 2;
+
+/**
+ * Every district's own K nearest OTHER districts by plaza-to-plaza distance, deduped into
+ * unordered pairs — the side-street mesh `generateShardLayout` builds corridors from and
+ * `District.neighborDistrictIds` records. A pair appears once whether both districts picked
+ * each other or only one did: the corridor is physically bidirectional regardless of which
+ * side "chose" it first, so this is a symmetric union of directed K-NN choices, not a
+ * mutual-nearest-neighbour requirement. Deterministic: `others` is sorted by real (integer,
+ * exact) Manhattan distance, and JS's stable sort preserves `districtData`'s own array order
+ * on ties, which is itself fixed generation order — no reliance on object-key iteration.
+ */
+function sideStreetPairs(
+  districtData: readonly { id: DistrictId; plazaPlot: { x: number; y: number } }[],
+  k: number,
+): Array<[DistrictId, DistrictId]> {
+  const seen = new Set<string>();
+  const pairs: Array<[DistrictId, DistrictId]> = [];
+  for (const d of districtData) {
+    const nearest = districtData
+      .filter((o) => o.id !== d.id)
+      .map((o) => ({ id: o.id, dist: distance(d.plazaPlot, o.plazaPlot) }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, k);
+    for (const o of nearest) {
+      const key = [d.id, o.id].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push([d.id, o.id]);
+    }
+  }
+  return pairs;
+}
+
 /**
  * Deterministic procedural shard layout. Same `seed` + same `config` always produces a
  * byte-identical `Shard` — every random draw goes through `mulberry32(seed)` in a fixed
@@ -393,30 +438,56 @@ export function generateShardLayout(seed: number, config: ShardLayoutConfig = DE
     for (const p of d.plots) claimed.add(`${p.x},${p.y}`);
   }
 
-  // Pass 2: corridors, in district order — a cell goes to whichever district (real plot or
-  // earlier corridor) claimed it first; later corridors crossing the same cell skip it
-  // rather than adding a second, ambiguous Plot at that coordinate.
-  const districts: District[] = districtData.map((d) => {
+  // Pass 2: hub-spoke corridors, in district order — a cell goes to whichever district (real
+  // plot or earlier corridor) claimed it first; later corridors crossing the same cell skip
+  // it rather than adding a second, ambiguous Plot at that coordinate.
+  const hubCorridors = new Map<DistrictId, Plot[]>();
+  for (const d of districtData) {
     const corridor = corridorPlots(d.plazaPlot, hub, d.id).filter((p) => {
       const key = `${p.x},${p.y}`;
       if (claimed.has(key)) return false;
       claimed.add(key);
       return true;
     });
+    hubCorridors.set(d.id, corridor);
+  }
 
-    return {
-      id: d.id,
-      classification: d.classification,
-      radius: d.radius,
-      plazaPlot: d.plazaPlot,
-      plots: [...d.plots, ...corridor],
-      buildings: d.buildings,
-      population: 0,
-      economicHealthHistory: [],
-      detectionHistory: [],
-      weatherHistory: [],
-    };
-  });
+  // Pass 3: side-street corridors (2026-08-12, district barriers — see
+  // districtAccess.ts for who actually gets to use these; this pass only builds the
+  // physical mesh, which is the same for every player). Runs AFTER hub corridors claim
+  // their cells, same "first claim wins" discipline; a side street sharing a cell with an
+  // already-placed hub corridor is fine (both are plain 'street' plots), it just skips
+  // adding a second Plot at that coordinate.
+  const pairs = sideStreetPairs(districtData, DISTRICT_SIDE_STREET_NEIGHBOR_COUNT);
+  const sideStreetCorridors = new Map<DistrictId, Plot[]>();
+  const neighborsById = new Map<DistrictId, Set<DistrictId>>(districtData.map((d) => [d.id, new Set<DistrictId>()]));
+  for (const [a, b] of pairs) {
+    neighborsById.get(a)!.add(b);
+    neighborsById.get(b)!.add(a);
+    const from = districtData.find((d) => d.id === a)!;
+    const to = districtData.find((d) => d.id === b)!;
+    const corridor = corridorPlots(from.plazaPlot, to.plazaPlot, a).filter((p) => {
+      const key = `${p.x},${p.y}`;
+      if (claimed.has(key)) return false;
+      claimed.add(key);
+      return true;
+    });
+    sideStreetCorridors.set(a, [...(sideStreetCorridors.get(a) ?? []), ...corridor]);
+  }
+
+  const districts: District[] = districtData.map((d) => ({
+    id: d.id,
+    classification: d.classification,
+    radius: d.radius,
+    plazaPlot: d.plazaPlot,
+    plots: [...d.plots, ...(hubCorridors.get(d.id) ?? []), ...(sideStreetCorridors.get(d.id) ?? [])],
+    buildings: d.buildings,
+    population: 0,
+    economicHealthHistory: [],
+    detectionHistory: [],
+    weatherHistory: [],
+    neighborDistrictIds: [...(neighborsById.get(d.id) ?? [])].sort(),
+  }));
 
   return { id: `shard-${seed}`, seed, districts, hubPlot: hub };
 }

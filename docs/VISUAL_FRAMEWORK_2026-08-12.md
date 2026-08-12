@@ -138,16 +138,17 @@ additive to it, and one row in the original table is corrected.
 | Detection / witness density | `occupantsWithin()`, `detectionProbability()` (`space.ts`/`ecosystem.ts`, shipped) | Ambient light/activity noise scales with real witness count, not a decorative crowd |
 | Consolidation decline | `DistrictHealth.state` (`districtConsolidation.ts`, shipped) — ACTIVE/CONSOLIDATING/MERGED | Feeds District Weather already (§ above); a renderer may additionally desaturate/thin a CONSOLIDATING district's own structures, distinct from its color |
 | Pressure detection (Detective/Journalist sensor) | `pressureContribution()` (`pressureDetection.ts`, shipped 2026-08-12) | Already folded into District Weather's `tension` — no separate visual, by design (never a name, never a second signal to read) |
+| District access (barriers) | `District.neighborDistrictIds` (`space.ts`), `effectiveRoute()` (`districtAccess.ts`, shipped 2026-08-12) | Side streets rendered as real passable routes between neighbouring districts; a gate/checkpoint (§5's border-checkpoint language, scaled down) at the edge for travelers routed `'viaHub'` instead |
 
 ## 6. District barriers — gated movement, not just gated rendering
 
-**[DESIGN — not yet built]**. User's own framing, kept close to verbatim as the source of the
+**Status: built, 2026-08-12.** User's own framing, kept close to verbatim as the source of the
 decision: barriers restricting movement between districts, so that those who can move are
 able to, and everyone else has to use the main plaza. This is a real spatial/gameplay
-mechanic, not a rendering choice — it changes who can reach whom, not just what it looks like
-— so it gets specified here but deliberately not implemented in this pass; it touches pathing,
-which nothing else in this document does, and deserves its own build+test cycle the way every
-other mechanic in this project has gotten, not a same-session bolt-on.
+mechanic, not a rendering choice — it changes who can reach whom, not just what it looks
+like — and it got its own build+test cycle rather than a same-session bolt-on, per the
+paragraph above. `src/engine/districtAccess.ts` is the implementation; both design questions
+originally left open below are now resolved and proven by test, not just argued.
 
 **The gap this closes in the existing geometry**: `NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §2
 already wanted "side streets: connective paths between neighborhoods that don't pass through
@@ -162,10 +163,10 @@ they have standing there. A grifter has neither; `world.ts`'s own header already
 this exact asymmetry for an unrelated reason ("grifters have no fixed position in this
 model... not part of the proximity graph"). Extending that same asymmetry to movement is not
 a new invention, it's the same distinction the engine already draws, applied to a second
-system. Proposed rule: **a FILLED role-holder may use direct district-to-district side
-streets between their home district and its nearest neighbours; a grifter (or anyone in a
-BACKSTOPPED/VACANT slot's former position) must route through the hub/plaza to reach any
-other district.**
+system. Implemented rule (`districtAccess.ts`'s `hasShortcutAccess`/`effectiveRoute`): **a
+FILLED role-holder may use direct district-to-district side streets between their home
+district and its nearest neighbours; a grifter (or anyone in a BACKSTOPPED/VACANT slot's
+former position) must route through the hub/plaza to reach any other district.**
 
 **Why this is additive, not subtractive, and so doesn't touch constraint 6**: the baseline —
 everyone can always reach every district via the hub — is never removed for anyone; the hub
@@ -183,12 +184,13 @@ has a real cost. A grifter needing to reach a specific district could plausibly 
 to close the gap the direct shortcut denies them — that's a natural extension once item 6
 ships, not a dependency; the barrier mechanic stands on its own without it.
 
-**What "nearest neighbours" means, concretely**: district centers (`plazaPlot`) already have
-real coordinates; "adjacent" is computable today via `space.ts`'s own `distance()` between
-plaza plots, no new spatial primitive needed — e.g. each district's side street connects to
-its K nearest other districts by that distance, K itself a design choice (2-3, matching the
-brief's "genuine alternate routes," not a fully-connected mesh which would make the hub
-pointless).
+**What "nearest neighbours" means, concretely**: `space.ts`'s `sideStreetPairs()` — each
+district connects to its `DISTRICT_SIDE_STREET_NEIGHBOR_COUNT` (K=2) nearest other districts
+by real `distance()` between plaza plots, unioned symmetrically (a corridor exists if EITHER
+side picked it, since it's physically walkable both ways regardless of which side "chose"
+it) — matching the brief's "genuine alternate routes," not a fully-connected mesh which would
+make the hub pointless. Stored once at shard generation as `District.neighborDistrictIds`,
+static for the shard's whole life, same as `plazaPlot`/`radius`/`buildings`.
 
 **Visually**: a barrier is not a wall in the "MERGED district" sense — it doesn't degrade or
 look broken (§4's rule about structural beauty staying constant applies here too). It should
@@ -198,14 +200,23 @@ cross-shard exit-ticket mechanic) is the natural visual language to reuse here, 
 a district-to-district gate rather than a shard-exit one. A grifter standing at a gate they
 can't use should read as "not for you yet," not "broken" or "hostile."
 
-**Deliberately not decided here, flagged for the actual build pass**: whether a district's
-CONSOLIDATING/MERGED state affects who can use its shortcuts (a declining district's own
-role-holders losing standing there would double-penalize an already-struggling district,
-which cuts against "the floor protects everyone" — probably shouldn't, but not yet argued
-through); whether this needs its own simulation pass to check it doesn't create a new
-containment gap (a well-connected role-holder isolating a grifter by controlling which
-shortcuts exist is exactly the kind of thing `ADVERSARIAL_CONTAINMENT.md` would want checked
-before shipping, not assumed safe).
+**Both questions this section originally left open are now resolved, decided during the
+build rather than deferred again:**
+
+- **Consolidation state does NOT affect shortcut access.** A CONSOLIDATING/MERGED district's
+  role-holders already pay the trade-route friction penalty on income
+  (`districtConsolidation.ts`); also revoking shortcuts would double-penalize a district
+  already struggling, cutting against "the floor protects everyone." This is enforced
+  structurally, not just by intention — `space.ts` has zero import of
+  `districtConsolidation.ts`, proven by `test/districtAccess.test.ts`'s import-guard test
+  (same pattern `drivers.importGuard.test.ts` and `grammar.invariant.test.ts` already use),
+  so district health has no path to reach corridor geometry even by future accident.
+- **No containment gap**: a well-connected role-holder cannot control or gate another
+  player's access, because `directNeighbors`/`effectiveRoute` take no per-player identity for
+  any district but the traveler's own — there is no parameter through which a third party's
+  state could enter the computation. Proven, not just argued: `test/districtAccess.test.ts`
+  tampers with every OTHER district's geometry in a shard and confirms the route between two
+  specific districts is completely unaffected.
 
 ## 7. What this still leaves open, per the original brief's own §9 discipline
 
@@ -213,8 +224,7 @@ Not everything needs deciding now, and the 2026-08-07 brief was explicit that ex
 details (exact structure shapes per role, precise street-generation logic, weather-particle
 behavior) are for whoever builds the renderer, not this layer of design. Genuinely still open:
 
-1. **`Shard.hubPlot` as a named field** — the one real code change this document calls for
-   (§1). Small, mechanical, not yet done.
+1. ~~`Shard.hubPlot` as a named field~~ — done (§1).
 2. **Wall Soul window size calibration** — `WALL_SOUL_WINDOW_POSTS` is a starting guess (§3),
    needs measuring against real posting cadence before it's trusted.
 3. **Visual *quality* of light distinguishing District Weather from the Wall's Soul** — the
