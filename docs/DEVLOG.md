@@ -20,6 +20,18 @@ value normalized; support roles = `1 - consolidationFrictionMultiplier` for thei
 8 tests. Also fixed stale test-count mentions (233/266 -> 335) in README/HANDOVER, caught by
 the user mid-sprint. 335 tests total.
 
+**Item 4 (role completion)**: `engine/roleCompletion.ts`. Tried a flat per-completion reward
+first, MEASURED it before trusting it (per constraint 1) — Miller/Baker's zero-sum task
+completes ~54-58% of days, the friction-bar task all four support roles share completes
+~97-100%, so a flat reward would have paid support roles ~1.9x the expected daily bonus.
+Recalibrated per role type (0.5 vs 0.28) so expected reward converges; added the addendum's
+required hard-filter parity test (+-30% band, same discipline as flourRatio<=1.0). Also
+caught and fixed a real bug while wiring it in: completion reward was landing on Miller/
+Baker wealth AFTER wealthCap, silently defeating a supposedly hard bound — moved it into the
+taxed/capped income flow itself. Flagged honestly: Detective's task is NOT literally "catch a
+saboteur" (that's the unshipped pattern-based proposal) — it's the same friction-bar task as
+the other three support roles, using its own resource. 348 tests total.
+
 ---
 
 ## 2026-08-11 — Design Addendum received; item 0/3 (District Weather) wired first, as instructed
