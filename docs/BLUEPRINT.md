@@ -2893,3 +2893,68 @@ Verified: `npm run typecheck` clean; `test/throttleWindowImpact.test.ts`, 5 test
 invariance proof, the linear-scaling proof across every role's income function, and the
 `DAILY_ACTIVITY_MULTIPLIER`/`DOWNTIME_DAMPENING` value checks). Full suite 432 tests (up from
 427).
+
+## 2026-08-13 addendum received — a real conflict flagged, then re-derived properly
+
+`docs/DESIGN_ADDENDUM_2026-08-13.md` (saved verbatim) proposes a three-wedge/plaza/wall-gate
+district geometry, a cascading district-opening threshold model (districts open within a
+shard as population crosses ~65/~90, a new shard at 100), and cites "the validated default"
+role split (M3/B7/IE2/C6/J5/D3 = 26 slots) as the basis.
+
+**Traced the addendum's own citations before touching anything.** Its role numbers come from
+`design/node_core_reference.py` (explicitly labelled, in its own header, "the source of truth
+for the TypeScript port that FOLLOWS" — the PRE-PORT design sketch, with a toy
+`economic_health = (filled*1.0 + npc*0.4)/S` formula that has no districts, no market, no
+grain chain, and treats population as static) and `districtRoleSweep.ts`'s "current
+illustrative default" candidate — that sweep's STARTING point, not its recommended winner,
+and structurally missing an `rImportExport` field entirely (it predates the 6th role). Both
+are already documented in this repo as superseded by `jointGridSearch.ts`, which produced the
+shipped `DEFAULT_WORLD_CONFIG` (M5/B5/C5/J5/D5/IE3 = 28) by screening 560 candidates against
+the real engine.
+
+**Verified the addendum's underlying economic claim against the real engine before accepting
+or rejecting it.** `sim/populationCapacitySweep.ts` + `test/populationCapacitySweep.test.ts`:
+the addendum's "scale districts not slots, because slot-scaling breaches the grifter floor"
+concern does NOT reproduce — this session's own `opportunityAdjustedMigrationStep` fix
+already ties sustainable population to slot count, so scaling slots up raises population
+roughly proportionally and grifter fraction stays healthy (~37-38%, not the toy model's
+predicted 4-10%). The toy model's static-population assumption is the reason for the
+divergence, not a real property of the game.
+
+**User's decision, given both findings**: re-run `jointGridSearch.ts` itself at
+`targetPopulation=100` — the rigorous path, rather than trusting either the stale addendum
+numbers or the shipped pop=65 default outside its calibrated range.
+
+### `jointGridSearch.ts` extended to take a population argument
+
+`npm run joint-grid-search screen 100` / `confirm 100` — the ENTIRE grid (allocation totals,
+per-role candidate bands, the "remainder floor"/"per-role cap" guards, and every district
+layout's building counts) scales proportionally by `POP_SCALE = targetPopulation /
+DEFAULT_WORLD_CONFIG.targetPopulation`, rather than re-guessing a new grid by hand. At
+`POP_SCALE=1` (population omitted, the default) every code path is byte-identical to before —
+confirmed by the fact that no existing golden test or config needed to change. The screen-file
+path is population-suffixed so a pop=100 run can never clobber the original pop=65 screening
+output.
+
+**Full pipeline run at pop=100** (real, not estimated): Phase 1 screened 555 allocations (500
+days, burn-in 120, 1 seed) — 6 discarded as incoherent, 8 finalists promoted (2 per total,
+same short-horizon-bias guard as the original sweep). Phase 2 confirmed all 8 x 3 district
+layouts at full fidelity (1500 days, burn-in 300, 2 seeds) — every one of the 24 combinations
+passed the flourRatio<=1.0 hard filter (worst case 0.928, comfortable margin), confirming the
+chain stays coherent at this scale.
+
+**Reading the Phase 2 numbers with the same judgement the original pop=65 decision used**
+(balance over extremes, avoid shard-count inflation, prefer lower gini at comparable health):
+`M9 B9 C7 J7 D8 IE6` (S=46) at 6 districts stands out — health 0.937 (near the top of the
+finalist set), gini 0.629 (tied-lowest among the strong-health candidates), flourRatio 0.616
+(a comfortable margin, not just barely under 1.0), shard count holding at 2.5 rather than
+inflating toward 3-4 the way the S=52 candidates do, grifter wait 26.9 days (a real but modest
+increase over the pop=65 default's ~22 days, not a floor breach). **Not yet adopted as a
+shipped default** — reported as a real, evidence-backed answer to "what would a pop=100
+config actually look like," the same two-phase discipline (`screen` ranks, `confirm` reports,
+a human decision is separate) `jointGridSearch.ts` was always built around.
+
+Verified: `npm run typecheck` clean; full suite unchanged at 437 tests (`jointGridSearch.ts`
+is a script, not unit-tested directly, matching its own established convention — its
+correctness is verified by the POP_SCALE=1 identity-preservation argument above, plus the
+real screen/confirm run itself producing coherent, sane results).

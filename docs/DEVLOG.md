@@ -78,6 +78,53 @@ will need deliberate updating if `DEFAULT_WORLD_CONFIG` is ever changed to match
 addendum's numbers — so that can't happen silently either). Full suite: 437 tests (up from
 432), `npm run typecheck` clean.
 
+**User's decision, given both findings**: re-run `jointGridSearch.ts` itself at
+`targetPopulation=100` — the rigorous path, not either the stale addendum numbers or the
+shipped pop=65 default used outside the range it was calibrated for.
+
+**Extended `jointGridSearch.ts` to take a population argument** (`npm run joint-grid-search
+screen 100` / `confirm 100`) rather than writing a parallel script — the allocation grid, its
+per-role candidate bands, and every district layout's building counts now scale
+proportionally by `POP_SCALE`, so the search space keeps the same relative shape a larger
+population needs instead of being re-guessed. Caught one real bug immediately on first run:
+the screen phase's default district layout wasn't included in the scaling (only the confirm
+phase's `LAYOUTS` array was), so the very first pop=100 candidate threw "43 role slots
+requested, shard has 40 buildings" — fixed by hoisting a shared `SCREEN_SHARD_CONFIG` used by
+both phases. At `POP_SCALE=1` (population omitted) every path is byte-identical to the
+original — the screen-file path is also population-suffixed so a pop=100 run can never
+clobber the original pop=65 screening output.
+
+**Ran the full pipeline for real** (not estimated): Phase 1 screened 555 allocations (timed a
+single candidate first — ~375ms/candidate — before committing to the full run, ~3.5 minutes
+total), 6 discarded as incoherent, 8 finalists promoted. Phase 2 confirmed all 8 x 3 district
+layouts at full fidelity (1500 days, burn-in 300, 2 seeds, ~38 seconds) — every one of 24
+combinations passed the flourRatio<=1.0 hard filter, worst case 0.928. Applying the same
+judgement the original pop=65 decision used (balance over extremes, avoid shard-count
+inflation, prefer lower gini at comparable health): `M9 B9 C7 J7 D8 IE6` (S=46) at 6 districts
+stands out — strong health (0.937), tied-lowest gini among the strong-health candidates
+(0.629), a comfortable flourRatio margin (0.616, not just-under-1.0), shard count holding at
+2.5 rather than inflating toward 3-4 like the S=52 candidates, grifter wait a real but modest
+increase over the pop=65 baseline (26.9 vs ~22 days, not a floor breach). **Not adopted as a
+shipped default yet** — reported as the evidence-backed answer to "what would a pop=100 config
+actually look like," same two-phase discipline (screen ranks, confirm reports, a human
+decision is separate) this sweep was always built around.
+
+**Mid-session: user pushed back on how I'd framed the addendum's concept-art references** —
+correctly. I'd treated the AI-generated visual reference images (three-wedge plaza geometry,
+a "Decoding the Visual Contrast Contract" slide mapping Miller scarcity/Baker price
+competition/Courier movement/stealth mechanics onto visual zones) as something to acknowledge
+and set aside while finishing the config sweep. The user's point: they're modelling the
+visuals FROM the actual architecture, not decorating an arbitrary shape after the fact — the
+art is real design input, not flavor to nod at. Correct, and consistent with this project's
+own founding visual-design law (data-to-visual mapping, established 2026-08-07/08-12) — the
+"Visual Contrast Contract" material is doing exactly that mapping work, just via a newer
+image-generation pass. Committed to treating it as real source material once district
+geometry work resumes, not background inspiration.
+
+Full suite: 437 tests, unchanged (`jointGridSearch.ts` is a script, not unit-tested directly,
+matching its own convention — correctness verified by the POP_SCALE=1 identity-preservation
+argument plus the real run itself producing coherent results). `npm run typecheck` clean.
+
 ---
 
 ## 2026-08-12 — Item 8's report-back verification: exact proof + real numbers, and a methodology bug caught mid-write
