@@ -195,6 +195,16 @@ touch in the game:
   from the same kind of composed vocabulary as the Wall rather than typed
   free text. Nothing about it is ever recorded. Once it's said, it exists
   only in whoever was standing close enough to hear it.
+- **A home for everyone, including grifters** — one housing type, not a
+  separate tier for people without a role yet. Whoever you are, you live
+  somewhere real — above a bakery, or elsewhere across the city — with
+  density handled by adding floors to a building rather than adding more
+  buildings. Paired with a reputation-level system: starting out, a small
+  number of roles are within reach; standing opens up more over time, but
+  it only ever adds options, never takes any away, and nobody's own
+  progress gets slower because someone else is playing more that day.
+
+
 
 ## Beyond one shard
 

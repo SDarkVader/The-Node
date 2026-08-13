@@ -6,6 +6,64 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Housing, ground-level access, and reputation levels written up as one design doc (no code yet)
+
+Two `AskUserQuestion` attempts to resolve the district-count question (3 vs 6 vs 11 districts,
+flagged unresolved in `VISUAL_FRAMEWORK_2026-08-12.md` §8) were both rejected, sharply. First
+attempt proposed options without real population-per-district numbers ("look at what your
+proposing, how many players per district?... it's absurd") — fixed by running a real
+`createWorld`/`stepWorld` probe at 3 seeds, day 800, before proposing anything further. Second
+attempt ("switch to 3 districts now" vs "build a cascading model") was rejected even harder
+("read what I said first.") — the user's concurrent message reframed the whole problem: not
+district count, but how a grifter (roleless player) exists in this world at all — where they
+live, how visible they are, how they get a role. District count was a symptom, not the
+question.
+
+**Real bug found by the probe, not yet fixed**: `District.population` (`space.ts:88`) reads 0
+in every district across every seed tested, despite `world.population` correctly tracking
+real totals (54-63). The field exists but nothing in the normal `stepWorld` tick flow
+increments it — only `placeArrival` does, and that's not called by the tick loop. Flagged to
+the user directly, then made a named prerequisite in the design doc below rather than fixed
+ad hoc.
+
+The user then laid out, across several messages, a coherent system: universal housing (one
+abode type for every resident regardless of role — explicitly *not* a separate "grifter
+housing" category, corrected by the user directly: "the same abode anyone with a role has"),
+density via floors rather than plot count ("population density can be layered... through
+first, second floor etc"), ground-level role opportunities for grifters to grind toward
+(explicitly connected to the already-shipped `shiftCover.ts` rather than a new mechanic), and
+a full reputation-level system (discrete levels gating role eligibility, additive-only, must
+not let one player's grinding advantage another player's growth, "increasingly difficult as
+the lvls advance" via a rising bar not a rate cut). Explicit instruction alongside this: "find
+creative solutions to problems within the constraints of the game to find emergent mechanics"
+— i.e. compose existing, already-measured mechanics rather than invent new sweeps.
+
+Written up as `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`. Every mechanism in it reuses
+something already shipped and measured: `shiftCover.ts` unchanged as the grinding opportunity
+(only its successful-cover event gains a reputation progress-tick); `roleCompletion.ts`'s
+measured completion ratios (Miller/Baker ~54-58%, the four support roles ~97-100%) as the
+real, evidence-based signal for a 2-tier role split — explicitly flagged as 2 tiers *because
+that's what the data clusters into today*, not invented ahead of evidence; `roleCompletion.ts`'s
+and `shiftCoverNoticedIndices`'s existing once-per-day caps as the anti-grind fairness
+mechanism, with no new limiter needed; the existing district lowest-population placement rule
+and `CONSOLIDATION_GRACE_DAYS` reused for housing assignment/displacement instead of new
+constants. One explicit design decision recorded: reputation levels are a public/civic
+progression value (like a job title), never a per-observer trust score — required by
+constraint 4 (no invented in-between memory) and constraint 6 (additive-only, untouchable
+floor); and reputation-level gates apply only to *voluntary* role uptake, never to backstop or
+conscription, which already overrides every other access rule in this engine (constraint 2).
+
+Also recorded: floors break the plot-count intuition that made "6 districts" read as absurd,
+which materially changes what evidence the still-open district-count decision should be
+checked against — but does not resolve that decision. Left open deliberately, per §5 of the
+new doc, with a concrete recommended next step (re-run a population-per-district probe once
+floors exist).
+
+**Design only. No engine code, no new tests this entry** — matches the same design-before-code
+discipline used for the visual framework work the same session.
+
+---
+
 ## 2026-08-13 — New design addendum received: a real, unresolved conflict with the shipped role/district config, flagged not silently picked
 
 **Context.** User uploaded `docs/DESIGN_ADDENDUM_2026-08-13.md` (saved verbatim) — a

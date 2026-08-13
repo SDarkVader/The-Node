@@ -3002,3 +3002,53 @@ its own merits rather than force-passing:**
 
 Verified: `npm run typecheck` clean; full suite 437 tests, all passing (identical count to
 before adoption — the failures were all fixed in place, not deleted).
+
+## Universal housing, ground-level role access, and reputation levels (2026-08-13) — design only, no code yet
+
+Two rejected `AskUserQuestion` framings on the still-open district-count question (3 vs 6 vs
+11, `VISUAL_FRAMEWORK_2026-08-12.md` §8) led the user to name the real underlying problem
+directly: not district count, but how a roleless "grifter" player exists in this world at all
+— where they live, how visible they are, how they get from no role to a role. Full design
+recorded in `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`; summarized here per this file's
+own convention of tracking every deviation/decision, not just shipped code.
+
+**Real bug found (probe, not fixed yet).** `District.population` (`space.ts:88`) is never
+incremented by the real `stepWorld` tick loop — only `placeArrival` touches it, and that's not
+in the tick path. Confirmed 0 in every district at day 800 across 3 seeds, despite
+`world.population` tracking correctly (54-63). Recorded as a named prerequisite of the housing
+design, not fixed ad hoc — fixing it in isolation, before residency assignment exists to give
+it real meaning, would just be guessing at what the field should hold.
+
+**Three decisions, one document, because they're one system:**
+
+1. **Housing is universal, not role-gated.** One abode type, for a role-holder or a grifter
+   alike — the user corrected an early misreading of theirs directly ("the same abode anyone
+   with a role has"). Buildings are mixed-use: ground floor is the role function (if any,
+   reusing `Building.roleSlotRef: string | null`, `space.ts:70`, unchanged), floor(s) above are
+   housing available to any resident of the district. Density scales via `floors`, not plot
+   count — this is the piece that changes the district-count conversation: the plot-count
+   intuition that made "6 districts" read as absurd doesn't hold once housing capacity is
+   `floors × residentsPerFloor` per building rather than one resident per plot.
+2. **Ground-level role access reuses `shiftCover.ts` unchanged.** Already matches the user's
+   own spec almost exactly (opt-in, no scheduler, "watching the world is the skill being
+   rewarded" per its own header) — the only addition is that a successful cover also registers
+   one reputation progress-tick, using the mechanism's existing once-per-BACKSTOPPED-slot-
+   per-day cap as the anti-grind limiter for free, rather than inventing a new one.
+3. **Reputation levels are additive-only and civic, not a trust score.** Two tiers, derived
+   from `roleCompletion.ts`'s already-measured completion ratios rather than guessed: the four
+   cooperative/friction-bar roles (~97-100% completion) as level 1, Miller/Baker's competitive
+   Cournot/Bertrand roles (~54-58%) as level 2 — flagged explicitly as a 2-tier default because
+   that's what the measured data clusters into today, not invented ahead of evidence. A level
+   is a single global progression value (like a job title), never a per-observer score —
+   required by constraint 4 (no invented in-between memory) and constraint 6 (additive-only,
+   untouchable floor). Gates apply only to *voluntary* role uptake; backstop/conscription
+   always bypasses them, consistent with the existing precedent that backstop already overrides
+   every other access rule in this engine (constraint 2 — a permanently-ungated level-2 slot
+   would itself be the permanent-zero-state failure constraint 2 forbids).
+
+**What this does NOT decide.** The district-topology count question stays open — this doc
+changes what evidence it should be checked against (real housing capacity via floors, not
+plot-count intuition) but explicitly defers the decision itself, recommending a fresh
+population-per-district probe once floors exist before revisiting it.
+
+No code, no new tests — design-before-code discipline, same as the visual framework work.

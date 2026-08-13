@@ -27,10 +27,31 @@ decision — extended `jointGridSearch.ts` to re-derive a role/district config a
 `M9 B9 C7 J7 D8 IE6` (S=46), `targetPopulation=100` (was M5/B5/C5/J5/D5/IE3=28, pop=65). Full
 trail in `docs/BLUEPRINT.md`'s "2026-08-13 addendum received" and "Adopted (2026-08-13)"
 entries; a real side-finding (the core-vs-periphery identity-resolution gap disappeared at the
-new building-count scaling) is flagged there too. **Next**: fold the addendum's concept-art
-visual reference into `docs/VISUAL_FRAMEWORK_2026-08-12.md` as real source material (user's
-explicit instruction — the art is modelled from the architecture, not decoration), reconciled
-against the wedge/plaza/gate geometry, BEFORE any district-geometry engine code gets written.
+new building-count scaling) is flagged there too. Concept art was then folded into
+`docs/VISUAL_FRAMEWORK_2026-08-12.md` as real source material (user's explicit instruction —
+the art is modelled from the architecture, not decoration) as §8, which surfaced a genuine
+conflict: the addendum's three-wedge geometry implies a district-count question (3 vs 6 vs 11)
+that's still **unresolved**.
+
+Two rejected `AskUserQuestion` framings on that district-count question led the user to
+reframe the actual problem: not "how many districts" but "how does a grifter exist in this
+world at all" — where they live, how they're seen, how they get a role. That's now written up
+as `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`: universal housing (one abode type for
+everyone, capacity via floors not plot count — resolves the plot-count intuition that made "6
+districts" read as absurd), ground-level role access (reusing `shiftCover.ts` unchanged, not a
+new mechanic), and reputation levels (two tiers derived from `roleCompletion.ts`'s measured
+54-58% vs 97-100% completion split, additive-only per constraint 6, backstop always overrides
+per constraint 2). **Design only — no engine code yet.** Real prerequisite bug flagged there:
+`District.population` (`space.ts:88`) is never incremented by the real `stepWorld` tick loop
+(only `placeArrival` touches it) — confirmed 0 in every district at day 800 across 3 seeds
+despite `world.population` tracking correctly.
+
+**Next**: the district-topology count decision (still open, `VISUAL_FRAMEWORK...§8`) should be
+revisited with real housing-capacity math once floors exist, per the new design doc's §1.5 —
+then, if the user wants to proceed to code: fix the `District.population` bug, build
+floors/housing capacity, wire Shift Cover to reputation progress, add the level/role-tier gate.
+See `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6 for the full suggested build order.
+
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below are already
 updated; narrative elsewhere referring to "65" as the target is now historical).
