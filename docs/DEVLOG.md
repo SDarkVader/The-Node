@@ -116,6 +116,46 @@ target (task #69).
 
 ---
 
+## 2026-08-13 — Arson built and calibrated to the 30% floor: all three "let's get busy" items done
+
+Last of the three. `src/engine/arson.ts` reuses `ecosystem.ts`'s `patternSabotageAttempt`
+wholesale, per the fines doc's own explicit instruction — zero new detection math. Only
+arson-specific pieces built: `canAttemptArson` (the housing doc §7.6 absence-gate, both signals
+— not actively working the role, not present at the abode — must be true); `resolveArsonTarget`
+(a picked default for the doc's own flagged-open workplace-vs-abode question: a role-holder's
+workplace, since arson reads as "destroying infrastructure" matching `applySabotageDamage`'s
+existing semantics; a grifter's abode, since grifters have none to target; moot when the two are
+the same mixed-use building).
+
+**Calibrated for real, not guessed.** Swept `pPerWitness` at the shipped 6-step count directly
+against `sim/sabotagePatternHarness.ts` (8 seeds, 20,000 days, 2,000-day burn-in — same harness
+sabotage's own recalibration used, reused rather than duplicated). `0.02` lands no-Detective
+success at 32.0% (mean 110 days between successes), with an active Detective 18.3% (mean 171
+days) — matching *"30% opportunity is enough to take a chance... otherwise it's not worth
+obtaining"* read as a floor: comfortably below sabotage's 71.1%/40.2%, "explicitly the hardest
+of the three" honored with a real number, and a Detective still meaningfully harder (~43%
+relative reduction, same order of magnitude as sabotage's own Detective effect). `sim/arsonCli.ts`
+is the permanent report (new `npm run arson-sim`), mirroring `sabotagePatternCli.ts`'s shape.
+
+13 new tests (`test/arson.test.ts`): absence-gate truth table, target-resolution defaults,
+`attemptArson`'s defaults match its explicit-args form byte-for-byte, and four real
+measured-regression locks (success rate stays in a 25-40% band, is below sabotage's own rate,
+Detective still raises difficulty, rate stays high enough to be "worth obtaining"). 526 tests
+total (513 + 13), typecheck clean.
+
+**Deliberately not built**: the Firestarter crafting item (needs `personalResourceStock`, a
+real prerequisite the fines doc's own §1 already flags as missing) and wiring into `world.ts`'s
+tick loop (needs real per-tick witness-count/absence data) — this is the same
+design+sim-verified-not-shipped stage pattern-sabotage itself went through before its own
+harness existed, stated explicitly rather than implied.
+
+**All three "would you agree there are many things we can build already... parked away that
+could just be built instead of documented?" candidates are now done**: the diary's content
+schema, proximity conversation, and arson. Session running low on budget — see
+`docs/HANDOVER.md` for exactly what's real vs. what's still a prerequisite away.
+
+---
+
 ## 2026-08-13 — Moderation-logging research turned into architecture, verified before adopting
 
 Follow-up to the research prompt generated and sent earlier this session (proximity

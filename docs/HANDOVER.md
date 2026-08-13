@@ -273,18 +273,41 @@ session, tracked as tasks #66-69:**
   6-month-from-flagged Tier 2), `createInMemorySink` reference implementation. Silo boundary
   enforced by `test/moderationLog.importGuard.test.ts`, mirroring the existing driver-guard
   pattern. 9 new tests, 513 total, typecheck clean.
-- **#69 in progress**: arson against its 30% target, reusing `ecosystem.ts`'s pattern-sabotage
-  machinery, absence-gate per housing doc §7.6.
+- **#69 done**: `src/engine/arson.ts` — `canAttemptArson` (housing doc §7.6 absence-gate),
+  `resolveArsonTarget` (picked default: role-holder's workplace, grifter's abode — the
+  workplace-vs-abode question was flagged open in the docs, this is a stated choice, not a
+  silent resolution), `attemptArson` (thin wrapper around `ecosystem.ts`'s
+  `patternSabotageAttempt`, zero new detection math). Calibrated for real against
+  `sim/sabotagePatternHarness.ts`: `pPerWitness=0.02` at 6 steps lands no-Detective 32.0%
+  success (mean 110 days), with Detective 18.3% (mean 171 days) — matches "30% opportunity...
+  otherwise it's not worth obtaining" as a floor, clearly below sabotage's 71.1%/40.2%. New
+  `sim/arsonCli.ts` (`npm run arson-sim`) is the permanent report. 13 new tests, 526 total
+  (513 + 13), typecheck clean.
 
-**If this session ends mid-list, resume with `TaskList` to see exactly which of #66-69 are
-actually done** — don't re-derive from prose alone, the task tool has the live state.
+**All three "let's get busy" build candidates are done (#66-69).** Not built, by design, in any
+of the three: the Firestarter crafting item and trespass's SUBJECT-graph read both need
+`personalResourceStock`/residency-and-keys, real prerequisites flagged in their own docs, not
+avoided by accident; TTS rendering and `world.ts` tick-loop wiring for both proximity
+conversation and arson are client/infra concerns or need real per-tick spatial/absence data this
+pass didn't have. All of this is the SAME "design+sim-verified, not yet wired to a live world"
+stage sabotage itself went through before its own harness existed — a real, named stage, not a
+gap.
 
-Still separately open, not part of this build push: the level-2 reputation-gate mechanism
-question (user hasn't specified one), and whether "let's explore it on each level" meant gating
-proximity conversation's vocabulary by reputation level (proposed, never confirmed — worth
-resolving once #67 exists to actually apply a gate to). Fines economy (needs the
-personal-resource-stock field) and Oracle (needs the population-scale re-simulation its own §5
-asks for) remain parked for real reasons, not just undocumented laziness.
+**#66-69 all done, this session.** 526 tests total, typecheck clean. New files this build push:
+`src/engine/diary.ts`, `src/comms/proximityConversation.ts`, `src/infra/moderationLog.ts`,
+`src/engine/arson.ts`, `src/sim/arsonCli.ts` (`npm run arson-sim`), plus matching test files.
+
+**Next, in rough priority order:**
+1. The level-2 reputation-gate mechanism question — user hasn't specified one yet ("something
+   else, tell me what to try"), still genuinely open.
+2. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
+   reputation level — proposed, never confirmed, now buildable since the grammar module exists.
+3. Wire what got built into `world.ts`'s real tick loop (proximity conversation, arson,
+   moderation-log capture) — all four new modules are currently standalone/measurable but not
+   yet driven by real per-tick world state, the same stage sabotage itself was at for a while.
+4. `personalResourceStock` (blocks the Firestarter item and trespass's SUBJECT-graph read) and
+   the population-scale re-simulation Oracle's own §5 needs — both real prerequisites, not
+   avoided by accident.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

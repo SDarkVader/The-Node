@@ -13,6 +13,7 @@
     "conscription-sim": "tsx src/sim/conscriptionCli.ts",
     "ecosystem-sim": "tsx src/sim/ecosystemCli.ts",
     "sabotage-pattern-sim": "tsx src/sim/sabotagePatternCli.ts",
+    "arson-sim": "tsx src/sim/arsonCli.ts",
     "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "world-sim": "tsx src/sim/worldCli.ts",
     "role-ratio-sweep": "tsx src/sim/roleRatioSweep.ts",

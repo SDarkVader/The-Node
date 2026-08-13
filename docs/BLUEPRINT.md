@@ -3552,3 +3552,27 @@ fact rather than a comment — scans `engine`/`world`/`comms`/`server` for any i
 logger, plus a sanity check proving the guard would catch a real violation. 9 new tests, 513
 total (504 + 9), typecheck clean. Last of the three "let's get busy" build candidates:
 arson (task #69).
+
+---
+
+**2026-08-13, later still — arson built, calibrated to the ~30% floor. All three "let's get
+busy" candidates now done.** `src/engine/arson.ts` reuses `patternSabotageAttempt` wholesale
+(fines doc's own explicit instruction, zero new detection math): `canAttemptArson` implements
+the housing doc's §7.6 absence-gate exactly (both signals — not working the role, not present
+at the abode — must be true); `resolveArsonTarget` picks and documents a default for the
+still-open workplace-vs-abode question (workplace for role-holders, matching
+`applySabotageDamage`'s infrastructure-damage semantics; abode for grifters, who have no
+workplace).
+
+Calibration was real, not guessed: swept `pPerWitness` directly against
+`sim/sabotagePatternHarness.ts` (same harness, same 8-seed/20,000-day/2,000-day-burn-in
+methodology sabotage's own recalibration used) and landed `0.02` at 6 steps — no-Detective
+32.0% success (mean 110 days), with Detective 18.3% (mean 171 days), matching *"30% opportunity
+is enough... otherwise it's not worth obtaining"* as a floor, comfortably below sabotage's
+71.1%/40.2%, Detective still meaningfully harder. `sim/arsonCli.ts` (new `npm run arson-sim`)
+is the permanent report, mirroring `sabotagePatternCli.ts`. 13 new tests including four real
+measured-regression locks, 526 total (513 + 13), typecheck clean.
+
+Not built: the Firestarter crafting item (needs `personalResourceStock`, still missing per the
+fines doc's own §1) and `world.ts` tick-loop wiring (needs real per-tick witness/absence data)
+— same design+sim-verified stage sabotage itself was at before its own harness existed.

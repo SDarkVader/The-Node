@@ -175,9 +175,14 @@ statement: *I could leave. I'm choosing not to. Yet.*
 
 ## Other things being built
 
-A few more pieces of NODE exist only as design right now — reasoned
-through, simulated, argued about, but not yet something you could actually
-touch in the game:
+The private diary, face-to-face conversation, and arson (below) now have
+real, tested engine code — `src/engine/diary.ts`,
+`src/comms/proximityConversation.ts`, `src/infra/moderationLog.ts`,
+`src/engine/arson.ts` — calibrated and verified the same way everything
+else in this repo is, but not yet wired into the live running world (no
+`world.ts` tick-loop integration yet), so still not something you could
+actually play with today. Everything else below remains design only —
+reasoned through, simulated, argued about, but no code yet:
 
 - **The Oracle** — a battered, unglamorous fixture anyone can visit once a
   day for a real probability draw, the same odds for a three-year veteran as
