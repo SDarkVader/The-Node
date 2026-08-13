@@ -3188,3 +3188,66 @@ capacity check is a district aggregate, not per-building); the consolidation-tri
 displacement grace period §1.3 said should reuse `CONSOLIDATION_GRACE_DAYS` for housing too
 (only role-slot eviction uses it today); reputation levels (§3) and the diary-in-abode
 mechanic (§7) both still need this housing layer as a foundation but aren't wired to it yet.
+
+## Reputation levels — progress tracked and calibrated for real, the gate itself deliberately not wired (2026-08-13, same session)
+
+User: *"let's continue"*, following the housing build order's own step 3-4. Real code from
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §3 — but this pass surfaced a genuine
+architectural gap that changed what's actually buildable, so it's split into what shipped and
+what's explicitly deferred, not silently glossed.
+
+**A real, load-bearing finding, checked before building anything**: §3 assumes "a reputation
+level is a single, global, additive progression value per player" that persists across a
+grifter becoming a role-holder and back. Checked against the real architecture and confirmed
+that identity does NOT exist: `player.ts`'s own header already flags this ("a session-scoped
+id... real accounts/auth are a separate, later concern, not decided here"), and `world.ts`
+substitutes `buildingId` for `playerId` wherever it needs one — a role slot resets `wealth`/
+`experience` to 0 on every new occupant with no reference to who, if anyone, held it before,
+and a grifter popped from the pool to fill a role has no thread connecting it back if it later
+becomes a grifter again. Separately, the design's §3.5 gate ("applies only to voluntary
+uptake, never conscription") needs to hook into "which specific grifter fills an open role" —
+but the real fill mechanism (`sim/multiRoleConscription.ts`'s `genuineFill` event) is a
+hazard-driven AGGREGATE COUNT increment, not a per-grifter pick; individual grifters are only
+ever selected for eviction/draft ordering (oldest-wait-first), never for a voluntary fill.
+Wiring a real gate needs fill selection restructured to pick a specific, reputation-eligible
+grifter — real, separate, larger work.
+
+**Scoped to what's honestly buildable now**: `src/engine/reputation.ts` (new) computes
+level from accumulated progress (`reputationLevelForProgress`, a pure derivation — level is
+never stored independently, so it can't drift out of sync) and `rolesEligibleFor(level)`
+(additive per constraint 6 — level 2 is level 1's four roles plus Miller/Baker, never a
+replacement). `GrifterSlot` gained `reputationProgress?: number` — optional, defaulting via
+`?? 0` at every read site, same convention `districtId` established, so none of the 6+
+grifter-construction call sites needed touching. Wired into the existing Shift Cover payout
+in `stepWorld`: a successful cover also earns one progress-tick, reusing the SAME
+once-per-BACKSTOPPED-slot-per-day cap that already governs the pay itself as the anti-grind
+limiter — no new rate limit needed, exactly as §3.3 specified. **The gate itself
+(`rolesEligibleFor` restricting who can voluntarily fill what) is NOT called from `world.ts`
+anywhere** — this is level/progress tracking only, honestly labeled as such in the module's
+own header, not silently presented as the full mechanic.
+
+**A second real finding, this time about the illustrative constants themselves.** First
+shipped `REPUTATION_LEVEL_THRESHOLDS = [3, 8]`, `[ILLUSTRATIVE]`, no data behind it. Measured
+against real `stepWorld` runs before trusting it (1000 days, 3 seeds, 3 churn rates,
+tracking every grifter's progress every tick, not just a final snapshot — a snapshot alone
+undercounts, since a grifter who accrues real progress is often the same one who then gets
+genuinely conscripted and leaves the pool, the mechanic working as intended). Level 1 (3) was
+robustly reached — hundreds to thousands of grifter-days crossed it per run. **Level 2 (8) was
+never reached once, across all 9 combinations** — max progress ever observed topped out at 7.
+Lowered to 6: empirically reached (0-177 times per 1000-day run depending on churn) while
+staying meaningfully harder than level 1 (double the bar), matching the intended "harder,
+rarer" shape without being a dead tier nobody could ever occupy. Locked in with a real
+regression test (`test/shiftCover.test.ts`) that fails loudly if a future threshold change
+makes level 2 unreachable again, rather than that being caught by accident.
+
+**Verified**: 15 new tests (11 pure `reputation.ts` tests — level derivation, monotonicity,
+additive role sets; 4 world-integration tests — accrual happens over a real run, progress
+never decreases, a bounded-not-absolute-zero invariant at zero churn since sabotage
+independently creates Shift Cover opportunities regardless of churn rate — a real, honest
+correction to an initially-wrong test assumption, not silently forced to pass, plus the
+level-1/level-2-reachability lock-in above). 466 tests total, `npm run typecheck` clean.
+
+**Not built, explicitly deferred**: the voluntary-uptake gate itself (needs fill-selection
+restructuring — real, separate work); any notion of reputation surviving a grifter's
+transition into a role and back (blocked on the same missing persistent-identity concept
+`player.ts` already flagged as future work, not something this pass could fix in scope).

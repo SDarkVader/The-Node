@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../src/sim/rng.js';
 import { shiftCoverPay, shiftCoverNoticedIndices, SHIFT_COVER_FRACTION } from '../src/engine/shiftCover.js';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type WorldConfig } from '../src/world/world.js';
+import { reputationLevelForProgress, REPUTATION_LEVEL_THRESHOLDS } from '../src/engine/reputation.js';
 
 /**
  * Regression tests for Shift Cover (2026-08-11 addendum item 7) — verified in isolation per
@@ -120,5 +121,72 @@ describe('Shift Cover wired into the world kernel', () => {
       return w.grifters.map((g) => g.wealth);
     };
     expect(JSON.stringify(run())).toBe(JSON.stringify(run()));
+  });
+});
+
+describe('Shift Cover -> reputation progress (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.3)', () => {
+  it('at least one grifter accrues reputation progress over a long run at high churn (real Shift Cover opportunities)', () => {
+    // High pMonthly -> more churn -> more BACKSTOPPED slots -> more real Shift Cover
+    // opportunities, same technique the existing "sawExtra" wealth test above uses.
+    let world = createWorld(8, { ...DEFAULT_WORLD_CONFIG, pMonthly: 0.95 });
+    for (let i = 0; i < 500; i++) world = stepWorld(world);
+    expect(world.grifters.some((g) => (g.reputationProgress ?? 0) > 0)).toBe(true);
+  });
+
+  it('reputation progress only ever increases — never decremented by anything, matching wealth staying non-negative above (constraint 6, additive-only)', () => {
+    let world = createWorld(8, { ...DEFAULT_WORLD_CONFIG, pMonthly: 0.95 });
+    const priorById = new Map<string, number>();
+    for (let i = 0; i < 300; i++) {
+      world = stepWorld(world);
+      for (const g of world.grifters) {
+        const prior = priorById.get(g.id);
+        const current = g.reputationProgress ?? 0;
+        if (prior !== undefined) expect(current).toBeGreaterThanOrEqual(prior);
+        priorById.set(g.id, current);
+      }
+    }
+  });
+
+  it('reputationProgress is always a non-negative integer bounded by ticks elapsed — never more than one tick could have earned', () => {
+    // NOT "zero churn -> zero progress": sabotage eviction independently creates BACKSTOPPED
+    // slots regardless of pMonthly (found running this test — a real, honest correction, not
+    // a bug: pMonthly=0 measurably still produced progress=1 for some grifter). The real,
+    // defensible invariant is a bound, not an absolute zero.
+    let world = createWorld(1, { ...DEFAULT_WORLD_CONFIG, pMonthly: 0 });
+    for (let day = 1; day <= 50; day++) {
+      world = stepWorld(world);
+      for (const g of world.grifters) {
+        const progress = g.reputationProgress ?? 0;
+        expect(Number.isInteger(progress)).toBe(true);
+        expect(progress).toBeGreaterThanOrEqual(0);
+        expect(progress).toBeLessThanOrEqual(day);
+      }
+    }
+  });
+
+  it('real grifters reach level 1 AND level 2 over a long run — the calibration this session found and fixed (level 2 was empirically unreachable at the original illustrative threshold of 8)', () => {
+    // Tracks progress every tick, not just a final snapshot — a snapshot alone undercounts,
+    // since a grifter who accrues enough progress to matter is often the same grifter who
+    // then gets genuinely conscripted into a role and leaves the pool (the mechanic working
+    // as intended). Real measurement (1000 days, 3 seeds, 3 churn rates, see reputation.ts's
+    // own header) found max progress ever observed topped out at 7 — level 1 (threshold 3)
+    // was robustly reached, level 2 (originally 8) never was. This test locks in that level 2
+    // is reachable at the corrected threshold, so a future silent threshold change that makes
+    // it unreachable again fails loudly here rather than being caught by accident.
+    let world = createWorld(2, { ...DEFAULT_WORLD_CONFIG, pMonthly: 0.6 });
+    let sawLevel1 = false;
+    let sawLevel2 = false;
+    for (let day = 0; day < 1000; day++) {
+      world = stepWorld(world);
+      for (const g of world.grifters) {
+        const level = reputationLevelForProgress(g.reputationProgress ?? 0);
+        if (level >= 1) sawLevel1 = true;
+        if (level >= 2) sawLevel2 = true;
+      }
+    }
+    expect(sawLevel1).toBe(true);
+    expect(sawLevel2).toBe(true);
+    // Sanity-checks the thresholds themselves stay a real rising bar, not silently flattened.
+    expect(REPUTATION_LEVEL_THRESHOLDS[1]!).toBeGreaterThan(REPUTATION_LEVEL_THRESHOLDS[0]!);
   });
 });

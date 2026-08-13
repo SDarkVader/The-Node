@@ -6,6 +6,46 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Reputation levels: real progress tracking, a real architectural blocker found, and a real calibration fix
+
+User: *"let's continue"*. Following the housing build order's own next step (§3, reputation
+levels). Before writing any code, checked whether the design's "persists across a grifter
+becoming a role-holder and back" assumption actually holds against the real engine — it
+doesn't. `player.ts`'s own header already flags this: player identity is "session-scoped,"
+real accounts are explicitly deferred. `world.ts` substitutes `buildingId` for `playerId`
+wherever role-holders need one; a role slot resets wealth/experience to 0 on every new
+occupant with no reference to who held it before. Separately, the design's own gate (voluntary
+uptake only, never conscription) needs to pick a SPECIFIC grifter for a voluntary fill — but
+the real fill mechanism (`genuineFill`) is a hazard-driven count increment, not a per-grifter
+selection at all.
+
+**Scoped down to what's honestly buildable**: level/progress tracking, not the gate. New
+`src/engine/reputation.ts` — `reputationLevelForProgress` (pure derivation, level never
+stored separately from progress) and `rolesEligibleFor(level)` (additive, level 2 = level 1
+plus Miller/Baker, never a replacement). `GrifterSlot.reputationProgress` wired into the
+existing Shift Cover payout — a successful cover earns one tick, reusing the existing
+once-per-slot-per-day cap as the anti-grind limiter, no new one needed. The gate itself isn't
+called from anywhere — labeled honestly in the module's own header, not silently presented as
+done.
+
+**Then measured the illustrative thresholds before trusting them, per house rule.** First
+shipped `[3, 8]`, no data behind it. Real `stepWorld` runs (1000 days, 3 seeds, 3 churn rates,
+tracked every tick — a final snapshot alone undercounts, since high-progress grifters often
+get conscripted and vanish from the pool, which is the mechanic working correctly) found level
+1 (3) robustly reached, but level 2 (8) reached ZERO times across all 9 combinations — max
+ever observed topped out at 7. A dead tier, caught before it shipped as a real number rather
+than an illustrative placeholder. Lowered to 6 — empirically reached, still double level 1's
+bar. Locked in with a regression test that fails if a future change makes level 2
+unreachable again.
+
+**466 tests total (451 + 15 new), typecheck clean.** Not built: the voluntary-uptake gate
+(needs fill-selection restructured to pick individual grifters — separate, larger work); any
+notion of reputation surviving a grifter's transition into a role and back (blocked on the
+same missing persistent-identity concept, not fixable in this pass's scope). Full trail in
+`docs/BLUEPRINT.md`'s "Reputation levels" entry.
+
+---
+
 ## 2026-08-13 — First real housing code: floors, capacity, grifter residency (build+test, not design)
 
 User: *"continue working on the build and test as you go"* — after two design-only doc

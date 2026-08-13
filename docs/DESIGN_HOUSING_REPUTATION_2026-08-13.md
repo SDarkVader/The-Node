@@ -389,15 +389,25 @@ plainly so the reuse is visible rather than buried in prose above:
 Not a commitment, just a sequencing note for whoever picks this up next, following the
 project's own design→code→test→docs discipline:
 
-1. Fix `District.population` tracking in the real `stepWorld` tick loop (prerequisite, §1.4).
-2. Add `floors`/housing-capacity to `Building`/`District`, with residency assignment (§1.2–1.3),
-   verified against real `stepWorld` output the same way `populationCapacitySweep.ts` verified
-   the role-slot scaling claim — not trusted on paper.
-3. Wire Shift Cover's existing successful-cover event to also register a reputation
-   progress-tick (§3.3) — additive, should not touch `SHIFT_COVER_FRACTION` or
-   `SHIFT_COVER_NOTICE_PROBABILITY`.
-4. Add the reputation-level state and role-tier gate, applied only to voluntary uptake
-   (§3.5), with regression tests proving backstop/conscription bypasses it.
+1. ✅ **Done (2026-08-13).** Fix `District.population` tracking in the real `stepWorld` tick
+   loop (prerequisite, §1.4).
+2. ✅ **Done (2026-08-13).** Add `floors`/housing-capacity to `Building`/`District`, with
+   residency assignment (§1.2–1.3), verified against real `stepWorld` output. Scoped to
+   district-level assignment only (not per-building/per-floor) — see `docs/BLUEPRINT.md`'s
+   "Housing capacity + grifter residency" entry.
+3. ✅ **Done (2026-08-13).** Wire Shift Cover's existing successful-cover event to also
+   register a reputation progress-tick (§3.3) — additive, doesn't touch
+   `SHIFT_COVER_FRACTION` or `SHIFT_COVER_NOTICE_PROBABILITY`. Thresholds measured and
+   recalibrated against a real run (`src/engine/reputation.ts`'s own header has the numbers).
+4. **Partially done, real blocker found (2026-08-13).** Reputation LEVEL/PROGRESS state is
+   built (`src/engine/reputation.ts`, `GrifterSlot.reputationProgress`). The role-tier GATE
+   itself — applied only to voluntary uptake, backstop/conscription bypassing it (§3.5) — is
+   **not wired up**: this engine has no persistent player identity that survives a grifter
+   becoming a role-holder and back (`player.ts`'s own header already flags this as deferred),
+   and the real fill mechanism (`genuineFill`) is a hazard-driven count increment, not a
+   per-grifter selection a gate could hook into. Wiring a real gate needs fill selection
+   restructured to pick a specific, reputation-eligible grifter — real, separate, larger
+   work, not started. Full reasoning in `docs/BLUEPRINT.md`'s "Reputation levels" entry.
 
 (District-topology count, previously step 5 here, is resolved — see §1.5.)
 

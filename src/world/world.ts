@@ -325,6 +325,16 @@ export interface GrifterSlot {
    *  grifters get placed. See `space.ts`'s `chooseHousingDistrict` and
    *  `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.3. */
   districtId?: DistrictId;
+  /** Accumulated reputation progress-ticks — undefined/0 for a freshly-created grifter, never
+   *  set directly at construction (avoids touching every one of the 6+ places a `GrifterSlot`
+   *  literal gets built; reads as `?? 0` everywhere, same convention `districtId` established).
+   *  One tick per successfully-covered Shift Cover slot per day (`stepWorld`'s existing
+   *  once-per-BACKSTOPPED-slot-per-day cap IS the anti-grind limiter — no new one needed, per
+   *  §3.3). Level is derived from this via `reputation.ts`'s `reputationLevelForProgress`,
+   *  never stored separately. Resets to 0 if this grifter identity ever fills a role and later
+   *  becomes a NEW grifter — see `reputation.ts`'s own header for why that's a real, known
+   *  limitation, not a bug in this field. */
+  reputationProgress?: number;
 }
 
 export interface SabotageLogEntry {
@@ -1191,7 +1201,11 @@ export function stepWorld(world: World): World {
     const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!));
     grifters = grifters.map((g, i) => {
       const pos = grifterOrder.findIndex((o) => o.i === i);
-      return pos >= 0 ? { ...g, wealth: g.wealth + payouts[pos]! } : g;
+      // A successful cover also earns one reputation progress-tick (2026-08-13,
+      // docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.3/§2.1) — the SAME once-per-
+      // BACKSTOPPED-slot-per-day cap that already governs the pay itself IS the anti-grind
+      // limiter here; no separate reputation-specific rate limit needed.
+      return pos >= 0 ? { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1 } : g;
     });
   }
 

@@ -104,11 +104,32 @@ user's explicit ask — *"ensure it's represented in the visual design so that I
 game directly from code and documents"* — so a 3D modeler has real code constants to work
 from, not concept-only language.
 
-**Next**: pick up the key-crafting/fines economy design (needs its own pass — see the devlog
-entry), the Oracle odds/prize design, or continue the housing build order
-(`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) — reputation levels (§3, step 3-4) and the
-diary-in-abode mechanic (§7) both now have the housing/residency foundation (§1, step 2) they
-were waiting on.
+**Then: "let's continue"** — reputation levels (§3), following the housing build order's own
+next step. Before coding, checked whether the design's "persists across a grifter becoming a
+role-holder and back" assumption holds against the real engine — **it doesn't**: `player.ts`
+already flags player identity as session-scoped/deferred, and `world.ts` has no thread
+connecting a grifter to whoever they become after filling a role. Separately, the design's
+own voluntary-uptake gate needs to pick a SPECIFIC grifter for a fill, but the real fill
+mechanism (`genuineFill`) is a hazard-driven count increment, not a per-grifter selection.
+Both real, load-bearing gaps — scoped down to what's honestly buildable: `src/engine/
+reputation.ts` (level derivation, additive role-eligibility sets) plus `GrifterSlot.
+reputationProgress`, wired into Shift Cover's existing payout (a successful cover earns one
+progress-tick, reusing the existing anti-grind cap). **The gate itself is not wired up** —
+labeled honestly as level/progress tracking only, not the full mechanic.
+
+Also caught and fixed a real calibration problem before it shipped: the illustrative
+thresholds `[3, 8]` were guessed with no data; measured against real 1000-day runs and found
+level 2 (8) was NEVER reached once across 9 (seed, churn-rate) combinations — max ever
+observed topped out at 7. Lowered to 6, verified reachable, locked in with a regression test.
+
+466 tests total (451 + 15 new), typecheck clean. Full trail in `docs/BLUEPRINT.md`'s
+"Reputation levels" entry.
+
+**Next**: the voluntary-uptake gate itself needs fill-selection restructured to pick
+individual grifters (separate, larger work) before it can be wired to `rolesEligibleFor` — or
+pick up the key-crafting/fines economy design (needs its own pass — see the devlog entry), the
+Oracle odds/prize design, or the diary-in-abode mechanic (§7), which now has the
+housing/residency foundation (§1) it was waiting on.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
@@ -347,7 +368,7 @@ honest cost of a bigger population target.
 
 ```
 npm install
-npm test                              # 451 tests
+npm test                              # 466 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
