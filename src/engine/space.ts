@@ -244,16 +244,23 @@ export interface ShardLayoutConfig {
 // districts sits almost exactly between both extremes on every metric measured — kept as
 // the deliberate balance point, not a default nobody re-examined. See docs/BLUEPRINT.md's
 // "5-role/district allocation, re-derived" entry for the full numbers.
+// Building counts raised alongside targetPopulation=100 (2026-08-13, world.ts's
+// DEFAULT_WORLD_CONFIG — see its own header for the full jointGridSearch re-run trail):
+// buildingsPerCoreDistrict 10->15, buildingsPerPeripheryDistrict 5->8, exactly the shard
+// config the pop=100 sweep's winning "6 districts" layout validated (2*15 + 4*8 = 62
+// buildings, comfortable headroom over the winning split's 46 role slots). District count,
+// radii, and spacing are unchanged — only re-checked at the new population would justify
+// re-running the 3/6/11 district-count comparison itself, which this pass did not do.
 export const DEFAULT_SHARD_CONFIG: ShardLayoutConfig = {
-  targetPopulation: 65,
+  targetPopulation: 100,
   coreDistrictCount: 2,
   peripheryDistrictCount: 4,
   coreDistrictRadius: 6,
   peripheryDistrictRadius: 5,
   coreSpacing: 1,
   peripherySpacing: 2,
-  buildingsPerCoreDistrict: 10,
-  buildingsPerPeripheryDistrict: 5,
+  buildingsPerCoreDistrict: 15,
+  buildingsPerPeripheryDistrict: 8,
 };
 
 interface DistrictCenter {

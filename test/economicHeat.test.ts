@@ -45,7 +45,7 @@ describe('computeEconomicHeat', () => {
 
   it('a VACANT or BACKSTOPPED slot reads 0 — no occupant, no scarcity pressure to show', () => {
     let world = createWorld(5, DEFAULT_WORLD_CONFIG);
-    for (let i = 0; i < 40; i++) world = stepWorld(world); // enough churn that something is not FILLED
+    for (let i = 0; i < 90; i++) world = stepWorld(world); // enough churn that something is not FILLED
     const heat = computeEconomicHeat(world);
     const nonFilled = [
       ...world.millers.filter((m) => m.slot.state !== 'FILLED'),

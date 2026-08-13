@@ -127,22 +127,30 @@ describe('population-capacity sweep: does the real engine reproduce the addendum
   });
 });
 
-describe('the addendum\'s cited "validated default" (M3/B7/IE2/C6/J5/D3=26) is stale, verified against this repo\'s own history', () => {
+describe('the addendum\'s cited "validated default" (M3/B7/IE2/C6/J5/D3=26) was stale — the shipped default is now the pop=100 jointGridSearch winner instead, not the addendum\'s numbers either', () => {
   it('districtRoleSweep.ts\'s "current illustrative default" label (the addendum\'s M3/B7/C6/J5/D3) is a swept STARTING candidate, not its recommended winner, and predates Import/Export entirely', () => {
     // districtRoleSweep.ts has no rImportExport field at all in its RoleSplit interface —
     // structurally proving it predates the 6th role, which jointGridSearch.ts (the sweep
-    // that actually produced DEFAULT_WORLD_CONFIG) was built to include.
-    expect(totalSlots(DEFAULT_WORLD_CONFIG)).toBe(28);
-    expect(DEFAULT_WORLD_CONFIG.rMiller).toBe(5);
-    expect(DEFAULT_WORLD_CONFIG.rBaker).toBe(5);
-    expect(DEFAULT_WORLD_CONFIG.rCourier).toBe(5);
-    expect(DEFAULT_WORLD_CONFIG.rJournalist).toBe(5);
-    expect(DEFAULT_WORLD_CONFIG.rDetective).toBe(5);
-    expect(DEFAULT_WORLD_CONFIG.rImportExport).toBe(3);
-    // The addendum's cited default (M3 B7 IE2 C6 J5 D3 = 26) does NOT match the shipped,
-    // jointGridSearch-derived config — recorded here as a live, structural tripwire: if
-    // DEFAULT_WORLD_CONFIG is ever changed to match the addendum's numbers without a
-    // deliberate, reviewed decision, this test's own values above will need updating, which
-    // is the point — it can't happen silently.
+    // that actually produced DEFAULT_WORLD_CONFIG, both at pop=65 and now pop=100) was built
+    // to include.
+    //
+    // UPDATED 2026-08-13: this tripwire did its job — DEFAULT_WORLD_CONFIG changed (28->46
+    // slots, targetPopulation 65->100), deliberately, per the user's own decision, to the
+    // REAL jointGridSearch-at-pop=100 winner (`M9 B9 C7 J7 D8 IE6`, see world.ts's own
+    // header for the full trail), NOT to the addendum's stale M3/B7/IE2/C6/J5/D3=26 either.
+    // Values below updated to match; this test still exists to catch the NEXT silent change.
+    expect(totalSlots(DEFAULT_WORLD_CONFIG)).toBe(46);
+    expect(DEFAULT_WORLD_CONFIG.rMiller).toBe(9);
+    expect(DEFAULT_WORLD_CONFIG.rBaker).toBe(9);
+    expect(DEFAULT_WORLD_CONFIG.rCourier).toBe(7);
+    expect(DEFAULT_WORLD_CONFIG.rJournalist).toBe(7);
+    expect(DEFAULT_WORLD_CONFIG.rDetective).toBe(8);
+    expect(DEFAULT_WORLD_CONFIG.rImportExport).toBe(6);
+    expect(DEFAULT_WORLD_CONFIG.targetPopulation).toBe(100);
+    // The addendum's cited default (M3 B7 IE2 C6 J5 D3 = 26) still does NOT match the
+    // shipped config — recorded as a live, structural tripwire: if DEFAULT_WORLD_CONFIG is
+    // ever changed again (to the addendum's numbers or anything else) without a deliberate,
+    // reviewed decision, this test's own values above will need updating, which is the
+    // point — it can't happen silently.
   });
 });

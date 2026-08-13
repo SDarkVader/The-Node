@@ -5,33 +5,57 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "bakerValues": [
     {
       "exp": 0.5,
+      "state": "VACANT",
+      "value": 0.2467341014720054,
+      "wealth": 16.230651729055754,
+    },
+    {
+      "exp": 0.10999999999999999,
       "state": "FILLED",
-      "value": 0.6598270022304962,
-      "wealth": 10.360095176086759,
+      "value": 0.2751135401807021,
+      "wealth": 2.765933055552021,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
-      "value": 0.6723231164388113,
-      "wealth": 8.963056279419153,
+      "value": 0.2889637980286677,
+      "wealth": 16.287331042342828,
+    },
+    {
+      "exp": 0.5,
+      "state": "VACANT",
+      "value": 0.2781060271629161,
+      "wealth": 15.736013054644918,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
-      "value": 0.6827133514885825,
-      "wealth": 11.779933242432527,
+      "value": 0.250648495778854,
+      "wealth": 17.242108976944102,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
-      "value": 0.6572396069756716,
-      "wealth": 11.784768191780012,
+      "value": 0.25421209137755074,
+      "wealth": 15.747170471173053,
     },
     {
-      "exp": 0.17,
+      "exp": 0.5,
       "state": "FILLED",
-      "value": 0.6648192024238434,
-      "wealth": 8.846232034200636,
+      "value": 0.28709524501974737,
+      "wealth": 13.793156916513272,
+    },
+    {
+      "exp": 0.5,
+      "state": "FILLED",
+      "value": 0.2612771186472863,
+      "wealth": 15.764960089587424,
+    },
+    {
+      "exp": 0.5,
+      "state": "FILLED",
+      "value": 0.2620580612243902,
+      "wealth": 15.269044850617098,
     },
   ],
   "courierValues": [
@@ -40,8 +64,16 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "wealth": 20.124999999999993,
     },
     {
-      "state": "BACKSTOPPED",
-      "wealth": 11.269999999999996,
+      "state": "FILLED",
+      "wealth": 0.8049999999999999,
+    },
+    {
+      "state": "VACANT",
+      "wealth": 19.319999999999993,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 0.7525,
     },
     {
       "state": "FILLED",
@@ -49,25 +81,37 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
     },
     {
       "state": "FILLED",
-      "wealth": 52.93749999999999,
+      "wealth": 2.1174999999999997,
     },
     {
       "state": "FILLED",
-      "wealth": 45.06250000000002,
+      "wealth": 1.8024999999999998,
     },
   ],
   "detectiveValues": [
     {
       "state": "FILLED",
-      "wealth": 5.32,
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
       "wealth": 33.250000000000014,
     },
     {
-      "state": "BACKSTOPPED",
-      "wealth": 18.619999999999994,
+      "state": "FILLED",
+      "wealth": 33.250000000000014,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 1.3299999999999998,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 33.250000000000014,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
@@ -78,12 +122,12 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "wealth": 33.250000000000014,
     },
   ],
-  "economicHealth": 0.9142857142857144,
-  "economicHealthWithExperience": 0.8313333333333334,
-  "flourPrice": 0.5114619263369155,
-  "grifterCount": 30,
+  "economicHealth": 0.908695652173913,
+  "economicHealthWithExperience": 0.7670370370370371,
+  "flourPrice": 0.24659220684985583,
+  "grifterCount": 40,
   "grifterMaxDaysWaiting": 25,
-  "grifterTotalWealth": 226.87424824745207,
+  "grifterTotalWealth": 311.4443056094373,
   "importExportValues": [
     {
       "state": "FILLED",
@@ -91,7 +135,19 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
     },
     {
       "state": "FILLED",
+      "wealth": 1.3299999999999998,
+    },
+    {
+      "state": "FILLED",
       "wealth": 33.250000000000014,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 1.3299999999999998,
+    },
+    {
+      "state": "VACANT",
+      "wealth": 30.59000000000001,
     },
     {
       "state": "FILLED",
@@ -101,11 +157,19 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "journalistValues": [
     {
       "state": "FILLED",
+      "wealth": 1.3299999999999998,
+    },
+    {
+      "state": "FILLED",
       "wealth": 33.250000000000014,
     },
     {
       "state": "FILLED",
       "wealth": 33.250000000000014,
+    },
+    {
+      "state": "VACANT",
+      "wealth": 31.920000000000012,
     },
     {
       "state": "FILLED",
@@ -122,39 +186,63 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   ],
   "millerValues": [
     {
-      "exp": 0.5,
+      "exp": 0,
       "state": "FILLED",
-      "value": 0.5125280987896966,
-      "wealth": 9.172859809480377,
+      "value": 0.3208822723012417,
+      "wealth": 0.05538894736603169,
     },
     {
       "exp": 0.5,
-      "state": "BACKSTOPPED",
-      "value": 0.5279836824854629,
-      "wealth": 7.755772503252894,
-    },
-    {
-      "exp": 0.5,
-      "state": "FILLED",
-      "value": 0.49774197103994955,
-      "wealth": 5.626741572227833,
-    },
-    {
-      "exp": 0.5,
-      "state": "BACKSTOPPED",
-      "value": 0.5043223204814031,
-      "wealth": 8.261852764030237,
+      "state": "VACANT",
+      "value": 0.48890129669307486,
+      "wealth": 3.142951295592712,
     },
     {
       "exp": 0.5,
       "state": "FILLED",
-      "value": 0.4848568423806357,
-      "wealth": 5.077306535716059,
+      "value": 0.49350849135736075,
+      "wealth": 6.503592484480908,
+    },
+    {
+      "exp": 0.5,
+      "state": "FILLED",
+      "value": 0.5092371348964148,
+      "wealth": 12.018158571484978,
+    },
+    {
+      "exp": 0,
+      "state": "FILLED",
+      "value": 0.4932283240836114,
+      "wealth": 0.5851383826416435,
+    },
+    {
+      "exp": 0,
+      "state": "FILLED",
+      "value": 0.34263434475287796,
+      "wealth": 0.059143671450616546,
+    },
+    {
+      "exp": 0.5,
+      "state": "VACANT",
+      "value": 0.5310700609246236,
+      "wealth": 6.91945767694771,
+    },
+    {
+      "exp": 0.5,
+      "state": "FILLED",
+      "value": 0.5203498934894083,
+      "wealth": 7.005643059296936,
+    },
+    {
+      "exp": 0.5,
+      "state": "FILLED",
+      "value": 0.4981855162862321,
+      "wealth": 6.502469291483882,
     },
   ],
-  "population": 54,
+  "population": 79,
   "tick": 25,
-  "wealthGini": 0.40275415434583084,
-  "wealthTop10Share": 0.24519749518517692,
+  "wealthGini": 0.4399801743124576,
+  "wealthTop10Share": 0.2688148828359446,
 }
 `;

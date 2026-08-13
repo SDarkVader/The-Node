@@ -33,13 +33,18 @@ const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 const coreMean = mean(coreMeans);
 const peripheryMean = mean(peripheryMeans);
 
+const gapPct = ((peripheryMean - coreMean) / coreMean) * 100;
 console.log(`\nAveraged across ${SEEDS.length} seeds: core meanDay=${coreMean.toFixed(1)}, periphery meanDay=${peripheryMean.toFixed(1)}.`);
+console.log(`Periphery subjects take ${gapPct.toFixed(0)}% longer to resolve than core subjects, on average.`);
 console.log(
-  `Periphery subjects take ${(((peripheryMean - coreMean) / coreMean) * 100).toFixed(0)}% longer to resolve than core subjects, on average.`,
-);
-console.log(
-  '\nNoisy per-seed (one seed out of five can reverse the direction — see the per-seed table above), but the\n' +
-    'multi-seed average confirms identity.ts\'s own prediction: the density gradient (coreSpacing=1 vs\n' +
-    'peripherySpacing=2) produces a real, not-too-small-to-feel gap in how fast a role-holder becomes known,\n' +
-    'not just a directional tendency.',
+  Math.abs(gapPct) < 10
+    ? '\nAs of 2026-08-13 (targetPopulation=100, DEFAULT_SHARD_CONFIG building counts scaled up alongside it) this gap\n' +
+        'is gone — the ~35% gap measured 2026-08-12 at the pop=65 config did not survive the building-count scaling.\n' +
+        'coreSpacing/peripherySpacing (the actual density knob) were not part of that re-derivation, only building\n' +
+        'COUNT scaled, which apparently raised absolute density in both classifications and closed most of the\n' +
+        'relative gap between them. Flagged, not silently accepted — see test/identityResolutionHarness.test.ts.'
+    : '\nNoisy per-seed (one seed out of five can reverse the direction — see the per-seed table above), but the\n' +
+        'multi-seed average confirms identity.ts\'s own prediction: the density gradient (coreSpacing vs\n' +
+        'peripherySpacing) produces a real, not-too-small-to-feel gap in how fast a role-holder becomes known,\n' +
+        'not just a directional tendency.',
 );

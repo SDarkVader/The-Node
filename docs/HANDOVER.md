@@ -16,9 +16,28 @@ personal memory is mortal, civic memory is immortal; let outcomes be real, don't
 them; reputation may only ever grant, never remove) that apply to everything built from
 here on.
 
+## Current state (as of 2026-08-13, mid-session — see below before assuming this is a stopping point)
+
+**2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
+three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
+turned out to be stale (traced to a pre-port Python toy model). Verified its underlying
+economic claim against the real engine (didn't hold), then — per the user's explicit
+decision — extended `jointGridSearch.ts` to re-derive a role/district config at
+`targetPopulation=100` properly, and adopted the result: `DEFAULT_WORLD_CONFIG` is now
+`M9 B9 C7 J7 D8 IE6` (S=46), `targetPopulation=100` (was M5/B5/C5/J5/D5/IE3=28, pop=65). Full
+trail in `docs/BLUEPRINT.md`'s "2026-08-13 addendum received" and "Adopted (2026-08-13)"
+entries; a real side-finding (the core-vs-periphery identity-resolution gap disappeared at the
+new building-count scaling) is flagged there too. **Next**: fold the addendum's concept-art
+visual reference into `docs/VISUAL_FRAMEWORK_2026-08-12.md` as real source material (user's
+explicit instruction — the art is modelled from the architecture, not decoration), reconciled
+against the wedge/plaza/gate geometry, BEFORE any district-geometry engine code gets written.
+The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
+the above supersedes it (role/population numbers in "Shipped configuration" below are already
+updated; narrative elsewhere referring to "65" as the target is now historical).
+
 ## Current state (as of 2026-08-12, end of session)
 
-**432 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
+**437 tests, all passing; `npm run typecheck` clean. Working on `main` directly.**
 
 **The entire 2026-08-11 Design Addendum's build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) is now
 built and tested.** What's left from it is only its own "report back explicitly on" section —
@@ -181,18 +200,42 @@ stuck there by design and nobody in it goes without.
 ### Shipped configuration, and where it came from
 
 ```
-rMiller 5  rBaker 5  rCourier 5  rJournalist 5  rDetective 5  rImportExport 3   (S=28)
-6 districts (2 core + 4 periphery)        targetPopulation 65 (brief band: 50-80)
+rMiller 9  rBaker 9  rCourier 7  rJournalist 7  rDetective 8  rImportExport 6   (S=46)
+6 districts (2 core + 4 periphery, buildingsPerCoreDistrict=15, buildingsPerPeripheryDistrict=8)
+targetPopulation 100 (brief band was 50-80; raised 2026-08-13, user's own call — see below)
 ```
 
-Derived by `npm run joint-grid-search` (screen, then confirm): 560 allocations screened at
-reduced fidelity, **151 discarded outright as incoherent**, finalists then re-run jointly
-against 3/6/11 districts at full fidelity. **Re-run after the consolidation defect was
-fixed**, with the incumbent explicitly re-entered as a baseline — without that there was no
-way to tell whether a "winner" actually beat what was live.
+**Raised from the original pop=65/S=28 default on 2026-08-13**, user's explicit decision,
+after the day's design addendum turned out to cite stale numbers (traced to a pre-port Python
+toy model and a pre-Import/Export sweep, both already superseded here) and its underlying
+"scale districts not slots" economic claim didn't reproduce against the real engine
+(`sim/populationCapacitySweep.ts`). Rather than trust either the stale addendum numbers or
+the old pop=65 default used outside its calibrated range, `jointGridSearch.ts` was extended
+to take a population argument (`npm run joint-grid-search screen 100` / `confirm 100`) and
+re-run properly: 555 allocations screened, 6 discarded as incoherent, 8 finalists confirmed
+at full fidelity across all three district layouts — every one passing the flourRatio<=1.0
+hard filter. `M9 B9 C7 J7 D8 IE6` won on the same judgement the original pop=65 choice used:
+balance over extremes (near-top health, tied-lowest gini among strong performers, a
+comfortable flourRatio margin, shard count staying steady rather than inflating).
+`DEFAULT_SHARD_CONFIG`'s building counts were raised to match exactly what that winning
+layout validated. See `docs/BLUEPRINT.md`'s "Adopted (2026-08-13)" entry for the full trail,
+including a real side-finding caught while adopting it: raising building count without also
+re-deriving `coreSpacing`/`peripherySpacing` closed the core-vs-periphery identity-resolution
+gap that used to exist at the old default — flagged, not silently absorbed.
 
-Live per-shard behaviour at these defaults: population ~56/65 (inside the brief's band),
-economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRatio 0.83.
+The ORIGINAL pop=65/S=28 derivation (`npm run joint-grid-search` with no population argument,
+still the default invocation): 560 allocations screened at reduced fidelity, **151 discarded
+outright as incoherent**, finalists then re-run jointly against 3/6/11 districts at full
+fidelity, re-run again after the consolidation defect was fixed with the incumbent explicitly
+re-entered as a baseline. That process and its own numbers (population ~56/65, economicHealth
+~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRatio 0.83) are historical now —
+kept here for provenance, not the live shipped behaviour.
+
+**Live per-shard behaviour at the current defaults** (from the pop=100 confirm-phase run,
+6-district layout): population ~87.4, economicHealth ~0.937, Gini ~0.629, grifter wait ~26.9
+days mean, ~2.5 shards, flourRatio ~0.616. Grifter wait and Gini are both a real, modest step
+up from the pop=65 numbers — not a floor breach (verified directly, not assumed), just the
+honest cost of a bigger population target.
 
 ### Multi-shard: registry, consolidation, and the population fix
 
@@ -217,7 +260,7 @@ economicHealth ~0.87, Gini ~0.55, grifter wait ~22 days mean, 3 shards, flourRat
 
 ```
 npm install
-npm test                              # 432 tests
+npm test                              # 437 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS

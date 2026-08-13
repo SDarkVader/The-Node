@@ -232,17 +232,31 @@ export interface WorldConfig {
 // 11 districts remains a live alternative, not a rejected one: post-fix it trades 2.4%
 // health and 1.2% population for 1.7% better equality and 5.0% shorter grifter waits — a
 // real but modest trade, materially weaker than the pre-fix numbers suggested.
+//
+// RAISED TO targetPopulation=100 (2026-08-13, user-specified — the design addendum's "a
+// hundred is enough as a tipping point to then open up a new [shard]" framing). NOT the
+// addendum's own cited role numbers (M3/B7/IE2/C6/J5/D3=26), which trace back to a pre-port
+// Python toy model and a pre-Import/Export sweep, both already superseded in this repo — see
+// docs/BLUEPRINT.md's "2026-08-13 addendum received" entry for the full trail. Instead,
+// `jointGridSearch.ts` was extended to take a population argument and re-run properly: 555
+// candidates screened, 8 finalists confirmed at full fidelity across all three district
+// layouts, every one passing the flourRatio<=1.0 hard filter. `M9 B9 C7 J7 D8 IE6` (S=46) at
+// 6 districts won on the same judgement the pop=65 choice used — balance over extremes: near-
+// top health (0.937), tied-lowest gini among the strong-health candidates (0.629), a
+// comfortable flourRatio margin (0.616, not just-under-1.0), shard count holding at 2.5
+// rather than inflating toward 3-4 like the S=52 candidates, and a real-but-modest grifter
+// wait increase (26.9 vs ~22 days) — not a floor breach, matching the earlier real-engine
+// verification (`sim/populationCapacitySweep.ts`) that the addendum's grifter-floor-breach
+// concern doesn't reproduce once slot count and population scale together properly.
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
-  rMiller: 5,
-  rBaker: 5,
-  rCourier: 5,
-  rJournalist: 5,
-  rDetective: 5,
-  // 3 slots — grainCover 1.72 at the chosen layout, so Import/Export still comfortably
-  // covers milling while grain binds under genuine understaffing.
-  rImportExport: 3,
-  targetPopulation: 65,
+  rMiller: 9,
+  rBaker: 9,
+  rCourier: 7,
+  rJournalist: 7,
+  rDetective: 8,
+  rImportExport: 6,
+  targetPopulation: 100,
   pMonthly: 0.2,
   conscriptionDelay: 14,
   gamma: 1.0,
