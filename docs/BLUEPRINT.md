@@ -3142,3 +3142,49 @@ follow-up work, flagged, not done here.
 **Verified**: `npm run typecheck` clean; full suite 442 tests, all passing (437 + 5 new
 population/starvation regression tests). Golden snapshot regenerated (expected — role
 placement genuinely changed).
+
+## Housing capacity + grifter residency — first real code from the housing design (2026-08-13, later same session)
+
+User: *"continue working on the build and test as you go"* — first engine code from
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1, following that doc's own §6 build order
+step 2 (step 1, the `District.population` fix, was already shipped above). Deliberately scoped
+to what's real and testable now: floors/capacity and grifter residency assignment, not the
+full multi-story rendering/Home-only-building system §1.1-1.2 describes.
+
+**`space.ts`**: `Building` gained a `floors: number` field, set to `HOUSING_FLOORS_PER_BUILDING`
+(illustrative `[ILLUSTRATIVE]` constant, 3) at generation — every building, role-bearing or
+not, carries the same floor count for now; real per-building variation is future work. New
+`districtHousingCapacity(district)` sums `floors x HOUSING_RESIDENTS_PER_FLOOR` (illustrative,
+2) across every building, independent of `roleSlotRef` (a Home-only building looks identical
+to this function, matching §1.1's "above bakeries, and elsewhere" model). New
+`chooseHousingDistrict(shard, housedCountByDistrict)` picks the district with the most housing
+headroom (mirrors `placeArrival`'s lowest-population selection, but keyed to housing capacity)
+— never returns nothing for a nonempty shard, even if every district is technically over
+capacity (constraint 2: no permanent zero-state, applied to housing this time).
+
+**`world.ts`**: `GrifterSlot` gained `districtId?: DistrictId`. Rather than touch the 6+
+call sites that construct a `GrifterSlot` (churn, sabotage eviction, consolidation eviction,
+arrivals, emigration, `createWorld`'s initial batch), housing assignment is a single lazy-fill
+pass at the end of `stepWorld` — the same pattern the `District.population` fix itself uses:
+any grifter still `districtId === undefined` gets placed into whichever district currently has
+the most headroom, and stays there once assigned (no reshuffling on later ticks just because a
+newer grifter needs a home too). Role-holders are already housed for free — the same district
+their workplace building sits in, already counted via FILLED role-slot state — so
+`District.population` now means real total residents (role-holders + housed grifters), not
+just role-holders, closing the gap `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.4 flagged.
+
+**Verified against a real run, not just unit-tested in isolation**: at the shipped 1-district,
+46-role-slot, pop=100 config, 300 ticks — housing capacity 372 vs. real population 67, every
+one of 22 grifters housed, `District.population` exactly equals `world.population` (only one
+district exists). 9 new tests: `districtHousingCapacity`/`chooseHousingDistrict` unit tests
+(space.regression.test.ts — capacity formula, headroom selection, the empty-shard/
+over-capacity edge cases), and world-level tests proving every grifter is housed every tick,
+stays housed once assigned, and spreads across multiple districts at a multi-district config
+rather than piling into one. 451 tests total, `npm run typecheck` clean.
+
+**Not built in this pass, flagged not silently skipped**: role-holder-to-specific-floor
+assignment (currently only district-level, not building-level, for role-holders — the
+capacity check is a district aggregate, not per-building); the consolidation-triggered
+displacement grace period §1.3 said should reuse `CONSOLIDATION_GRACE_DAYS` for housing too
+(only role-slot eviction uses it today); reputation levels (§3) and the diary-in-abode
+mechanic (§7) both still need this housing layer as a foundation but aren't wired to it yet.

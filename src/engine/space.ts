@@ -68,6 +68,54 @@ export interface Building {
    * Null until Phase B assigns a real role to this building.
    */
   roleSlotRef: string | null;
+  /** Residential floors above/alongside whatever role function (if any) occupies this
+   *  building's ground floor — housing is decoupled from role slot entirely, per
+   *  `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.1-1.2 ("above bakeries, and
+   *  elsewhere across the city"). Every building carries the same illustrative floor count
+   *  today (`HOUSING_FLOORS_PER_BUILDING`) — real per-building variation is future work,
+   *  not needed for the first housing-capacity pass. */
+  floors: number;
+}
+
+/** [ILLUSTRATIVE] — not yet measured against a real run; named and factored out so it's
+ *  easy to find and retune later rather than buried inline, per the user's own "we can name
+ *  every variable in play later, just ensure we can track them easily." */
+export const HOUSING_FLOORS_PER_BUILDING = 3;
+/** [ILLUSTRATIVE] — residents one floor houses. */
+export const HOUSING_RESIDENTS_PER_FLOOR = 2;
+
+/** A district's total housing capacity: every building's floors x residents-per-floor,
+ *  independent of whether that building also carries a role slot — a Home-only building
+ *  (no `roleSlotRef`) looks identical to this function. */
+export function districtHousingCapacity(district: District): number {
+  return district.buildings.reduce((sum, b) => sum + b.floors * HOUSING_RESIDENTS_PER_FLOOR, 0);
+}
+
+/**
+ * Chooses the district with the most housing headroom (capacity minus already-housed
+ * residents), ties broken by array order — the housing-capacity analogue of
+ * `placeArrival`'s lowest-population selection, but keyed to housing capacity rather than
+ * raw population so residents spread across whatever housing actually exists rather than
+ * piling into whichever district happens to have the fewest role-holders. Never fails to
+ * return a district when at least one exists (per constraint 2, no permanent zero-state) —
+ * if every district is technically over capacity, it returns the LEAST overcrowded one
+ * rather than refusing to house anyone.
+ */
+export function chooseHousingDistrict(
+  shard: Shard,
+  housedCountByDistrict: Readonly<Record<DistrictId, number>>,
+): DistrictId | undefined {
+  if (shard.districts.length === 0) return undefined;
+  let best = shard.districts[0]!;
+  let bestHeadroom = districtHousingCapacity(best) - (housedCountByDistrict[best.id] ?? 0);
+  for (const d of shard.districts.slice(1)) {
+    const headroom = districtHousingCapacity(d) - (housedCountByDistrict[d.id] ?? 0);
+    if (headroom > bestHeadroom) {
+      best = d;
+      bestHeadroom = headroom;
+    }
+  }
+  return best.id;
 }
 
 export interface WeatherSample {
@@ -383,7 +431,14 @@ function generateDistrictPlots(
     const buildingId = `${id}-b${i}`;
     chosen.kind = 'building';
     chosen.buildingId = buildingId;
-    buildings.push({ id: buildingId, x: chosen.x, y: chosen.y, districtId: id, roleSlotRef: null });
+    buildings.push({
+      id: buildingId,
+      x: chosen.x,
+      y: chosen.y,
+      districtId: id,
+      roleSlotRef: null,
+      floors: HOUSING_FLOORS_PER_BUILDING,
+    });
   }
 
   return { plots, buildings, plazaPlot };

@@ -527,7 +527,25 @@ forbids, on top of (not instead of) the diary's own unchanged hard-TTL safeguard
   trespass happened, e.g. via Detective's fine notification reaching them indirectly — left
   for whoever designs the fines/notification flow in full.]
 
-### 7.6 What this section does NOT decide
+### 7.6 The same absence-gate generalizes: arson
+
+User's follow-up, extending §7.1's "only while absent" rule to a second rule from the fines
+ruleset: *"same with arson. can't do it when their active in their role, but can when they're
+not at home."* Two presence signals stated, both must be absent for arson to be possible:
+**not actively FILLED-and-working their role, AND not present at their own abode.** Read
+together with §1.1's "above bakeries" mixed-use model (a Home can sit directly above its
+owner's own workplace), this is coherent as one check, not two unrelated ones: a role-holder
+who lives above their own shop is "present" in the relevant sense whether they're behind the
+counter or upstairs, so arson needs to check both signals precisely because they can be the
+same building. **[OPEN, flagged rather than guessed at]**: whether arson's TARGET is the
+victim's workplace building, their abode, or either — not stated explicitly in the message
+that introduced it, and not assumed here. Whichever it is, the gating condition reuses the two
+presence signals this design already needs to track (role-slot FILLED-and-active state, and
+home-presence per §7.1) rather than requiring a third, general-purpose "where is this player
+right now" system — the same "compose what's already there" discipline as everything else in
+this document.
+
+### 7.7 What this section does NOT decide
 
 - The key-crafting recipe itself (which roles' resources, how many, how long) — depends on
   the fines/crafting economy's own full design pass, not started.

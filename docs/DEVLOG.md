@@ -6,6 +6,36 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — First real housing code: floors, capacity, grifter residency (build+test, not design)
+
+User: *"continue working on the build and test as you go"* — after two design-only doc
+sessions today (housing/reputation, then diary-in-abode), this is the first actual engine code
+from that work, following the housing doc's own §6 build order. Also, mid-work: *"the goal is
+to create something fun to play despite the mathematical gymnastics underneath"* — noted, kept
+scope real and shippable rather than building the whole housing/floors/rendering system at
+once.
+
+Added `Building.floors` (space.ts), `districtHousingCapacity()`, `chooseHousingDistrict()` (the
+housing-capacity analogue of the existing `placeArrival` lowest-population selection), and
+`GrifterSlot.districtId` (world.ts). Housing assignment is a single lazy-fill pass at the end
+of `stepWorld` rather than touching the 6+ places a `GrifterSlot` gets constructed — same
+pattern the `District.population` fix from earlier today already used. Role-holders are housed
+for free (same district as their workplace, already tracked); `District.population` now means
+real total residents, not just role-holders.
+
+Verified against a real run, not just unit tests: shipped config, 300 ticks — housing capacity
+372, real population 67, all 22 grifters housed, `District.population` matches
+`world.population` exactly (one district). 9 new tests (capacity formula, headroom selection,
+edge cases, plus world-level tests that every grifter gets housed, stays housed, and spreads
+across districts at a multi-district config). 451 tests total, typecheck clean.
+
+Deliberately NOT built this pass: per-building (not just per-district) assignment, the
+consolidation-displacement grace period applied to housing, and wiring reputation levels or
+the diary-in-abode mechanic to this new foundation — both still need it but aren't connected
+yet.
+
+---
+
 ## 2026-08-13 — The diary lives in the abode: trespass, keys, and a connections-only view (design only)
 
 Direct follow-on, same session, right after the district-topology resolution. User: *"we have
@@ -60,6 +90,14 @@ schema, key-crafting economy) remain unbuilt. Full writeup, including the constr
 compliance reasoning and the explicit open items (key-crafting recipe, trespass witness math,
 whether the owner ever learns a trespass happened) in
 `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.
+
+**Follow-up, same thread**: *"same with arson. can't do it when their active in their role, but
+can when they're not at home."* Generalizes §7.1's absence-gate to a second fines rule —
+arson needs BOTH "not actively working their role" AND "not present at their abode" to be
+true, which composes cleanly with the "above bakeries" mixed-use housing model (the two
+signals can be the same building). Arson's actual TARGET (workplace, abode, or either) wasn't
+stated and isn't assumed — recorded as `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.6,
+flagged open rather than guessed.
 
 ---
 

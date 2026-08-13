@@ -8,6 +8,10 @@ import {
   generateShardLayout,
   proximityCloseness,
   placeArrival,
+  districtHousingCapacity,
+  chooseHousingDistrict,
+  HOUSING_FLOORS_PER_BUILDING,
+  HOUSING_RESIDENTS_PER_FLOOR,
   DEFAULT_SHARD_CONFIG,
   DISTRICT_SIDE_STREET_NEIGHBOR_COUNT,
   type Shard,
@@ -338,5 +342,52 @@ describe('placeArrival — closes districtArrivalChoice()\'s "nothing persists" 
   it('returns null when no district of the requested classification exists', () => {
     const emptyShard: Shard = { id: 'x', seed: 0, districts: [], hubPlot: { x: 0, y: 0 } };
     expect(placeArrival(emptyShard, 'core')).toBeNull();
+  });
+});
+
+describe('districtHousingCapacity — every building carries housing, independent of role slot', () => {
+  it('equals building count x floors x residents-per-floor', () => {
+    const shard = generateShardLayout(1, DEFAULT_SHARD_CONFIG);
+    const d = shard.districts[0]!;
+    expect(districtHousingCapacity(d)).toBe(d.buildings.length * HOUSING_FLOORS_PER_BUILDING * HOUSING_RESIDENTS_PER_FLOOR);
+  });
+
+  it('is 0 for a district with no buildings', () => {
+    const emptyDistrict = { ...generateShardLayout(1, DEFAULT_SHARD_CONFIG).districts[0]!, buildings: [] };
+    expect(districtHousingCapacity(emptyDistrict)).toBe(0);
+  });
+
+  it('does not depend on roleSlotRef — a Home-only (unassigned) building counts the same as a role-bearing one', () => {
+    const shard = generateShardLayout(1, DEFAULT_SHARD_CONFIG);
+    const d = shard.districts[0]!;
+    const withoutRoles = { ...d, buildings: d.buildings.map((b) => ({ ...b, roleSlotRef: null })) };
+    expect(districtHousingCapacity(withoutRoles)).toBe(districtHousingCapacity(d));
+  });
+});
+
+describe('chooseHousingDistrict — spreads residents by housing headroom, never fails on a nonempty shard', () => {
+  it('picks the district with the most headroom when counts differ', () => {
+    const shard = generateShardLayout(1, MULTI_DISTRICT_TEST_CONFIG);
+    const [a, b] = shard.districts;
+    const capacityA = districtHousingCapacity(a!);
+    // Fill every other district to near-capacity so `a` is unambiguously the most-headroom pick.
+    const counts: Record<string, number> = {};
+    for (const d of shard.districts) counts[d.id] = districtHousingCapacity(d) - 1;
+    counts[a!.id] = 0;
+    expect(chooseHousingDistrict(shard, counts)).toBe(a!.id);
+    void b;
+  });
+
+  it('returns undefined only for a shard with zero districts', () => {
+    const emptyShard: Shard = { id: 'x', seed: 0, districts: [], hubPlot: { x: 0, y: 0 } };
+    expect(chooseHousingDistrict(emptyShard, {})).toBeUndefined();
+  });
+
+  it('still returns a real district id when every district is technically over capacity — never blocks (constraint 2)', () => {
+    const shard = generateShardLayout(1, DEFAULT_SHARD_CONFIG);
+    const counts: Record<string, number> = {};
+    for (const d of shard.districts) counts[d.id] = districtHousingCapacity(d) + 1000;
+    const chosen = chooseHousingDistrict(shard, counts);
+    expect(shard.districts.some((d) => d.id === chosen)).toBe(true);
   });
 });

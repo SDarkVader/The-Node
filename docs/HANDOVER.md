@@ -81,11 +81,34 @@ projection distorts, not the stored entries). **Design only, nothing built** —
 housing/residency, the diary's content schema, and the key-crafting economy, none of which
 exist in code yet.
 
+**Also captured, same thread**: arson gets the same absence-gate as trespass ("can't do it
+when they're active in their role, but can when they're not at home") — target (workplace vs.
+abode) not stated, flagged open rather than guessed, `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`
+§7.6.
+
+**Then: "continue working on the build and test as you go."** First real code from the
+housing design, not just another design doc — `space.ts` gained `Building.floors`,
+`districtHousingCapacity()`, `chooseHousingDistrict()`; `world.ts` gained
+`GrifterSlot.districtId`, assigned via a single lazy-fill pass at the end of `stepWorld` (same
+pattern the `District.population` fix used) rather than touching every grifter-construction
+call site. `District.population` now means real total residents (role-holders + housed
+grifters), not just role-holders. Verified against a real run: shipped config, 300 ticks,
+housing capacity 372 vs. real population 67, all 22 grifters housed. 9 new tests, 451 total,
+typecheck clean. Deliberately scoped down from the full design — no per-building/per-floor
+assignment yet (district-level only), no consolidation-displacement grace period for housing.
+Full detail in `docs/BLUEPRINT.md`'s "Housing capacity + grifter residency" entry.
+
+Then folded the real shipped numbers into `docs/VISUAL_FRAMEWORK_2026-08-12.md` §9 (floors,
+capacity, the "every building is mixed-use, same footprint regardless of role" rule) per the
+user's explicit ask — *"ensure it's represented in the visual design so that I can model the
+game directly from code and documents"* — so a 3D modeler has real code constants to work
+from, not concept-only language.
+
 **Next**: pick up the key-crafting/fines economy design (needs its own pass — see the devlog
-entry), the Oracle odds/prize design, or proceed to the housing-design build order
-(`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) now that its district-topology prerequisite
-is resolved. The diary-in-abode piece (§7) most naturally follows once housing/residency (§1)
-is real, since it depends on knowing who lives where.
+entry), the Oracle odds/prize design, or continue the housing build order
+(`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) — reputation levels (§3, step 3-4) and the
+diary-in-abode mechanic (§7) both now have the housing/residency foundation (§1, step 2) they
+were waiting on.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
@@ -324,7 +347,7 @@ honest cost of a bigger population target.
 
 ```
 npm install
-npm test                              # 442 tests
+npm test                              # 451 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS

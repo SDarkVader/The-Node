@@ -667,7 +667,13 @@ describe('District.population — real bug found and fixed 2026-08-13, probing t
     expect(total).toBeGreaterThan(0);
   });
 
-  it('sums exactly to the real FILLED count across all six roles, every tick — no drift, no double-count', () => {
+  it('sums exactly to FILLED role-holders plus housed grifters, every tick — no drift, no double-count', () => {
+    // Extended 2026-08-13 (docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §1.3): grifters are
+    // now housed too (GrifterSlot.districtId), so District.population is real total
+    // residents, not just role-holders. Every grifter should be housed by the end of the
+    // SAME tick it's created in (lazy-fill, same pattern as the population fix itself) — so
+    // the district sum should always equal FILLED role-holders + ALL grifters, none left
+    // unhoused past the tick that created them.
     let world = createWorld(2, DEFAULT_WORLD_CONFIG);
     for (let i = 0; i < 50; i++) {
       world = stepWorld(world);
@@ -680,7 +686,8 @@ describe('District.population — real bug found and fixed 2026-08-13, probing t
         ...world.importExporters,
       ].filter((s) => s.slot.state === 'FILLED').length;
       const districtSum = world.shard.districts.reduce((sum, d) => sum + d.population, 0);
-      expect(districtSum).toBe(filledCount);
+      expect(districtSum).toBe(filledCount + world.grifters.length);
+      expect(world.grifters.every((g) => g.districtId !== undefined)).toBe(true);
     }
   });
 
@@ -720,5 +727,48 @@ describe('assignRoleBuildings — no district is ever permanently starved of eve
         expect(d.population).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('Grifter housing (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §1.3)', () => {
+  const MULTI_DISTRICT_CONFIG: ShardLayoutConfig = {
+    ...DEFAULT_SHARD_CONFIG,
+    coreDistrictCount: 2,
+    peripheryDistrictCount: 4,
+    buildingsPerCoreDistrict: 15,
+    buildingsPerPeripheryDistrict: 8,
+  };
+
+  it('every grifter is housed (has a real districtId) by the end of any tick, never left undefined', () => {
+    let world = createWorld(1, DEFAULT_WORLD_CONFIG);
+    for (let i = 0; i < 60; i++) {
+      world = stepWorld(world);
+      for (const g of world.grifters) {
+        expect(g.districtId).toBeDefined();
+        expect(world.shard.districts.some((d) => d.id === g.districtId)).toBe(true);
+      }
+    }
+  });
+
+  it('once housed, a grifter is not reshuffled to a different district on a later tick', () => {
+    let world = createWorld(1, { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_CONFIG });
+    world = stepWorld(world);
+    const assignedAfterFirstTick = new Map(world.grifters.map((g) => [g.id, g.districtId]));
+    for (let i = 0; i < 30; i++) {
+      world = stepWorld(world);
+      for (const g of world.grifters) {
+        const prior = assignedAfterFirstTick.get(g.id);
+        if (prior === undefined) continue; // created after the first tick — not tracked here
+        expect(g.districtId).toBe(prior);
+      }
+    }
+  });
+
+  it('spreads across multiple districts at a multi-district config, not piled into one', () => {
+    let world = createWorld(2, { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_CONFIG });
+    for (let i = 0; i < 200; i++) world = stepWorld(world);
+    const districtIdsUsed = new Set(world.grifters.map((g) => g.districtId));
+    expect(world.grifters.length).toBeGreaterThan(0);
+    expect(districtIdsUsed.size).toBeGreaterThan(1);
   });
 });

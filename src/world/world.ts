@@ -58,9 +58,11 @@
  * both remain off by default (`wealthTaxRate: 0`, `wealthCap: undefined`) regardless.
  *
  * Comms only propagates `pendingWallPosts` from role-holders with a fixed building position
- * (Miller/Baker/Courier/Journalist/Detective); grifters have no fixed position in this model
- * (same simplification `space.ts`'s own `placeArrival()` already left unused) and are not
- * part of the proximity graph.
+ * (Miller/Baker/Courier/Journalist/Detective); grifters have no fixed BUILDING position in
+ * this model (same simplification `space.ts`'s own `placeArrival()` already left unused) and
+ * are not part of the proximity graph. Grifters DO have a coarse housing DISTRICT now
+ * (2026-08-13, `GrifterSlot.districtId` — see below) — that's a housing-capacity concern, not
+ * a precise coordinate, so it doesn't put them back into the proximity graph.
  */
 
 import { mulberry32, gaussian } from '../sim/rng.js';
@@ -68,11 +70,13 @@ import {
   generateShardLayout,
   occupantsWithin,
   proximityCloseness,
+  chooseHousingDistrict,
   type Shard,
   type Building,
   type PlayerPosition,
   type ShardLayoutConfig,
   type PlayerId,
+  type DistrictId,
   DEFAULT_SHARD_CONFIG,
 } from '../engine/space.js';
 import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
@@ -313,6 +317,14 @@ export interface GrifterSlot {
    *  gain a role or be drafted." undefined for ordinary churn/sabotage/arrival grifters,
    *  who have no such deadline and wait on the ordinary conscription timers instead. */
   consolidationDeadline?: number;
+  /** Which district this grifter is housed in — undefined until the housing-assignment pass
+   *  at the end of the tick they were created in runs (same lazy-fill pattern
+   *  `District.population` itself uses: never blocks creation, always resolved by the end of
+   *  the same `stepWorld` call). Stable once assigned — a grifter isn't reshuffled between
+   *  districts on later ticks just because a NEWER grifter arrived, only newly-unhoused
+   *  grifters get placed. See `space.ts`'s `chooseHousingDistrict` and
+   *  `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.3. */
+  districtId?: DistrictId;
 }
 
 export interface SabotageLogEntry {
@@ -1453,9 +1465,6 @@ export function stepWorld(world: World): World {
   // at day 800 across 3 seeds despite world.population tracking correctly). Fixed here, at the
   // same point weatherHistory is finalized, from the FINAL post-tick role-slot state (all six
   // roles, not just the five `allRoleSlotsForHealth` above uses for health/consolidation).
-  // Grifters are deliberately excluded — they have no fixed district assignment in this model
-  // yet (`identity.ts`'s own header note); giving them one is `docs/DESIGN_HOUSING_REPUTATION_
-  // 2026-08-13.md`'s job, not this fix's.
   const allRoleSlotsFinal: { buildingId: string; slot: RoleSlot }[] = [
     ...millers,
     ...bakers,
@@ -1471,6 +1480,27 @@ export function stepWorld(world: World): World {
     if (!districtId) continue;
     districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
   }
+
+  // Grifter housing (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §1.3): a
+  // role-holder is already housed in the same district as their workplace — counted above via
+  // FILLED role-slot state, doubling as their housing count, no separate pass needed. Grifters
+  // have no workplace building, so they need their own assignment. Already-housed grifters are
+  // counted first (stable — nobody already housed gets reshuffled), then any grifter still
+  // unhoused (freshly created this tick, or from before this feature existed) is placed into
+  // whichever district currently has the most housing headroom (`chooseHousingDistrict`) —
+  // resolved by the end of THIS tick, every tick, same lazy-fill-by-end-of-tick pattern
+  // District.population's own fix above uses.
+  for (const g of grifters) {
+    if (g.districtId) districtPopulationById[g.districtId] = (districtPopulationById[g.districtId] ?? 0) + 1;
+  }
+  grifters = grifters.map((g) => {
+    if (g.districtId) return g;
+    const districtId = chooseHousingDistrict(world.shard, districtPopulationById);
+    if (!districtId) return g; // empty shard — nothing to assign to, shouldn't happen in practice
+    districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
+    return { ...g, districtId };
+  });
+
   const shardWithPopulation: Shard = {
     ...shardWithWeather,
     districts: shardWithWeather.districts.map((d) => ({ ...d, population: districtPopulationById[d.id] ?? 0 })),

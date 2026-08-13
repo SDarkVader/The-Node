@@ -372,3 +372,51 @@ coreDistrictRadius: 7, buildingsPerCoreDistrict: 62` — see `space.ts`'s own he
 trail. The periphery fields stay in the config type (not deleted) so a future cascading
 district-opening feature (addendum §4 — a real district 2/3 opening only once population
 genuinely crosses a threshold, not built yet) has somewhere to plug in.
+
+---
+
+## 9. Building form: floors and housing capacity — first real numbers, not concept only
+
+Added 2026-08-13, same session, once `space.ts` actually shipped `Building.floors`,
+`districtHousingCapacity()`, and grifter residency (`docs/BLUEPRINT.md`'s "Housing capacity +
+grifter residency" entry) — the user's own instruction: *"ensure it's represented in the
+visual design so that I can model the game directly from code and documents."* Everything
+below is a real, shipped code constant, not a concept-art guess — safe to model from directly.
+
+**Every building is mixed-use, per `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.1's
+"above bakeries, and elsewhere across the city."** Ground floor: the building's role function,
+if it has one (`roleSlotRef` — a Mill, a Bakery, a Docker post, or nothing, for a Home-only
+building; the model should look identical either way from the outside, since visibility rules
+already say nothing about a resident should be legible from outside their home). Every floor
+above ground: housing, available to any resident of the district regardless of who works
+downstairs — a grifter's silhouette can live directly above a Baker's shop.
+
+**Real numbers, shipped default (`space.ts`)**:
+```
+HOUSING_FLOORS_PER_BUILDING = 3   [ILLUSTRATIVE — tunable, not yet measured/tuned]
+HOUSING_RESIDENTS_PER_FLOOR = 2   [ILLUSTRATIVE]
+-> 6 residents of housing capacity per building, ground floor unaffected/unchanged
+62 buildings x 6 = 372 total district housing capacity (single-district shard)
+```
+Measured against a real 300-tick run at the shipped config: real population ~67, all housed,
+comfortable headroom (372 capacity vs. 67 residents) — a modeler should NOT read this as "every
+building needs to look crowded, floor to roof"; most buildings sit well under capacity most of
+the time, which the model should show (some buildings mostly-dark upper floors, not every
+window lit).
+
+**Every building should read as the SAME footprint, 3 floors tall, regardless of role.** No
+special-cased "big" Mill or "small" Courier post from height alone — `floors` is currently
+identical (3) for every building in the shipped code, so nothing in the geometry itself
+distinguishes role visually beyond ground-floor signage/function. If role-specific building
+height ever becomes a real, measured design choice, it needs a real `floors` value change in
+`space.ts` first — don't invent visual variety the code doesn't have; §4 above already
+established "structural beauty stays constant, colour is the only honest variable," and this
+extends that same discipline to building height.
+
+**What's NOT real yet, don't model as fixed**: which SPECIFIC floor/unit within a building a
+given resident occupies (assignment today is district-level only, not per-building or
+per-floor — `docs/BLUEPRINT.md`'s housing entry flags this explicitly as not built);
+per-building floor-count variation (every building is 3 floors today, uniformly); and the
+diary-in-abode/trespass mechanic's visual language (a key, an entry animation, whatever reads
+as "breaking in") — designed (`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7) but not built
+in code, so nothing about its presentation is real yet either.
