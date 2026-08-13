@@ -3535,3 +3535,20 @@ persist — not a flag that could be set wrong. 14 new tests, 504 total (490 + 1
 clean. TTS rendering and the moderation-logging telemetry (`docs/DESIGN_MODERATION_LOGGING_
 2026-08-13.md`) deliberately not built in this pass — the logging wiring is next (task #68),
 now that a real `Utterance` type exists to generate events from.
+
+---
+
+**2026-08-13, later still — moderation-logging telemetry wired.** Third of the "build it
+instead of document it" items. New top-level `src/infra/` directory (deliberately separate
+from `engine`/`world`/`comms`/`server`) holds `moderationLog.ts`:
+`captureProximityConversationEvent` converts a real `Utterance` into exactly the five
+design-doc fields (timestamp, actor, target(s), grammar payload, spatial coordinates), never
+audio; `isExpired`/`createInMemorySink` implement the design doc's actual bifurcated
+retention — 30-day Tier-1 TTL for unflagged entries, DSA's 6-month Tier-2 floor from the
+flagged date for flagged ones, not just described in prose. `test/moderationLog.importGuard.
+test.ts` mirrors the existing `drivers.importGuard.test.ts` pattern to make the design doc's
+§3 silo requirement (simulation kernel has zero dependency on this service) a real, checked
+fact rather than a comment — scans `engine`/`world`/`comms`/`server` for any import of the
+logger, plus a sanity check proving the guard would catch a real violation. 9 new tests, 513
+total (504 + 9), typecheck clean. Last of the three "let's get busy" build candidates:
+arson (task #69).

@@ -82,6 +82,40 @@ design); the moderation-logging telemetry from `docs/DESIGN_MODERATION_LOGGING_2
 
 ---
 
+## 2026-08-13 — Moderation-logging telemetry wired, silo boundary enforced by a real test
+
+Third of the "let's get busy" build items. `src/infra/moderationLog.ts` lives in a new
+top-level directory, deliberately separate from `engine`/`world`/`comms`/`server` — making the
+design doc's §3 silo requirement a directory-structure fact, not just a comment. Its own doc
+header explains why: the simulation kernel must have zero dependency on or awareness of this
+service, so the game is unaffected if it's ever offline.
+
+**`captureProximityConversationEvent`** converts a real `Utterance` (built last entry) into
+exactly the five design-doc fields — timestamp, actor, target(s), grammar payload, spatial
+coordinates — never audio, matching the doc's own "TTS synthesis is deterministic, storing the
+clip is pure data-minimization risk for zero benefit." **Bifurcated retention implemented for
+real, not just described**: `isExpired` ages an unflagged entry out at the 30-day Tier-1 TTL,
+or a flagged one at the DSA's 6-month Tier-2 floor from the day it was flagged, not the day it
+was created. `createInMemorySink` is a reference implementation for tests/local wiring only —
+real backend/hosting/encryption choices stay explicitly out of scope, same as the design doc
+says.
+
+**The silo boundary is enforced by a real test, not left as a doc claim.**
+`test/moderationLog.importGuard.test.ts` mirrors `test/drivers.importGuard.test.ts`'s existing
+pattern exactly: scans `src/engine`, `src/world`, `src/comms`, `src/server` for any import of
+the logger and fails if it finds one, plus a sanity check proving the guard would actually
+catch a real violation rather than vacuously passing. (The dependency correctly runs the other
+way — `moderationLog.ts` imports `Utterance`'s type from `comms/proximityConversation.ts`,
+since the logger has to know the shape of what it's logging; that's not a violation, only the
+game depending on the logger would be.)
+
+9 new tests (7 functional + 2 import-guard), 513 total (504 + 9), typecheck clean.
+
+**Last of the three "let's get busy" candidates left**: arson, against its already-set 30%
+target (task #69).
+
+---
+
 ## 2026-08-13 — Moderation-logging research turned into architecture, verified before adopting
 
 Follow-up to the research prompt generated and sent earlier this session (proximity

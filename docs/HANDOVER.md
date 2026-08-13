@@ -268,12 +268,13 @@ session, tracked as tasks #66-69:**
 - **#67 done**: `src/comms/proximityConversation.ts` — INTENT/TONE/REFERENT/CONTEXT, presence
   gating, distance-driven degradation reusing `space.ts`'s `proximityCloseness()` +
   `decay.ts`'s `applyDistortion`. 14 new tests, 504 total, typecheck clean.
-- **#68 in progress**: wire the moderation-logging telemetry from
-  `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`, now that #67 has a real `Utterance` type to
-  generate events from. Needs a real silo boundary (mirror `test/drivers.importGuard.test.ts`'s
-  pattern — nothing under `src/engine`/`src/world`/`src/server` may import the logger).
-- **#69 pending**: arson against its 30% target, reusing `ecosystem.ts`'s pattern-sabotage
-  machinery.
+- **#68 done**: `src/infra/moderationLog.ts` (new top-level dir, deliberately siloed) —
+  `captureProximityConversationEvent`, bifurcated retention (`isExpired`, 30-day unflagged /
+  6-month-from-flagged Tier 2), `createInMemorySink` reference implementation. Silo boundary
+  enforced by `test/moderationLog.importGuard.test.ts`, mirroring the existing driver-guard
+  pattern. 9 new tests, 513 total, typecheck clean.
+- **#69 in progress**: arson against its 30% target, reusing `ecosystem.ts`'s pattern-sabotage
+  machinery, absence-gate per housing doc §7.6.
 
 **If this session ends mid-list, resume with `TaskList` to see exactly which of #66-69 are
 actually done** — don't re-derive from prose alone, the task tool has the live state.
