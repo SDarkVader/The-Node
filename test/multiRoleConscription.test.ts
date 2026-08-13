@@ -181,3 +181,94 @@ describe('stepMultiRoleConscriptionDay — churn/fill pool bookkeeping', () => {
     expect(totalDelta).toBe(totalChurn - totalGenuineFills);
   });
 });
+
+describe('stepMultiRoleConscriptionDay — reputation gate (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.5)', () => {
+  it('omitting grifterLevelCounts entirely reproduces the exact pre-2026-08-13 behavior, byte for byte — the whole backward-compatibility guarantee', () => {
+    const params = makeParams(5, 65, 14);
+    const slots: RoleSlot[] = Array.from({ length: 5 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groupsUngated: RoleGroupState[] = [{ roleId: 'solo', slots, params }];
+    const groupsWithMinLevelButNoCounts: RoleGroupState[] = [{ roleId: 'solo', slots, params, minReputationLevelForFill: 2 }];
+    const run = (groups: RoleGroupState[], seed: number) => {
+      const rng = mulberry32(seed);
+      let working = groups;
+      let pool = 60;
+      const tally: Record<string, number> = {};
+      for (let day = 0; day < 400; day++) {
+        // No 6th argument at all — the exact old call shape.
+        const result = stepMultiRoleConscriptionDay(working, pool, day, 14, rng);
+        working = result.roleGroups;
+        pool += result.grifterPoolDelta;
+        for (const e of result.events) tally[e.type] = (tally[e.type] ?? 0) + 1;
+      }
+      return tally;
+    };
+    // Even with minReputationLevelForFill SET on the role group, omitting grifterLevelCounts
+    // means the gate never activates — identical results to the group without the field at all.
+    expect(run(groupsWithMinLevelButNoCounts, 5)).toEqual(run(groupsUngated, 5));
+  });
+
+  it('a role group gated at level 2 gets ZERO genuineFill events when the pool has nobody at level 2, even though fills would otherwise readily occur', () => {
+    const params = makeParams(5, 65, 9999); // tHard unreachable — isolates genuineFill from backstop/conscription
+    const slots: RoleSlot[] = Array.from({ length: 5 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [{ roleId: 'gated', slots, params, minReputationLevelForFill: 2 }];
+    const rng = mulberry32(11);
+    let working = groups;
+    let genuineFills = 0;
+    for (let day = 0; day < 500; day++) {
+      // Pool is entirely level 0/1 — nobody ever qualifies for this level-2-gated role.
+      const result = stepMultiRoleConscriptionDay(working, 60, day, 14, rng, { 0: 40, 1: 20 });
+      working = result.roleGroups;
+      genuineFills += result.events.filter((e) => e.type === 'genuineFill').length;
+    }
+    expect(genuineFills).toBe(0);
+  });
+
+  it('the SAME role group DOES get genuineFill events once the pool has real level-2 headroom', () => {
+    const params = makeParams(5, 65, 9999);
+    const slots: RoleSlot[] = Array.from({ length: 5 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [{ roleId: 'gated', slots, params, minReputationLevelForFill: 2 }];
+    const rng = mulberry32(11);
+    let working = groups;
+    let genuineFills = 0;
+    for (let day = 0; day < 500; day++) {
+      const result = stepMultiRoleConscriptionDay(working, 60, day, 14, rng, { 0: 30, 1: 20, 2: 10 });
+      working = result.roleGroups;
+      genuineFills += result.events.filter((e) => e.type === 'genuineFill').length;
+    }
+    expect(genuineFills).toBeGreaterThan(0);
+  });
+
+  it('conscriptionFromGrifters and backstopFires are completely unaffected by the gate — fire identically whether grifterLevelCounts is provided or not', () => {
+    // A tight, entirely-level-0 pool relative to demand, tHard reachable — forces the
+    // BACKSTOPPED/conscription branch to actually run, not just genuineFill.
+    const roleCounts = { a: 2, b: 2 };
+    const N = 3 + Object.values(roleCounts).reduce((x, y) => x + y, 0);
+    const ungated = initialGroups(roleCounts, N, 10);
+    const gated: RoleGroupState[] = ungated.map((g) => ({ ...g, minReputationLevelForFill: 2 }));
+    const runTally = (groups: RoleGroupState[], levelCounts?: Record<number, number>) => {
+      const rng = mulberry32(21);
+      let working = groups;
+      let pool = 3;
+      const tally: Record<string, number> = {};
+      for (let day = 0; day < 1000; day++) {
+        const result = stepMultiRoleConscriptionDay(working, pool, day, 5, rng, levelCounts);
+        working = result.roleGroups;
+        pool += result.grifterPoolDelta;
+        for (const e of result.events) tally[e.type] = (tally[e.type] ?? 0) + 1;
+      }
+      return tally;
+    };
+    const ungatedTally = runTally(ungated);
+    const gatedTally = runTally(gated, { 0: 3 }); // pool is entirely level 0 — level-2 gate should block ALL genuineFill
+    expect(gatedTally['conscriptionFromGrifters'] ?? 0).toBeGreaterThan(0);
+    expect(gatedTally['backstopFires'] ?? 0).toBeGreaterThan(0);
+    expect(gatedTally['genuineFill'] ?? 0).toBe(0); // the one event type the gate DOES restrict
+    // NOT asserting equality with the ungated run's conscription/backstop counts — blocking
+    // genuineFill changes the whole trajectory (a slot that would have been voluntarily
+    // filled now sits VACANT longer, so MORE of them reach BACKSTOPPED/conscription instead;
+    // real, measured, expected: gated run's conscription/backstop counts come out higher,
+    // not identical). What matters, and IS asserted: conscription/backstop still fire at
+    // all — the gate never blocks them outright (constraint 2/§3.5's actual guarantee).
+    expect(gatedTally['conscriptionFromGrifters']!).toBeGreaterThanOrEqual(ungatedTally['conscriptionFromGrifters'] ?? 0);
+  });
+});

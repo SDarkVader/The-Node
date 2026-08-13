@@ -3299,3 +3299,69 @@ the Oracle's own "no target for grudges" design both rule out structurally.
 Neither document changes any shipped code or constant — both are additions to the
 design-before-code queue, cross-referenced with the housing/reputation/diary work already
 written up, not duplicating it.
+
+## The reputation gate: restructured and wired, with two real bugs found verifying it (2026-08-13, same session)
+
+User: *"let's restructure the reputation gate before coding, then begin."* Closes the one
+piece the earlier "Reputation levels" entry left explicitly deferred — the voluntary-uptake
+gate itself, previously blocked because the real fill mechanism
+(`sim/multiRoleConscription.ts`'s `genuineFill`) was a hazard-driven aggregate count
+increment with no per-grifter selection to hook a gate into.
+
+**The restructuring.** `RoleGroupState` gained an optional `minReputationLevelForFill`;
+`stepMultiRoleConscriptionDay` gained an optional 6th parameter, a per-level breakdown of the
+same pool it already tracked as one number (`{0: 12, 1: 3, 2: 1}`). Both default to today's
+ungated behavior when omitted — every pre-2026-08-13 caller sees byte-identical results,
+proven by a new test that runs the exact old call shape (no 6th argument) against a role
+group that DOES set `minReputationLevelForFill` and confirms nothing changes, plus the
+entire pre-existing test suite passing unmodified. Internally, a running per-level count
+(mirroring the existing `grifterPoolDelta` pattern) tracks consumption WITHIN one day's call
+across every role group processed, so two gated roles processed the same day can't
+double-book the same real grifter. `world.ts` computes real per-level counts from
+`GrifterSlot.reputationProgress` every tick and sets each role group's real
+`minReputationLevelForFill` via `reputation.ts`'s new `minLevelForRole` (1 for the four
+cooperative roles, 2 for Miller/Baker) — the gate is genuinely live now, not just built.
+
+**Bug 1 — found by the population-conservation test, not hypothesized.** First working
+version still failed `test/world.regression.test.ts`'s existing "grifters.length + total
+FILLED = population" invariant — a real 15-vs-14 mismatch at a specific, reproduced tick.
+Root cause: `conscriptionFromGrifters` (the BACKSTOPPED-branch draft, meant to bypass the
+gate entirely per constraint 2/§3.5) correctly decremented the aggregate pool
+(`grifterPoolDelta`) but never touched the NEW per-level breakdown — so a role group
+processed LATER the same day could see a stale per-level snapshot that hadn't accounted for
+a grifter `conscriptionFromGrifters` had already claimed earlier that same day, letting its
+`genuineFill` gate pass when, in reality, no eligible grifter remained. Fixed by making
+`conscriptionFromGrifters` (and `churn`, for full consistency) also update the per-level
+running count via a shared `consumeFromLowestLevel` helper.
+
+**Bug 2 — a subtler one, found immediately after fixing Bug 1 (same reproduction, still
+failing).** The internal per-level tracking now correctly decremented on
+`conscriptionFromGrifters`, assuming (via `consumeFromLowestLevel`) that it would consume
+the LOWEST available reputation level first. But `world.ts`'s REAL grifter selection for
+`conscriptionFromGrifters` was still pure longest-wait, with no regard to level at all — so
+if the longest-waiting grifter happened to be a rare level-1 one, the real world would
+consume THAT grifter while the internal bookkeeping assumed a level-0 grifter had been
+spent, leaving the two "views" of the pool in disagreement. Fixed by making `world.ts`'s
+real `conscriptionFromGrifters` selection also prefer the lowest reputation level first
+(longest-wait within that level), exactly matching the internal assumption — the two views
+are now provably consistent by construction, not by coincidence. Both bugs traced with a
+real reproduction script (day-237, seed-3, a specific pool composition), not guessed at.
+
+**Verified**: `npm run typecheck` clean; a broad sweep (3 configs × 8 seeds × 800 days) found
+zero further conservation violations. 4 new tests in `test/multiRoleConscription.test.ts`
+(backward-compatibility byte-equality, a gated role gets zero fills with zero eligible
+grifters, the same role fills once eligible grifters exist, conscription/backstop fire
+regardless of the gate — though NOT at identical counts to the ungated run, a real and
+expected consequence documented in that test rather than incorrectly asserted away: blocking
+`genuineFill` means more slots fall through to conscription/backstop instead, so those counts
+come out HIGHER under the gate, not equal). 470 tests total, typecheck clean.
+
+**A real, measured consequence of the gate actually being live, not hidden.** At the shipped
+config, across the 3 seeds already used to calibrate the level thresholds, no grifter ever
+reached level 2 within 800 days — meaning Miller/Baker's voluntary `genuineFill` path is
+effectively closed under current dynamics; they now fill almost entirely through
+conscription/backstop. `economicHealth` stayed in a healthy 0.909–0.922 band regardless (the
+backstop's productivity floor absorbs it, same mechanism it's always absorbed VACANT/
+BACKSTOPPED slots with) — but this is a stronger effect than "harder to get into for some
+players," worth a closer look before this is considered fully tuned. Flagged, not smoothed
+over.

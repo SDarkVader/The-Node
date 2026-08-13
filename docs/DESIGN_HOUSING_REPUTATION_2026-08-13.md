@@ -399,15 +399,33 @@ project's own design→code→test→docs discipline:
    register a reputation progress-tick (§3.3) — additive, doesn't touch
    `SHIFT_COVER_FRACTION` or `SHIFT_COVER_NOTICE_PROBABILITY`. Thresholds measured and
    recalibrated against a real run (`src/engine/reputation.ts`'s own header has the numbers).
-4. **Partially done, real blocker found (2026-08-13).** Reputation LEVEL/PROGRESS state is
-   built (`src/engine/reputation.ts`, `GrifterSlot.reputationProgress`). The role-tier GATE
-   itself — applied only to voluntary uptake, backstop/conscription bypassing it (§3.5) — is
-   **not wired up**: this engine has no persistent player identity that survives a grifter
-   becoming a role-holder and back (`player.ts`'s own header already flags this as deferred),
-   and the real fill mechanism (`genuineFill`) is a hazard-driven count increment, not a
-   per-grifter selection a gate could hook into. Wiring a real gate needs fill selection
-   restructured to pick a specific, reputation-eligible grifter — real, separate, larger
-   work, not started. Full reasoning in `docs/BLUEPRINT.md`'s "Reputation levels" entry.
+4. ✅ **Done (2026-08-13, in two passes).** First pass shipped reputation LEVEL/PROGRESS state
+   (`src/engine/reputation.ts`, `GrifterSlot.reputationProgress`) without the gate — this
+   engine had no persistent player identity spanning a grifter becoming a role-holder and
+   back, and the real fill mechanism (`genuineFill`) was a hazard-driven count increment, not
+   a per-grifter selection a gate could hook into.
+   **Second pass ("let's restructure the reputation gate before coding, then begin")**
+   restructured `sim/multiRoleConscription.ts` to optionally accept a per-level breakdown of
+   the grifter pool alongside a role group's `minReputationLevelForFill`, gating only
+   `genuineFill` — fully backward compatible (every pre-existing caller omits the new
+   parameter and sees byte-identical behavior, verified by the untouched original test suite
+   passing unchanged). `world.ts` now computes real per-level counts every tick and wires
+   `minLevelForRole` per role group; the gate is live. **Two real correctness bugs found and
+   fixed while verifying against real `stepWorld` runs, not just unit tests**: (1)
+   `conscriptionFromGrifters` decremented the aggregate pool but not the new per-level
+   breakdown, letting a later role's gate evaluate against a stale snapshot — caused an
+   actual population-conservation failure (15 counted vs. 14 real), caught by the existing
+   `test/world.regression.test.ts` conservation tests, not a hypothetical; (2) fixed by
+   making `conscriptionFromGrifters`'s real grifter selection consistently prefer the lowest
+   reputation level first, exactly matching the internal gate's own bookkeeping assumption —
+   the two "views" of the pool now agree by construction, not by chance. 470 tests total
+   (466 + 4 new), typecheck clean. **Real, measured consequence, not hidden**: at the
+   shipped config, no grifter reached level 2 within 800 days in 3 of 3 seeds tested, so
+   Miller/Baker's voluntary `genuineFill` path is effectively closed under current dynamics
+   — they fill almost entirely via conscription/backstop instead. Economic health stayed
+   healthy regardless (0.909–0.922) since the backstop's productivity floor absorbs it, same
+   as always — but this is a stronger effect than "harder to get into," worth a closer look
+   later. Full trail in `docs/BLUEPRINT.md`'s "Reputation gate" entries.
 
 (District-topology count, previously step 5 here, is resolved — see §1.5.)
 

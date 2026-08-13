@@ -6,6 +6,46 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Reputation gate restructured and wired, two real bugs found and fixed verifying it
+
+User: *"let's restructure the reputation gate before coding, then begin."* Closed the piece
+the earlier reputation-levels pass had explicitly deferred: the voluntary-uptake gate,
+blocked because `sim/multiRoleConscription.ts`'s `genuineFill` was a hazard-driven aggregate
+count with no per-grifter selection.
+
+**Restructured, backward compatible.** `RoleGroupState.minReputationLevelForFill` and an
+optional per-level pool breakdown on `stepMultiRoleConscriptionDay` — both default to
+today's ungated behavior when omitted, proven with a real byte-equality test against the
+exact old call shape. `world.ts` computes real per-level grifter counts every tick and wires
+`minLevelForRole` (1 for the four cooperative roles, 2 for Miller/Baker) — the gate is live.
+
+**Bug 1, caught by the pre-existing population-conservation test, not hypothesized**: a real
+15-vs-14 mismatch. `conscriptionFromGrifters` (meant to bypass the gate entirely) decremented
+the aggregate pool but not the new per-level breakdown, so a role processed later the same
+day could see a stale snapshot and let a `genuineFill` through with nobody real left to fill
+it. Fixed by keeping the per-level running count in sync on every consuming event, not just
+the gated one.
+
+**Bug 2, found immediately after — same reproduction, still failing.** The internal
+bookkeeping now assumed `conscriptionFromGrifters` always consumes the lowest available
+level first, but `world.ts`'s REAL selection for it was still pure longest-wait, level-blind
+— if the longest-waiter happened to be a rare higher-level grifter, reality and the internal
+assumption diverged. Fixed by making the real selection also prefer lowest-level-first,
+matching the internal assumption exactly rather than approximately. Both bugs traced with an
+actual reproduction (day 237, seed 3), not guessed at from first principles.
+
+**A real, measured consequence, reported not hidden**: at the shipped config, no grifter
+reached level 2 within 800 days across 3 seeds — so Miller/Baker's voluntary fill path is
+effectively closed under current dynamics; they now fill almost entirely through
+conscription/backstop instead. Economic health stayed healthy (0.909–0.922) regardless, since
+the backstop absorbs it as it always has — but this is a stronger effect than "harder to get
+into," flagged as worth a closer look, not smoothed over.
+
+4 new tests, 470 total, typecheck clean. Full trail in `docs/BLUEPRINT.md`'s "reputation
+gate" entries.
+
+---
+
 ## 2026-08-13 — The two remaining open design threads: fines economy + Oracle odds (design only)
 
 User: *"the open design threads"*. Two new documents, both design-only, both cross-referenced

@@ -81,6 +81,7 @@ import {
 } from '../engine/space.js';
 import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../engine/vacancy.js';
 import { DEFAULTS as VACANCY_DEFAULTS } from '../sim/vacancyHarness.js';
+import { reputationLevelForProgress, minLevelForRole } from '../engine/reputation.js';
 import { stepMultiRoleConscriptionDay, type RoleGroupState } from '../sim/multiRoleConscription.js';
 import {
   stepDistrictHealth,
@@ -855,15 +856,33 @@ export function stepWorld(world: World): World {
     return s;
   }
 
+  // Reputation gate (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.5): a real
+  // per-level breakdown of the CURRENT grifter pool, computed once here from real
+  // `reputationProgress` state, and each role group's real minimum level requirement
+  // (`minLevelForRole` — 1 for the four cooperative roles, 2 for Miller/Baker). Passed to
+  // `stepMultiRoleConscriptionDay`, which gates only `genuineFill`; conscription/backstop
+  // below are entirely unaffected, same as every day before this gate existed.
+  const grifterLevelCounts: Record<number, number> = {};
+  for (const g of grifters) {
+    const level = reputationLevelForProgress(g.reputationProgress ?? 0);
+    grifterLevelCounts[level] = (grifterLevelCounts[level] ?? 0) + 1;
+  }
   const roleGroupsIn: RoleGroupState[] = [
-    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config) },
-    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config) },
-    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config) },
-    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config) },
-    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config) },
-    { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config) },
+    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('miller') },
+    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('baker') },
+    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('courier') },
+    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('journalist') },
+    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('detective') },
+    { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('importExport') },
   ];
-  const conscriptionResult = stepMultiRoleConscriptionDay(roleGroupsIn, grifters.length, day, config.conscriptionDelay, rng);
+  const conscriptionResult = stepMultiRoleConscriptionDay(
+    roleGroupsIn,
+    grifters.length,
+    day,
+    config.conscriptionDelay,
+    rng,
+    grifterLevelCounts,
+  );
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
 
   const millerJustFilled = justFilledSet(millers, byRole.get('miller')!);
@@ -902,11 +921,46 @@ export function stepWorld(world: World): World {
     if (event.type === 'churn') {
       grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
       nextGrifterId += 1;
-    } else if (event.type === 'genuineFill' || event.type === 'conscriptionFromGrifters') {
+    } else if (event.type === 'genuineFill') {
+      // Reputation-gated (2026-08-13): pick the longest-waiting grifter among those whose
+      // REAL reputation level meets this role's requirement, not the whole pool.
+      // `eligible.length === 0` here should never happen — it did once, during development
+      // (a real bug, not hypothetical: `conscriptionFromGrifters`'s selection ignored level
+      // entirely and could consume the very grifter a same-day gated `genuineFill` was
+      // internally counted as still available, a 15-vs-14 population-conservation failure).
+      // Fixed by making `conscriptionFromGrifters`'s real selection prefer the lowest level
+      // first, exactly matching stepMultiRoleConscriptionDay's own internal bookkeeping
+      // assumption for that event type (see that branch's own comment below). The `> 0`
+      // guard stays as a defensive fallback regardless — fails safe (skips the removal
+      // rather than crashing or picking an ineligible grifter) if some future change
+      // reintroduces a similar mismatch, rather than silently corrupting state again.
+      const minLevel = minLevelForRole(event.roleId);
+      const eligible = grifters
+        .map((g, i) => ({ i, level: reputationLevelForProgress(g.reputationProgress ?? 0), days: g.daysAsGrifter }))
+        .filter((o) => o.level >= minLevel);
+      if (eligible.length > 0) {
+        let longest = eligible[0]!;
+        for (const o of eligible) if (o.days > longest.days) longest = o;
+        grifters = grifters.filter((_, i) => i !== longest.i);
+      }
+    } else if (event.type === 'conscriptionFromGrifters') {
+      // Bypasses the reputation GATE (never blocked by it — constraint 2,
+      // docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.5), but WHICH grifter it picks must
+      // still prefer the LOWEST reputation level first (longest-wait within that level),
+      // exactly matching stepMultiRoleConscriptionDay's own internal `consumeFromLowestLevel`
+      // assumption for this same event type. Real bug found and fixed 2026-08-13: picking
+      // pure longest-wait across the WHOLE pool (ignoring level) could consume the one
+      // real grifter a LATER role group's gated `genuineFill` was internally counted as
+      // still available, silently filling a role's slot with no real grifter left to remove
+      // (caught by the population-conservation test — a real 15-vs-14 mismatch). Keeping the
+      // two views of the pool (this real selection, and the internal per-level bookkeeping)
+      // in exact agreement is what fixes it, not a looser approximation.
       if (grifters.length > 0) {
-        let longestIdx = 0;
-        for (let i = 1; i < grifters.length; i++) {
-          if (grifters[i]!.daysAsGrifter > grifters[longestIdx]!.daysAsGrifter) longestIdx = i;
+        const lowestLevel = Math.min(...grifters.map((g) => reputationLevelForProgress(g.reputationProgress ?? 0)));
+        let longestIdx = -1;
+        for (let i = 0; i < grifters.length; i++) {
+          if (reputationLevelForProgress(grifters[i]!.reputationProgress ?? 0) !== lowestLevel) continue;
+          if (longestIdx === -1 || grifters[i]!.daysAsGrifter > grifters[longestIdx]!.daysAsGrifter) longestIdx = i;
         }
         grifters = grifters.filter((_, i) => i !== longestIdx);
       }

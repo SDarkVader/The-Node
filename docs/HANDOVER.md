@@ -147,12 +147,40 @@ observed topped out at 7. Lowered to 6, verified reachable, locked in with a reg
 Both cross-reference, not duplicate, the housing/reputation/diary work already written up.
 No code in either — full detail in `docs/BLUEPRINT.md`'s matching entry.
 
-**Next**: the voluntary-uptake gate itself needs fill-selection restructured to pick
-individual grifters (separate, larger work) before it can be wired to `rolesEligibleFor`; or
-build toward either new design (fines economy needs the personal-resource-stock field first;
-Oracle needs the population-scale re-simulation its own §5 asks for before any code); or the
-diary-in-abode mechanic (§7 of the housing doc), which now has the housing/residency
-foundation it was waiting on.
+**Then: "let's restructure the reputation gate before coding, then begin."** Done, and live.
+`sim/multiRoleConscription.ts`'s `RoleGroupState` gained an optional
+`minReputationLevelForFill`, and `stepMultiRoleConscriptionDay` an optional per-level pool
+breakdown — both default to the exact pre-existing ungated behavior when omitted (proven with
+a byte-equality test), so this was additive, not a breaking rewrite. `world.ts` computes real
+per-level grifter counts every tick and wires it up — Miller/Baker require level 2, the four
+cooperative roles require level 1, for VOLUNTARY fills only; backstop/conscription still
+bypass it entirely.
+
+**Two real bugs found and fixed verifying it against real `stepWorld` runs, not just unit
+tests** — both caught by the pre-existing population-conservation test, not hypothesized:
+(1) `conscriptionFromGrifters` decremented the aggregate pool but not the new per-level
+breakdown, letting a later role's gate pass against a stale snapshot; (2) once fixed, a
+subtler mismatch remained — the internal bookkeeping assumed `conscriptionFromGrifters`
+always consumes the lowest reputation level first, but the REAL selection in `world.ts` was
+still pure longest-wait, level-blind, so the two views of the pool could still disagree.
+Fixed by making the real selection also prefer lowest-level-first, matching the internal
+assumption exactly. Both traced to an actual reproduction (day 237, seed 3), not guessed.
+
+**A real, measured consequence, reported honestly**: at the shipped config, no grifter
+reached level 2 within 800 days across 3 seeds tested — Miller/Baker's voluntary fill path is
+effectively closed under current dynamics, filling almost entirely through conscription/
+backstop instead. Economic health stayed fine (0.909–0.922, the backstop absorbs it as
+always) but this is flagged as a stronger effect than intended, worth a closer look later.
+
+470 tests total (466 + 4 new), typecheck clean. Full trail in `docs/BLUEPRINT.md`'s
+"reputation gate" entries.
+
+**Next**: revisit the reputation-level thresholds or the Miller/Baker gate given how rarely
+level 2 is reached in practice (a real, measured tension between "harder to get into" and
+"basically never voluntarily filled"); or build toward either open design (fines economy
+needs the personal-resource-stock field first; Oracle needs the population-scale
+re-simulation its own §5 asks for before any code); or the diary-in-abode mechanic (§7 of the
+housing doc), which now has the housing/residency foundation it was waiting on.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
@@ -391,7 +419,7 @@ honest cost of a bigger population target.
 
 ```
 npm install
-npm test                              # 466 tests
+npm test                              # 470 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS

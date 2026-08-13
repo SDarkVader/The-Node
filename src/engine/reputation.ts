@@ -2,15 +2,17 @@
  * Reputation levels (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3). Pure,
  * dependency-free, same style as every other `src/engine/` module.
  *
- * SCOPE OF THIS PASS — LEVEL/PROGRESS ONLY, NOT THE GATE. The design's §3.5 says reputation
- * gates apply only to *voluntary* role uptake, never to backstop/conscription. That gate
- * needs to hook into "which specific grifter fills an open role" — but the real fill
- * mechanism (`sim/multiRoleConscription.ts`'s `genuineFill` event) is a hazard-driven
- * AGGREGATE COUNT increment, not a per-grifter selection; individual grifters are only ever
- * picked for eviction/draft ordering (oldest-wait-first, `world.ts`'s `stepWorld`), never for
- * a voluntary fill. Wiring a real gate would mean restructuring fill selection to pick a
- * specific, reputation-eligible grifter — real, separate, larger work, not done here. This
- * module only computes level/progress; nothing calls `rolesEligibleFor` from `world.ts` yet.
+ * THE GATE ITSELF (2026-08-13, restructured). §3.5 says reputation gates apply only to
+ * *voluntary* role uptake, never to backstop/conscription. The real fill mechanism
+ * (`sim/multiRoleConscription.ts`'s `genuineFill` event) was a hazard-driven AGGREGATE COUNT
+ * increment with no per-grifter selection at all — extended (not replaced) to optionally
+ * accept a per-level breakdown of the same pool, gating `genuineFill` on real eligible
+ * headroom while leaving `conscriptionFromGrifters`/`conscriptionFromOtherRole`/
+ * `backstopFires` completely untouched. `world.ts` does the actual per-real-grifter selection
+ * once an event comes back (same longest-wait convention it already used, now filtered to
+ * eligible grifters for `genuineFill` specifically). See `multiRoleConscription.ts`'s own
+ * header for the restructuring detail and why it's backward-compatible with every
+ * pre-2026-08-13 caller.
  *
  * SCOPE OF THIS PASS — LEVEL/PROGRESS PERSISTENCE. Reputation is stored on `GrifterSlot`
  * (`world.ts`), which is itself session-scoped to one grifter "episode" — this engine has no
@@ -71,4 +73,18 @@ export function rolesEligibleFor(level: number): readonly string[] {
   if (level <= 0) return [];
   if (level === 1) return LEVEL_1_ROLES;
   return [...LEVEL_1_ROLES, ...LEVEL_2_ROLES];
+}
+
+/**
+ * The inverse of `rolesEligibleFor`: smallest level at which `roleId` becomes eligible for
+ * voluntary uptake. Miller/Baker -> 2; the four cooperative roles -> 1. A role not in any
+ * level's set (shouldn't occur for the real six roles) falls back to `MAX_REPUTATION_LEVEL +
+ * 1` — deliberately unreachable rather than 0, so an unrecognized roleId reads as "gated
+ * shut" rather than silently wide open.
+ */
+export function minLevelForRole(roleId: string): number {
+  for (let level = 1; level <= MAX_REPUTATION_LEVEL; level++) {
+    if (rolesEligibleFor(level).includes(roleId)) return level;
+  }
+  return MAX_REPUTATION_LEVEL + 1;
 }

@@ -27,12 +27,33 @@ import { fillHazard, stepSlot, type RoleSlot, type VacancyParams } from '../engi
  * concern layered on top of this count via `grifterPoolDelta`, not built into this pure
  * sim primitive — deliberate, mirrors how `RoleEconomicSlot.wealth` already layers
  * identity-bearing state on top of `vacancy.ts`'s identity-free `RoleSlot`.
+ *
+ * REPUTATION GATE (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.5).
+ * `RoleGroupState.minReputationLevelForFill` and the optional `grifterLevelCounts` param
+ * below extend — not replace — the count-only abstraction: instead of one raw pool number,
+ * a caller MAY also pass the same pool's breakdown by reputation level, and a role group MAY
+ * declare a minimum level a voluntary (`genuineFill`) fill requires. Both are optional and
+ * default to today's ungated behavior — every caller written before this date passes neither
+ * and sees byte-identical results, verified by the pre-existing test suite passing unchanged.
+ * `conscriptionFromGrifters`/`conscriptionFromOtherRole`/`backstopFires` never consult the
+ * level breakdown at all — backstop/conscription always overrides, per constraint 2/§3.5;
+ * only the `genuineFill` hazard roll is gated. Still identity-free: this function tracks
+ * COUNTS per level, the same way it already tracked one count for the whole pool — WHICH
+ * real grifter fills the role is still `world.ts`'s job, done after this returns, using the
+ * same longest-wait selection convention it already used, now filtered to grifters whose
+ * real reputation level meets the filled role's requirement.
  */
 
 export interface RoleGroupState {
   roleId: string;
   slots: RoleSlot[];
   params: VacancyParams;
+  /** Minimum reputation level a grifter needs for a VOLUNTARY (`genuineFill`) fill of this
+   *  role. Omitted or 0 (every pre-2026-08-13 caller's implicit behavior) means ungated —
+   *  identical to this field not existing. Only takes effect when `grifterLevelCounts` is
+   *  also passed to `stepMultiRoleConscriptionDay`; never affects
+   *  `conscriptionFromGrifters`/`conscriptionFromOtherRole`/`backstopFires`. */
+  minReputationLevelForFill?: number;
 }
 
 export type MultiRoleEvent =
@@ -63,15 +84,50 @@ export interface MultiRoleConscriptionResult {
  * `workingOtherSlots` mutation pattern exactly, not a new behavior invented for this
  * generalization.
  */
+/**
+ * Decrements the lowest available level bucket at or above `minLevel`, mutating
+ * `counts` in place. Returns the level consumed, or undefined if none was available.
+ * Shared by both the reputation-gated `genuineFill` path (minLevel = the role's real
+ * requirement) and `conscriptionFromGrifters` (minLevel = 0, i.e. any level at all) — the
+ * SAME running state has to be kept in sync by BOTH paths, not just the gated one, or the
+ * gate's internal bookkeeping silently drifts out of sync with the real pool within a single
+ * day's processing (real bug found and fixed 2026-08-13: `conscriptionFromGrifters` was
+ * decrementing the aggregate `grifterPoolDelta` but never this per-level breakdown, so a
+ * LATER role group's `genuineFill` gate could evaluate against a stale snapshot that hadn't
+ * accounted for a grifter an EARLIER role group already consumed the same day — caught by
+ * `test/world.regression.test.ts`'s population-conservation test, which found a real
+ * 15-vs-14 mismatch before this fix, not a hypothetical).
+ */
+function consumeFromLowestLevel(counts: Record<number, number>, minLevel: number): number | undefined {
+  const eligibleLevels = Object.keys(counts)
+    .map(Number)
+    .filter((lvl) => lvl >= minLevel && counts[lvl]! > 0)
+    .sort((a, b) => a - b);
+  const chosen = eligibleLevels[0];
+  if (chosen !== undefined) counts[chosen] = counts[chosen]! - 1;
+  return chosen;
+}
+
 export function stepMultiRoleConscriptionDay(
   roleGroups: readonly RoleGroupState[],
   grifterPoolSize: number,
   day: number,
   conscriptionDelay: number,
   rng: () => number,
+  /** Optional per-level breakdown of the SAME pool `grifterPoolSize` already describes in
+   *  aggregate — e.g. `{0: 12, 1: 3, 2: 1}`. Omit entirely (every pre-2026-08-13 caller's
+   *  behavior) to skip reputation gating altogether, regardless of any role group's
+   *  `minReputationLevelForFill`. When provided, tracked as a running count WITHIN this
+   *  call (across every role group processed this same day, same pattern `grifterPoolDelta`
+   *  already uses for the aggregate pool) so two gated role groups processed the same day
+   *  can never double-book the same real grifter. */
+  grifterLevelCounts?: Readonly<Record<number, number>>,
 ): MultiRoleConscriptionResult {
   const events: MultiRoleEvent[] = [];
   let grifterPoolDelta = 0;
+  const runningLevelCounts: Record<number, number> | undefined = grifterLevelCounts
+    ? { ...grifterLevelCounts }
+    : undefined;
   const working: RoleSlot[][] = roleGroups.map((g) => [...g.slots]);
 
   for (let gi = 0; gi < roleGroups.length; gi++) {
@@ -82,6 +138,11 @@ export function stepMultiRoleConscriptionDay(
         if (rng() < params.pDaily) {
           events.push({ type: 'churn', roleId: group.roleId });
           grifterPoolDelta += 1;
+          // A freshly-churned grifter starts at reputation level 0 (world.ts's real
+          // GrifterSlot construction never seeds reputationProgress) — reflected here too,
+          // for full within-day consistency, even though it can never affect a gated fill's
+          // availability (every real role's minLevel is >= 1).
+          if (runningLevelCounts) runningLevelCounts[0] = (runningLevelCounts[0] ?? 0) + 1;
           return { state: 'VACANT' as const, vacantSince: day };
         }
         return slot;
@@ -101,10 +162,17 @@ export function stepMultiRoleConscriptionDay(
         // voluntary fill must not be allowed to succeed when nobody is actually left to
         // fill it — gated here the same way the BACKSTOPPED branch below already gates
         // conscription on real availability, using the running same-day pool total.
-        const availableForFill = grifterPoolSize + grifterPoolDelta > 0;
-        if (availableForFill && rng() < fillHazard(tau, params)) {
+        const minLevel = group.minReputationLevelForFill ?? 0;
+        // Peek without mutating: only actually consume once the hazard roll below also
+        // succeeds (an available-but-untaken candidate this tick isn't spent).
+        const wouldBeAvailable =
+          runningLevelCounts && minLevel > 0
+            ? Object.keys(runningLevelCounts).some((k) => Number(k) >= minLevel && runningLevelCounts![Number(k)]! > 0)
+            : grifterPoolSize + grifterPoolDelta > 0;
+        if (wouldBeAvailable && rng() < fillHazard(tau, params)) {
           events.push({ type: 'genuineFill', roleId: group.roleId });
           grifterPoolDelta -= 1;
+          if (runningLevelCounts && minLevel > 0) consumeFromLowestLevel(runningLevelCounts, minLevel);
           return { state: 'FILLED' as const, vacantSince: null };
         }
         return slot;
@@ -135,6 +203,12 @@ export function stepMultiRoleConscriptionDay(
           events.push({ type: 'conscriptionFromOtherRole', roleId: group.roleId, fromRoleId });
         } else {
           grifterPoolDelta -= 1;
+          // Unrestricted (any level, min 0) — conscription bypasses the reputation gate
+          // entirely (constraint 2/§3.5), but the per-level running count still has to be
+          // decremented here too, or a LATER role group's gated genuineFill check would
+          // evaluate against a stale snapshot that doesn't reflect this consumption (see
+          // consumeFromLowestLevel's own header for the real bug this fixes).
+          if (runningLevelCounts) consumeFromLowestLevel(runningLevelCounts, 0);
           events.push({ type: 'conscriptionFromGrifters', roleId: group.roleId });
         }
         return { state: 'FILLED' as const, vacantSince: null };
@@ -144,7 +218,16 @@ export function stepMultiRoleConscriptionDay(
   }
 
   return {
-    roleGroups: roleGroups.map((g, i) => ({ roleId: g.roleId, slots: working[i]!, params: g.params })),
+    // Preserves `minReputationLevelForFill` (real bug found and fixed 2026-08-13: dropping
+    // it here meant any caller that reuses `result.roleGroups` as next day's input — which
+    // `world.ts` doesn't do, it rebuilds fresh every tick, but this module's own tests and
+    // any other future caller reasonably would — silently ran ungated from day 2 onward).
+    roleGroups: roleGroups.map((g, i) => ({
+      roleId: g.roleId,
+      slots: working[i]!,
+      params: g.params,
+      minReputationLevelForFill: g.minReputationLevelForFill,
+    })),
     grifterPoolDelta,
     events,
   };
