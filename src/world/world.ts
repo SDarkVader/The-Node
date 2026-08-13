@@ -922,25 +922,30 @@ export function stepWorld(world: World): World {
       grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
       nextGrifterId += 1;
     } else if (event.type === 'genuineFill') {
-      // Reputation-gated (2026-08-13): pick the longest-waiting grifter among those whose
-      // REAL reputation level meets this role's requirement, not the whole pool.
-      // `eligible.length === 0` here should never happen — it did once, during development
-      // (a real bug, not hypothetical: `conscriptionFromGrifters`'s selection ignored level
-      // entirely and could consume the very grifter a same-day gated `genuineFill` was
-      // internally counted as still available, a 15-vs-14 population-conservation failure).
-      // Fixed by making `conscriptionFromGrifters`'s real selection prefer the lowest level
-      // first, exactly matching stepMultiRoleConscriptionDay's own internal bookkeeping
-      // assumption for that event type (see that branch's own comment below). The `> 0`
-      // guard stays as a defensive fallback regardless — fails safe (skips the removal
-      // rather than crashing or picking an ineligible grifter) if some future change
-      // reintroduces a similar mismatch, rather than silently corrupting state again.
+      // Reputation-gated (2026-08-13): pick a real eligible grifter (level >= this role's
+      // requirement). Prefers the LOWEST eligible level first (longest-wait within that
+      // level), exactly matching stepMultiRoleConscriptionDay's own internal
+      // `consumeFromLowestLevel` assumption for THIS event type too — the same "the two
+      // views of the pool must agree by construction" fix already applied to
+      // `conscriptionFromGrifters` below (found as a real 15-vs-14 conservation bug there;
+      // this branch had the identical latent mismatch, caught by inspection while measuring
+      // the level-2 reachability numbers, not by a second reproduced failure — fixed
+      // proactively rather than waiting for it to surface). This also does real, useful
+      // work beyond correctness: a level-1-gated fill no longer risks spending a rare
+      // level-2 grifter when a level-1 grifter was equally eligible, reserving scarce
+      // higher-level grifters for the roles that actually need them.
+      // `eligible.length === 0` should never happen given the above — the `> 0` guard stays
+      // as a defensive fallback regardless (fails safe: skips the removal rather than
+      // crashing or picking an ineligible grifter, not a silent zero-state for any player).
       const minLevel = minLevelForRole(event.roleId);
       const eligible = grifters
         .map((g, i) => ({ i, level: reputationLevelForProgress(g.reputationProgress ?? 0), days: g.daysAsGrifter }))
         .filter((o) => o.level >= minLevel);
       if (eligible.length > 0) {
-        let longest = eligible[0]!;
-        for (const o of eligible) if (o.days > longest.days) longest = o;
+        const lowestEligibleLevel = Math.min(...eligible.map((o) => o.level));
+        const atLowestLevel = eligible.filter((o) => o.level === lowestEligibleLevel);
+        let longest = atLowestLevel[0]!;
+        for (const o of atLowestLevel) if (o.days > longest.days) longest = o;
         grifters = grifters.filter((_, i) => i !== longest.i);
       }
     } else if (event.type === 'conscriptionFromGrifters') {

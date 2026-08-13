@@ -175,12 +175,26 @@ always) but this is flagged as a stronger effect than intended, worth a closer l
 470 tests total (466 + 4 new), typecheck clean. Full trail in `docs/BLUEPRINT.md`'s
 "reputation gate" entries.
 
-**Next**: revisit the reputation-level thresholds or the Miller/Baker gate given how rarely
-level 2 is reached in practice (a real, measured tension between "harder to get into" and
-"basically never voluntarily filled"); or build toward either open design (fines economy
-needs the personal-resource-stock field first; Oracle needs the population-scale
-re-simulation its own §5 asks for before any code); or the diary-in-abode mechanic (§7 of the
-housing doc), which now has the housing/residency foundation it was waiting on.
+**Then: "let's explore these options and offer solutions."** Built a real probe (every
+grifter's level tracked across 800 days x 3 seeds, not a snapshot) and confirmed the "trap"
+with numbers: 105-128 grifters reach level 1 per seed, only 10-21 reach level 2; 83-90% of
+those removed while at level>=1 were removed AT level 1 (mean 6.9-16.3 days after reaching
+it) — because level 1 opens FOUR roles at once, so most grifters get swept up long before
+accumulating level 2's extra progress. Found and fixed a real latent bug while measuring
+(`world.ts`'s `genuineFill` didn't prefer the lowest eligible level first, same class of
+internal/real mismatch as the gate-restructuring bugs) — didn't move the numbers much on its
+own, confirming the four-roles-competing dynamic is the dominant effect. Measured real
+threshold sensitivity: 6 (shipped) → 44 total level-2 achievers/3 seeds/800 days; 5 → 77;
+4 → 162 — a clean lever, presented with real numbers via `AskUserQuestion`. User chose
+"something else" without yet specifying the mechanism; asked directly rather than guessing.
+**Unresolved, waiting on the user's answer** — pick this up first next session if it's still
+open. 470 tests, typecheck clean, no test/doc debt left hanging from this entry.
+
+**Next**: once the level-2 mechanism question resolves, either build it or move to one of the
+still-open design threads (fines economy needs the personal-resource-stock field first;
+Oracle needs the population-scale re-simulation its own §5 asks for before any code; the
+diary-in-abode mechanic, §7 of the housing doc, now has the housing/residency foundation it
+was waiting on).
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

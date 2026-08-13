@@ -6,6 +6,34 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Measured the level-2 "trap," fixed a latent bug found by inspection, real numbers presented
+
+User: *"let's explore these options and offer solutions"*, following up on the earlier
+flagged finding that Miller/Baker's voluntary fill path is effectively closed. Built a real
+probe (not a snapshot) tracking every grifter's reputation level across 800 days, 3 seeds,
+correlating level against pool removal. Confirmed the hypothesis with real numbers: 105-128
+grifters reach level 1 per seed, only 10-21 reach level 2; 83-90% of those removed while at
+level>=1 were removed AT level 1, mean 6.9-16.3 days after reaching it. Mechanism: level 1
+opens FOUR roles at once (Courier/Journalist/Detective/Import-Export), so most grifters get
+swept into one of them long before accumulating the extra progress level 2 needs.
+
+While measuring, found a real latent bug by inspection (not a second reproduced failure):
+`world.ts`'s `genuineFill` translation didn't prefer the lowest eligible reputation level
+first, unlike `stepMultiRoleConscriptionDay`'s own internal bookkeeping for that same event
+type — the same class of internal/real mismatch as the two bugs found restructuring the gate
+itself. Fixed proactively. Conservation sweep and full suite (470 tests) still clean. Didn't
+meaningfully change the level-2 numbers on its own — confirms the dominant effect really is
+the four-roles-competing dynamic, not this consumption-order detail.
+
+Measured real threshold sensitivity as a candidate fix: 6 (shipped) → 44 total level-2
+achievers across 3 seeds/800 days; 5 → 77; 4 → 162. A clean, single-constant, no-side-effects
+lever. Presented with real numbers via `AskUserQuestion` (leave as intended-rarity, lower to
+5, lower to 4, or something else). User chose "something else — tell me what to try" without
+specifying yet; asked directly what mechanism they have in mind rather than guessing. Not
+resolved this entry.
+
+---
+
 ## 2026-08-13 — Reputation gate restructured and wired, two real bugs found and fixed verifying it
 
 User: *"let's restructure the reputation gate before coding, then begin."* Closed the piece

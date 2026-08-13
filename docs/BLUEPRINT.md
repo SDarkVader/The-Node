@@ -3365,3 +3365,33 @@ backstop's productivity floor absorbs it, same mechanism it's always absorbed VA
 BACKSTOPPED slots with) — but this is a stronger effect than "harder to get into for some
 players," worth a closer look before this is considered fully tuned. Flagged, not smoothed
 over.
+
+## Investigating the level-2 rarity: a latent bug fixed, and the real root cause measured (2026-08-13, same session)
+
+User: *"let's explore these options and offer solutions"* — digging into the "worth a closer
+look" flag above. Quantified with a real probe (tracking every grifter's level across 800
+days, 3 seeds, correlating removal against level rather than trusting a snapshot): 105-128
+grifters reach level 1 per seed, but only 10-21 ever reach level 2. Of those removed while at
+level>=1, **83-90% were removed AT level 1** — mean 6.9-16.3 days spent at level>=1 before
+removal. Root cause: reaching level 1 makes a grifter an immediate target for FOUR roles'
+`genuineFill` at once (Courier/Journalist/Detective/Import-Export), so most get swept into
+one of them long before accumulating the extra progress level 2 needs.
+
+**A latent correctness bug found by inspection while measuring this, not by a second
+reproduced failure** — same family as the two bugs the gate's own restructuring found: `world.
+ts`'s `genuineFill` translation picked the longest-waiting grifter among ALL eligible
+(level >= the role's requirement), not preferring the LOWEST eligible level first the way
+`stepMultiRoleConscriptionDay`'s own internal `consumeFromLowestLevel` bookkeeping already
+assumed for this exact event type. Fixed to match — a level-1-gated fill now can't spend a
+rare level-2 grifter when a level-1 grifter was equally eligible. Verified: the 3-config x
+8-seed x 800-day conservation sweep still reports zero violations; full suite still 470
+passing, `npm run typecheck` clean. This fix alone didn't meaningfully move the level-2
+reachability numbers (still ~12-18/seed) — the dominant effect is the four-roles-competing-
+for-one-pool dynamic above, not this particular consumption-order edge case.
+
+**Real threshold sensitivity, measured, not guessed**: total distinct grifters reaching level
+2 across 3 seeds/800 days — threshold 6 (shipped): 44. Threshold 5: 77 (~1.75x). Threshold 4:
+162 (~3.7x). A real, clean, single-constant lever with no other side effects. Presented to the
+user with these numbers; response was to explore a different mechanism instead of a threshold
+change — specifics requested, not yet supplied. Not resolved this entry; picking up once a
+concrete alternative mechanism is named.
