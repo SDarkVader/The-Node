@@ -265,10 +265,13 @@ session, tracked as tasks #66-69:**
   the already-locked addendum spec, `distortDiaryEntry` wired into `privateStore.ts`'s distort
   hook (its first real consumer). 13 new tests, 490 total, typecheck clean. Full detail in
   `docs/BLUEPRINT.md`'s matching entry.
-- **#67 in progress**: proximity conversation's grammar module (INTENT/TONE/REFERENT/CONTEXT,
-  mirroring `comms/grammar.ts`'s Wall/Envelope pattern) — next up.
-- **#68 pending**: wire the moderation-logging telemetry from
-  `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md` once #67 exists to generate events from.
+- **#67 done**: `src/comms/proximityConversation.ts` — INTENT/TONE/REFERENT/CONTEXT, presence
+  gating, distance-driven degradation reusing `space.ts`'s `proximityCloseness()` +
+  `decay.ts`'s `applyDistortion`. 14 new tests, 504 total, typecheck clean.
+- **#68 in progress**: wire the moderation-logging telemetry from
+  `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`, now that #67 has a real `Utterance` type to
+  generate events from. Needs a real silo boundary (mirror `test/drivers.importGuard.test.ts`'s
+  pattern — nothing under `src/engine`/`src/world`/`src/server` may import the logger).
 - **#69 pending**: arson against its 30% target, reusing `ecosystem.ts`'s pattern-sabotage
   machinery.
 

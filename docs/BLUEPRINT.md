@@ -3517,3 +3517,21 @@ CONTEXT never distort. `DIARY_RETENTION_DAYS = 2`, matching the corrected design
 tests, 490 total (477 + 13), typecheck clean. Trespass's SUBJECT-graph read (§7.3 of the housing
 doc) deliberately not built yet — real prerequisites (residency, key-crafting) still missing,
 not scope creep avoided for its own sake.
+
+---
+
+**2026-08-13, later still — proximity conversation built.** Second of the three "build it
+instead of document it" candidates. `src/comms/proximityConversation.ts`: INTENT/TONE/CONTEXT
+closed tables and REFERENT (room or a specific present player, never absent) exactly per
+`docs/DESIGN_ADDENDUM_2026-08-06.md`'s already-locked spec, same function-boundary-throws
+discipline as `postToWall`. Spatial clarity reuses `space.ts`'s `proximityCloseness()` — built
+during Observatory Phase A with this exact future use already named in its own doc comment —
+to drive `decay.ts`'s `applyDistortion` by physical distance instead of graph hops, with new
+INTENT/TONE neighbor tables and REFERENT/CONTEXT treated as the design's own "most fragile,
+drop-or-distort-first" slots. Corruption happens before synthesis, matching the design exactly:
+`degradeForListener` hands back an already-degraded object, nothing for a client to recover;
+out-of-range returns `null`. Ephemerality is architectural — no store, no query API, nothing to
+persist — not a flag that could be set wrong. 14 new tests, 504 total (490 + 14), typecheck
+clean. TTS rendering and the moderation-logging telemetry (`docs/DESIGN_MODERATION_LOGGING_
+2026-08-13.md`) deliberately not built in this pass — the logging wiring is next (task #68),
+now that a real `Utterance` type exists to generate events from.

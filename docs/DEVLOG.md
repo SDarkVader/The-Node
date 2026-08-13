@@ -44,6 +44,44 @@ stays a follow-up rather than scope creep into this commit.
 
 ---
 
+## 2026-08-13 — Proximity conversation built: grammar, presence gating, distance-driven degradation
+
+Second of the three "let's get busy" candidates. `src/comms/proximityConversation.ts`:
+INTENT (8) / TONE (7) / CONTEXT (3, illustrative) closed tables, same
+combinatorial-not-flat-list principle and function-boundary validation as `comms/grammar.ts`'s
+`SELF_STATES`. REFERENT is `{kind:'room'}` or a specific present player — `composeUtterance`
+throws on addressing an absent player (the design's own explicit "never an absent one," unlike
+Wall/Envelope) and, extending `sendEnvelope`'s existing self-target check, on addressing
+yourself.
+
+**Spatial clarity reuses what Observatory Phase A already built for exactly this.**
+`space.ts`'s `proximityCloseness()` — its own doc comment already named "proximity
+conversation" as a future consumer back when it was built — feeds `decay.ts`'s
+`applyDistortion` per slot, with distance driving corruption instead of graph hops. New
+neighbor tables for INTENT/TONE (same semantically-adjacent-not-noise discipline as the rumour
+mill's `DISTORTION_NEIGHBORS`); REFERENT and CONTEXT (the design's own "most fragile, drop or
+distort first" slots) either drop or drift to another actually-present player / another tag.
+Matches the design's "corruption happens before synthesis" property exactly: `degradeForListener`
+returns an already-degraded object, there is no clean signal a listener's client could ever
+recover — out-of-range returns `null` (hears nothing at all, not even corrupted).
+
+**Ephemerality enforced by omission, not a runtime flag.** Deliberately no store, no
+`getAlive`, no query-by-day — unlike Wall/Envelope or the diary, this module provides nothing
+to persist. Relaying something heard here still has to go back through the existing
+Wall/Envelope grammar, no new path added, matching the design exactly.
+
+14 new tests (`test/proximityConversation.test.ts`): table structural integrity, presence/
+self-address gating, distance-0 is exact regardless of rng (corruption chance is
+mathematically zero at closeness=1, not just empirically untriggered), edge-of-range with rng
+forced-on corrupts every fragile slot, a corrupted REFERENT never resolves to someone who
+wasn't actually present. 504 tests total (490 + 14), typecheck clean.
+
+**Deliberately not built yet**: TTS rendering (client/infra concern, out of engine scope by
+design); the moderation-logging telemetry from `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`
+— next up, now that there's a real `Utterance` type to generate events from (task #68).
+
+---
+
 ## 2026-08-13 — Moderation-logging research turned into architecture, verified before adopting
 
 Follow-up to the research prompt generated and sent earlier this session (proximity
