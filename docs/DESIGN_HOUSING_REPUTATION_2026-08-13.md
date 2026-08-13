@@ -1,5 +1,8 @@
 # DESIGN — Universal Housing, Ground-Level Role Access, and Reputation Levels
 
+*(Extended, same day, with §7: the diary lives in the abode — trespass, keys, and a
+connections-only view.)*
+
 **2026-08-13. Design only — no engine code in this pass**, per the same discipline used for
 `docs/VISUAL_FRAMEWORK_2026-08-12.md` and the pop=100 config adoption: work out the shape in
 writing, with citations to what's already measured or already built, before anything gets
@@ -397,3 +400,139 @@ project's own design→code→test→docs discipline:
    (§3.5), with regression tests proving backstop/conscription bypasses it.
 
 (District-topology count, previously step 5 here, is resolved — see §1.5.)
+
+---
+
+## 7. The diary lives in the abode — trespass, keys, and a connections-only view
+
+Added same day, after §1-6 above. User's own framing, verbatim, because every clause is
+load-bearing: *"we have to leave the current diary of the player in their abode. so when
+their offline, or online, if someone trespassed via gaining a key, they can enter your abode
+and look at your diary. we have to also make the diary mechanical so it automatically shows
+connections but not what they're saying, so that the next day it's still distorted enough to
+change for everyone."* Followed by an explicit scoping correction: *"but only visible to a
+player trespassing, not general visitors or visible in game in that environment. only
+viewable via trespass."*
+
+This composes three previously-separate, still-undesigned-in-code pieces from this same
+session into one mechanic: the diary (design-locked since `docs/DESIGN_ADDENDUM_2026-08-06.md`,
+storage primitive built as `engine/privateStore.ts`, but its content schema never wired up),
+universal housing (§1 above, not built), and the tongue-in-cheek fines/crafting economy
+(captured in `docs/DEVLOG.md`'s 2026-08-13 entries, not yet designed in detail). None of the
+three is built yet, so this section is design only, same as the rest of this doc.
+
+### 7.1 The diary's location, not just its owner
+
+The diary is currently modeled as purely per-player (`PrivateStore<T>` keyed by `PlayerId`,
+`privateStore.ts`) — no spatial location at all. This adds one: **a player's diary lives in
+their Home** (§1's abode, whichever building/floor they're assigned to). This doesn't change
+who *writes* to it (still the owner, unprompted-only, per the original diary design) or how it
+expires (see §7.4 — the raw store's hard TTL is unchanged) — it changes who else can *reach*
+it, and how: not by knowing the owner's player ID, but by physically being at their building.
+
+**Trespass is only possible while the owner is absent from the abode — offline, or online but
+physically elsewhere.** User's own words: *"you can only trespass when the player is outside
+or offline."* This is a real simplification, not just a
+realism flourish: it means the mechanic never has to model what happens when an owner is home
+and notices someone breaking in — no confrontation behavior, no alert/response state, nothing
+to infer about either player's reaction. Per constraint 3 ("does this need to be an agent" —
+minimize what's modelable), gating the action on absence removes that whole surface before it
+exists, rather than building it and then constraining it. Mechanically this needs only what
+the engine already has, or already plans to have: whether the owner is online, and (once
+housing/residency exists, §1.3) where they currently are relative to their own Home building —
+both already representable, nothing new to invent.
+
+### 7.2 Trespass requires a key — the fines economy's first concrete instantiation
+
+"No trespass" is one of the four disallowed-but-tongue-in-cheek rules already captured
+(`docs/DEVLOG.md`), enforced mechanically by Journalist/Detective, requiring an "item" that no
+single player can produce alone — each role's capped resource forms only part of it, assembly
+requires trading with other roles. **A key is that item's first concrete shape.** This gives
+the previously-abstract crafting/fines economy a real reason to exist: there is now something
+worth breaking in for (§7.3), so the "why would anyone bother assembling a multi-role item"
+question the fines design left implicit has a real answer.
+
+This also corrects an earlier guess of mine, recorded so the correction is visible rather than
+silently overwritten: the fines devlog entry originally speculated "no trespass" would map to
+the district wall-shortcut access rules (`districtAccess.ts`). This session's framing is more
+specific and more interesting — trespass means entering another player's *abode* without a
+key, not misusing a district shortcut. `districtAccess.ts`'s existing shortcut-privilege model
+is unrelated to this mechanic and untouched by it.
+
+Detection stays mechanical, not behavioural (constraint 3), reusing the same shape as
+pattern-based sabotage: a trespass attempt is witnessable by real players near the abode at
+the time, not by the engine modeling intent. Journalist/Detective's existing role as
+enforcers (per the fines capture) applies unchanged here — catching a trespass triggers the
+same fine-refunds-the-economy mechanism already specified for the ruleset generally.
+
+### 7.3 What's actually visible: connections, not content — and the diary's own SUBJECT slot already draws this exact line
+
+The original diary spec (`docs/DESIGN_ADDENDUM_2026-08-06.md`) already has four slots:
+**SUBJECT** (who the entry is about), **OBSERVATION** (what was seen, composed from a fixed
+table), **READING** (the owner's own biased interpretation), **CONTEXT** (optional, ties to a
+real event). "Shows connections but not what they're saying" maps onto this exactly, without
+needing a new schema: **a trespasser sees the SUBJECT graph — who this diary has entries
+about — and nothing else.** OBSERVATION, READING, and CONTEXT stay hidden even under trespass.
+This is a strictly smaller reveal than the diary's own designers already considered and
+accepted as safe: the addendum explicitly rejected a numeric trust/valence slot ("no fifth
+slot for a trust score... a number is the thing players would optimize around") — a bare
+connections graph, with no valence at all, sits comfortably inside that same already-accepted
+boundary, arguably safer than the OBSERVATION table alone would be.
+
+**Only visible via trespass — not ambient, not shown to legitimate visitors, not rendered as
+passive environment detail.** User's explicit correction. A guest, a partner, anyone with a
+key given willingly, sees nothing different about the room. Only the specific trespass
+action — key spent, witness risk taken — triggers the reveal. This keeps the leak surface as
+narrow and deliberate as possible: it is not "anyone who's ever been inside your home now
+knows who you journal about," it is "someone chose to risk a real, catchable violation
+specifically to learn this."
+
+### 7.4 The distortion is in the VIEW, not the store — reconciling with an existing, deliberate design decision
+
+This needs to be stated explicitly because it touches a decision already recorded elsewhere,
+and CLAUDE.md's own rule is "don't silently work around a rule that breaks — say so." Two
+existing, deliberate facts are both still true and both preserved here, not contradicted:
+
+- The diary's own retention model (`DESIGN_ADDENDUM_2026-08-06.md`) is a **hard, silent,
+  per-entry TTL — "no fade or blur applied before expiry."** This stays exactly as designed.
+  The raw stored entries are not touched by this section at all.
+- `comms/decay.ts`'s own header states it is **"NOT used by the private diary... the diary is
+  a genuinely different mechanic."** This stays true of the diary's *storage*.
+
+What's new is a **separate, derived, read-time-only projection**: when a trespass succeeds,
+the SUBJECT graph shown is passed through the *existing* decay/distortion primitive
+(`comms/decay.ts`'s `applyDistortion`, the same mechanism the rumour mill already uses) —
+computed fresh each time it's viewed, not stored, not cached. "So that the next day it's still
+distorted enough to change for everyone" reads directly as: query the same diary again
+tomorrow, get a differently-distorted connections graph, because the distortion roll happens
+at read time, not write time. This is a NEW use of an existing primitive against a NEW
+derived view, not a change to the diary's own decay model — the reconciliation is real, not a
+word game: nobody who trespasses twice, a day apart, sees the same "truth" twice, which is
+exactly the property that keeps this from becoming the leaked, stable dossier constraint 4
+forbids, on top of (not instead of) the diary's own unchanged hard-TTL safeguard.
+
+### 7.5 Constraint 4 compliance, stated directly rather than assumed
+
+- **No stable private dossier is ever created for the reader.** What's seen is a connections
+  graph, freshly distorted per read, never the same twice, never containing READING/valence.
+  If a trespasser wants to *remember* what they saw, that has to go through their own diary —
+  same hard TTL, same rules, no new permanent channel invented.
+- **No cross-session or cross-shard trust score.** Nothing numeric is exposed; this section
+  doesn't add one and doesn't need one — same principle §3.1's reputation-level design already
+  applied to a different mechanic this same document.
+- **The owner's own diary is untouched by being trespassed.** Reading it doesn't delete it,
+  doesn't shorten its TTL, doesn't notify the owner (matching the diary's existing
+  "no warning at expiry, no system nudges" philosophy) — trespass is a read, not a write,
+  against the target's data. [OPEN, not decided here: whether the owner should ever learn a
+  trespass happened, e.g. via Detective's fine notification reaching them indirectly — left
+  for whoever designs the fines/notification flow in full.]
+
+### 7.6 What this section does NOT decide
+
+- The key-crafting recipe itself (which roles' resources, how many, how long) — depends on
+  the fines/crafting economy's own full design pass, not started.
+- Exact witness/detection math for a trespass attempt — should reuse the pattern-based
+  sabotage witness model's shape, not be derived from scratch, but not measured here.
+- Whether OTHER private mechanics besides the diary (e.g. a future per-player "impressions"
+  store) should also live in the abode, or whether this is diary-specific. Assume
+  diary-specific until stated otherwise.

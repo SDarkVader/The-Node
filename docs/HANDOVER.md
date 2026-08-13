@@ -69,10 +69,23 @@ Oracle. Full detail in `docs/DEVLOG.md`'s two matching 2026-08-13 entries — re
 so none of it is lost a second time (the user flagged they'd raised the fines idea before and
 weren't sure it survived).
 
-**Next**: pick up either the fines/economy design (needs its own pass before any sweep is
-worth running — see the devlog entry) or the Oracle odds/prize design, or proceed to the
-housing-design build order (`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) now that its
-own district-topology prerequisite is resolved.
+**Then, same session**: the diary (design-locked since 2026-08-06, never wired to real
+content) got composed with housing and the fines economy into one mechanic — a player's diary
+now lives in their abode; trespassing (requires a key — the fines economy's first concrete
+use) while the owner is offline-or-elsewhere reveals a connections-only view (who they have
+diary entries about, not what those entries say), freshly distorted every read via the
+existing `comms/decay.ts` primitive so it's never the same stable "truth" twice. Full design in
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7 — explicitly reconciles with, rather than
+contradicts, the diary's existing hard-TTL/no-fade storage decision (only the read-time
+projection distorts, not the stored entries). **Design only, nothing built** — depends on
+housing/residency, the diary's content schema, and the key-crafting economy, none of which
+exist in code yet.
+
+**Next**: pick up the key-crafting/fines economy design (needs its own pass — see the devlog
+entry), the Oracle odds/prize design, or proceed to the housing-design build order
+(`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) now that its district-topology prerequisite
+is resolved. The diary-in-abode piece (§7) most naturally follows once housing/residency (§1)
+is real, since it depends on knowing who lives where.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

@@ -6,6 +6,63 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — The diary lives in the abode: trespass, keys, and a connections-only view (design only)
+
+Direct follow-on, same session, right after the district-topology resolution. User: *"we have
+to leave the current diary of the player in their abode. so when their offline, or online, if
+someone trespassed via gaining a key, they can enter your abode and look at your diary. we
+have to also make the diary mechanical so it automatically shows connections but not what
+they're saying, so that the next day it's still distorted enough to change for everyone."*
+Two immediate follow-up refinements in the same breath: *"but only visible to a player
+trespassing, not general visitors or visible in game in that environment. only viewable via
+trespass"* and *"you can only trespass when the player is outside or offline."*
+
+This is a real, coherent composition of three previously-separate pieces from this same
+session, none built in code yet: the diary (design-locked since
+`docs/DESIGN_ADDENDUM_2026-08-06.md`, SUBJECT/OBSERVATION/READING/CONTEXT slots, hard silent
+~30-day TTL, storage primitive built as `engine/privateStore.ts` but never wired to real
+content), universal housing (`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1, not built),
+and the tongue-in-cheek fines/crafting economy (earlier today's devlog entry, not designed in
+detail). Written up in full as new §7 of the housing design doc rather than re-explained here.
+
+**The key finding worth pulling out on its own**: "shows connections but not what they're
+saying" maps EXACTLY onto the diary's own already-existing SUBJECT slot (who an entry is
+about) versus its OBSERVATION/READING slots (what was seen, and the owner's biased read of
+it) — no new schema needed, the diary's original 2026-08-06 design already drew this exact
+line, and had already independently rejected a numeric trust/valence slot for the same
+"don't let this become an optimizable dossier" reason. A bare connections graph sits
+comfortably inside a boundary the diary's own designers already accepted as safe.
+
+**A real, explicit reconciliation with a previously-recorded decision, not a silent
+override**: `comms/decay.ts`'s own header says "NOT used by the private diary... the diary is
+a genuinely different mechanic [hard TTL, no gradual fade]." That stays true — the raw stored
+diary entries are untouched by this design. What's new is a separate, read-time-only
+projection (the connections view shown under trespass) that reuses `decay.ts`'s existing
+distortion primitive, freshly rolled every time it's queried, never cached — which is exactly
+what makes "still distorted enough to change for everyone" the next day true, without
+touching the diary's own storage/expiry model at all. Recorded explicitly per CLAUDE.md's own
+"don't silently work around a rule that breaks — say so" instruction, since this could easily
+have been read as quietly contradicting the 2026-08-06 decision if left unstated.
+
+**Corrects my own earlier guess**: the fines devlog entry from earlier today speculated "no
+trespass" would map onto `districtAccess.ts`'s wall-shortcut rules. This session's framing is
+sharper — trespass means entering another player's abode without a key, unrelated to district
+shortcuts. Recorded as a correction, not silently overwritten.
+
+**Constraint-3 payoff from the "only while absent" rule**: gating trespass on the owner being
+offline-or-elsewhere means the mechanic never needs to model a confrontation between the two
+players at all — no alert state, no reaction to infer, nothing added to what's modelable.
+Removes a whole behavioral surface by construction rather than building it and constraining it
+after.
+
+**Design only — nothing built.** All three composed systems (housing/residency, diary content
+schema, key-crafting economy) remain unbuilt. Full writeup, including the constraint-4
+compliance reasoning and the explicit open items (key-crafting recipe, trespass witness math,
+whether the owner ever learns a trespass happened) in
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.
+
+---
+
 ## 2026-08-13 — Captured, not yet designed: tongue-in-cheek disallowed-rules / fines mechanic (Journalist + Detective enforce)
 
 User flagged this mid-session, explicitly worried it hadn't survived a prior session:
