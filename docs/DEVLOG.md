@@ -6,6 +6,51 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Moderation-logging research turned into architecture, verified before adopting
+
+Follow-up to the research prompt generated and sent earlier this session (proximity
+conversation's logging obligations). User supplied an 11-page report back and asked to
+"verify the results and then ensure the architecture meets these compliance standards."
+
+**Verified, not rubber-stamped.** Three claims spot-checked against primary sources before
+building anything on them: COPPA's "support for internal operations" exception (confirmed —
+lets a persistent identifier be logged without parental consent for security/safety purposes;
+found one gap in the report's own citation, that current FTC rule text also requires naming
+the specific internal operations in the privacy policy); DSA Article 17/20 (statement of
+reasons, ≥6-month appeal window — both confirmed accurate); and the single most load-bearing
+claim, that TTS output from a fixed template avoids GDPR's Article 9 biometric classification —
+directionally confirmed against AEPD guidance, but that guidance is general voice-processing
+guidance applied to this case, not a ruling about a system like NODE's, so recorded as
+credible-not-certain rather than settled. User separately confirmed reaching the same
+conclusion from their own research. A fourth spot-check (Epic Games' 14/28-day voice-report
+retention) confirmed accurate, and surfaced that Epic's actual capture is a rolling 5-minute
+buffer — more aggressive than anything proposed here, which reads as reassuring rather than
+exposed for NODE's proposed 30-day default.
+
+**Architecture written up in `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`**: never store
+the rendered TTS audio (deterministic synthesis makes storing it pure GDPR-minimization risk
+for zero benefit); log five structured fields only (timestamp, actor, target, grammar payload,
+spatial coordinates) to a backend service completely siloed from the game's own simulation
+kernel — `stepWorld` and friends have no dependency on or awareness of it, matching the same
+silo discipline `decay.ts` already models for reusable primitives; bifurcated retention,
+30-day rolling TTL for unflagged logs, moved to a Dispute Archive through investigation +
+DSA's 6-month appeal minimum if flagged.
+
+**A real correction caught by cross-referencing same-session work, not missed this time**:
+the report recommended matching this log's retention to the diary's ~30-day window "for
+consistency." That was accurate when the report was researched, but the diary's own window
+had already shrunk to ~2 days earlier the same session (previous entry, this same file).
+Written up explicitly rather than silently adopting a now-stale recommendation: the two
+systems are independently justified (one by GDPR's one-month DSAR cycle, the other by pure
+game-design taste) and were never required to track each other — this doc says so directly so
+a future session doesn't "fix" them into alignment based on a misreading of why 30 came up in
+two different places.
+
+No code — proximity conversation itself still has none. Design-only, same status as the fines
+economy and Oracle docs, waiting on the feature it describes existing first.
+
+---
+
 ## 2026-08-13 — Real correction to the diary's own retention model: daily distortion, ~2 days not ~30, and a design-doc sweep for what else was still wrong
 
 User, sharply, after the proximity-conversation correction above: *"also, the diary changes

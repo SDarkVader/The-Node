@@ -234,15 +234,38 @@ including the honest "why this happened" note.
 
 477 tests total (473 + 4 new), typecheck clean.
 
+**Then: the research prompt came back, with an explicit ask to verify it and build to it.**
+User supplied an 11-page report answering the moderation-logging research prompt from earlier
+this session, plus: *"everyone has to keep logs, I just need to obey the law... I think we can
+verify the results and then ensure the architecture meets these compliance standards."* Four of
+the report's claims were spot-checked against primary sources rather than adopted on faith —
+COPPA's internal-operations exception (confirmed, with a real gap found: current FTC rule text
+also requires naming the specific operations in the privacy policy), DSA Article 17/20
+(confirmed), the GDPR biometric-classification argument for TTS output (directionally confirmed
+against AEPD guidance, flagged as credible-not-certain since it's general guidance applied to
+this case, not a ruling on a system like NODE's — the user separately confirmed reaching the
+same conclusion independently), and the Epic Games retention precedent (confirmed, and turns
+out more aggressive than what's proposed here). Written up as
+`docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`: never store rendered TTS audio (deterministic
+synthesis makes it redundant), log five structured fields only to a backend service completely
+siloed from the game's own simulation kernel, bifurcated 30-day-unflagged /
+Dispute-Archive-if-flagged retention. **Caught and corrected the report's own now-stale
+recommendation** rather than adopting it: it suggested matching this log's retention to the
+diary's window "for consistency," but the diary shrank to ~2 days earlier the same session —
+the doc records explicitly that these are two independently-justified systems (one legal, one
+game-design) never required to track each other. No code — design only, same status as fines
+economy/Oracle, waiting on proximity conversation's own engine work to exist first.
+
 **Next**: still waiting on the level-2 reputation-gate mechanism question raised earlier this
-session — pick that up first. Also still open from this same thread: whether "let's explore it
+session — pick that up first. Also still open from the same thread: whether "let's explore it
 on each level" meant gating proximity conversation's INTENT/TONE/REFERENT/CONTEXT vocabulary by
 reputation level (proposed, never confirmed). Otherwise: build arson against its 30% target;
 move to fines economy (needs the personal-resource-stock field first) or Oracle (needs the
 population-scale re-simulation its own §5 asks for); or build the diary's actual content schema
 and wire it into `privateStore.ts` now that both its retention model and storage primitive are
 correct and settled — the diary-in-abode/trespass mechanic (§7 of the housing doc) is now
-unblocked on this too.
+unblocked on this too. Proximity conversation itself (still zero code) now has a full
+compliance architecture waiting for it too, whenever its own engine work starts.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

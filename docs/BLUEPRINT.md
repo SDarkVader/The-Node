@@ -3451,3 +3451,52 @@ piece per trespass, multiple needed to add up to anything useful). Deliberately 
 of the pipeline; nothing recalibrated here.
 
 **Verified**: `npm run typecheck` clean; full suite 473 tests (470 + 3 new), all passing.
+
+---
+
+**2026-08-13, later — moderation logging for proximity conversation, given a real architecture
+(`docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`).** Downstream of the "there is no way this
+isn't in the logs" correction earlier the same session: the user commissioned outside research
+into what a real infrastructure-layer moderation log for a TTS-rendered, template-based
+in-game speech feature actually needs to look like to be legally defensible, then asked for the
+findings to be verified and turned into architecture. Design only — proximity conversation has
+no code yet, so nothing here is a rebuild, just scoping the infra layer alongside where the
+feature will eventually land.
+
+**Verification, not blind adoption**: three of the report's most load-bearing claims were
+spot-checked against primary/near-primary sources before being built on. COPPA's "support for
+internal operations" exception (lets a persistent identifier be collected without parental
+consent for security/safety purposes) — confirmed, with a real gap in the report's own
+citation: current FTC rule text also requires the privacy policy to name which internal
+operations the identifier serves and confirm it's not used for profiling. DSA Article 17
+(statement of reasons) and Article 20 (≥6-month appeal window) — confirmed accurate. The GDPR
+biometric-classification claim (TTS from a fixed template avoids Article 9's "special category"
+data because nothing physiological is ever captured) — directionally confirmed against AEPD
+guidance, but that guidance is general-purpose voice-processing guidance applied to this case,
+not a ruling issued about a system like NODE's; flagged as credible-not-certain rather than
+overstated as settled. The Epic Games 14-day/28-with-appeal retention precedent the report cites
+— confirmed, and it turns out Epic's actual capture is a rolling 5-minute buffer, more
+aggressive than what's proposed here, which if anything makes NODE's proposed 30-day default
+look conservative rather than exposed.
+
+**The architecture**: never store the rendered TTS audio (synthesis is deterministic, so
+storing it violates GDPR data-minimization for zero benefit — any investigator can regenerate
+the exact clip from the structured selection). Log only five fields (timestamp, actor ID,
+target ID, the grammar payload actually selected, spatial coordinates) to an isolated backend
+service the game's simulation kernel has zero dependency on or awareness of — same silo
+discipline `decay.ts` already models. Bifurcated retention: unflagged logs get a rolling 30-day
+TTL then permanent deletion/anonymization (independently justified by GDPR's own one-month DSAR
+response cycle, not by matching anything else in this codebase); flagged logs move to a
+Dispute Archive retained through investigation plus the DSA's 6-month appeal minimum.
+
+**A real correction to the report's own recommendation, caught by cross-referencing same-session
+work**: the report suggested aligning this log's retention with the diary's ~30-day window "for
+consistency's sake" — accurate when the report was written, but the diary's own window shrank
+to ~2 days the same session (see the entry above this one). Recorded explicitly in the design
+doc: these are two independently-justified systems (one legal/compliance, one game-design) that
+happen to both use round numbers, not two systems that need to track each other, and neither
+future change to one obligates a change to the other.
+
+No code — same status as the fines-economy and Oracle design docs, waiting on proximity
+conversation's own engine work to exist first. Full detail, including the DSA-article mapping
+table and the EULA-language directive, in `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`.
