@@ -402,20 +402,44 @@ boundary exactly like `postToWall` throwing on anything outside its table.
 
 **No microphone, ever.** Player composes a turn via staged UI selection (INTENT narrows
 sensible TONE options, then REFERENT, then optional CONTEXT); the validated template
-string renders through text-to-speech. Nothing captured, nothing biometric, nothing
-retained anywhere — there is no recording to be subject to any policy, which is the
-actual solution, not a workaround of one.
+string renders through text-to-speech. Nothing captured, nothing biometric — this is
+still the real, load-bearing win, and it's the reason this design exists at all: there is
+no voice to record, so the entire biometric-data/retention-obligation surface a real
+microphone would open never exists in the first place.
+
+**Correction (2026-08-13, user directive) to "nothing retained anywhere":** that line
+overstated the claim. The composed message — which INTENT/TONE/REFERENT/CONTEXT combo was
+sent, by whom, to whom — is ordinary structured data traveling client-to-server the same
+as every other game action, and any real deployed system will have SOME infrastructure
+that incidentally touches it: server access logs, crash/error telemetry, abuse-report or
+Trust & Safety tooling. User's own words: *"there is no way this isn't in the logs."*
+Correct and not in tension with the design — this is exactly the same distinction the
+diary's own retention section (below) already draws between infrastructure-layer data a
+platform holds for moderation purposes (governed by real platform policy, GDPR, Trust &
+Safety obligations — outside this design's control or claim) and GAME-MECHANIC state (what
+gameplay systems actually query, persist, or let a player replay). What THIS design
+actually delivers, precisely: no GAMEPLAY-FACING conversation history exists anywhere — no
+mechanic lets any player (including the ones who were present) pull up a transcript, no
+system feeds room-conversation content back into any other mechanic except through the
+lossy relay-via-Wall path below. That's the real, buildable guarantee; "never touches any
+log, anywhere, ever" was never something a game's own design layer could actually promise
+and shouldn't have been claimed as one.
 
 **Tone still permits real social maneuvering.** Same property as the Wall's grammar:
 constraining truthfulness of the statement itself is not the same as constraining what a
 listener infers from tone or timing. A warm-toned deflection is a real, legitimate social
 move under this system, not a hole in it.
 
-### Ephemerality — gone from the system, kept in the minds that heard it
+### Ephemerality — gone from every GAME mechanic, kept in the minds that heard it
 
 **[DESIGN — not yet built]**
 
-Room conversation is recorded nowhere and by no system, full stop. It is not lost,
+No GAME mechanic records room conversation, full stop — no gameplay system stores it, no
+player (present or not) can query or replay it, nothing feeds it into any other mechanic.
+(See the correction above: this is a claim about the game's own mechanical layer, not a
+claim that the message never touches ordinary server/infrastructure logging — it will,
+same as any other client-server action, and that's a platform/compliance matter outside
+this design's scope, not a hole in it.) Within the game's own systems, it is not lost,
 however — it persists exactly as far as the memory of whoever was actually present, the
 same way a real overheard conversation does. This resolves cleanly into the existing
 rumour mill rather than requiring a new propagation system: a player who wants to relay

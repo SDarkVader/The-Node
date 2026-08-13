@@ -6,6 +6,33 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Real correction to proximity conversation's ephemerality claim: infra logs vs. game-mechanic state
+
+User, on "proxy chat" (proximity conversation, `docs/DESIGN_ADDENDUM_2026-08-06.md`, confirmed
+by description — TTS-rendered, no microphone, matches that section's own spec word for word):
+*"it's just in game communication, txt to speech so there's no biometrics. there is no way
+this isn't in the logs."*
+
+A real, correct catch — the original spec's "nothing retained anywhere... no recording to be
+subject to any policy" and "recorded nowhere and by no system, full stop" overstated the
+claim. The composed message is ordinary structured client-server data; any real deployed
+system will have SOME infrastructure that incidentally touches it (access logs, crash
+telemetry, abuse-report tooling). Fixed by drawing the same distinction the diary's own
+retention section already draws nearby in the same document: infrastructure-layer data a
+platform holds for moderation/compliance purposes (real, unavoidable, outside this design's
+control) versus GAME-MECHANIC state (what gameplay systems actually query/persist/replay —
+still genuinely nothing, no mechanic anywhere lets any player pull up a transcript). The real,
+buildable guarantee was always the second one; the first was never something a game design
+document could actually promise. Not a redesign — the "no microphone, no biometric capture"
+win (the actual point of the whole mechanic) is untouched and still real.
+
+**Still open, from the same thread**: whether "explore it on each level" means gating
+proximity conversation's INTENT/TONE/REFERENT/CONTEXT vocabulary richness by reputation level
+(grifter level 0 gets a real, unremovable baseline subset; level 1/2 unlock more) — proposed,
+not yet confirmed by the user. Picking up once confirmed.
+
+---
+
 ## 2026-08-13 — Sabotage recalibrated (relatively easy now), arson given a real difficulty target, diary pace confirmed untouched
 
 User, across several messages: *"we need sabotage to succeed more often. it can't take over
