@@ -6,6 +6,47 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — The two remaining open design threads: fines economy + Oracle odds (design only)
+
+User: *"the open design threads"*. Two new documents, both design-only, both cross-referenced
+with what's already written up rather than duplicating it.
+
+**`docs/DESIGN_FINES_ECONOMY_2026-08-13.md`** — the tongue-in-cheek disallowed-rules mechanic
+(no stealing/arson/trespass/detected misinformation), captured piecemeal across several
+messages earlier today, written up as one coherent design. The "capped per-role resource"
+requirement turns out to already exist: `resources.ts`'s six named resources
+(grain/flour/bread/parcels/stories/leads), one per role, shipped since 2026-08-11 — reused,
+not invented. Real gap found and closed on paper: those resources are tracked shard-aggregate
+today, not as a personal stock a role-holder could spend/trade; proposed a per-slot
+`personalResourceStock` mirroring `wealth`'s existing accrue-while-occupied/reset-on-new-
+occupant convention, checked to confirm it does NOT hit the same persistent-identity wall that
+blocked reputation levels (it only needs to persist for as long as someone holds the slot).
+Three illustrative item recipes (Key/Firestarter/Theft-tool), each combining three different
+roles' resources, communal pooling rather than bilateral trade (mechanical, not negotiated).
+Detection reuses `ecosystem.ts`'s pattern-based sabotage step-chain wholesale — a violation is
+structurally the same "many innocuous steps, no single one definitive" shape sabotage already
+models, so zero new detection math was written. Misinformation explicitly does NOT get forced
+into the item-crafting shape — it already has a complete home in the rumour mill/pressure
+detection. Fines refund into nodule supply (closed-loop, matches nodules-as-sole-root-input);
+checked whether "nodules keep pace with node growth" needs new code and found it's already
+true structurally (nodule supply already scales with Import/Export slot count).
+
+**`docs/DESIGN_ORACLE_2026-08-13.md`** — closes the Oracle's one remaining `[OPEN]` item
+(which metric its odds should float on). Checked both real candidate metrics against already-
+measured behavior rather than guessing: `economicHealth` reads "basically fine" (0.96) even
+under real sustained attack (an existing finding from earlier this project);
+`economicHealthWithExperience` genuinely moves (0.77 under the same attack) — recommended.
+Proposed a linear, clamped, floored health-to-odds mapping that matches the exit-ticket
+gamble's own already-validated flat-odds population simulation at healthy conditions and never
+reaches zero (constraint 2). Event prizes scoped to real economic quantities only (nodule
+bonus, resource top-up, a small wealth bonus checked against existing Gini findings) —
+explicitly never standing or reputation, which constraint 6 rules out structurally.
+
+**Design only, both documents. No code, no new tests this entry** — matches the design-before-
+code discipline used all session. Full detail in `docs/BLUEPRINT.md`'s matching entry.
+
+---
+
 ## 2026-08-13 — Reputation levels: real progress tracking, a real architectural blocker found, and a real calibration fix
 
 User: *"let's continue"*. Following the housing build order's own next step (§3, reputation

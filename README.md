@@ -203,6 +203,13 @@ touch in the game:
   number of roles are within reach; standing opens up more over time, but
   it only ever adds options, never takes any away, and nobody's own
   progress gets slower because someone else is playing more that day.
+- **Four rules, said with a straight face** — no stealing, no arson, no
+  trespass, no getting caught spreading misinformation. Breaking one takes
+  real coordination: whatever it takes to do it has to be pieced together
+  from several different roles' own trade, since nobody holds every part
+  alone. Getting caught is a real, felt cost — a fine — and that fine
+  doesn't just vanish, it flows back into the same economy everyone else
+  is drawing from.
 
 
 

@@ -125,11 +125,34 @@ observed topped out at 7. Lowered to 6, verified reachable, locked in with a reg
 466 tests total (451 + 15 new), typecheck clean. Full trail in `docs/BLUEPRINT.md`'s
 "Reputation levels" entry.
 
+**Then: "the open design threads."** Wrote up both remaining ones in full, design-only:
+
+- `docs/DESIGN_FINES_ECONOMY_2026-08-13.md` — the fines ruleset made coherent. The "capped
+  per-role resource" requirement is `resources.ts`'s six already-shipped named resources,
+  reused not invented (real gap closed on paper: they're shard-aggregate today, need a
+  per-slot personal stock, checked to NOT hit the same identity-persistence wall reputation
+  levels hit). Three illustrative item recipes, communal pooling not bilateral trade.
+  Detection reuses `ecosystem.ts`'s pattern-based sabotage machinery wholesale — zero new
+  detection math. Misinformation explicitly NOT forced into the item shape — already has a
+  home in the rumour mill. Fines refund into nodule supply; "nodules keep pace with growth"
+  turns out to already be true structurally, no new mechanism needed there.
+- `docs/DESIGN_ORACLE_2026-08-13.md` — closes the Oracle's one open item (which metric odds
+  float on). Checked both candidates against real measured behavior:
+  `economicHealthWithExperience` (0.77 under real attack) recommended over `economicHealth`
+  (reads "basically fine," 0.96, under the same attack — an existing finding). Proposed a
+  linear, clamped, floored health-to-odds mapping matching the exit-ticket gamble's own
+  already-validated flat-odds simulation at healthy conditions. Event prizes scoped to real
+  economic quantities only, never standing/reputation (constraint 6).
+
+Both cross-reference, not duplicate, the housing/reputation/diary work already written up.
+No code in either — full detail in `docs/BLUEPRINT.md`'s matching entry.
+
 **Next**: the voluntary-uptake gate itself needs fill-selection restructured to pick
-individual grifters (separate, larger work) before it can be wired to `rolesEligibleFor` — or
-pick up the key-crafting/fines economy design (needs its own pass — see the devlog entry), the
-Oracle odds/prize design, or the diary-in-abode mechanic (§7), which now has the
-housing/residency foundation (§1) it was waiting on.
+individual grifters (separate, larger work) before it can be wired to `rolesEligibleFor`; or
+build toward either new design (fines economy needs the personal-resource-stock field first;
+Oracle needs the population-scale re-simulation its own §5 asks for before any code); or the
+diary-in-abode mechanic (§7 of the housing doc), which now has the housing/residency
+foundation it was waiting on.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

@@ -3251,3 +3251,51 @@ level-1/level-2-reachability lock-in above). 466 tests total, `npm run typecheck
 restructuring — real, separate work); any notion of reputation surviving a grifter's
 transition into a role and back (blocked on the same missing persistent-identity concept
 `player.ts` already flagged as future work, not something this pass could fix in scope).
+
+## Two remaining open design threads written up in full (2026-08-13, same session)
+
+User: *"the open design threads"* — the fines/crafting economy and the Oracle's odds model,
+both flagged open across earlier entries this session. Both landed as their own documents
+rather than folded into existing ones, since each is substantial enough to want its own home:
+`docs/DESIGN_FINES_ECONOMY_2026-08-13.md` and `docs/DESIGN_ORACLE_2026-08-13.md`. Design
+only — no code in either.
+
+**Fines economy.** Turns the tongue-in-cheek disallowed-rules mechanic (captured piecemeal in
+`docs/DEVLOG.md`) into one coherent design. Key move: the "every role has a resource, capped,
+to a limit" requirement is `engine/resources.ts`'s six already-shipped named resources
+(grain/flour/bread/parcels/stories/leads), reused rather than invented — closing a real gap
+in HOW they're tracked (shard-aggregate today, needs a personal per-slot stock, checked
+against the architecture and confirmed buildable without hitting the same identity-
+persistence wall reputation levels hit, because it only needs to persist for as long as
+someone holds a role-slot, same as `wealth` already does). Three illustrative item recipes
+(Key/Firestarter/Theft-tool) combine three roles' resources each, no recipe repeating the
+same three, communal-pooling not bilateral trade (mechanical, not negotiated — constraint 3).
+Detection reuses `ecosystem.ts`'s existing pattern-based sabotage step-chain machinery
+wholesale rather than inventing new detection math — a violation IS structurally the same
+shape (many individually-innocuous steps, no single one definitive). Misinformation is
+explicitly NOT forced into the crafted-item shape — it already has a complete mechanical home
+in the rumour mill's distortion tracking plus Journalist's pressure detection. Fines refund
+into nodule supply rather than vanishing, checked against and found consistent with the
+already-closed-loop nodules-as-sole-root-input design; "nodules keep pace with node growth"
+turns out to already be true of the shipped system structurally (nodule supply already scales
+with Import/Export slot count, the same lever population growth already moves).
+
+**Oracle odds.** Closes the one `[OPEN]` item left in the Oracle's locked design
+(`docs/DESIGN_ADDENDUM_2026-08-06.md`): which metric odds should float on. Checked both
+existing candidates against real measured behavior rather than picking blind —
+`economicHealth` reads "basically fine" (mean 0.96) even under sustained real attack per an
+earlier finding this project already made; `economicHealthWithExperience` genuinely moves
+(mean 0.77 under the same attack), so it's the one recommended. Proposed a linear, clamped,
+floored mapping from health to `base_odds` that matches the exit-ticket gamble's own already-
+validated flat-odds population simulation at healthy conditions, never reaches zero
+(constraint 2), and is explicit that its constants are illustrative pending a re-run of that
+same simulation with real health-linked odds instead of a flat placeholder — exactly what that
+original simulation's own `[OPEN]` note already asked for. Event prizes are scoped to draw
+only from already-real economic quantities (nodule bonus, resource-stock top-up, a
+deliberately small wealth bonus checked against the shipped Gini/inequality findings) —
+explicitly never a role, a reputation level, or any form of standing, which constraint 6 and
+the Oracle's own "no target for grudges" design both rule out structurally.
+
+Neither document changes any shipped code or constant — both are additions to the
+design-before-code queue, cross-referenced with the housing/reputation/diary work already
+written up, not duplicating it.
