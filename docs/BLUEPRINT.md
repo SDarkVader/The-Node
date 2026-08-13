@@ -3500,3 +3500,20 @@ future change to one obligates a change to the other.
 No code — same status as the fines-economy and Oracle design docs, waiting on proximity
 conversation's own engine work to exist first. Full detail, including the DSA-article mapping
 table and the EULA-language directive, in `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md`.
+
+---
+
+**2026-08-13, later still — the diary's content schema, built.** User: *"would you agree there
+are many things we can build already, without additional data, parked away that could just be
+built instead of documented?"* — yes, and the diary was the smallest, most self-contained of
+the three candidates named. `src/engine/diary.ts`: SUBJECT/OBSERVATION/READING/CONTEXT slots
+typed in exactly per `docs/DESIGN_ADDENDUM_2026-08-06.md`'s already-locked spec (28 OBSERVATION
+entries across Trade/Information/Crisis/Presence, 5 READING entries, same closed-table
+discipline as `SELF_STATES`/`TEMPLATES`), `writeDiaryEntry` (unprompted-only, throws on a
+self-entry or an unresolved SUBJECT), and `distortDiaryEntry` — the first real consumer of the
+distort hook `privateStore.ts` gained earlier this same session. OBSERVATION/READING drift via
+new within-category neighbor tables through `getAlive`'s once-per-elapsed-day hook; SUBJECT and
+CONTEXT never distort. `DIARY_RETENTION_DAYS = 2`, matching the corrected design exactly. 13 new
+tests, 490 total (477 + 13), typecheck clean. Trespass's SUBJECT-graph read (§7.3 of the housing
+doc) deliberately not built yet — real prerequisites (residency, key-crafting) still missing,
+not scope creep avoided for its own sake.

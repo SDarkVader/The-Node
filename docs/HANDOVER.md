@@ -256,16 +256,31 @@ the doc records explicitly that these are two independently-justified systems (o
 game-design) never required to track each other. No code — design only, same status as fines
 economy/Oracle, waiting on proximity conversation's own engine work to exist first.
 
-**Next**: still waiting on the level-2 reputation-gate mechanism question raised earlier this
-session — pick that up first. Also still open from the same thread: whether "let's explore it
-on each level" meant gating proximity conversation's INTENT/TONE/REFERENT/CONTEXT vocabulary by
-reputation level (proposed, never confirmed). Otherwise: build arson against its 30% target;
-move to fines economy (needs the personal-resource-stock field first) or Oracle (needs the
-population-scale re-simulation its own §5 asks for); or build the diary's actual content schema
-and wire it into `privateStore.ts` now that both its retention model and storage primitive are
-correct and settled — the diary-in-abode/trespass mechanic (§7 of the housing doc) is now
-unblocked on this too. Proximity conversation itself (still zero code) now has a full
-compliance architecture waiting for it too, whenever its own engine work starts.
+**Then: "would you agree there are many things we can build already... parked away that could
+just be built instead of documented?"** Yes — named three candidates (proximity conversation,
+the diary's content schema, arson), user said "let's get busy." **In progress, this same
+session, tracked as tasks #66-69:**
+
+- **#66 done**: `src/engine/diary.ts` — SUBJECT/OBSERVATION/READING/CONTEXT built exactly to
+  the already-locked addendum spec, `distortDiaryEntry` wired into `privateStore.ts`'s distort
+  hook (its first real consumer). 13 new tests, 490 total, typecheck clean. Full detail in
+  `docs/BLUEPRINT.md`'s matching entry.
+- **#67 in progress**: proximity conversation's grammar module (INTENT/TONE/REFERENT/CONTEXT,
+  mirroring `comms/grammar.ts`'s Wall/Envelope pattern) — next up.
+- **#68 pending**: wire the moderation-logging telemetry from
+  `docs/DESIGN_MODERATION_LOGGING_2026-08-13.md` once #67 exists to generate events from.
+- **#69 pending**: arson against its 30% target, reusing `ecosystem.ts`'s pattern-sabotage
+  machinery.
+
+**If this session ends mid-list, resume with `TaskList` to see exactly which of #66-69 are
+actually done** — don't re-derive from prose alone, the task tool has the live state.
+
+Still separately open, not part of this build push: the level-2 reputation-gate mechanism
+question (user hasn't specified one), and whether "let's explore it on each level" meant gating
+proximity conversation's vocabulary by reputation level (proposed, never confirmed — worth
+resolving once #67 exists to actually apply a gate to). Fines economy (needs the
+personal-resource-stock field) and Oracle (needs the population-scale re-simulation its own §5
+asks for) remain parked for real reasons, not just undocumented laziness.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

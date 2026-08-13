@@ -6,6 +6,44 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — "let's get busy": diary content schema built and wired to real code
+
+User's question — "are there things we can build already, without additional data, parked
+away that could just be built instead of documented?" — got a yes, with three concrete
+candidates: proximity conversation, the diary's content schema, and arson. "let's get busy."
+First up, the smallest and most self-contained: `src/engine/diary.ts`.
+
+**Built exactly to the addendum's already-locked spec, nothing invented.** SUBJECT/
+OBSERVATION/READING/CONTEXT slots per `docs/DESIGN_ADDENDUM_2026-08-06.md`; the illustrative
+OBSERVATION table (Trade/Information/Crisis/Presence, 28 entries) and READING table (5 entries,
+deliberately small and blunt by contrast) typed in verbatim as closed string-literal unions,
+same discipline as `SELF_STATES`/`TEMPLATES` in `comms/grammar.ts`. `writeDiaryEntry` throws on
+a self-entry (mirrors `sendEnvelope`'s existing check) and on an unresolved SUBJECT (ties to
+`isKnown()`, per fog-of-recognition) — writing is otherwise unprompted-only and always honest,
+no write-time distortion, matching the design exactly.
+
+**The distortion/retention correction from earlier this session gets its first real consumer.**
+`distortDiaryEntry` plugs straight into `privateStore.ts`'s `getAlive` distort hook (built
+earlier today, unused until now): OBSERVATION and READING each get one `applyDistortion` roll
+per elapsed server day via new neighbor tables (within-category adjacency, same
+semantically-adjacent-not-noise discipline as the rumour mill's `DISTORTION_NEIGHBORS`); SUBJECT
+and CONTEXT pass through untouched. `DIARY_RETENTION_DAYS = 2`, matching the corrected design
+exactly, locked in with a regression test asserting it stays well under the old ~30-day figure.
+
+13 new tests (`test/diary.test.ts`): structural table integrity (every neighbor entry is a
+real, different member of its own table — the same class of check `grammar.test.ts` already
+runs on `TEMPLATES`), creation gating, same-day reads are exact, distortion fires once per
+elapsed day not per read, retention boundary is silent and exact. 490 tests total (477 + 13),
+typecheck clean.
+
+**Deliberately not built yet, out of this task's scope**: the trespass mechanic's
+SUBJECT-graph-only read (§7.3 of `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`) — that's a
+thin derived view over `readDiary`'s output, genuinely trivial once housing/keys exist, but
+still has real prerequisites this file doesn't (residency, the key-crafting economy) so it
+stays a follow-up rather than scope creep into this commit.
+
+---
+
 ## 2026-08-13 — Moderation-logging research turned into architecture, verified before adopting
 
 Follow-up to the research prompt generated and sent earlier this session (proximity
