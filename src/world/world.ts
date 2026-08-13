@@ -92,7 +92,7 @@ import {
   type DistrictHealth,
 } from '../engine/districtConsolidation.js';
 import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
-import { emptyIdentityLedger, recordEncounter, type IdentityLedger } from '../engine/identity.js';
+import { emptyIdentityLedger, recordEncounter, resolvedSubjects, type IdentityLedger } from '../engine/identity.js';
 import {
   emptyPressureRecord,
   recordPost,
@@ -130,6 +130,8 @@ import { shiftCoverPay, shiftCoverNoticedIndices } from '../engine/shiftCover.js
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
+import { createDiaryStore, writeDiaryEntry, type DiaryEntry, type Observation, type Reading, type ContextTag } from '../engine/diary.js';
+import type { PrivateStore } from '../engine/privateStore.js';
 import {
   millerDailyIncome,
   bakerDailyIncome,
@@ -354,6 +356,17 @@ export interface RumourEventLite {
   clarity: number;
 }
 
+/** A queued diary-write request — same "caller populates, `stepWorld` consumes and clears"
+ *  shape as `pendingWallPosts`. Diary entries are unprompted-only (`diary.ts`'s own rule),
+ *  so `stepWorld` never generates one on its own; this is the only way one enters `World`. */
+export interface PendingDiaryEntry {
+  authorId: PlayerId;
+  subject: PlayerId;
+  observation: Observation;
+  reading: Reading;
+  context?: ContextTag;
+}
+
 export interface World {
   seed: number;
   tick: number;
@@ -417,6 +430,30 @@ export interface World {
    *  `districtWeather.ts`'s ambient `tension` — never a name, never a per-player identifier
    *  exposed to any other player. See engine/pressureDetection.ts's header. */
   pressureLedger: Readonly<Record<string, PressureRecord>>;
+  /** The diary's real storage — `engine/diary.ts`'s `PrivateStore<DiaryEntry>`, keyed by
+   *  owner `PlayerId`. Reads (`readDiary`) apply the daily distortion/expiry lazily on
+   *  access — `stepWorld` doesn't need its own maintenance pass for that, only for writes.
+   *
+   *  DELIBERATE EXCEPTION to this file's otherwise-immutable-snapshot convention (see the
+   *  file header's "DETERMINISM" note): `PrivateStore` is a mutable `Map`, by design —
+   *  `privateStore.ts`'s own header calls it "server-authoritative... the canonical copy,"
+   *  meaning there is meant to be exactly ONE live store, not a fresh clone every tick. This
+   *  field is the same `Map` reference across every `stepWorld` call for a given `World`
+   *  lineage, mutated in place by `writeDiaryEntry`/`getAlive`'s distortion — NOT
+   *  recreated. Two `World` snapshots (e.g. one kept for comparison, one stepped forward)
+   *  therefore SHARE and both observe this store's mutations, unlike every other field on
+   *  `World`. Flagged here explicitly rather than silently diverging from the file's own
+   *  stated contract. */
+  diary: PrivateStore<DiaryEntry>;
+  /** Queued diary-write requests — consumed and cleared every `stepWorld` call, same
+   *  pattern as `pendingWallPosts`. */
+  pendingDiaryEntries: PendingDiaryEntry[];
+  /** Authors whose queued entry actually wrote this tick. */
+  lastDiaryWrites: PlayerId[];
+  /** Queued entries rejected this tick (self-entry, or SUBJECT not yet resolved for that
+   *  author) — `writeDiaryEntry` throws on these rather than silently dropping them, so
+   *  `stepWorld` catches and reports them here instead of crashing the tick. */
+  lastDiaryRejections: Array<{ authorId: PlayerId; reason: string }>;
 }
 
 /**
@@ -597,6 +634,10 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     identityLedger: emptyIdentityLedger(),
     completionStats: {},
     pressureLedger: {},
+    diary: createDiaryStore(),
+    pendingDiaryEntries: [],
+    lastDiaryWrites: [],
+    lastDiaryRejections: [],
   };
 }
 
@@ -1489,6 +1530,24 @@ export function stepWorld(world: World): World {
     identityLedger = recordEncounter(identityLedger, event.heardBy, event.heardFrom);
   }
 
+  // Diary writes (wired 2026-08-13, retention model corrected the same day). Unprompted-only
+  // per diary.ts's own rule — this only ever processes what a real player queued via
+  // `pendingDiaryEntries`, never generates an entry itself. Uses THIS tick's just-updated
+  // identityLedger (immediately above) so a SUBJECT resolved by today's own rumour-hearing is
+  // writable the same day, not lagged a tick. `diary` is the one mutable exception to this
+  // file's snapshot convention — see the `World.diary` field's own doc comment.
+  const diary = world.diary;
+  const lastDiaryWrites: PlayerId[] = [];
+  const lastDiaryRejections: Array<{ authorId: PlayerId; reason: string }> = [];
+  for (const entry of world.pendingDiaryEntries) {
+    try {
+      writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, resolvedSubjects(identityLedger, entry.authorId), entry.context);
+      lastDiaryWrites.push(entry.authorId);
+    } catch (err) {
+      lastDiaryRejections.push({ authorId: entry.authorId, reason: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   // Design Addendum 2026-08-12, §4/§4.1 — pressure detection. Every Wall post posted today
   // (regardless of whether it propagated to anyone — the pattern being detected is the
   // AUTHOR's own posting behaviour, not who heard it) updates that author's rolling
@@ -1616,5 +1675,9 @@ export function stepWorld(world: World): World {
     identityLedger,
     completionStats,
     pressureLedger,
+    diary,
+    pendingDiaryEntries: [],
+    lastDiaryWrites,
+    lastDiaryRejections,
   };
 }

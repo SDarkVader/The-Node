@@ -6,6 +6,54 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Diary wired into `stepWorld`; reputation-retention research prompt sent
+
+User: *"start wiring it in."* First of the four new modules actually connected to the live
+`World` kernel, mirroring `pendingWallPosts`' own established "caller queues, `stepWorld`
+consumes and clears" pattern exactly: new `pendingDiaryEntries: PendingDiaryEntry[]` on
+`World`, processed in a new stage right after Stage 5's `identityLedger` update (so a SUBJECT
+resolved by today's own rumour-hearing is writable the same day, not lagged a tick), using
+`identity.ts`'s `resolvedSubjects()` to supply `writeDiaryEntry`'s known-set. Rejections
+(self-entry, unresolved SUBJECT) are caught and reported via `lastDiaryRejections` rather than
+throwing and crashing the tick — one bad queued entry never blocks a different valid one the
+same tick, verified directly.
+
+**One real, deliberate exception to `World`'s otherwise-immutable-snapshot contract, flagged
+explicitly rather than silently accepted.** `PrivateStore` is a mutable `Map` by design
+(`privateStore.ts`'s own header: "server-authoritative... the canonical copy") — there is
+meant to be exactly ONE live diary store, not a fresh clone every tick the way every other
+`World` field works. `world.diary` is therefore the SAME `Map` reference across every
+`stepWorld` call for a given lineage, mutated in place. This is correct, not a bug — cloning it
+per tick would create divergent diary copies across snapshots, which is exactly wrong for
+something the design calls "the server's one canonical copy." Documented directly on the
+`World.diary` field itself so a future session doesn't "fix" it into the wrong shape.
+
+6 new integration tests (`test/world.diary.test.ts`) against a real `createWorld`/`stepWorld`
+round-trip — not just the standalone unit tests `test/diary.test.ts` already had. 532 tests
+total (526 + 6), typecheck clean.
+
+**Proximity conversation, moderation logging, and arson deliberately NOT wired into
+`stepWorld` this pass** — each for a real, separate reason, not oversight:
+- Proximity conversation needs real per-utterance listener resolution across the connection
+  graph (bigger than the queue-and-consume pattern diary used) — next candidate.
+- Moderation logging's own silo test (`test/moderationLog.importGuard.test.ts`) explicitly
+  forbids `src/world` (and `src/server`) from importing it — wiring it into `stepWorld` would
+  violate the exact boundary built for it two sessions ago. It has to be consumed by something
+  outside the guarded directories, which doesn't exist yet.
+- Arson reuses pattern-based sabotage's machinery, and pattern-based sabotage itself is still
+  explicitly a "PROPOSAL, not shipped as default" per `ecosystem.ts`'s own header — promoting
+  arson to a live `stepWorld` mechanic would mean promoting pattern-sabotage to shipped-default
+  status too, a bigger call than this pass was scoped for.
+
+**Also sent**: a self-contained research prompt (not committed to the repo, sent as a file)
+asking for other games' reputation/retention design patterns, explicitly scoped around the
+still-open "level-2 trap" finding (83-90% of grifters get swept into a role at level 1 before
+reaching level 2) and framed as "extract principles, adapt them to NODE's own constraints —
+monotonic-only reputation, no social voting, no permanent zero-state — don't copy any single
+game's system wholesale."
+
+---
+
 ## 2026-08-13 — "let's get busy": diary content schema built and wired to real code
 
 User's question — "are there things we can build already, without additional data, parked

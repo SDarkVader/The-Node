@@ -297,17 +297,43 @@ gap.
 `src/engine/diary.ts`, `src/comms/proximityConversation.ts`, `src/infra/moderationLog.ts`,
 `src/engine/arson.ts`, `src/sim/arsonCli.ts` (`npm run arson-sim`), plus matching test files.
 
+**Then: "fuck it. start wiring it in."** Diary is now the first of the four new modules wired
+into the real, live `World` kernel — `World.pendingDiaryEntries`/`World.diary`, processed in a
+new `stepWorld` stage right after the identity-ledger update, mirroring `pendingWallPosts`'
+exact queue-in/consume-and-clear shape. Rejections (self-entry, unresolved SUBJECT) are caught,
+not thrown — `lastDiaryRejections` reports them, one bad entry never blocks another the same
+tick. `world.diary` is a documented, deliberate exception to `World`'s otherwise-immutable
+snapshot contract: the SAME mutable `Map` across ticks (not cloned), because `privateStore.ts`
+was built as one server-authoritative canonical store — see the `World.diary` field's own
+comment for the full reasoning. 6 new integration tests, 532 total (526 + 6), typecheck clean.
+
+**Proximity conversation, moderation logging, and arson deliberately NOT wired this pass** —
+each hit a real, separate reason, not just running out of time:
+- Proximity conversation needs real per-utterance listener resolution across the connection
+  graph (bigger than diary's simple queue) — the natural next candidate.
+- Moderation logging's own `test/moderationLog.importGuard.test.ts` explicitly forbids
+  `src/world`/`src/server` from importing it — wiring it into `stepWorld` would break the exact
+  silo boundary built for it. It needs to be consumed from somewhere outside those guarded
+  directories, which doesn't exist yet.
+- Arson reuses pattern-based sabotage's machinery, and pattern-based sabotage itself is STILL
+  explicitly "a PROPOSAL, not shipped as default" per `ecosystem.ts`'s own header — wiring
+  arson in would mean promoting pattern-sabotage to shipped-default status too, a real,
+  separate decision this pass wasn't scoped to make.
+
+**Also sent** (not committed to the repo): a self-contained research prompt on
+reputation-driven retention design, explicitly scoped around the still-open "level-2 trap"
+finding and asking for principles synthesized from other games, not a lifted system.
+
 **Next, in rough priority order:**
-1. The level-2 reputation-gate mechanism question — user hasn't specified one yet ("something
-   else, tell me what to try"), still genuinely open.
-2. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
-   reputation level — proposed, never confirmed, now buildable since the grammar module exists.
-3. Wire what got built into `world.ts`'s real tick loop (proximity conversation, arson,
-   moderation-log capture) — all four new modules are currently standalone/measurable but not
-   yet driven by real per-tick world state, the same stage sabotage itself was at for a while.
-4. `personalResourceStock` (blocks the Firestarter item and trespass's SUBJECT-graph read) and
-   the population-scale re-simulation Oracle's own §5 needs — both real prerequisites, not
-   avoided by accident.
+1. The level-2 reputation-gate mechanism question — user hasn't specified one yet, still
+   genuinely open; the reputation-retention research prompt above may inform this once answered.
+2. Proximity conversation wiring into `stepWorld` (the natural next module, per above).
+3. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
+   reputation level — proposed, never confirmed, buildable once #2 above is wired.
+4. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
+   decision) — arson's wiring is blocked on this.
+5. `personalResourceStock` (blocks the Firestarter item and trespass's SUBJECT-graph read) and
+   the population-scale re-simulation Oracle's own §5 needs — both real prerequisites.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

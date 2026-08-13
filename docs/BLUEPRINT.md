@@ -3576,3 +3576,31 @@ measured-regression locks, 526 total (513 + 13), typecheck clean.
 Not built: the Firestarter crafting item (needs `personalResourceStock`, still missing per the
 fines doc's own §1) and `world.ts` tick-loop wiring (needs real per-tick witness/absence data)
 — same design+sim-verified stage sabotage itself was at before its own harness existed.
+
+---
+
+**2026-08-13, later still — diary wired into `stepWorld`, the first of the four new modules
+actually connected to the live World kernel.** New `World.diary: PrivateStore<DiaryEntry>` and
+`World.pendingDiaryEntries: PendingDiaryEntry[]`, mirroring `pendingWallPosts`' exact
+queue-in/consume-and-clear shape. Processed in a new stage right after Stage 5's
+`identityLedger` update, using `identity.ts`'s `resolvedSubjects()` as `writeDiaryEntry`'s
+known-set — a SUBJECT resolved by today's own rumour-hearing is writable the same tick.
+Rejections (self-entry, unresolved SUBJECT) are caught into `lastDiaryRejections` rather than
+thrown, so one bad queued entry never crashes the tick or blocks a different valid one.
+
+**One explicit, documented exception to `World`'s otherwise-immutable-snapshot contract**:
+`world.diary` is the SAME mutable `Map` reference across every `stepWorld` call for a given
+lineage (not cloned per tick), because `privateStore.ts` was deliberately designed as a single
+server-authoritative canonical store — cloning it per tick would be the actual bug (divergent
+diary copies), not the fix. Documented directly on the `World.diary` field.
+
+6 new integration tests (`test/world.diary.test.ts`), 532 total (526 + 6), typecheck clean.
+
+Proximity conversation, moderation logging, and arson deliberately NOT wired this pass, each
+for a real architectural reason: proximity conversation needs real per-utterance listener
+resolution (bigger than a simple queue); moderation logging's own import-guard test forbids
+`src/world`/`src/server` from ever importing it, so wiring it into `stepWorld` would violate
+the exact boundary built for it; arson reuses pattern-sabotage machinery that is itself still
+an explicit "PROPOSAL, not shipped as default" per `ecosystem.ts`'s header — wiring arson in
+would mean promoting pattern-sabotage to shipped-default status too, a bigger call than this
+pass was scoped for.
