@@ -6,6 +6,80 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — New design addendum received: a real, unresolved conflict with the shipped role/district config, flagged not silently picked
+
+**Context.** User uploaded `docs/DESIGN_ADDENDUM_2026-08-13.md` (saved verbatim) — a
+three-wedge-plaza district geometry, a cascading district-opening threshold model (districts
+open within a shard as population crosses ~65/~90, new shard at 100), and a role-building
+placement grid, presented as derived from "the validated default" role split (M3/B7/IE2/C6/
+J5/D3 = 26 slots) via a Python sweep script the addendum includes and calls "run, not
+guessed." Asked to "test what's required."
+
+**Traced the addendum's own citations before touching anything — found they're stale.** The
+addendum's §1 cites `design/node_core_reference.py` and `src/sim/districtRoleSweep.ts` as the
+source of "the validated default." Read both: `node_core_reference.py`'s own header literally
+says "the source of truth for the TypeScript port that FOLLOWS" — it's the PRE-PORT design
+sketch, with a toy `economic_health = (filled*1.0 + npc*0.4)/S` formula that has no districts,
+no Cournot/Bertrand market, no grain/nodule chain, and — critically — treats population as a
+STATIC number unaffected by slot count. `districtRoleSweep.ts`'s "current illustrative default
+(S=24)" candidate is exactly the addendum's M3/B7/C6/J5/D3 (JSON structurally has no
+`rImportExport` field at all — proving it predates the 6th role), and it's that sweep's
+STARTING candidate, not its recommended winner. Both are already documented in this repo's own
+HANDOVER.md as superseded: `districtRoleSweep.ts` is listed under "superseded, kept for
+provenance... old single-shard 5-role sweep." The actually-shipped, actually-validated default
+(`DEFAULT_WORLD_CONFIG`: M5/B5/C5/J5/D5/IE3 = 28 slots, 6 districts) came from
+`jointGridSearch.ts` — screened 560 candidates against the REAL engine (real markets, real
+grain chain, real consolidation), not a flat formula.
+
+**Built a real verification rather than accepting or rejecting the addendum's claim on
+priors.** The addendum's actual economic argument — scale district/shard count as population
+grows, because scaling slot count starves the grifter pool below its floor — is a genuine,
+testable claim, independent of whether its specific cited numbers are stale. Wrote
+`sim/populationCapacitySweep.ts` + `test/populationCapacitySweep.test.ts` to check it against
+the real shipped engine rather than the toy formula. Real finding, and a surprising one:
+**the toy model's grifter-floor-breach concern doesn't reproduce in the real engine.**
+Raising `targetPopulation` alone (with slot count held fixed) doesn't raise sustained
+single-shard population at all — this session's earlier `opportunityAdjustedMigrationStep`
+fix ties emigration damping to open role-slots per roleless player, so population capacity is
+already, structurally, a function of slot count, not a config label. Scaling slot count up
+with the shipped ratio (5:5:5:5:5:3, toward a 100-population target) raised sustained
+population roughly proportionally (measured ~33 -> ~60 across seeds) and grifter fraction
+stayed healthy (~37-38%, nowhere near the addendum's toy-model-predicted 4-10%) — because the
+toy model's core mechanism (population fixed, grifters = pop - slots) doesn't hold in a system
+where population itself responds dynamically to slot count. flourRatio also stayed coherent
+(~0.53, comfortably under the 1.05 hard filter) — a check the toy model has no way to run at
+all, since it has no grain/flour chain.
+
+**What this means, stated plainly rather than left implicit**: the addendum's headline
+recommendation ("keep S=24-26, scale districts not slots") rests on a model artifact, not a
+property of the real game. That does NOT mean the recommendation is wrong on other grounds
+(there may be good reasons — geography, visual/narrative coherence, the three-wedge design
+itself — to prefer more, smaller districts over fewer, larger ones), but the specific
+"grifter floor breaches at S=30+" justification given for it does not hold up once checked
+against the real system.
+
+**Deliberately did NOT implement the wedge/wall/gate geometry, the cascading district-count-
+within-a-shard mechanic, or wire the addendum's role numbers into `DEFAULT_WORLD_CONFIG`.**
+Reasons, all real: (1) it would silently regress the actually-validated, more-rigorously-swept
+config without reconciling why; (2) "districts opening within a shard as population grows" is
+an entirely new mechanic this engine doesn't have (the shipped model has FIXED districts per
+shard plus a separate, already-working "open a new SHARD" registry — a different scaling
+axis than the addendum proposes); (3) the addendum's own §8 explicitly flags the
+district-2/district-3 placement question as unresolved; (4) the geometry itself (3 wedges, one
+central plaza, wall gates) would replace this session's own district-barriers work
+(K-nearest-neighbor side-street mesh, `hubPlot`) without a stated reconciliation plan. Flagged
+to the user directly rather than picking a side unilaterally — matches this whole session's
+standing discipline (item 6/8's flagged departures, the identity-resolution effect-size catch)
+of surfacing a real conflict rather than quietly resolving or quietly ignoring it.
+
+New `sim/populationCapacitySweep.ts` (`npm run population-capacity-sweep`),
+`test/populationCapacitySweep.test.ts` (5 tests, including a structural tripwire test that
+will need deliberate updating if `DEFAULT_WORLD_CONFIG` is ever changed to match the
+addendum's numbers — so that can't happen silently either). Full suite: 437 tests (up from
+432), `npm run typecheck` clean.
+
+---
+
 ## 2026-08-12 — Item 8's report-back verification: exact proof + real numbers, and a methodology bug caught mid-write
 
 **Context.** User: "continue with item 8's report-back verification" — item 8 itself doesn't
