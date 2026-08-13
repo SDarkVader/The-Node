@@ -141,6 +141,44 @@ asymmetry worth stating: coordinating a crime is safer than committing it, struc
 just by luck — which should create real social dynamics around who volunteers to do the risky
 final step versus who just contributes a resource from a distance.
 
+### 4.1 Difficulty targets across the whole pipeline — a real design principle, now locked in with numbers where one half is buildable today
+
+User's own framing, stated directly and now the standing rule for calibrating every piece of
+this system: **the crime itself should be relatively easy; gathering the intelligence to
+justify committing it should be the part that takes real time.** Three separate paces, not
+one:
+
+- **Sabotage** (the existing `ecosystem.ts` mechanic this section reuses) — should be
+  relatively easy, succeed often, complete in a reasonable window. **Recalibrated this
+  session, shipped, not just proposed**: `PATTERN_STEP_CADENCE_DAYS_DEFAULT` 15→7 days/step
+  (detection depends only on steps completed, never calendar time, so this halves campaign
+  length with ZERO effect on catch rate — verified, not assumed) and
+  `PATTERN_P_PER_WITNESS_DEFAULT` 0.01→0.006 (the lever that actually raises success rate).
+  Measured result (8 seeds, 20,000 days): no Detective 71.1% succeed, mean 55 days between
+  successes; with an active Detective 40.2% succeed, mean 85 days — both comfortably under
+  the "can't take over 100 days" ceiling, a Detective still meaningfully harder (structurally
+  necessary as counter-play, unchanged), constraint 2 re-verified holding at the new numbers
+  (tail `economicHealth` min 0.725–0.750 under 4 concurrent attackers). See `ecosystem.ts`'s
+  own header for the full numbers and `test/sabotagePattern.proposal.test.ts`'s new
+  "mean time to success stays under 100 days" tests, which now lock this in as a real
+  regression, not just a design intent.
+- **Diary/connections intel-gathering** (§7.1-7.4 of `docs/DESIGN_HOUSING_REPUTATION_
+  2026-08-13.md`) — explicitly should NOT speed up. User's own words: *"connecting
+  information must take time"* and *"all you receive is a diary snippet"* — each successful
+  trespass yields one small, already-distorted piece (the SUBJECT-graph-only view §7.3
+  already specified), not a complete picture; assembling something actually useful requires
+  multiple separate trespasses over real time. This is the deliberate SLOW half of the
+  pipeline and stays that way — nothing about it changes here.
+- **Arson (destroying infrastructure)** — explicitly the HARDEST of the three, harder than
+  sabotage, not easier. User's own number: *"30% opportunity is enough to take a chance...
+  otherwise it's not worth obtaining."* Read together: a real, meaningful floor, not a
+  ceiling — arson's eventual success rate should land somewhere around 30%, clearly below
+  sabotage's newly-recalibrated 40-71%, but not so low that assembling the Firestarter item
+  (§2's three-resource recipe, real multi-role coordination cost) stops being worth the
+  investment at all. **Not built yet** — this is the concrete calibration target for whoever
+  builds arson's detection math, not a number to hit blind; verify with a real simulation the
+  same way sabotage's numbers above were, once the mechanic exists to measure.
+
 ---
 
 ## 5. Misinformation is different in kind — no item, no crafting

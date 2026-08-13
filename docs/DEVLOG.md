@@ -6,6 +6,45 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Sabotage recalibrated (relatively easy now), arson given a real difficulty target, diary pace confirmed untouched
+
+User, across several messages: *"we need sabotage to succeed more often. it can't take over
+100 days"* → *"sabotage must be relatively easy, but connecting information must take
+time"* → *"all you receive is a diary snippet. destroying infrastructure must be more
+difficult"* → *"arson is a far more difficult crime, but still possible. 30% opportunity is
+enough to take a chance. otherwise it's not worth obtaining."* Together, a real, explicit
+three-tier difficulty principle for the whole crime pipeline: sabotage easy, diary-intel slow,
+arson hardest of all — not one uniform difficulty knob.
+
+Checked before touching anything: `applySabotageDamage()` reduces `filledByPlayer` (economic
+output/effectiveness) — confirmed this is NOT "destroying infrastructure," so recalibrating
+it doesn't blur the line with arson (unbuilt, separately targeted).
+
+**Sabotage recalibrated with real measurement, not guessed.** Two levers checked
+independently via the existing `sabotagePatternHarness.ts` before combining:
+`PATTERN_STEP_CADENCE_DAYS_DEFAULT` 15→7 (detection depends only on steps completed, never
+calendar time — confirmed by measurement, 44.8%→44.4% caught is noise, so this purely halves
+campaign length for free) and `PATTERN_P_PER_WITNESS_DEFAULT` 0.01→0.006 (the lever that
+actually raises success rate). Combined result (8 seeds, 20,000 days): no Detective 71.1%
+succeed / mean 55 days (was 55.2% / 146 days); with Detective 40.2% succeed / mean 85 days
+(was 32.0% / 220 days). Both now under the 100-day ceiling; Detective still meaningfully
+harder; constraint 2 re-verified holding (tail health min 0.725-0.750 under 4 concurrent
+attackers). 3 new regression tests lock this in as a real property.
+
+**Arson given a real calibration target for whenever it's built**: ~30% success rate, read as
+a floor not a ceiling — "far more difficult" than sabotage's new 40-71%, but not so low the
+crafting cost stops being worth it. Recorded in
+`docs/DESIGN_FINES_ECONOMY_2026-08-13.md`'s new §4.1 for whoever eventually builds arson's
+detection math to verify against, the same way sabotage's numbers were just verified.
+
+**Diary/intel-gathering explicitly confirmed as the deliberately slow half** — "connecting
+information must take time," "all you receive is a diary snippet" reaffirms the existing
+§7 design (one small distorted piece per trespass), nothing changed there.
+
+473 tests total (470 + 3 new), typecheck clean.
+
+---
+
 ## 2026-08-13 — Measured the level-2 "trap," fixed a latent bug found by inspection, real numbers presented
 
 User: *"let's explore these options and offer solutions"*, following up on the earlier

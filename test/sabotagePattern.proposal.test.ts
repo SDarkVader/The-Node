@@ -106,6 +106,50 @@ describe('runPatternSabotageSim — constraint 2: the shard floor holds under su
   });
 });
 
+describe('mean time to success stays under 100 days (2026-08-13, user directive — "sabotage must be relatively easy... it can\'t take over 100 days")', () => {
+  // Real, measured regression lock-in — not just a design intent restated. Cadence
+  // (15->7 days/step) and PATTERN_P_PER_WITNESS_DEFAULT (0.01->0.006) were both lowered
+  // this session specifically to hit this; a future change to either constant that pushes
+  // mean-days-per-success back over 100 should fail here, not be caught by accident.
+  it('no Detective: mean days between successes is comfortably under 100', () => {
+    const r = runPatternSabotageSim({ seed: 1, days: 20000, detectiveActive: false });
+    const successes = r.campaigns.filter((c) => c.outcome === 'succeeded' && c.day >= 2000);
+    const successDays: number[] = [];
+    let last = 2000;
+    for (const c of successes) {
+      successDays.push(c.day - last);
+      last = c.day;
+    }
+    const mean = successDays.reduce((a, b) => a + b, 0) / successDays.length;
+    expect(mean).toBeLessThan(100);
+  });
+
+  it('with an active Detective: mean days between successes is STILL under 100, even though the Detective makes it slower than the no-Detective case', () => {
+    const r = runPatternSabotageSim({ seed: 1, days: 20000, detectiveActive: true });
+    const successes = r.campaigns.filter((c) => c.outcome === 'succeeded' && c.day >= 2000);
+    const successDays: number[] = [];
+    let last = 2000;
+    for (const c of successes) {
+      successDays.push(c.day - last);
+      last = c.day;
+    }
+    const mean = successDays.reduce((a, b) => a + b, 0) / successDays.length;
+    expect(mean).toBeLessThan(100);
+  });
+
+  it('the no-Detective success rate is genuinely a majority outcome now, not a coin flip that happens to lean favorable — "succeed more often"', () => {
+    let succeeded = 0;
+    let total = 0;
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const r = runPatternSabotageSim({ seed, days: 20000, detectiveActive: false });
+      const post = r.campaigns.filter((c) => c.day >= 2000);
+      succeeded += post.filter((c) => c.outcome === 'succeeded').length;
+      total += post.length;
+    }
+    expect(succeeded / total).toBeGreaterThan(0.65);
+  });
+});
+
 describe('sanity: economicHealth itself still floors at BACKSTOP_PRODUCTIVITY regardless of this proposal', () => {
   it('a fully-evicted shard still floors at 0.4, unchanged by anything added here', () => {
     expect(economicHealth(0, 24)).toBeCloseTo(0.4, 5);

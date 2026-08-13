@@ -368,11 +368,31 @@ export function applySabotageDamage(
 
 /** Steps a sabotage campaign requires to complete, if never caught first. */
 export const PATTERN_STEPS_DEFAULT = 6;
-/** Days between successive steps of one campaign. */
-export const PATTERN_STEP_CADENCE_DAYS_DEFAULT = 15;
-/** Per-witness, per-step ambient detection contribution — an order of magnitude below
- *  DETECTION_P_PER_WITNESS, reflecting that any single step reads as innocuous on its own. */
-export const PATTERN_P_PER_WITNESS_DEFAULT = 0.01;
+/**
+ * Days between successive steps of one campaign. Lowered 15->7 (2026-08-13, user directive:
+ * "sabotage must be relatively easy... it can't take over 100 days") — checked against
+ * `sabotagePatternHarness.ts` before trusting: detection math depends only on steps
+ * completed, never on calendar time, so this lever changes NOTHING about catch/success
+ * rate (measured: 44.8%/44.4% caught, essentially noise) — it purely halves the calendar
+ * time a campaign takes. See `PATTERN_P_PER_WITNESS_DEFAULT` below for the change that
+ * actually raises the success rate.
+ */
+export const PATTERN_STEP_CADENCE_DAYS_DEFAULT = 7;
+/**
+ * Per-witness, per-step ambient detection contribution. Lowered 0.01->0.006 (2026-08-13,
+ * same directive — "succeed more often"), verified with `sabotagePatternHarness.ts`
+ * (8 seeds, 20,000 days, 2,000-day burn-in) alongside the cadence change above:
+ *
+ *   no Detective:    caught 44.8%->28.9%  succeeded 55.2%->71.1%  mean days/success 146->55
+ *   with a Detective: caught 68.0%->59.8%  succeeded 32.0%->40.2%  mean days/success 220->85
+ *
+ * Both configurations now complete well under the 100-day ceiling, a Detective still
+ * measurably raises the catch rate (structurally necessary as counter-play, unchanged),
+ * and constraint 2 still holds under the 4-concurrent-attacker stress case (tail
+ * `economicHealth` min 0.725-0.750, comfortably above the 0.4 floor) — re-verified at
+ * these new numbers, not assumed to carry over from the old ones.
+ */
+export const PATTERN_P_PER_WITNESS_DEFAULT = 0.006;
 /** Flat additional per-step detection contribution when a Detective is actively
  *  investigating this campaign, ramped linearly (not quadratically) with steps completed. */
 export const PATTERN_DETECTIVE_BONUS_DEFAULT = 0.15;

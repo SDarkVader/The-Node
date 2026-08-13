@@ -3395,3 +3395,47 @@ for-one-pool dynamic above, not this particular consumption-order edge case.
 user with these numbers; response was to explore a different mechanism instead of a threshold
 change — specifics requested, not yet supplied. Not resolved this entry; picking up once a
 concrete alternative mechanism is named.
+
+## Sabotage recalibrated: relatively easy now, arson gets a real difficulty target (2026-08-13, same session)
+
+Separate thread, same session: user directive — *"sabotage must be relatively easy, but
+connecting information must take time"* — three explicitly different paces for three
+different pieces of the crime pipeline, not one uniform difficulty. Full reasoning and the
+user's exact quotes preserved in `docs/DESIGN_FINES_ECONOMY_2026-08-13.md`'s new §4.1;
+summarized here since it touches shipped code, unlike that doc's other sections.
+
+**Sabotage (`ecosystem.ts`'s pattern-based mechanic, the 2026-08-10 proposal above) —
+recalibrated and re-measured, not just proposed this time.** Original numbers (146/220 mean
+days to success, 55.2%/32.0% success rate) were too slow per the user's explicit "can't take
+over 100 days." Two real levers, checked independently before combining:
+
+- `PATTERN_STEP_CADENCE_DAYS_DEFAULT` 15→7. Detection math depends only on steps completed,
+  never calendar time — confirmed by measurement (44.8%→44.4% caught, noise-level), so this
+  purely halves campaign length with zero effect on success rate. A clean, side-effect-free
+  win for the "too slow" half of the complaint.
+- `PATTERN_P_PER_WITNESS_DEFAULT` 0.01→0.006 — the lever that actually raises success rate,
+  for the "succeed more often" half.
+
+Combined (8 seeds, 20,000 days, 2,000-day burn-in): no Detective 71.1% succeed (was 55.2%),
+mean 55 days (was 146); with an active Detective 40.2% succeed (was 32.0%), mean 85 days (was
+220). Both now comfortably under the 100-day ceiling; Detective still meaningfully raises
+difficulty (structurally necessary as counter-play, unchanged — a real gap, not narrowed);
+constraint 2 re-verified at the new numbers, not assumed carried over (tail `economicHealth`
+min 0.725-0.750 under the 4-concurrent-attacker stress case, comfortably above the 0.4 floor).
+3 new regression tests lock in "mean days under 100" and "success rate is a genuine majority
+now" as real properties, not just design intent — `test/sabotagePattern.proposal.test.ts`.
+
+**Arson — explicitly the hardest of the three, given a real number to build toward.** User:
+*"arson is a far more difficult crime, but still possible. 30% opportunity is enough to take
+a chance. otherwise it's not worth obtaining."* Read as a floor, not a ceiling: arson's
+eventual success rate (once built — still design-only, `docs/DESIGN_FINES_ECONOMY_2026-08-13.
+md` §2/§4) should land near 30%, clearly below sabotage's newly-recalibrated 40-71%, but not
+so low the multi-role Firestarter-crafting cost stops being worth attempting at all.
+
+**Diary/intel-gathering explicitly untouched.** User: *"connecting information must take
+time"* and *"all you receive is a diary snippet"* — reaffirms, doesn't change,
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7's existing design (one small, distorted
+piece per trespass, multiple needed to add up to anything useful). Deliberately the slow half
+of the pipeline; nothing recalibrated here.
+
+**Verified**: `npm run typecheck` clean; full suite 473 tests (470 + 3 new), all passing.

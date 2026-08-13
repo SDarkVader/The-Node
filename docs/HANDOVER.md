@@ -188,13 +188,32 @@ threshold sensitivity: 6 (shipped) → 44 total level-2 achievers/3 seeds/800 da
 4 → 162 — a clean lever, presented with real numbers via `AskUserQuestion`. User chose
 "something else" without yet specifying the mechanism; asked directly rather than guessing.
 **Unresolved, waiting on the user's answer** — pick this up first next session if it's still
-open. 470 tests, typecheck clean, no test/doc debt left hanging from this entry.
+open.
 
-**Next**: once the level-2 mechanism question resolves, either build it or move to one of the
-still-open design threads (fines economy needs the personal-resource-stock field first;
-Oracle needs the population-scale re-simulation its own §5 asks for before any code; the
-diary-in-abode mechanic, §7 of the housing doc, now has the housing/residency foundation it
-was waiting on).
+**Then, a separate thread, same session**: *"we need sabotage to succeed more often... it
+can't take over 100 days"* → *"sabotage must be relatively easy, but connecting information
+must take time"* → *"arson is a far more difficult crime, but still possible. 30% opportunity
+is enough to take a chance."* A real three-tier difficulty principle for the whole crime
+pipeline. **Sabotage recalibrated and shipped**: `ecosystem.ts`'s
+`PATTERN_STEP_CADENCE_DAYS_DEFAULT` 15→7 (detection depends only on steps completed, not
+calendar time — halves campaign length for free, zero effect on success rate, confirmed by
+measurement) and `PATTERN_P_PER_WITNESS_DEFAULT` 0.01→0.006 (raises success rate). Measured
+(8 seeds, 20,000 days): no Detective 71.1% succeed / mean 55 days (was 55.2%/146); with
+Detective 40.2% succeed / mean 85 days (was 32.0%/220) — both under the 100-day ceiling,
+Detective still meaningfully harder, constraint 2 re-verified. **Arson** (still unbuilt) got a
+real calibration target for later: ~30% success rate, a floor not a ceiling, clearly below
+sabotage's new numbers — recorded in `docs/DESIGN_FINES_ECONOMY_2026-08-13.md` §4.1. **Diary
+pace explicitly confirmed unchanged** — "connecting information must take time," "all you
+receive is a diary snippet" reaffirms the existing design, nothing recalibrated there.
+
+473 tests total (470 + 3 new), typecheck clean, no test/doc debt left hanging.
+
+**Next**: still waiting on the level-2 reputation-gate mechanism question above — pick that up
+first. Otherwise: build arson against its new 30% target once the level-2 question resolves
+and there's a natural pause point; or move to one of the still-open design threads (fines
+economy needs the personal-resource-stock field first; Oracle needs the population-scale
+re-simulation its own §5 asks for before any code; the diary-in-abode mechanic, §7 of the
+housing doc, now has the housing/residency foundation it was waiting on).
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
@@ -433,7 +452,7 @@ honest cost of a bigger population target.
 
 ```
 npm install
-npm test                              # 470 tests
+npm test                              # 473 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS
