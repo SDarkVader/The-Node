@@ -6,6 +6,176 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Captured, not yet designed: tongue-in-cheek disallowed-rules / fines mechanic (Journalist + Detective enforce)
+
+User flagged this mid-session, explicitly worried it hadn't survived a prior session:
+*"we also need to include the rules, by which the journalist and detectives mechanical[ly]
+fines players who are caught. the rules are tongue in cheek for things you can do, but it's
+disallowed."* Checked every doc in `docs/` for "fine"/"tongue-in-cheek"/"disallowed" before
+concluding this — confirmed genuinely absent, not just missed by a bad grep. Recording it now,
+verbatim, precisely so this doesn't happen a second time.
+
+**The ruleset itself, as given** (tone is load-bearing — a short, deadpan, in-fiction "code of
+conduct" list, not a solemn legal document; matches the brief's own "grudges and sour
+relationships are expected and fine... a world that never visibly risks anything reads as
+vanilla" tone target, `DESIGN_ADDENDUM_2026-08-06.md`):
+
+1. No stealing
+2. No arson
+3. No trespass
+4. No detected misinformation
+
+**Mechanically, Journalist and Detective are the enforcers** — catching a violation triggers a
+fine. Not designed yet, but a first read against what's already built, so the next design pass
+doesn't start from zero:
+
+- **"No detected misinformation"** already has an obvious mechanical home: the rumour mill's
+  decay/distortion tracking plus Journalist's wall-post pressure detection
+  (2026-08-12 item 1, `BLUEPRINT.md`). A rumour crossing some distortion/pressure threshold,
+  once flagged, is the "caught" event.
+- **"No trespass"** maps onto the district-access/wall-shortcut rules already designed in the
+  2026-08-13 addendum §5 (Courier/Journalist/Detective get wall shortcuts; everyone else must
+  route via plaza+gates) — trespass reads naturally as "detected somewhere the access rules
+  say you shouldn't be," which Detective is already the natural role to police.
+- **"No stealing" and "no arson"** have no existing mechanical hook yet — no wealth-theft or
+  building-damage mechanic exists in the engine today. These need their own design pass,
+  including the constraint-3 check every new mechanic gets ("does this need to be an agent" —
+  these must be caught mechanically/structurally, like the existing pattern-based sabotage
+  re-spec, not by modeling player intent).
+
+**Follow-up detail from the user, same conversation**: *"each event requires multiple people
+to use their resource to create the item for each action."* — committing one of these
+(arson's presumed "item," stealing's presumed tool) isn't a lone-player action; it requires
+several players to each contribute a resource to craft whatever's needed first. This is a real
+mechanical gate, not a narrative one, and it composes directly with what's already built rather
+than requiring anything new to model intent (constraint 3): more participants required to
+create the item means more real people whose presence/resource-spend is itself a witnessable
+event, which is exactly the shape `identity.ts`'s real-encounter-count witnessing and the
+pattern-based sabotage re-spec (`docs/BLUEPRINT.md`'s "Open deviations") already use for
+detection — a crime that structurally can't stay solo-and-silent, by construction, not by the
+engine tracking anyone's motive. User's own follow-up confirms the intent reads correctly:
+*"so going solo requires help"* — there is no lone-wolf path through this at all; recruiting
+help isn't a strategy choice, it's the only route the mechanic allows.
+
+**Further mechanical detail, same conversation**: *"every role has a resource they produce via
+play, to a limit and they can use it to create part of an item. they need to trade with other
+people, their resource, to gain the other parts."* — each role produces its own capped
+resource through ordinary play (the existing per-role economic-resource shape — grain/flour
+already exist for Miller/Baker, `resources.ts`, 2026-08-11 item 5), and that resource forms
+only *part* of whatever "item" a rule-4 violation requires. No single role can produce every
+part alone; assembling the item means trading with players in other roles for the missing
+parts. This is the actual mechanism behind "going solo requires help" above, made concrete —
+and it composes with the existing resource-chain architecture (a new item-recipe layer on top
+of already-produced role resources) rather than inventing a parallel economy. Final framing
+from the user: *"so each person only knows one part of the puzzle"* — no player, alone, has
+either the resource or the knowledge to complete the item; the "puzzle" is genuinely
+distributed, not just resource-gated.
+
+**Separate, adjacent request, same conversation, not yet started**: *"we also need to start
+putting values, odds and statistics into the oracle, anything that's mechanical requires
+development and modelling. event prizes etc etc"* — the Oracle currently exists only as design
+(`README.md`'s "Other things being built": "a real probability draw, the same odds for a
+three-year veteran as for someone who joined this morning... when the local economy is
+healthy, the Oracle's odds widen for everyone"), with no concrete odds table, prize schedule,
+or economic-health-to-odds mapping specified yet. User's own standing principle applies
+directly here too, restated in their own follow-up on the fines/economy work: *"without the
+ecosystem running on resources, I'm not sure how we can really test anything"* — i.e. don't
+hand-pick odds/prizes in the abstract; ground them in the real, already-measured economic
+signals (`economicHealth`, `wealthGini`, the resource chain) the same way every other constant
+in this project has been derived, not guessed. Queued, not started.
+
+**Closing detail, and an explicit request to actually simulate this, not just design it**:
+*"we need to model this against the node and see what happens. giving each player a resource
+they can gain, make it arbitrary and enforce a cap. interaction and trading is how resources
+are distributed. fines refund the economy, and as the node grows, additional nodules arrive at
+the docks so the economy stays in equilibrium."* Concrete shape now specified: every player
+(any role) gains an arbitrary, capped personal resource through play; that resource only moves
+between players via trade (no other distribution channel); a fine, when levied, is a sink that
+refunds INTO the economy rather than just vanishing (consistent with nodules being the sole
+root input per 2026-08-11 item 5 — this is a redistribution mechanism on top of that closed
+loop, not a second currency); and node growth is matched by more nodules arriving at the docks,
+an explicit equilibrium-maintenance rule so the fine/craft/trade loop doesn't quietly drain or
+flood the economy as population scales. **Still queued, not built or simulated this session**
+— this is real, additional scope on top of the fines ruleset above, and needs its own design
+pass (a recipe/craft/fine economy layered on `resources.ts`) before a sweep is worth running,
+matching this project's own design-before-code discipline. Recorded in full here specifically
+so it survives to that pass.
+
+**Not designed further this entry** — captured and cross-referenced, not specced, because the
+user's immediate priority this session was resolving the district-topology question first (see
+the entry below/above this one). Queued as the next design item once that's resolved.
+
+---
+
+## 2026-08-13 — District-topology question resolved: 1 district per shard, and two real bugs found+fixed getting there
+
+Direct follow-on from the housing-design session below: user said *"let's resolve the issue
+before proceeding"* — the district-count conflict from `VISUAL_FRAMEWORK_2026-08-12.md` §8.
+Went to fix `District.population` first (the bug flagged, not yet fixed, in that same
+session) so real per-district numbers could finally be trusted instead of guessed at.
+
+**Bug 1, found via the fix itself.** `District.population` was never incremented by the real
+`stepWorld` tick loop — confirmed 0 in every district at day 800 across 3 seeds. Fixed: the
+final return in `stepWorld` now derives each district's population from real FILLED role-slot
+state across all six roles. 5 new tests.
+
+**Bug 2, found immediately by looking at the newly-real numbers.** Two of the shipped
+6-district config's four periphery districts read population 0 in every seed — not noise,
+deterministic. Root cause: `assignRoleBuildings` walked buildings strictly in
+district-then-building order and simply ran out of role slots before reaching the last two
+periphery districts. First fix attempt (interleave district-cycling and role-cycling in one
+loop) introduced a WORSE bug, caught immediately by an existing test rather than shipped: with
+exactly 6 roles and 6 districts, both cursors kept a constant offset mod 6 forever, so every
+courier landed in the identical single district (`test/courierPay.test.ts`'s distance-variance
+test caught this — all 7 couriers, identical wealth). Real fix: process roles one at a time,
+with a district cursor that keeps advancing ACROSS roles rather than resetting per role. 2 more
+tests confirming no district is ever starved, across 4 seeds.
+
+**With both bugs fixed, real per-district numbers were decisive.** Single shard, 800 days, 3
+seeds, shipped 46-slot split:
+
+```
+1 district:  meanRoleHoldersPerDistrict=43.0  health=0.961  gini=0.619
+3 districts: meanRoleHoldersPerDistrict=14.3  health=0.961  gini=0.628
+6 districts: meanRoleHoldersPerDistrict=6.8   health=0.930  gini=0.649
+```
+
+1 district wins on every axis — not a tradeoff, unlike almost every other config decision this
+project has made. The earlier 3-vs-6-vs-11 comparison (which picked 6 as "balance over
+extremes") wasn't wrong given what it could measure — it only had aggregate health/gini/wait
+numbers, because Bug 1 hid the real per-district story the whole time that decision was made.
+Adopted: `DEFAULT_SHARD_CONFIG` is now `coreDistrictCount: 1, peripheryDistrictCount: 0,
+coreDistrictRadius: 7, buildingsPerCoreDistrict: 62`. This also resolves the geometry conflict
+with the 2026-08-13 addendum's three-wedge concept art for free — one district now IS one
+settlement, matching the art directly, no more "how many separate plazas" question. Population
+beyond one settlement's natural size (~55-70/shard in these runs) is handled by the
+already-built multi-shard system opening a new shard, not more districts.
+
+**Real, undeleted cost, flagged not hidden**: removes the core/periphery District
+classification split `identity.ts`'s Silhouette Shield resolution-speed gradient was built
+around. `identityResolutionHarness.test.ts`'s core-vs-periphery test, plus tests in
+`courierPay.test.ts`, `space.regression.test.ts`, and `districtAccess.test.ts` that implicitly
+relied on the shipped default having multiple districts, all now construct an explicit
+multi-district test config instead — same underlying mechanisms still verified, just decoupled
+from "is this what ships today." If the busy-center-vs-quiet-edge feel is still wanted, it
+needs re-deriving as a within-one-district distance-from-plaza gradient, not a between-district
+one — real follow-up, not resolved here.
+
+**Verified**: `npm run typecheck` clean; full suite 442 tests passing (437 + 5 new). Golden
+snapshot regenerated (expected). `docs/VISUAL_FRAMEWORK_2026-08-12.md` §8 and
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.5/§5 both updated to record the resolution
+rather than left as stale "unresolved" markers.
+
+**Also captured this session, not yet designed or built** — a burst of real design content
+arrived interleaved with this fix, about a tongue-in-cheek disallowed-rules/fines mechanic
+(Journalist/Detective as enforcers) and a capped-per-role-resource crafting/trading economy
+behind it, plus explicit interest in modelling it against the real engine, and separately a
+request to start putting real values/odds into the Oracle and event prizes. All captured
+faithfully in the entry directly below this one (same date) so none of it is lost — none of it
+is designed or built yet; both are real, separate next-session items.
+
+---
+
 ## 2026-08-13 — Housing, ground-level access, and reputation levels written up as one design doc (no code yet)
 
 Two `AskUserQuestion` attempts to resolve the district-count question (3 vs 6 vs 11 districts,

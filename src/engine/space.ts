@@ -235,31 +235,71 @@ export interface ShardLayoutConfig {
   buildingsPerPeripheryDistrict: number;
 }
 
-// District count (6: 2 core + 4 periphery) checked, not just inherited, 2026-08-11 —
-// sim/multiShardRoleDistrictSweep.ts swept 3/6/11 districts through the real multi-shard
-// system and found a genuine, monotonic tradeoff: fewer/bigger districts staff better but
-// are less equal and leave grifters waiting longer (district-consolidation's irreversible
-// ratchet trips less often when each district's filled-fraction averages over more role
-// slots); more/smaller districts are fairer and faster for grifters but worse-staffed. 6
-// districts sits almost exactly between both extremes on every metric measured — kept as
-// the deliberate balance point, not a default nobody re-examined. See docs/BLUEPRINT.md's
-// "5-role/district allocation, re-derived" entry for the full numbers.
-// Building counts raised alongside targetPopulation=100 (2026-08-13, world.ts's
-// DEFAULT_WORLD_CONFIG — see its own header for the full jointGridSearch re-run trail):
-// buildingsPerCoreDistrict 10->15, buildingsPerPeripheryDistrict 5->8, exactly the shard
-// config the pop=100 sweep's winning "6 districts" layout validated (2*15 + 4*8 = 62
-// buildings, comfortable headroom over the winning split's 46 role slots). District count,
-// radii, and spacing are unchanged — only re-checked at the new population would justify
-// re-running the 3/6/11 district-count comparison itself, which this pass did not do.
+// District count REVISED 2026-08-13 — the 6-district (2 core + 4 periphery) call above was
+// real but was made on aggregate multi-shard metrics alone (health/gini/wait/flourRatio),
+// never on real per-district population, because `District.population` was silently never
+// incremented by the tick loop (found and fixed this same session, `world.ts`'s
+// `stepWorld`). Once fixed, the real numbers were decisive, not a close call: at a single
+// shard, 800 days, 3 seeds —
+//
+//   layout        districts  meanPop  meanRoleHolders  meanRoleHoldersPerDistrict  health  gini
+//   1 district     1          69.0     43.0             43.0                       0.961   0.619
+//   3 districts    3          66.0     43.0             14.3                       0.961   0.628
+//   6 districts    6          58.7     40.7              6.8                       0.930   0.649
+//
+// 1 district wins on EVERY metric measured — there is no tradeoff being traded away here,
+// unlike the pop/district-count calls made earlier this project. More districts fragment the
+// same role-slot pool across more separately-consolidatable units; district-consolidation's
+// irreversible health ratchet (districtConsolidation.ts) trips more often the thinner each
+// district's own filled-fraction sample is, which is worse for health AND equality, not just
+// a "feel" issue. This directly resolves the user's own rejection of the 6-district default
+// ("6 is unreasonable" / "how many players per district? ... it's absurd") with real numbers,
+// not a guess, and separately matches the 2026-08-13 addendum's concept art: one addendum
+// "district" is one single plaza+3-wedge settlement (`docs/DESIGN_ADDENDUM_2026-08-13.md`
+// §5-6), not several separate ones. A SEPARATE real bug was found and fixed alongside this
+// (`assignRoleBuildings` in world.ts starved whichever districts landed last in iteration
+// order once role count < building count — 2 of the old 4 periphery districts held literally
+// zero role-holders, ever, before that fix); the numbers above are POST-fix, so they're not
+// an artifact of that bug either.
+//
+// Population beyond what one dense district comfortably holds (currently ~55-70 in these
+// single-shard runs, below `targetPopulation=100`) is NOT handled by adding more districts —
+// it's handled by the already-built, already-tested multi-shard system (`shardRegistry.ts`,
+// `multiShardHarness.ts`): a new shard opens once existing ones are genuinely full and
+// healthy. This is a real simplification, not a compromise: one settlement per shard, and
+// shard count (not district count) absorbs population growth — exactly what "Beyond one
+// shard" in README.md already describes as built and tested.
+//
+// KNOWN RIPPLE, not resolved here: this removes the separate core-district/periphery-district
+// distinction the Silhouette Shield's resolution-speed gradient and the visual brief's
+// density table were built around (`identity.ts`'s `coreSpacing`/`peripherySpacing`). See
+// `test/identityResolutionHarness.test.ts` and `docs/BLUEPRINT.md`'s entry on this exact
+// change for how that test was actually handled, not silently dropped. If a felt busy-center-
+// vs-quiet-edge gradient is still wanted, it needs re-deriving as a distance-from-plaza
+// gradient WITHIN this one district (which `generateDistrictPlots`'s existing edge-raggedness
+// factor already gestures at) rather than between separate District objects — real follow-up
+// work, not decided today.
+//
+// buildingsPerCoreDistrict=62 keeps the prior total building count (2*15 + 4*8 = 62)
+// unchanged, now concentrated in one district instead of split six ways — same headroom over
+// the 46-role-slot split, now real headroom every district shares rather than some districts
+// getting none. coreDistrictRadius raised 6->7 because radius=6 empirically tops out at 68
+// buildable plots (measured directly, `generateDistrictPlots`'s own candidate-plot count) —
+// workable but no slack; radius=7 supports up to 88, comfortable room to grow (e.g. Home-only
+// buildings, `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.1, not yet built).
+// peripheryDistrictCount=0: periphery fields kept in the type/config (not deleted) so a
+// future cascading-district-opening feature (addendum §4 — a real district 2/3 opening only
+// once population genuinely crosses a threshold, not built yet) has somewhere to plug in
+// without a config-shape change.
 export const DEFAULT_SHARD_CONFIG: ShardLayoutConfig = {
   targetPopulation: 100,
-  coreDistrictCount: 2,
-  peripheryDistrictCount: 4,
-  coreDistrictRadius: 6,
+  coreDistrictCount: 1,
+  peripheryDistrictCount: 0,
+  coreDistrictRadius: 7,
   peripheryDistrictRadius: 5,
   coreSpacing: 1,
   peripherySpacing: 2,
-  buildingsPerCoreDistrict: 15,
+  buildingsPerCoreDistrict: 62,
   buildingsPerPeripheryDistrict: 8,
 };
 

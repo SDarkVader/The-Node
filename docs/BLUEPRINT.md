@@ -3052,3 +3052,93 @@ plot-count intuition) but explicitly defers the decision itself, recommending a 
 population-per-district probe once floors exist before revisiting it.
 
 No code, no new tests — design-before-code discipline, same as the visual framework work.
+
+## District-topology question RESOLVED (2026-08-13, later same session): 1 district per shard, and two real bugs found fixing it
+
+User's direct instruction: *"let's resolve the issue before proceeding"* — the district-count
+conflict flagged in `VISUAL_FRAMEWORK_2026-08-12.md` §8 and left open in the housing design
+doc's §1.5. Resolved with real numbers, and two genuine, previously-invisible bugs were found
+and fixed along the way — not guessed past.
+
+**Bug 1 — `District.population` never incremented.** `space.ts`'s `District.population` field
+existed (`/** Current player count in this district — 0 at generation; Phase B updates it as
+players move. */`) but nothing in the real `stepWorld` tick loop ever touched it — only
+`placeArrival`, which the tick loop doesn't call. Probed directly: every district read
+population 0 at day 800 across 3 seeds, despite `world.population` tracking correctly.
+**Fixed** in `stepWorld`'s final return (`world.ts`): computes FILLED-role-holder counts per
+district from the final post-tick role-slot state across all six roles, keyed through the
+existing `buildingDistrictId` map, and sets each district's population from that. Grifters are
+deliberately excluded — they have no fixed district assignment in this model yet (that's
+`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`'s job). 5 new regression tests
+(`test/world.regression.test.ts`) prove it's nonzero after real ticks, sums exactly to the
+real FILLED count every tick (no drift/double-count), and reads 0 (not undefined/NaN) before
+any tick runs.
+
+**Bug 2 — `assignRoleBuildings` starved whichever districts came last in iteration order.**
+Once the population bug was fixed and real per-district numbers could finally be read, 2 of
+the shipped config's 4 periphery districts read population 0 in EVERY seed tested,
+deterministically — not a statistical fluke. Root cause: `assignRoleBuildings` walked
+buildings strictly in district-then-building order, assigning roles until `totalRoles` was
+exhausted; with 46 role slots and 62 total buildings (routine — a district needs Home-only
+buildings too), the walk simply ran out of roles by the time it reached the last two
+periphery districts, leaving their buildings' `roleSlotRef` permanently null.
+
+**First fix attempt introduced a second, subtler bug — caught immediately, not shipped.**
+Rewriting to round-robin buildings AND roles in a single interleaved loop (`di` and `cursor`
+both advancing by 1 per iteration) hit a real resonance: with exactly 6 roles and 6 districts,
+both indices kept a CONSTANT offset mod 6 forever, so every slot of a given role landed in the
+SAME single district every time. Caught by `test/courierPay.test.ts`'s existing
+distance-variance test — all 7 couriers landed in one periphery district with identical
+wealth, not the expected spread. **Real fix**: process one role at a time (not interleaved),
+with a district cursor that keeps advancing ACROSS roles (not reset per role) so no single
+district gets first pick for every role. Verified directly (`courierDebug.ts` probe): couriers
+now spread across all 6 districts with real distance variance restored. 2 new regression tests
+added (`test/world.regression.test.ts`) proving no district is ever left with zero role-holders
+across a real run, at 2 different multi-district configs, across 4 seeds.
+
+**The resolution, once both bugs were fixed and real numbers could finally be trusted.**
+Single-shard probe, 800 days, 3 seeds, at the shipped `M9 B9 C7 J7 D8 IE6` (46-slot) split:
+
+| layout | districts | meanPop | meanRoleHolders | meanRoleHoldersPerDistrict | health | gini |
+|---|---|---|---|---|---|---|
+| **1 district (adopted)** | 1 | 69.0 | 43.0 | **43.0** | 0.961 | 0.619 |
+| 3 districts | 3 | 66.0 | 43.0 | 14.3 | 0.961 | 0.628 |
+| 6 districts (old default) | 6 | 58.7 | 40.7 | 6.8 | 0.930 | 0.649 |
+
+1 district wins on every metric — population, per-district headcount, health, AND equality.
+Not a tradeoff being traded away, unlike most decisions this project has made (contrast the
+earlier 3-vs-6-vs-11 table in `VISUAL_FRAMEWORK_2026-08-12.md`'s original §8, which only had
+AGGREGATE metrics to go on because Bug 1 hid the real per-district story at the time that
+table was made — that table wasn't wrong given what it could measure, it was measuring the
+wrong resolution). This also resolves the geometry conflict for free: one district IS one
+settlement, exactly what the 2026-08-13 addendum's three-wedge/one-plaza geometry already
+describes — there's no longer a "how many separate plazas" question at all. Population beyond
+one settlement's comfortable size (currently ~55-70/shard in these single-shard runs) is
+handled by the already-built, already-tested multi-shard system opening a new shard, not more
+districts — exactly what README.md's "Beyond one shard" section already describes as built.
+
+**Shipped**: `DEFAULT_SHARD_CONFIG` (`space.ts`) is now `coreDistrictCount: 1,
+peripheryDistrictCount: 0, coreDistrictRadius: 7 (was 6, empirically verified to support the
+needed building count — radius=6 tops out at 68 buildable plots, radius=7 at 88),
+buildingsPerCoreDistrict: 62` (same total building count as the old 6-district split, now
+concentrated in one district instead of split six ways). Periphery fields kept in the config
+type, unused, so a future cascading district-opening feature (addendum §4, not built) has
+somewhere to plug in.
+
+**Known, real, undeleted cost — not silently absorbed.** This removes the separate
+core-district/periphery-district distinction `identity.ts`'s Silhouette Shield resolution-speed
+gradient (`coreSpacing`/`peripherySpacing`) was built around. `test/
+identityResolutionHarness.test.ts`'s core-vs-periphery comparison has nothing left to compare
+in the shipped default (no periphery districts exist), so it now runs against an explicit
+multi-district test config to keep the underlying mechanism verified, decoupled from what
+ships — same pattern applied to `test/courierPay.test.ts`, `test/space.regression.test.ts`,
+and `test/districtAccess.test.ts`, all of which had tests exercising real, still-shipped
+multi-district mechanics (side streets, density gradient, arrival spreading, inter-district
+routing) that no longer have a multi-district shipped default to run against implicitly. If a
+felt busy-center-vs-quiet-edge gradient is still wanted, it needs re-deriving as a
+distance-from-plaza gradient WITHIN one district, not between separate District objects — real
+follow-up work, flagged, not done here.
+
+**Verified**: `npm run typecheck` clean; full suite 442 tests, all passing (437 + 5 new
+population/starvation regression tests). Golden snapshot regenerated (expected — role
+placement genuinely changed).

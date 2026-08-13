@@ -246,8 +246,12 @@ behavior) are for whoever builds the renderer, not this layer of design. Genuine
 5. **Structure shapes per role** — unchanged from the original brief's own scope: still an
    execution decision for whoever builds this, once the 6-role roster's shapes are chosen.
 
-## 8. The 2026-08-13 addendum's three-wedge geometry — real, valuable design input, and a
-## real conflict with the just-adopted district topology that needs a decision, not a guess
+## 8. The 2026-08-13 addendum's three-wedge geometry — RESOLVED (2026-08-13, later same day):
+## one district per shard, not 3 or 6 or 11
+
+**Resolved, not left open** — see the block at the end of this section for how and why. The
+rest of §8 below is kept verbatim as the real record of how the conflict was found and framed
+before resolution; don't read it as still-open.
 
 `docs/DESIGN_ADDENDUM_2026-08-13.md` §5-§7 proposes a specific settlement shape (one central
 plaza, exactly three 120° wedge districts, three wall-gates at the plaza edge, courier-only
@@ -313,3 +317,58 @@ This table is the concrete form of "treat the art as architectural input" — ev
 concept art traces to a real, already-validated mechanic, not an invented visual motif. It
 should anchor whatever renderer eventually gets built, once the topology question above is
 resolved.
+
+---
+
+### RESOLUTION (2026-08-13, later the same session): 1 district per shard
+
+The 3-vs-6-vs-11 table above compared AGGREGATE metrics (health/gini/wait/flourRatio) — it
+never actually measured population per individual district, because `District.population`
+(`space.ts`) was silently never incremented by the real tick loop. Found and fixed by probing
+it directly: every district read 0 at day 800 across every seed tested, despite
+`world.population` tracking correctly. A second, independent bug was found in the same pass:
+`assignRoleBuildings` (`world.ts`) walked buildings strictly in district-then-building order,
+so once role count fell short of building count (routine), whichever districts landed last in
+that order got literally zero role-holders, ever — 2 of the old 4 periphery districts, always,
+deterministically. Both fixed (see `docs/BLUEPRINT.md`'s 2026-08-13 entry for the fix
+mechanics and the real resonance bug hit and caught mid-fix).
+
+With both bugs fixed, real per-district numbers (single shard, 800 days, 3 seeds) were
+decisive, not close:
+
+| layout | districts | meanPop | meanRoleHolders | **meanRoleHoldersPerDistrict** | health | gini |
+|---|---|---|---|---|---|---|
+| **1 district (adopted)** | 1 | 69.0 | 43.0 | **43.0** | 0.961 | 0.619 |
+| 3 districts | 3 | 66.0 | 43.0 | 14.3 | 0.961 | 0.628 |
+| 6 districts (old default) | 6 | 58.7 | 40.7 | 6.8 | 0.930 | 0.649 |
+
+1 district wins on every metric measured — not a tradeoff being traded away, unlike most
+decisions this project has made. More districts fragment the same role-slot pool across more
+separately-consolidatable units, which is worse for equality and health too, not just a "feel"
+problem. This directly resolves the user's own rejection of the old 6-district default ("6 is
+unreasonable... how many players per district? ... it's absurd") with real numbers.
+
+**This also resolves the conflict this section spent so long describing, for free**: one
+district IS one settlement, which is exactly what the addendum's three-wedge geometry already
+describes (one central plaza, three 120° wedges) — there's no longer a "3 vs 6 vs 11 separate
+plazas" question to reconcile against the concept art at all. Population beyond what one dense
+settlement comfortably holds (currently ~55-70 per shard in these single-shard runs) is handled
+by the already-built, already-tested multi-shard system opening a new shard, not by adding more
+districts — exactly what README.md's "Beyond one shard" section already describes.
+
+**Real, known cost, not silently absorbed**: this removes the separate core-district/
+periphery-district distinction the Silhouette Shield's resolution-speed gradient
+(`identity.ts`'s `coreSpacing`/`peripherySpacing`) was built around. `test/
+identityResolutionHarness.test.ts`'s core-vs-periphery comparison no longer has anything to
+compare in the shipped default — the test now runs against an explicit multi-district config to
+keep the underlying mechanism verified, decoupled from what ships. If a felt busy-center-vs-
+quiet-edge gradient is still wanted, it needs re-deriving as a distance-from-plaza gradient
+WITHIN this one district (the existing edge-raggedness factor in `generateDistrictPlots`
+already gestures at this) rather than between separate District objects — real follow-up work,
+not done here.
+
+`DEFAULT_SHARD_CONFIG` is now `coreDistrictCount: 1, peripheryDistrictCount: 0,
+coreDistrictRadius: 7, buildingsPerCoreDistrict: 62` — see `space.ts`'s own header for the full
+trail. The periphery fields stay in the config type (not deleted) so a future cascading
+district-opening feature (addendum §4 — a real district 2/3 opening only once population
+genuinely crosses a threshold, not built yet) has somewhere to plug in.

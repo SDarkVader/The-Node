@@ -30,31 +30,55 @@ entries; a real side-finding (the core-vs-periphery identity-resolution gap disa
 new building-count scaling) is flagged there too. Concept art was then folded into
 `docs/VISUAL_FRAMEWORK_2026-08-12.md` as real source material (user's explicit instruction —
 the art is modelled from the architecture, not decoration) as §8, which surfaced a genuine
-conflict: the addendum's three-wedge geometry implies a district-count question (3 vs 6 vs 11)
-that's still **unresolved**.
+conflict: the addendum's three-wedge geometry implies a district-count question (3 vs 6 vs 11).
 
 Two rejected `AskUserQuestion` framings on that district-count question led the user to
 reframe the actual problem: not "how many districts" but "how does a grifter exist in this
 world at all" — where they live, how they're seen, how they get a role. That's now written up
 as `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md`: universal housing (one abode type for
-everyone, capacity via floors not plot count — resolves the plot-count intuition that made "6
-districts" read as absurd), ground-level role access (reusing `shiftCover.ts` unchanged, not a
-new mechanic), and reputation levels (two tiers derived from `roleCompletion.ts`'s measured
-54-58% vs 97-100% completion split, additive-only per constraint 6, backstop always overrides
-per constraint 2). **Design only — no engine code yet.** Real prerequisite bug flagged there:
-`District.population` (`space.ts:88`) is never incremented by the real `stepWorld` tick loop
-(only `placeArrival` touches it) — confirmed 0 in every district at day 800 across 3 seeds
-despite `world.population` tracking correctly.
+everyone, capacity via floors not plot count), ground-level role access (reusing
+`shiftCover.ts` unchanged, not a new mechanic), and reputation levels (two tiers derived from
+`roleCompletion.ts`'s measured 54-58% vs 97-100% completion split, additive-only per
+constraint 6, backstop always overrides per constraint 2). **Design only — no engine code for
+this part.** It flagged a real prerequisite bug: `District.population` (`space.ts`) was never
+incremented by the real `stepWorld` tick loop.
 
-**Next**: the district-topology count decision (still open, `VISUAL_FRAMEWORK...§8`) should be
-revisited with real housing-capacity math once floors exist, per the new design doc's §1.5 —
-then, if the user wants to proceed to code: fix the `District.population` bug, build
-floors/housing capacity, wire Shift Cover to reputation progress, add the level/role-tier gate.
-See `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6 for the full suggested build order.
+**Then the user said "let's resolve the issue before proceeding"** — the district-count
+question. Fixing `District.population` (the flagged prerequisite) surfaced a SECOND real bug
+immediately: `assignRoleBuildings` starved whichever districts landed last in iteration order
+once role count fell short of building count — 2 of the shipped config's 4 periphery districts
+held zero role-holders, ever, deterministically. Both fixed (world.ts) — the first fix attempt
+at Bug 2 introduced a worse resonance bug (caught by an existing courier-pay test before it
+shipped), the real fix processes roles one at a time with a district cursor that keeps
+advancing across roles. With both bugs fixed, real per-district numbers were decisive: **1
+district per shard beats 3, 6, and 11 on every metric measured** (population, per-district
+headcount, health, AND equality — not a tradeoff). `DEFAULT_SHARD_CONFIG` is now
+`coreDistrictCount: 1, peripheryDistrictCount: 0`. This resolves the geometry conflict with the
+addendum's three-wedge art for free (one district now IS one settlement) and closes
+`VISUAL_FRAMEWORK_2026-08-12.md` §8. Full numbers and the real, undeleted cost (the
+core/periphery Silhouette-Shield resolution-speed distinction no longer applies to the shipped
+default) are in `docs/BLUEPRINT.md`'s 2026-08-13 "District-topology question RESOLVED" entry.
+442 tests passing (437 + 5 new), typecheck clean.
+
+Also captured this session but **not yet designed or built**: a tongue-in-cheek
+disallowed-rules/fines mechanic (no stealing/arson/trespass/detected misinformation,
+Journalist+Detective as mechanical enforcers, violations requiring multiple players trading a
+capped per-role resource to craft — nobody can go solo), an explicit ask to simulate that
+economy once designed, and a separate ask to put real values/odds/prize numbers into the
+Oracle. Full detail in `docs/DEVLOG.md`'s two matching 2026-08-13 entries — recorded verbatim
+so none of it is lost a second time (the user flagged they'd raised the fines idea before and
+weren't sure it survived).
+
+**Next**: pick up either the fines/economy design (needs its own pass before any sweep is
+worth running — see the devlog entry) or the Oracle odds/prize design, or proceed to the
+housing-design build order (`docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §6) now that its
+own district-topology prerequisite is resolved.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
-the above supersedes it (role/population numbers in "Shipped configuration" below are already
-updated; narrative elsewhere referring to "65" as the target is now historical).
+the above supersedes it (role/population numbers in "Shipped configuration" below need the
+single-district update — see `docs/BLUEPRINT.md`'s 2026-08-13 entries for the real numbers;
+narrative elsewhere referring to "65" as the target, or to 6 scattered districts, is now
+historical).
 
 ## Current state (as of 2026-08-12, end of session)
 
@@ -222,9 +246,15 @@ stuck there by design and nobody in it goes without.
 
 ```
 rMiller 9  rBaker 9  rCourier 7  rJournalist 7  rDetective 8  rImportExport 6   (S=46)
-6 districts (2 core + 4 periphery, buildingsPerCoreDistrict=15, buildingsPerPeripheryDistrict=8)
+1 district per shard (coreDistrictCount=1, peripheryDistrictCount=0, buildingsPerCoreDistrict=62)
 targetPopulation 100 (brief band was 50-80; raised 2026-08-13, user's own call — see below)
 ```
+
+District count was 6 (2 core + 4 periphery) earlier the same day, then revised to 1 district
+LATER the same day once real per-district population data (a bug fix away — see below) showed
+1 district wins on every metric. Population beyond one settlement's natural size is handled by
+opening a new *shard*, not more districts within this one — see `docs/BLUEPRINT.md`'s
+"District-topology question RESOLVED" entry for the full numbers and reasoning.
 
 **Raised from the original pop=65/S=28 default on 2026-08-13**, user's explicit decision,
 after the day's design addendum turned out to cite stale numbers (traced to a pre-port Python
@@ -281,7 +311,7 @@ honest cost of a bigger population target.
 
 ```
 npm install
-npm test                              # 437 tests
+npm test                              # 442 tests
 npm run typecheck
 
 npm run joint-grid-search             # allocation x district grid (screen | confirm) — THE SHIPPED CONFIG CAME FROM THIS

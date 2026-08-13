@@ -5,7 +5,8 @@ import {
   summarizeByClassification,
   SYNTHETIC_POST_PROBABILITY,
 } from '../src/sim/identityResolutionHarness.js';
-import { createWorld, DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
+import { createWorld, DEFAULT_WORLD_CONFIG, type WorldConfig } from '../src/world/world.js';
+import { DEFAULT_SHARD_CONFIG, type ShardLayoutConfig } from '../src/engine/space.js';
 import { mulberry32 } from '../src/sim/rng.js';
 
 /**
@@ -14,6 +15,22 @@ import { mulberry32 } from '../src/sim/rng.js';
  * CLAUDE.md constraint 1 ("simulate before trusting"), rather than leaving it as an assumed
  * consequence of `identity.ts`'s own header comment.
  */
+
+// The shipped DEFAULT_SHARD_CONFIG became a single district 2026-08-13 (real per-district
+// population data showed no tradeoff — see space.ts's own header), so the shipped default no
+// longer HAS a periphery classification to compare against core at all. The core-vs-periphery
+// resolution-speed question below is still a real property of `identity.ts`'s density-gradient
+// mechanism whenever a shard DOES have both classifications (e.g. a future cascading
+// district-opening feature) — tested here with an explicit multi-district config rather than
+// the shipped default, same pattern used across every other test file this change touched.
+const MULTI_DISTRICT_TEST_SHARD_CONFIG: ShardLayoutConfig = {
+  ...DEFAULT_SHARD_CONFIG,
+  coreDistrictCount: 2,
+  peripheryDistrictCount: 4,
+  buildingsPerCoreDistrict: 15,
+  buildingsPerPeripheryDistrict: 8,
+};
+const MULTI_DISTRICT_TEST_WORLD_CONFIG: WorldConfig = { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_TEST_SHARD_CONFIG };
 
 describe('injectSyntheticPosts', () => {
   it('only FILLED role-holders can post, never a VACANT/BACKSTOPPED slot', () => {
@@ -83,13 +100,13 @@ describe('runIdentityResolutionSweep', () => {
 });
 
 describe('THE ADDENDUM\'S OPEN QUESTION, ANSWERED WITH NUMBERS: is the core-vs-periphery identity resolution gap meaningful, or too small to feel?', () => {
-  it('at the shipped 2026-08-13 config, core and periphery resolve at statistically indistinguishable rates — the gap measured 2026-08-12 did not survive the population-100 building-count scaling, and that is reported honestly rather than the old threshold quietly loosened to pass', () => {
+  it('at a multi-district config, core and periphery resolve at statistically indistinguishable rates — the gap measured 2026-08-12 did not survive the population-100 building-count scaling, and that is reported honestly rather than the old threshold quietly loosened to pass', () => {
     // ORIGINAL FINDING (2026-08-12, pop=65 default): periphery took ~35% longer than core to
     // resolve (measured ~30.1 vs ~40.5 days) — asserted as a real hard filter,
     // `peripheryMean > coreMean * 1.15`.
     //
-    // RE-MEASURED after targetPopulation was raised to 100 (2026-08-13) and
-    // `DEFAULT_SHARD_CONFIG`'s building counts scaled up alongside it (10->15 core, 5->8
+    // RE-MEASURED after targetPopulation was raised to 100 (2026-08-13) and the (then-shipped,
+    // multi-district) shard config's building counts scaled up alongside it (10->15 core, 5->8
     // periphery, radii UNCHANGED): the gap is gone. Measured core~27.2 days, periphery~27.3
     // — a ~0.4% difference, well inside noise, one seed even showing periphery resolving
     // FASTER than core. The likely mechanism, worth recording rather than silently
@@ -100,12 +117,15 @@ describe('THE ADDENDUM\'S OPEN QUESTION, ANSWERED WITH NUMBERS: is the core-vs-p
     // not the goal of raising population and is flagged here as a real, unintended side
     // effect for whoever next revisits district geometry (see docs/BLUEPRINT.md's
     // 2026-08-13 entries) — not something to quietly re-thicken this test's old threshold to
-    // paper over.
+    // paper over. DEFAULT_SHARD_CONFIG itself became a single district later in the same
+    // session (no periphery classification exists in the shipped default at all any more —
+    // see space.ts's own header), so this now runs against an explicit multi-district config
+    // to keep verifying the underlying mechanism rather than a claim about today's default.
     const seeds = [1, 2, 3, 4, 5];
     const coreMeans: number[] = [];
     const peripheryMeans: number[] = [];
     for (const seed of seeds) {
-      const results = runIdentityResolutionSweep(seed, 120);
+      const results = runIdentityResolutionSweep(seed, 120, MULTI_DISTRICT_TEST_WORLD_CONFIG);
       const core = summarizeByClassification(results, 'core');
       const periphery = summarizeByClassification(results, 'periphery');
       if (core.meanResolvedDay !== null) coreMeans.push(core.meanResolvedDay);
@@ -128,7 +148,7 @@ describe('THE ADDENDUM\'S OPEN QUESTION, ANSWERED WITH NUMBERS: is the core-vs-p
     // it is not: given a long enough run, periphery resolution catches up to near-total too.
     const seeds = [1, 2, 3];
     for (const seed of seeds) {
-      const results = runIdentityResolutionSweep(seed, 250);
+      const results = runIdentityResolutionSweep(seed, 250, MULTI_DISTRICT_TEST_WORLD_CONFIG);
       const periphery = summarizeByClassification(results, 'periphery');
       expect(periphery.resolvedFraction).toBeGreaterThan(0.85);
     }

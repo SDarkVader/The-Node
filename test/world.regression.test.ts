@@ -13,6 +13,7 @@ import { flourPrice } from '../src/engine/millers.js';
 import { giniCoefficient, SUPPORT_ROLE_DAILY_WAGE, GRIFTER_DAILY_INCOME, DAILY_ACTIVITY_MULTIPLIER } from '../src/engine/wealth.js';
 import { COMPLETION_REWARD } from '../src/engine/roleCompletion.js';
 import { courierDailyPay, courierRouteDistance } from '../src/engine/courierPay.js';
+import { DEFAULT_SHARD_CONFIG, type ShardLayoutConfig } from '../src/engine/space.js';
 
 /** Test-only helper: real district-for-a-building lookup, same shape world.ts builds internally. */
 function districtIdForBuilding(world: World, buildingId: string): string {
@@ -650,5 +651,74 @@ describe('stepWorld — wealthGini now spans all 5 roles + grifters', () => {
     let world = createWorld(1);
     for (let i = 0; i < 150; i++) world = stepWorld(world);
     expect(world.wealthGini).toBeGreaterThan(0);
+  });
+});
+
+describe('District.population — real bug found and fixed 2026-08-13, probing the district-topology question', () => {
+  // Stage 1's own header comment already claimed occupancy "feeds district population" —
+  // it never actually did; only placeArrival (not called by the normal tick loop) touched
+  // the field, so every district read 0 forever regardless of real occupancy. Found by
+  // probing per-district population at day 800 across 3 seeds and seeing 0 everywhere
+  // despite world.population tracking correctly. Fixed in stepWorld's final return.
+  it('is nonzero after real ticks, for a district that actually holds FILLED role-holders', () => {
+    let world = createWorld(1, DEFAULT_WORLD_CONFIG);
+    for (let i = 0; i < 100; i++) world = stepWorld(world);
+    const total = world.shard.districts.reduce((sum, d) => sum + d.population, 0);
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it('sums exactly to the real FILLED count across all six roles, every tick — no drift, no double-count', () => {
+    let world = createWorld(2, DEFAULT_WORLD_CONFIG);
+    for (let i = 0; i < 50; i++) {
+      world = stepWorld(world);
+      const filledCount = [
+        ...world.millers,
+        ...world.bakers,
+        ...world.couriers,
+        ...world.journalists,
+        ...world.detectives,
+        ...world.importExporters,
+      ].filter((s) => s.slot.state === 'FILLED').length;
+      const districtSum = world.shard.districts.reduce((sum, d) => sum + d.population, 0);
+      expect(districtSum).toBe(filledCount);
+    }
+  });
+
+  it('is 0, not undefined or NaN, at creation — no district falsely reads populated before any tick runs', () => {
+    const world = createWorld(3, DEFAULT_WORLD_CONFIG);
+    for (const d of world.shard.districts) expect(d.population).toBe(0);
+  });
+});
+
+describe('assignRoleBuildings — no district is ever permanently starved of every role, real bug found alongside the population fix', () => {
+  // The original district-then-building walk exhausted early districts' buildings before
+  // moving on, so once totalRoles < totalBuildings (routine), whichever districts landed
+  // last in shard.districts order got ZERO role slots, forever, deterministically — not
+  // discoverable until District.population actually worked (test group above). Fixed by
+  // round-robining across districts, one role at a time.
+  const MULTI_DISTRICT_CONFIG: ShardLayoutConfig = {
+    ...DEFAULT_SHARD_CONFIG,
+    coreDistrictCount: 2,
+    peripheryDistrictCount: 4,
+    buildingsPerCoreDistrict: 15,
+    buildingsPerPeripheryDistrict: 8,
+  };
+
+  it('every district ends up with at least one role-holder across a real run, at the shipped 46-slot / 6-district split', () => {
+    let world = createWorld(1, { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_CONFIG });
+    for (let i = 0; i < 300; i++) world = stepWorld(world);
+    for (const d of world.shard.districts) {
+      expect(d.population).toBeGreaterThan(0);
+    }
+  });
+
+  it('holds across multiple seeds, not just one lucky layout', () => {
+    for (const seed of [1, 2, 3, 4]) {
+      let world = createWorld(seed, { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_CONFIG });
+      for (let i = 0; i < 300; i++) world = stepWorld(world);
+      for (const d of world.shard.districts) {
+        expect(d.population).toBeGreaterThan(0);
+      }
+    }
   });
 });

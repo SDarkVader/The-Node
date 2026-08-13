@@ -227,11 +227,15 @@ that's been genuinely emptying out for a while starts showing real cracks
 — it gets measurably harder to get served there, a felt cost, not a
 warning label — and if nobody's turned that around within two weeks, the
 decline becomes permanent. Whoever was still working there gets a notice
-and two weeks of their own to pick up a new role somewhere else in the
-shard before the system places them into one. Nothing about this is a
-punishment dressed up as mechanics — it's the same principle as a role
-going unfilled: the node doesn't stop for anyone, and it doesn't pretend
-nothing happened either.
+and two weeks of their own to pick up a new role before the system places
+them into one. Nothing about this is a punishment dressed up as
+mechanics — it's the same principle as a role going unfilled: the node
+doesn't stop for anyone, and it doesn't pretend nothing happened either.
+(Each shard is one dense settlement now, not several scattered districts —
+real per-district population data showed one settlement genuinely serves
+everyone better than splitting the same people across many thin ones; a
+shard growing past what one settlement comfortably holds gets a new
+*shard*, not a new district within this one.)
 
 Moving between shards is real now too, and it isn't guaranteed to
 succeed — some attempts simply fail, a placeholder for the real

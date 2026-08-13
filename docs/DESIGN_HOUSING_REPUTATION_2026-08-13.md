@@ -143,23 +143,22 @@ out of sync.** Fixing the increment bug is a prerequisite of this design shippin
 unrelated cleanup — flagging that explicitly so it doesn't get silently skipped when this
 moves to code.
 
-### 1.5 Interaction with the open district-topology question
+### 1.5 Interaction with the district-topology question — RESOLVED 2026-08-13, later same session
 
-`VISUAL_FRAMEWORK_2026-08-12.md` §8 still has the three-wedge-geometry vs. 3/6/11-district
-count conflict marked **unresolved**, and this doc does not resolve it — but it does change
-what "population per district" actually means once §1.2 ships. The population math that made
-"6 is unreasonable" land as a real objection was implicitly plot-count-bound (one resident ≈
-one building slot); floors break that link entirely. A district's *housing* ceiling is no
-longer read off its building count — it's read off its building count **times however many
-floors get built on top of it**, which is a much cheaper, much less geometry-constrained
-lever than adding whole districts.
+`VISUAL_FRAMEWORK_2026-08-12.md` §8's three-wedge-geometry vs. 3/6/11-district count conflict
+is now resolved: **1 district per shard**, not 3, 6, or 11. Real per-district population data
+(only available after fixing a genuine `District.population` tracking bug — see §1.4 above,
+which was exactly this section's own named prerequisite) showed 1 district wins on every
+metric measured — population, per-district headcount, economic health, AND equality — not a
+tradeoff. Full numbers and reasoning in `VISUAL_FRAMEWORK_2026-08-12.md`'s §8 resolution block
+and `docs/BLUEPRINT.md`'s 2026-08-13 entry.
 
-That doesn't make the district-count decision go away — role-slot capacity (the addendum's
-§4 cascading thresholds, keyed to the M9/B9/C7/J7/D8/IE6 = 46-slot roster now, not the
-addendum's stale 26) is still a real, separate ceiling housing can't substitute for. But it
-does mean the district-count decision, when it's made, should be made **after** re-checking
-population-per-district against real housing capacity (§1.2), not against the plot-count
-intuition that was rejected here. Recorded as the concrete next step in §5.
+This makes the floors-vs-plot-count point below moot for the district-COUNT question
+specifically (there's only one district now, so there's no "how many thin districts" question
+left to answer) — but the underlying point still matters for housing DENSITY within that one
+district: a district's housing ceiling should still be read off its building count times
+floors, not one resident per plot, exactly as argued below. Kept for that reason, not as a
+still-open question.
 
 ---
 
@@ -367,11 +366,10 @@ plainly so the reuse is visible rather than buried in prose above:
 
 ## 5. Open items / what this doc does NOT decide
 
-- **District-topology count (3 vs 6 vs 11, or a cascading model)** — still unresolved, per
-  `VISUAL_FRAMEWORK_2026-08-12.md` §8. §1.5 above changes what evidence that decision should
-  be checked against (real housing capacity via floors, not plot count) but does not make the
-  decision. **Recommended next step: re-run a population-per-district probe once floors
-  exist, before revisiting district count.**
+- **District-topology count** — RESOLVED 2026-08-13 (later same session): 1 district per
+  shard. See §1.5's update above and `VISUAL_FRAMEWORK_2026-08-12.md` §8. Population growth
+  beyond one settlement is handled by opening a new shard (already built), not more
+  districts.
 - **Exact numeric constants** — `RESIDENTS_PER_FLOOR`, the reputation-tick progress curve's
   exact per-level thresholds, and how many floors a typical building carries are all
   deliberately left unspecified here (illustrative, not yet measured) — per this project's
@@ -397,4 +395,5 @@ project's own design→code→test→docs discipline:
    `SHIFT_COVER_NOTICE_PROBABILITY`.
 4. Add the reputation-level state and role-tier gate, applied only to voluntary uptake
    (§3.5), with regression tests proving backstop/conscription bypasses it.
-5. Revisit district-topology count with real housing-capacity numbers in hand (§1.5).
+
+(District-topology count, previously step 5 here, is resolved — see §1.5.)

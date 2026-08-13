@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { courierRouteDistance, courierDailyPay, COURIER_FEE_PER_DISTANCE_UNIT } from '../src/engine/courierPay.js';
-import { generateShardLayout, DEFAULT_SHARD_CONFIG, distance } from '../src/engine/space.js';
-import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
+import { generateShardLayout, DEFAULT_SHARD_CONFIG, distance, type ShardLayoutConfig } from '../src/engine/space.js';
+import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type WorldConfig } from '../src/world/world.js';
 import { SUPPORT_ROLE_DAILY_WAGE, DAILY_ACTIVITY_MULTIPLIER } from '../src/engine/wealth.js';
 
 /**
@@ -9,6 +9,21 @@ import { SUPPORT_ROLE_DAILY_WAGE, DAILY_ACTIVITY_MULTIPLIER } from '../src/engin
  * commissioner-funded") — verified in isolation per CLAUDE.md constraint 1, same pattern
  * every other `src/engine/` module's test file uses.
  */
+
+// The shipped DEFAULT_SHARD_CONFIG became a single district 2026-08-13 (real per-district
+// population data showed no tradeoff — see space.ts's own header). Distance-variance across
+// districts is still real, still-shipped `courierPay.ts` behavior whenever a shard DOES have
+// more than one district (e.g. the not-yet-built cascading district-opening feature) — these
+// tests verify that with an explicit multi-district config rather than assuming the shipped
+// default has one, so they stay meaningful regardless of what ships today.
+const MULTI_DISTRICT_TEST_CONFIG: ShardLayoutConfig = {
+  ...DEFAULT_SHARD_CONFIG,
+  coreDistrictCount: 2,
+  peripheryDistrictCount: 4,
+  buildingsPerCoreDistrict: 15,
+  buildingsPerPeripheryDistrict: 8,
+};
+const MULTI_DISTRICT_WORLD_CONFIG: WorldConfig = { ...DEFAULT_WORLD_CONFIG, shardConfig: MULTI_DISTRICT_TEST_CONFIG };
 
 describe('courierRouteDistance', () => {
   it('matches the real Manhattan distance from a district plaza to the shard hub', () => {
@@ -25,7 +40,7 @@ describe('courierRouteDistance', () => {
   it('periphery districts sit meaningfully further from the hub than core districts', () => {
     // Real, measured geometry, not asserted in the abstract — this is the actual property
     // the whole mechanic depends on: distance has to vary enough to matter.
-    const shard = generateShardLayout(1, DEFAULT_SHARD_CONFIG);
+    const shard = generateShardLayout(1, MULTI_DISTRICT_TEST_CONFIG);
     const core = shard.districts.filter((d) => d.classification === 'core');
     const periphery = shard.districts.filter((d) => d.classification === 'periphery');
     const meanCore = core.reduce((s, d) => s + courierRouteDistance(shard, d.id), 0) / core.length;
@@ -59,13 +74,15 @@ describe('courierDailyPay', () => {
 
 describe('Courier pay wired into the world kernel — real distance variance, not a flat wage', () => {
   it('two couriers in different districts earn different amounts on the same day', () => {
-    let world = createWorld(1, DEFAULT_WORLD_CONFIG);
+    let world = createWorld(1, MULTI_DISTRICT_WORLD_CONFIG);
     world = stepWorld(world);
     const filled = world.couriers.filter((c) => c.slot.state === 'FILLED');
     const distinctWealths = new Set(filled.map((c) => c.wealth));
     // Not every seed is guaranteed to place couriers in districts with different distances,
-    // but the shipped default (2 core + 4 periphery, rCourier=5) reliably does — this is the
-    // real, measured behaviour the flat SUPPORT_ROLE_DAILY_WAGE could never produce.
+    // but a multi-district shard (2 core + 4 periphery, rCourier=7) reliably does — this is
+    // the real, measured behaviour the flat SUPPORT_ROLE_DAILY_WAGE could never produce. The
+    // shipped default is a single district as of 2026-08-13 (space.ts's own header) so this
+    // now uses an explicit multi-district config rather than assuming the default has one.
     expect(distinctWealths.size).toBeGreaterThan(1);
   });
 

@@ -12,6 +12,7 @@ import {
   DISTRICT_SIDE_STREET_NEIGHBOR_COUNT,
   type Shard,
   type PlayerPosition,
+  type ShardLayoutConfig,
 } from '../src/engine/space.js';
 
 /**
@@ -20,6 +21,20 @@ import {
  * occupancy queries against hand-computed ground truth, and a regression test proving the
  * density gradient actually exists (core measurably denser than periphery).
  */
+
+// The shipped DEFAULT_SHARD_CONFIG became a single district 2026-08-13 (real per-district
+// population data showed no tradeoff — see space.ts's own header). Side streets, the core/
+// periphery density gradient, and same-classification arrival spreading are all still real,
+// still-shipped mechanisms that must work correctly whenever a shard DOES have multiple
+// districts — these tests verify that with an explicit multi-district config rather than
+// assuming the shipped default has one.
+const MULTI_DISTRICT_TEST_CONFIG: ShardLayoutConfig = {
+  ...DEFAULT_SHARD_CONFIG,
+  coreDistrictCount: 2,
+  peripheryDistrictCount: 4,
+  buildingsPerCoreDistrict: 15,
+  buildingsPerPeripheryDistrict: 8,
+};
 
 describe('generateShardLayout — determinism', () => {
   it('the same seed and config always produce a byte-identical shard', () => {
@@ -46,7 +61,7 @@ describe('generateShardLayout — determinism', () => {
   });
 
   it('every district has at least DISTRICT_SIDE_STREET_NEIGHBOR_COUNT side-street neighbours, given enough other districts to choose from', () => {
-    const shard = generateShardLayout(7); // default config: 6 districts
+    const shard = generateShardLayout(7, MULTI_DISTRICT_TEST_CONFIG);
     for (const d of shard.districts) {
       expect(d.neighborDistrictIds.length).toBeGreaterThanOrEqual(DISTRICT_SIDE_STREET_NEIGHBOR_COUNT);
     }
@@ -232,7 +247,7 @@ describe('occupantsWithin / plotsWithin — hand-computed ground truth', () => {
 
 describe('districtPlotDensity — the visual brief\'s density gradient actually exists', () => {
   it('core districts are measurably denser than periphery districts', () => {
-    const shard = generateShardLayout(11);
+    const shard = generateShardLayout(11, MULTI_DISTRICT_TEST_CONFIG);
     const coreDensities = shard.districts.filter((d) => d.classification === 'core').map(districtPlotDensity);
     const peripheryDensities = shard.districts
       .filter((d) => d.classification === 'periphery')
@@ -248,7 +263,7 @@ describe('districtPlotDensity — the visual brief\'s density gradient actually 
 
   it('holds across multiple seeds, not just one lucky layout', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
-      const shard = generateShardLayout(seed);
+      const shard = generateShardLayout(seed, MULTI_DISTRICT_TEST_CONFIG);
       const meanCore =
         shard.districts.filter((d) => d.classification === 'core').map(districtPlotDensity).reduce((a, b) => a + b, 0) /
         shard.districts.filter((d) => d.classification === 'core').length;
@@ -305,7 +320,7 @@ describe('placeArrival — closes districtArrivalChoice()\'s "nothing persists" 
   });
 
   it('spreads repeated arrivals across same-classification districts by lowest population', () => {
-    let shard = generateShardLayout(3);
+    let shard = generateShardLayout(3, MULTI_DISTRICT_TEST_CONFIG);
     const peripheryCount = shard.districts.filter((d) => d.classification === 'periphery').length;
     expect(peripheryCount).toBeGreaterThan(1);
 

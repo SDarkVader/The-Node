@@ -443,26 +443,41 @@ function assignRoleBuildings(shard: Shard, roleCounts: Record<RoleType, number>)
     );
   }
 
-  const remaining: Record<RoleType, number> = { ...roleCounts };
+  // Round-robins ACROSS districts, one building at a time, rather than exhausting one
+  // district's whole building list before moving to the next (real bug found 2026-08-13,
+  // probing the district-topology question after fixing District.population tracking):
+  // walking buildings strictly in district-then-building order starves whichever districts
+  // land last in that order once totalRoles < totalBuildings (routine — a district needs
+  // Home-only buildings too, `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.1). At the
+  // shipped 6-district/46-role config this left 2 of 4 periphery districts with LITERALLY
+  // ZERO role-holders, ever, deterministically, not a statistical fluke.
+  //
+  // Processes one ROLE at a time (not interleaved role-then-district cycling in a single
+  // loop) — a first attempt at this interleaved both cursors in lockstep and hit a real
+  // resonance bug: with exactly 6 roles and 6 districts, a role index and a district index
+  // both advancing by 1 per iteration keep a CONSTANT offset mod 6 forever, so every slot of
+  // a given role landed in the same single district every time (caught by a courier-pay test
+  // expecting distance variance — all 7 couriers landed in one periphery district with
+  // identical wealth). Assigning role-by-role with a district cursor that keeps advancing
+  // ACROSS roles (not reset per role, so no single district gets first pick every time)
+  // avoids that coupling entirely and is simpler to reason about besides.
+  const buildingQueues = shard.districts.map((d) => [...d.buildings]);
   const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], journalist: [], detective: [], importExport: [] };
 
-  let cursor = 0;
-  let assigned = 0;
-  for (const district of shard.districts) {
-    for (const building of district.buildings) {
-      if (assigned >= totalRoles) break;
-      let attempts = 0;
-      while (remaining[ROLE_TYPES[cursor % ROLE_TYPES.length]!] <= 0 && attempts < ROLE_TYPES.length) {
-        cursor += 1;
-        attempts += 1;
+  let di = 0;
+  for (const role of ROLE_TYPES) {
+    let need = roleCounts[role];
+    while (need > 0) {
+      let scanned = 0;
+      while (buildingQueues[di % buildingQueues.length]!.length === 0 && scanned < buildingQueues.length) {
+        di += 1;
+        scanned += 1;
       }
-      const role = ROLE_TYPES[cursor % ROLE_TYPES.length]!;
-      if (remaining[role]! > 0) {
-        result[role].push(building);
-        remaining[role]! -= 1;
-        assigned += 1;
-        cursor += 1;
-      }
+      if (scanned >= buildingQueues.length) break; // no buildings left anywhere — totalBuildings check above rules this out
+      const building = buildingQueues[di % buildingQueues.length]!.shift()!;
+      result[role].push(building);
+      need -= 1;
+      di += 1;
     }
   }
 
@@ -1432,13 +1447,42 @@ export function stepWorld(world: World): World {
   const weatherField = districtTensionField(world.shard, localTensions);
   const shardWithWeather = stepDistrictWeather(world.shard, weatherField, day);
 
+  // Stage 1's own header comment already claimed occupancy "feeds district population" —
+  // it never actually did; District.population sat at its generation-time 0 forever (real bug,
+  // found 2026-08-13 probing the district-topology question: every district read population 0
+  // at day 800 across 3 seeds despite world.population tracking correctly). Fixed here, at the
+  // same point weatherHistory is finalized, from the FINAL post-tick role-slot state (all six
+  // roles, not just the five `allRoleSlotsForHealth` above uses for health/consolidation).
+  // Grifters are deliberately excluded — they have no fixed district assignment in this model
+  // yet (`identity.ts`'s own header note); giving them one is `docs/DESIGN_HOUSING_REPUTATION_
+  // 2026-08-13.md`'s job, not this fix's.
+  const allRoleSlotsFinal: { buildingId: string; slot: RoleSlot }[] = [
+    ...millers,
+    ...bakers,
+    ...couriers,
+    ...journalists,
+    ...detectives,
+    ...importExporters,
+  ];
+  const districtPopulationById: Record<string, number> = {};
+  for (const s of allRoleSlotsFinal) {
+    if (s.slot.state !== 'FILLED') continue;
+    const districtId = buildingDistrictId.get(s.buildingId);
+    if (!districtId) continue;
+    districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
+  }
+  const shardWithPopulation: Shard = {
+    ...shardWithWeather,
+    districts: shardWithWeather.districts.map((d) => ({ ...d, population: districtPopulationById[d.id] ?? 0 })),
+  };
+
   return {
     ...world,
     tick: world.tick + 1,
     // Geography (plots/buildings/coordinates) is still static — Phase B doesn't move
     // anyone — but weatherHistory is per-district climate, not geometry, and now updates
     // every tick (see District Weather above).
-    shard: shardWithWeather,
+    shard: shardWithPopulation,
     millers,
     bakers,
     couriers,
