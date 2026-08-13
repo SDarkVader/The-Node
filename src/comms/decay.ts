@@ -7,8 +7,12 @@
  * here — the rumour mill uses graph hops, a future system might use metres or
  * shard-graph hops; this module doesn't care which.
  *
- * NOT used by the private diary. The diary is a genuinely different mechanic — hard
- * silent expiry (TTL), no gradual fade — see docs/DESIGN_ADDENDUM_2026-08-06.md.
+ * Also used by the private diary (corrected 2026-08-13 — an earlier version of this
+ * comment said the opposite). The diary's own stored entries are nudged through
+ * `applyDistortion` once per server day-tick they survive, on top of their own short
+ * rolling expiry — "mechanical memory," not a faithful transcript held until it
+ * silently vanishes. See docs/DESIGN_ADDENDUM_2026-08-06.md and
+ * ../engine/privateStore.ts's `getAlive`.
  */
 
 export interface ClarityStepConfig {

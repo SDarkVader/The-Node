@@ -515,36 +515,52 @@ narrow and deliberate as possible: it is not "anyone who's ever been inside your
 knows who you journal about," it is "someone chose to risk a real, catchable violation
 specifically to learn this."
 
-### 7.4 The distortion is in the VIEW, not the store — reconciling with an existing, deliberate design decision
+### 7.4 `[CORRECTED 2026-08-13, same day — see docs/DEVLOG.md]` The distortion is in the store now, not a separate view — this section's original reasoning was wrong
 
-This needs to be stated explicitly because it touches a decision already recorded elsewhere,
-and CLAUDE.md's own rule is "don't silently work around a rule that breaks — say so." Two
-existing, deliberate facts are both still true and both preserved here, not contradicted:
+This section originally argued the trespass view needed its *own* read-time-only distortion
+layer specifically because the diary's own storage was believed to be static — "hard, silent,
+per-entry TTL... no fade or blur applied before expiry," with `comms/decay.ts` "NOT used by
+the private diary." The user corrected that premise directly, the same day: *"the diary
+changes daily through subtle distortion. no 30 days, only yesterday's mechanical memory of
+interaction reset as server."* `DESIGN_ADDENDUM_2026-08-06.md`'s "Retention" section is
+rewritten accordingly — the diary's own stored entries now run through `applyDistortion` once
+per server day-tick they survive, and the window shrank from ~30 days to ~2. `comms/decay.ts`
+is used by the diary after all; its header comment is corrected to say so.
 
-- The diary's own retention model (`DESIGN_ADDENDUM_2026-08-06.md`) is a **hard, silent,
-  per-entry TTL — "no fade or blur applied before expiry."** This stays exactly as designed.
-  The raw stored entries are not touched by this section at all.
-- `comms/decay.ts`'s own header states it is **"NOT used by the private diary... the diary is
-  a genuinely different mechanic."** This stays true of the diary's *storage*.
+That changes what this section needs, and simplifies it:
 
-What's new is a **separate, derived, read-time-only projection**: when a trespass succeeds,
-the SUBJECT graph shown is passed through the *existing* decay/distortion primitive
-(`comms/decay.ts`'s `applyDistortion`, the same mechanism the rumour mill already uses) —
-computed fresh each time it's viewed, not stored, not cached. "So that the next day it's still
-distorted enough to change for everyone" reads directly as: query the same diary again
-tomorrow, get a differently-distorted connections graph, because the distortion roll happens
-at read time, not write time. This is a NEW use of an existing primitive against a NEW
-derived view, not a change to the diary's own decay model — the reconciliation is real, not a
-word game: nobody who trespasses twice, a day apart, sees the same "truth" twice, which is
-exactly the property that keeps this from becoming the leaked, stable dossier constraint 4
-forbids, on top of (not instead of) the diary's own unchanged hard-TTL safeguard.
+- **No separate read-time distortion layer is needed for the trespass view.** The diary's own
+  storage already drifts day to day now; a second distortion pass on top of it would just be
+  redundant noise, not an extra safeguard. A trespasser sees the SUBJECT graph *as it currently
+  stands* — no additional roll applied at read time.
+- **SUBJECT itself still never distorts, in the store or the view.** The rewritten retention
+  section is explicit that SUBJECT (and CONTEXT) are exempt from the daily distortion pass —
+  only OBSERVATION and READING drift. Identity resolution is the one thing constraint 4 says
+  must stay reliable once earned, and a trespasser seeing a *wrong person* in the connections
+  graph would be a real, not cosmetic, information leak. So the graph a trespasser sees is
+  exactly right about *who*, same as before — nothing about §7.3's reveal boundary changes.
+- **"So that the next day it's still distorted enough to change for everyone" is now satisfied
+  by the store itself, not a bolted-on view-layer trick.** A ~2-day rolling window means most
+  of what a trespasser saw yesterday has already aged out by the next visit regardless of any
+  distortion roll — the graph changing day to day was always going to be true once the window
+  shrank this far, distortion or not. The two corrections compound rather than duplicate: the
+  short window makes the *set* of visible connections churn fast, and OBSERVATION/READING
+  drift (irrelevant to this trespass view, since it never showed them) keeps the diary's own
+  private content unreliable for the owner's own hoarding case (§10 of
+  `DESIGN_ADDENDUM_2026-08-12.md`), a different threat this section was never trying to solve.
+
+Net effect: §7.4 stops existing as its own mechanic. Trespass reads the live SUBJECT graph,
+gated by absence (§7.1) and a key (§7.2), bounded to whatever's still inside the diary's own
+now-short retention window — no new distortion primitive invented or reused here at all.
 
 ### 7.5 Constraint 4 compliance, stated directly rather than assumed
 
 - **No stable private dossier is ever created for the reader.** What's seen is a connections
-  graph, freshly distorted per read, never the same twice, never containing READING/valence.
-  If a trespasser wants to *remember* what they saw, that has to go through their own diary —
-  same hard TTL, same rules, no new permanent channel invented.
+  graph bounded to the diary's own ~2-day retention window (§7.4, corrected 2026-08-13) —
+  mostly different from one trespass to the next simply because most of what was visible
+  yesterday has already aged out — and never contains READING/valence. If a trespasser wants
+  to *remember* what they saw, that has to go through their own diary — same short window,
+  same daily drift, no new permanent channel invented.
 - **No cross-session or cross-shard trust score.** Nothing numeric is exposed; this section
   doesn't add one and doesn't need one — same principle §3.1's reputation-level design already
   applied to a different mechanic this same document.

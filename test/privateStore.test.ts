@@ -46,3 +46,45 @@ describe('PrivateStore — rolling per-entry silent expiry', () => {
     expect(store.get('wren')?.length).toBe(1);
   });
 });
+
+describe('PrivateStore — daily distortion (corrected 2026-08-13, diary now uses this)', () => {
+  it('omitting distort/rng leaves entries exactly as written, any number of days later', () => {
+    const store = createPrivateStore<string>();
+    addEntry(store, 'wren', 'undercut my price', 0);
+    expect(getAlive(store, 'wren', 10, 30)).toEqual(['undercut my price']);
+  });
+
+  it('a surviving entry is distorted once per elapsed server day, not per read', () => {
+    const store = createPrivateStore<string>();
+    addEntry(store, 'wren', 'A', 0);
+    let calls = 0;
+    const distort = (value: string) => {
+      calls += 1;
+      return value + '!';
+    };
+    const rng = () => 0.5;
+    getAlive(store, 'wren', 1, 30, distort, rng); // 1 day elapsed
+    expect(calls).toBe(1);
+    expect(getAlive(store, 'wren', 1, 30, distort, rng)).toEqual(['A!']); // same day, no re-roll
+    expect(calls).toBe(1);
+  });
+
+  it('catches up multiple missed days in one read, not just the most recent one', () => {
+    const store = createPrivateStore<string>();
+    addEntry(store, 'wren', 'A', 0);
+    let steps = 0;
+    const distort = (value: string) => {
+      steps += 1;
+      return value + steps;
+    };
+    const result = getAlive(store, 'wren', 5, 30, distort, () => 0.5);
+    expect(result).toEqual(['A12345']);
+  });
+
+  it('distortion never blocks or interacts with expiry — an entry can still age out on schedule', () => {
+    const store = createPrivateStore<string>();
+    addEntry(store, 'wren', 'A', 0);
+    const distort = (value: string) => value + 'x';
+    expect(getAlive(store, 'wren', 30, 30, distort, () => 0.5)).toEqual([]);
+  });
+});

@@ -208,12 +208,41 @@ receive is a diary snippet" reaffirms the existing design, nothing recalibrated 
 
 473 tests total (470 + 3 new), typecheck clean, no test/doc debt left hanging.
 
-**Next**: still waiting on the level-2 reputation-gate mechanism question above — pick that up
-first. Otherwise: build arson against its new 30% target once the level-2 question resolves
-and there's a natural pause point; or move to one of the still-open design threads (fines
-economy needs the personal-resource-stock field first; Oracle needs the population-scale
-re-simulation its own §5 asks for before any code; the diary-in-abode mechanic, §7 of the
-housing doc, now has the housing/residency foundation it was waiting on).
+**Then, a research-prompt request, then a sharp correction that reopened the diary itself**:
+after generating a self-contained research prompt on proximity-conversation moderation logging
+(sent as a file, not committed to the repo), the user caught something bigger: *"the diary
+changes daily through subtle distortion. no 30 days, only yesterday's mechanical memory of
+interaction reset as server. why is all this being ignored..."* This was right, and it exposed
+that the §7.4 diary-in-abode reconciliation earlier this same session had defended the *wrong*
+version of the diary's retention model — built on the 2026-08-06 static/no-fade/~30-day
+assumption without noticing `DESIGN_ADDENDUM_2026-08-12.md` §10 had already proposed daily-ish
+distortion two days earlier. Fixed properly, not just patched: `DESIGN_ADDENDUM_2026-08-06.md`'s
+Retention section now specifies ~2 days (was ~30), with OBSERVATION/READING distorting once per
+server day-tick via `applyDistortion` (`comms/decay.ts` — its header no longer says "NOT used
+by the diary," because now it is); SUBJECT and CONTEXT never distort, since identity resolution
+must stay reliable (constraint 4). `privateStore.ts`'s `getAlive` gained optional
+`distort`/`rng` params (applied once per elapsed day, catching up if several were missed,
+entirely opt-in) — 4 new tests. `DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.4/§7.5 rewritten:
+the separate read-time-only distortion layer it built for the trespass view is now redundant
+(the diary's own storage already drifts daily) and removed; trespass just reads the live,
+short-windowed SUBJECT graph. Per the user's explicit follow-up ask, swept every design doc for
+other stale references to the old model and fixed them in place rather than just the two files
+already in view: `DESIGN_ADDENDUM_2026-08-12.md` §10's own reset-interval numbers (7/14/30/90
+days) flagged stale (mechanic still correct, numbers superseded), `ECOSYSTEM_VISION_2026-08-06.md`
+and five spots in `BLUEPRINT.md`. Full trail in `docs/DEVLOG.md`'s matching 2026-08-13 entry,
+including the honest "why this happened" note.
+
+477 tests total (473 + 4 new), typecheck clean.
+
+**Next**: still waiting on the level-2 reputation-gate mechanism question raised earlier this
+session — pick that up first. Also still open from this same thread: whether "let's explore it
+on each level" meant gating proximity conversation's INTENT/TONE/REFERENT/CONTEXT vocabulary by
+reputation level (proposed, never confirmed). Otherwise: build arson against its 30% target;
+move to fines economy (needs the personal-resource-stock field first) or Oracle (needs the
+population-scale re-simulation its own §5 asks for); or build the diary's actual content schema
+and wire it into `privateStore.ts` now that both its retention model and storage primitive are
+correct and settled — the diary-in-abode/trespass mechanic (§7 of the housing doc) is now
+unblocked on this too.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

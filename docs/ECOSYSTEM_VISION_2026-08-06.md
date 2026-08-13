@@ -151,6 +151,14 @@ ecosystem to the same honesty.
 > not a second data structure the system maintains and would need its own retention rule
 > for.
 
+> **Further corrected 2026-08-13:** the "~30-day rolling silent expiry" cited just above is
+> itself now stale — `DESIGN_ADDENDUM_2026-08-06.md`'s diary retention section was rewritten
+> the same day to a ~2-day window with continuous daily distortion (OBSERVATION/READING
+> only; SUBJECT stays identity-reliable), not a long silent countdown. The point this
+> blockquote makes still holds and is unaffected by the number changing: the diary's model —
+> whatever its current window and however it currently decays — remains authoritative at
+> every scale, and there is still no separate, longer-lived shard-impression record above it.
+
 **The Oracle's flat, identity-agnostic fairness holds ecosystem-wide, and that matters
 more at scale, not less.** If every shard has its own Oracle reading its own economic
 health, the fairness guarantee — same odds for a newcomer and a veteran — needs to hold

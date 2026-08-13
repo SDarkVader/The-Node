@@ -286,28 +286,60 @@ off a CONTEXT-worthy event. Writing one is always a deliberate act, never a syst
 suggestion — consistent with the diary being personal processing space, not a system
 telling players what's worth noticing about each other.
 
-**Retention: rolling per-entry expiry, illustrative ~30 days `[CALIBRATED —
-provisional]`, silent.** Each entry ages out independently on its own clock — oldest
-erodes first, like real pages — rather than a whole subject's history clearing at once.
-No fade or blur applied before expiry; an entry reads exactly as written until its window
-closes, then it's simply gone. Expiry carries no warning or prompt, same
-don't-tell-players-what-to-notice instinct as creation. This is a deliberate design
-choice, not a legal requirement — unlike the brief's §5.2 voice-retention discussion
-(which governs data the platform collects about a user for moderation purposes), a
-private diary is the player's own content about their own experience; nothing compels an
-expiry window here. It's adopted anyway because it does real thematic and safety work:
+**Retention: rolling per-entry expiry, illustrative ~2 days `[CALIBRATED — provisional,
+corrected 2026-08-13, was ~30]`, with continuous subtle distortion, not silent
+stillness.** Each entry ages out independently on its own clock — oldest erodes first,
+like real pages — rather than a whole subject's history clearing at once. The original
+~30-day figure was wrong on two counts, both corrected here:
+
+1. **The window is "yesterday's," not "the last month's."** A diary that held thirty
+   days of undistorted entries was already most of the way to being the persistent
+   cross-player trust ledger constraint 4 forbids — just gated behind a UI instead of a
+   database query. Shrinking the window to roughly a day-plus-change (today's entries,
+   plus what's left of yesterday's) keeps the diary honest to what it's actually for:
+   a same-day processing space, not an archive. It's also mechanically tied to the
+   server's own day-tick rather than a long silent countdown a player could privately
+   track — "reset as server" in the same sense the day-tick already resets vacancy
+   pressure and shift eligibility elsewhere in this design, not a special case invented
+   for the diary.
+2. **Entries distort daily; they do not read back exactly as written.** Every entry
+   that survives a day-tick gets one pass through `applyDistortion`
+   (`src/comms/decay.ts` — the same primitive the rumour mill uses, previously and
+   incorrectly documented as off-limits to the diary) against its OBSERVATION and
+   READING slots: a chance each server day of drifting to a plausible-adjacent value
+   from that slot's neighbor table, compounding day over day for as long as the entry
+   survives. SUBJECT never distorts — it's a resolved identity, not an impression, and
+   identity resolution is the one thing constraint 4 says must stay reliable once
+   earned. CONTEXT never distorts for the same reason — it's a pointer to a real event,
+   not a recollection of one. This is what makes it "mechanical memory" rather than a
+   transcript: the server's stored copy quietly drifts once per day whether or not the
+   player ever reopens the page, the same way an actual memory of *why* something
+   happened gets less certain — never more — the longer it sits.
+
+Expiry itself still carries no warning or prompt, same don't-tell-players-what-to-notice
+instinct as creation, and is still not a legal requirement — unlike the brief's §5.2
+voice-retention discussion (which governs data the platform collects about a user for
+moderation purposes), a private diary is the player's own content about their own
+experience; nothing compels a window here at all. Both pieces are adopted anyway because
+together they do more of the thematic and safety work the original ~30-day/no-fade
+version only gestured at:
 - The player's own persistent memory of a person and events is expected to outlast the
   system record — the diary is explicitly not meant to *be* the memory, just a temporary
   aid to it. "People will remember the person and the events. The diary is just a private
-  space to vent in the language of the game."
+  space to vent in the language of the game." A short, drifting window makes that literal
+  instead of aspirational: the system's copy degrades and disappears well before a
+  player's own memory would, so the diary can never quietly become the more reliable
+  record of the two.
 - It's a second, independent safeguard against the diary ever becoming a leaked
   dossier, on top of the vocabulary constraint: even in the worst case, a leaked diary is
-  only ever a bounded recent snapshot, never someone's whole history with another player.
+  only ever a bounded, already-unreliable snapshot of the last day or so — not someone's
+  whole history with another player, and not even a faithful account of that one day.
 - It matches the design's existing refusal to let anything calcify permanently —
   vacancy pressure resolves, economic position shifts, identity resolution is the one
-  thing that's supposed to stay reliable once earned; an ever-growing private
-  grudge-ledger would be the one place something *did* accumulate forever, which is the
-  exact shape of thing this design avoids everywhere else.
+  thing that's supposed to stay reliable once earned; an ever-growing, ever-accurate
+  private grudge-ledger would be the one place something *did* accumulate forever in
+  undistorted form, which is the exact shape of thing this design avoids everywhere
+  else.
 
 **Thematic pairing worth preserving:** the Oracle (documented above) is deliberately
 cold — no agent, no target for grudges, identical odds for everyone. The diary is the
@@ -318,7 +350,10 @@ also entirely temporary. Same design rigor, opposite emotional register.
 - Whether this replaces fog-of-recognition's shared-map framing outright or sits
   alongside it — inherited from the parent section above, still unresolved.
 - Final size/contents of the OBSERVATION and READING tables — illustrative only above.
-- Exact retention window — 30 days is illustrative, not tuned.
+- Exact retention window — ~2 days is illustrative (corrected 2026-08-13, was ~30), not
+  tuned. Exact distortion rate per day-tick is also untuned — see
+  `docs/DESIGN_ADDENDUM_2026-08-12.md` §10.4 for a prior (now stale-numbered but
+  structurally reusable) sweep at longer intervals.
 - Whether there's any cap on entries per SUBJECT, or per player overall — not discussed
   yet.
 

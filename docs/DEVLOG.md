@@ -6,6 +6,69 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Real correction to the diary's own retention model: daily distortion, ~2 days not ~30, and a design-doc sweep for what else was still wrong
+
+User, sharply, after the proximity-conversation correction above: *"also, the diary changes
+daily through subtle distortion. no 30 days, only yesterday's mechanical memory of interaction
+reset as server. why is all this being ignored..."*
+
+Two real errors, both fixed, neither a small one:
+
+1. **The retention window was an order of magnitude too long.** `DESIGN_ADDENDUM_2026-08-06.md`
+   had the diary at ~30 days, unfaded, reads-exactly-as-written-until-expiry. That's most of
+   the way to being the persistent cross-player trust ledger constraint 4 forbids, just gated
+   behind a UI. Rewritten to ~2 days ("yesterday's" — today plus what's left of yesterday),
+   tied to the server's own day-tick, matching how vacancy pressure and shift eligibility
+   already reset.
+2. **The store itself was static — dead wrong, and I'd defended the wrong version of it
+   earlier this same session.** Earlier today's housing/reputation design work (§7.4 of
+   `DESIGN_HOUSING_REPUTATION_2026-08-13.md`) explicitly built a *separate* read-time-only
+   distortion layer for the trespass mechanic specifically *because* I believed the diary's own
+   storage had to stay untouched — citing `comms/decay.ts`'s own header, which claimed the
+   diary was "NOT used by" it. Both were wrong. Fixed: the diary's stored entries (once the
+   schema exists) will run through `applyDistortion` once per server day-tick they survive —
+   OBSERVATION and READING drift toward plausible-adjacent values; SUBJECT and CONTEXT never
+   distort, since identity resolution has to stay reliable (constraint 4) and CONTEXT is a
+   pointer to a real event, not a recollection of one.
+
+**A design-doc sweep the user explicitly asked for** ("read elsewhere in the addendums... pull
+out all the parts you've forgotten") turned up more than the two docs already in view:
+- `DESIGN_ADDENDUM_2026-08-12.md` §10 already had a fully-modeled diary-distortion proposal
+  from two days ago (reset-with-residue, `DISTORTION_NEIGHBORS`, a 7/14/30/90-day sweep,
+  0.30 distortion rate) that I never reconciled with today's `privateStore.ts` work — exactly
+  the kind of thing the user's frustration was about. The *mechanic* it specifies (honest
+  writes, silent distortion, no tell, no contradiction popup) is still correct and now the
+  live spec; its numbers (14/30-day reset intervals) are flagged stale in place rather than
+  deleted, since the reasoning trail (resets widen the screenshot gap, they don't close it) is
+  still worth keeping.
+- `DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.4 (the trespass read-time-distortion layer) is
+  now redundant and rewritten: with the diary's own storage already drifting daily and the
+  window down to ~2 days, a second distortion pass on the trespass view would just be noise.
+  Trespass now reads the live SUBJECT graph, unmodified by any extra layer — §7.5's
+  constraint-4 compliance reasoning updated to match (the "never the same twice" property now
+  comes from the short window churning, not a bolted-on read-time roll).
+- `comms/decay.ts`'s header ("NOT used by the private diary") and `privateStore.ts`'s header
+  and `getAlive` signature were both wrong/incomplete. `getAlive` gained optional
+  `distort`/`rng` params: applied once per elapsed server day (catches up if several days were
+  missed between reads), mutating the stored value in place, entirely opt-in so any other
+  future consumer of `PrivateStore<T>` that must NOT drift (a future ledger of fact, not
+  impression) just omits them. 4 new tests in `test/privateStore.test.ts`.
+- `ECOSYSTEM_VISION_2026-08-06.md` and `BLUEPRINT.md` (five separate spots: the addendum
+  summary, the `privateStore.ts` architecture entry, the "server-authoritative" load-bearing
+  decision, the file-by-file description, and the 2026-08-08 permanence-contradiction
+  resolution) all still cited the old ~30-day/no-fade figure as current fact. All corrected in
+  place with the new number and a note of what changed, not silently overwritten.
+
+**Why this happened**: I anchored the diary's own storage to the 2026-08-06 static-TTL model
+all session, including while doing dedicated "reconciliation" work on it a few hours earlier,
+instead of noticing the 08-12 addendum had already moved past that model and applying the same
+continuous-decay principle used everywhere else in the design. Caught by the user, not by me —
+worth being honest about in the log rather than glossing over.
+
+477 tests passing (473 → 477, four new), typecheck clean.
+
+---
+
 ## 2026-08-13 — Real correction to proximity conversation's ephemerality claim: infra logs vs. game-mechanic state
 
 User, on "proxy chat" (proximity conversation, `docs/DESIGN_ADDENDUM_2026-08-06.md`, confirmed

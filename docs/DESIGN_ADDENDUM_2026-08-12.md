@@ -36,7 +36,8 @@ solvable.** A calculating player must be able to compute odds and never close th
   `DISTORTION_NEIGHBORS`. Deliberately imperfect, not a faithful relay.
 - `connections.ts` — per-edge weighted graph, no persistent global structure.
 - `decay.ts` — generic distance-decay + distortion primitive, already extracted for reuse.
-  Explicitly *not* used by the diary.
+  `[CORRECTED 2026-08-13]` Now used by the diary — see §10 below and
+  `docs/DESIGN_ADDENDUM_2026-08-06.md`'s "Retention" section.
 
 This is a Hanabi-shaped system already: a small finite message palette where meaning comes
 from convention, timing, and context rather than vocabulary. That framing is what the rest of
@@ -374,6 +375,16 @@ existing identity system already closes this; no new code needed.
 
 **No diary exists in code.** Referenced in six design docs, unimplemented.
 
+`[CORRECTED 2026-08-13]` The reset interval this section models below (7/14/30/90 days) is
+superseded — `DESIGN_ADDENDUM_2026-08-06.md`'s retention window shrank to ~2 days the same
+day, and distortion now applies every server day-tick an entry survives rather than only at a
+much-longer reset boundary. The *mechanic* this section specifies (§10.5: honest writes,
+silent distortion applied via `decay.ts`, no tell, no contradiction popup) is unchanged and
+still correct — only the numbers in §10.2/§10.4's tables are stale, since they were run
+against reset intervals an order of magnitude longer than the diary actually uses now. Left
+in place below as the reasoning trail (resets widen rather than close the screenshot gap,
+regardless of interval length), not as current tuning.
+
 ### 10.1 The exploit
 
 Screenshot the diary daily, externally, and hold perfect recall regardless of any in-game TTL
@@ -435,7 +446,9 @@ live re-verification becomes the reliable path.**
 1. **Writing is always honest.** Entries store exactly as the player intended. No write-time
    distortion. The player always knows what they meant.
 2. **Distortion happens only at reset**, silently, via the existing `decay.ts` /
-   `DISTORTION_NEIGHBORS` machinery. Reused, not reinvented.
+   `DISTORTION_NEIGHBORS` machinery. Reused, not reinvented. `[CORRECTED 2026-08-13]`
+   "Reset" is now the server's own daily day-tick, not the 14/30-day interval modeled in
+   §10.2/§10.4 above — so in practice this is continuous daily drift, not a periodic event.
 3. **No tell.** The player is never shown which residue survived intact and which drifted.
    Identical visual treatment either way — the same "reliably imperfect, not a faithful
    relay" principle already documented for rumours.

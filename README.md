@@ -188,9 +188,12 @@ touch in the game:
   you had anything to do with the sickness or not.
 - **A private diary** — a place to note, in the same constrained grammar as
   everything else, what you've actually watched someone do, and how you
-  read it. Entries fade on their own after about a month, silently, no
-  warning. It's a place to process a feeling, not a dossier that follows
-  someone forever.
+  read it. Entries only last about as long as "yesterday" — a couple of
+  days, mechanically reset with the server's own day cycle — and what
+  survives quietly drifts a little further from exactly-what-happened each
+  day it's still around, no warning, no fade-in. It's a place to process a
+  feeling, not a dossier that follows someone forever, and not a reliable
+  transcript either.
 - **Face-to-face conversation** — real-time, addressed, in the room, built
   from the same kind of composed vocabulary as the Wall rather than typed
   free text. Nothing about it is ever recorded. Once it's said, it exists

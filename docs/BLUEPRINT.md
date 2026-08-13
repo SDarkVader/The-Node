@@ -8,7 +8,8 @@ deviates from `NODE_Build_Brief_v1.pdf`. Aspirational/not-yet-built work belongs
 **New design material, not yet built:** `docs/DESIGN_ADDENDUM_2026-08-06.md` — vacancy
 backstop rationale (matches what's already built, no change needed), the shard exit
 ticket + Oracle system, private per-player maps and its "private diary" refinement
-(composed slots, unprompted, rolling ~30-day silent expiry — a real departure from
+(composed slots, unprompted, rolling ~2-day expiry with daily distortion on
+OBSERVATION/READING — corrected 2026-08-13, was ~30 days/no fade; a real departure from
 fog-of-recognition as scoped for Phase 4), an atmosphere principle for Phase 4 visual
 work, proximity conversation (a no-microphone, template-composed alternative to live
 voice — meaningfully reshapes Phase 5's scope), and multi-shard passport tiers. One open
@@ -75,9 +76,10 @@ src/engine/     Pure market simulation functions. No I/O, no randomness source o
   player.ts     PlayerId + isKnown() — the binary identity-resolution primitive scoped
                 in "Architecture scoped ahead of schedule" below. Doesn't decide *when*
                 a player becomes known (Phase 4), only the shape of the answer.
-  privateStore.ts  Generic per-player private state store with silent, rolling per-entry
-                TTL expiry — the storage primitive the diary (not yet built) will use.
-                Not diary-specific; see "Architecture scoped ahead of schedule."
+  privateStore.ts  Generic per-player private state store: rolling per-entry TTL expiry,
+                plus (corrected 2026-08-13) an optional per-day distort hook applied to
+                surviving entries — the storage primitive the diary (not yet built) will
+                use. Not diary-specific; see "Architecture scoped ahead of schedule."
   ecosystem.ts  Ecosystem-scale mechanics ported 2026-08-07 from a parallel design
                 session: economic floor, detection probability, experience growth/
                 decay, migration valve, sabotage, districting. Wired against
@@ -121,8 +123,10 @@ src/comms/      Phase 3 slice — communication layer, no I/O of its own.
   decay.ts      Generic "signal fidelity decays with distance" primitive (stepClarity +
                 applyDistortion), extracted from rumourMill.ts so future distance-based
                 propagation (proximity conversation, shard-graph distance) can reuse it
-                instead of reimplementing decay/distortion. NOT used by the diary — that's
-                a deliberately different mechanic (hard TTL expiry, no gradual fade).
+                instead of reimplementing decay/distortion. Also used by the diary
+                (corrected 2026-08-13 — an earlier version of this line said the
+                opposite): `applyDistortion` runs once per server day-tick a diary entry
+                survives.
   rumourMill.ts Propagates a Wall post outward from its author via BFS over the
                 connection graph, using decay.ts's primitives: decays in clarity per hop,
                 sometimes distorts into a semantically-adjacent self-state (§3.2). All
@@ -474,10 +478,11 @@ expensive, not less.
    that don't actually ask for one. Revisit if a future mechanic genuinely needs partial
    resolution; none identified yet.
 4. **Private per-player state (diary entries first) is server-authoritative, not
-   client-trusted.** The diary's 30-day silent expiry (design addendum) has to be
-   enforced somewhere a client can't just refuse to forget — that requires the server to
-   hold the canonical copy and apply expiry itself, even though the data is otherwise
-   never surfaced to anyone but its owner.
+   client-trusted.** The diary's ~2-day expiry and daily distortion (design addendum,
+   corrected 2026-08-13 — was ~30 days/no fade) have to be enforced somewhere a client
+   can't just refuse to forget or refuse to blur — that requires the server to hold the
+   canonical copy and apply both itself, even though the data is otherwise never
+   surfaced to anyone but its owner.
 
 ### Explicitly not scoped now
 
@@ -506,12 +511,18 @@ no pub/sub redesign needed at this scale, revisit if connection count ever makes
   only fixes the shape of the answer.
 - **`src/engine/privateStore.ts`** — generic `PrivateStore<T>`, `addEntry`, `getAlive`.
   Rolling per-entry expiry (each entry ages out on its own `createdOnDay + ttlDays`
-  clock), silent (no fade, no warning), and expired entries are actually dropped from the
+  clock), no warning at expiry, and expired entries are actually dropped from the
   backing map on read, not just filtered — verified directly in
   `test/privateStore.test.ts`, including that one player's entries never leak into
-  another's read. Generic on purpose: the diary's exact slot contents are still `[OPEN]`
-  in the design addendum, so this only builds the storage/expiry shape, not the diary
-  itself.
+  another's read. `[Corrected 2026-08-13]` `getAlive` also takes an optional
+  `distort`/`rng` pair: when supplied, each surviving entry is nudged once per server
+  day elapsed since it was last touched (catching up in one read if several days
+  passed), mutating the stored value in place — this is what the diary's own daily
+  distortion (design addendum, corrected 2026-08-13) will plug into once its slot
+  schema is built; a store used for content that must stay exact simply omits the
+  hook. Generic on purpose: the diary's exact slot contents are still `[OPEN]` in the
+  design addendum, so this only builds the storage/expiry/distortion shape, not the
+  diary itself.
 - **`src/server/ws.ts`** — the actual fix for the leak described above. Two channels now:
   `TickMessage` (`{type: 'tick', day, bakers, spread, wallPost}`) still broadcasts
   identically to everyone; `rumours` was removed from it entirely. A new `RumourMessage`
@@ -911,8 +922,9 @@ since they were unreachable) — 3 new tests, 46 total, all passing.
 **Resolved (2026-08-08) — the permanence contradiction: personal memory is mortal,
 civic memory is immortal.** A real, live contradiction had accumulated across the repo
 without ever being named: `README.md` opened with "the past is immortal"; the private
-diary (`docs/DESIGN_ADDENDUM_2026-08-06.md`) is explicitly a hard ~30-day silent TTL,
-nothing accumulating forever; `CLAUDE.md`'s old constraint 4 said "nothing gets
+diary (`docs/DESIGN_ADDENDUM_2026-08-06.md`) is explicitly a short, decaying TTL
+(~2 days as of the 2026-08-13 correction, ~30 at the time this was written), nothing
+accumulating forever; `CLAUDE.md`'s old constraint 4 said "nothing gets
 recorded, ever"; and external design material (not in this repo) described a
 persistent per-player `trust_index` carried across sessions via merged social graphs.
 These cannot all be true at once, and nobody had stopped to reconcile them.
