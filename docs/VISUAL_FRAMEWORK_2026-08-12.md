@@ -1,4 +1,4 @@
-# Visual Framework — 2026-08-12
+# Visual Framework — 2026-08-12 (extended 2026-08-13)
 
 Closes both `[OPEN]` items from `docs/DESIGN_ADDENDUM_2026-08-08.md` §4, corrects a stale role
 list in `docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md` §3, and locks the district/plaza layout
@@ -7,6 +7,13 @@ This is a design document — no Godot code changes here — but every rule belo
 be directly implementable against fields that already exist in the shipped engine, not
 aspirational language. Where something needs a small new field to be buildable, that's called
 out explicitly as a deliverable, not glossed over.
+
+**2026-08-13 addition (§8)**: `docs/DESIGN_ADDENDUM_2026-08-13.md`'s three-wedge/plaza/gate
+geometry and its accompanying concept art are folded in as real design input — the user's own
+instruction: the art is modelled FROM the architecture, not decoration. §8 also surfaces a
+real, unresolved conflict between that geometry (which commits to exactly 3 districts per
+shard) and the district topology actually adopted the same session (6 scattered districts,
+chosen by real sweep numbers) — flagged with the measured trade-off, not picked silently.
 
 **Standing doctrine, restated because it's the whole point**: this is not a generic city. Not
 a voxel block-world, not a reskin, not a "one-shot" throwaway aesthetic — a specific, organic,
@@ -238,3 +245,71 @@ behavior) are for whoever builds the renderer, not this layer of design. Genuine
    `importExport.ts`, exists mechanically but has no visual treatment specified).
 5. **Structure shapes per role** — unchanged from the original brief's own scope: still an
    execution decision for whoever builds this, once the 6-role roster's shapes are chosen.
+
+## 8. The 2026-08-13 addendum's three-wedge geometry — real, valuable design input, and a
+## real conflict with the just-adopted district topology that needs a decision, not a guess
+
+`docs/DESIGN_ADDENDUM_2026-08-13.md` §5-§7 proposes a specific settlement shape (one central
+plaza, exactly three 120° wedge districts, three wall-gates at the plaza edge, courier-only
+inter-wedge shortcuts) and includes real AI-generated concept art matching it — the user's own
+framing, worth stating plainly rather than glossing past a second time: **the art is modelled
+FROM the architecture, not decoration layered on top of an arbitrary shape.** The clearest
+reference (the plain black-and-white line-diagram frame, not the later ones that drift into
+unrelated concept art) shows exactly what §5 describes: three wedges around one plaza, gates
+at the inner plaza edge, roads fanning out organically per wedge, fairly even building density
+toward the outer rim rather than a center-heavy gradient. That's a real, usable target.
+
+**The conflict, stated with numbers rather than picked silently.** The addendum's geometry
+commits to exactly **3 districts total per shard** (District 1/2/3, cascading open as
+population grows, each running the full role roster). The shard topology adopted this same
+session (2026-08-13's `DEFAULT_WORLD_CONFIG`/`DEFAULT_SHARD_CONFIG` update — see
+`docs/HANDOVER.md`'s "Shipped configuration" section) is **6 scattered districts** (2 core + 4
+periphery, each with its own plaza, connected by hub-spoke corridors plus a K-nearest-neighbor
+side-street mesh) — chosen BECAUSE the real `jointGridSearch` pop=100 confirm-phase run showed
+it balances better than either extreme, not by default. The actual numbers for the winning
+role split (`M9 B9 C7 J7 D8 IE6`), all three district-count layouts the sweep tested:
+
+| Layout | health | gini | grifter wait | flourRatio |
+|---|---|---|---|---|
+| 3 districts | 0.968 (highest) | 0.657 (worst) | 30.3 days (worst) | 0.586 |
+| **6 districts (adopted)** | 0.937 | 0.629 | 26.9 days | 0.616 |
+| 11 districts | 0.924 (lowest) | 0.612 (best) | 25.7 days (best) | 0.611 |
+
+3 districts is not incoherent (flourRatio well under the 1.0 hard filter) — it genuinely staffs
+best. But it is real, measured, worse on equality and grifter wait than the balance point 6
+districts was chosen for, the same trade-off pattern that made "more health by adding Millers"
+a rejected direction earlier this session (see `docs/BLUEPRINT.md`'s Miller-scarcity notes).
+**This is a real design decision the addendum's own geometry forces, not a detail to average
+away**: committing to the addendum's exact three-wedge/one-plaza shape means committing to the
+3-districts row above, with its real equality/grifter-wait cost, or finding a way to keep 6
+(or more) districts while still delivering the wedge/plaza/gate visual language — e.g., a
+shard made of two three-wedge clusters, or wedges that themselves subdivide, neither of which
+the addendum specifies (its own §8 already flags "district 2/3's position relative to district
+1" as unresolved). **Not decided here — flagged for whenever this gets resolved with the user
+before any `space.ts` geometry code gets written**, the same discipline the role-count conflict
+was held to earlier this session.
+
+**A second, smaller reconciliation the geometry proposal needs regardless of which topology
+wins**: the addendum's own §6 role-building placement grid (26 buildings, split
+M3/B7/IE2/C6/J5/D3) was calibrated for the addendum's own stale role numbers, not the
+newly-adopted `M9 B9 C7 J7 D8 IE6` (46 slots) split. Whichever topology is chosen, the
+placement grid needs re-deriving against the real adopted split, not ported as-is.
+
+**What's genuinely reusable right now, independent of the topology question**: the "Visual
+Contrast Contract" concept material (a separate generated slide, not in the addendum text
+itself, shown alongside the wedge geometry) maps game mechanics onto visual zones in exactly
+the shape §5 above already establishes as doctrine — reconciled against real engine truth
+below rather than taken on faith:
+
+| Concept-art label | Real mechanic it maps to | Already true today? |
+|---|---|---|
+| "The Miller Duopoly — Strategic Supply Starvation" | Miller scarcity (a design pillar defended repeatedly against "just add more Millers" — see `docs/HANDOVER.md`'s "Miller scarcity is a design pillar, not a tunable") | Yes — Miller is 9 of 46 slots at the new default, deliberately the smallest core role alongside Import/Export |
+| "The Baker Stand-off — Competition on Price, Not Supply" | Baker's Bertrand price-competition layer (`bakers.ts`) | Yes, unchanged since Phase 1 |
+| "Couriers and Peripheral Lines — The Stability of Motion" | Courier's distance-indexed pay (`courierPay.ts`, item 6) and the district-barrier shortcut privilege (§6 above) | Yes — Courier is literally the role whose economics AND movement privilege are both geometry-driven now |
+| "Stealth and Information Mechanics" | Sabotage/detection (`ecosystem.ts`) and Detective/Journalist pressure detection (`pressureDetection.ts`) | Yes, both shipped |
+| "The Core Central Plaza — Wall's Emissive Soul / Sentiment Beacon" | §3 above (Wall's Emissive Soul, spec'd, not yet built as code) | Spec matches — the concept art's plaza-as-mood-beacon reading is consistent with, not contradicting, §3's design |
+
+This table is the concrete form of "treat the art as architectural input" — every label on the
+concept art traces to a real, already-validated mechanic, not an invented visual motif. It
+should anchor whatever renderer eventually gets built, once the topology question above is
+resolved.

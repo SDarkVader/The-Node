@@ -156,6 +156,39 @@ re-derived alongside building count, not assumed to survive scaling for free.
 Full suite: 437 tests, all passing (same count as before adoption — every failure fixed in
 place, none deleted). `npm run typecheck` clean.
 
+**Second decision from the same round**: fold the addendum's concept art into
+`docs/VISUAL_FRAMEWORK_2026-08-12.md` as real design input, before writing any district-
+geometry engine code — the user's explicit instruction, after correctly pushing back on an
+earlier message where I'd set the concept art aside to finish the config sweep first ("I'm
+modelling them FROM the architecture, not just my imagination... so don't ignore them").
+
+Added §8 to the visual framework doc. Two things in it, not one:
+
+1. **A real conflict, surfaced rather than resolved by fiat.** The addendum's geometry commits
+   to exactly 3 districts per shard (three wedges, one shared plaza). The district topology
+   adopted moments earlier in this same session is 6 scattered districts — chosen specifically
+   because the real `jointGridSearch` pop=100 numbers showed it balances better than the
+   extremes. Pulled the actual layout-comparison numbers for the winning role split back out of
+   that sweep: 3 districts genuinely staffs best (health 0.968) but is real-measured worst on
+   equality (gini 0.657) and grifter wait (30.3 days) — the identical "more health by adding
+   Millers" trade-off pattern that's been rejected repeatedly this session, just at the
+   district-count level instead of the role-count level this time. Not resolved here — flagged
+   with the numbers so whoever decides has real evidence, not two competing intuitions.
+2. **A concrete, reusable mapping table**, from a separate "Visual Contrast Contract" concept
+   slide shown alongside the wedge geometry: Miller scarcity, Baker price competition, Courier
+   movement-based economics, and sabotage/detection stealth mechanics each map onto a labeled
+   visual zone. Checked every label against real shipped mechanics before treating it as
+   trustworthy (same discipline as everything else this session) — all five hold up. This is
+   the concrete form of "the art is modelled from the architecture": every visual claim traces
+   to a real, validated mechanic already in the engine.
+
+Also flagged: the addendum's own §6 role-building placement grid was sized for its stale
+26-slot role split, not the newly-adopted 46-slot one — needs re-deriving regardless of which
+district topology eventually wins.
+
+No engine code touched by this pass — design document only, per the user's own chosen scope
+("start the visual framework doc first").
+
 ---
 
 ## 2026-08-12 — Item 8's report-back verification: exact proof + real numbers, and a methodology bug caught mid-write
