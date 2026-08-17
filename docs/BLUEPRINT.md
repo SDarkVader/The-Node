@@ -3630,3 +3630,22 @@ the exact boundary built for it; arson reuses pattern-sabotage machinery that is
 an explicit "PROPOSAL, not shipped as default" per `ecosystem.ts`'s header — wiring arson in
 would mean promoting pattern-sabotage to shipped-default status too, a bigger call than this
 pass was scoped for.
+
+---
+
+**2026-08-13, later still — experience floor from role-specific Shift Cover practice,
+`src/engine/experienceFloor.ts`, wired end-to-end.** Answers a real question about what
+happens economically when a level-2 Miller/Baker is lost and only a grifter is available: the
+shard never collapses (backstop/conscription already bypass the reputation gate, constraint 2)
+but role `experience` resets to 0, a real productivity dip. First proposal (scale by overall
+reputation level) was wrong — grifters essentially never reach level 2 (the "level-2 trap"),
+so there's rarely a level-2 grifter to draw from. Corrected to scale by real, role-SPECIFIC
+Shift Cover practice instead, which doesn't depend on that gate: `GrifterSlot.
+shiftsCoveredByRole` (per-role, not the flat `reputationProgress` counter),
+`experienceFloorFromShiftsCovered` (grant-only, capped at 50% of `EXPERIENCE_CAP` — a head
+start, not parity with a real veteran), threaded through the conscription event loop's
+`genuineFill`/`conscriptionFromGrifters` handling for Miller/Baker (the removed grifter's
+shift history captured before removal, zipped against newly-FILLED buildingIds). 9 new tests
+including a full world-level round-trip, 549 total, typecheck clean. Not built: fixing the
+level-2 trap itself (the real lever for a deeper veteran bench, still open), or extending the
+floor to support roles (no tracked `experience` field exists there to floor).

@@ -6,6 +6,47 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Experience floor from role-specific Shift Cover practice, wired end-to-end
+
+Real design question from the user, prompted by disagreeing with an external "v8" spec's
+`V_i`/velocity-shield mechanic (which would let reputation fall, contradicting constraint 6 —
+that objection stands, unresolved, on the user's own call to make): *"what happens to your
+economy when a level 2 player is replaced by a grifter because they're the only one
+available?"* Real, already-shipped answer: the shard never collapses (backstop/conscription
+bypass the reputation gate entirely, constraint 2) — but role `experience` resets to 0 for
+whoever fills it, a genuine, measurable productivity dip.
+
+First proposal (scale the head-start by overall reputation LEVEL) was wrong — user caught it:
+*"grifters don't start at lvl 2."* Correct, and already measured this session: the "level-2
+trap" means 83-90% of grifters who reach level 1 get swept into a role within 7-16 days,
+so a level-2 grifter to draw from essentially never exists. User's own refinement: *"perhaps
+only if you've done open shift work as a grifter."* Right idea — tie the head-start to real,
+role-SPECIFIC Shift Cover practice instead, which doesn't depend on the broken level-2 gate
+at all.
+
+**Built**: `src/engine/experienceFloor.ts` — `experienceFloorFromShiftsCovered(n)`, capped at
+50% of `EXPERIENCE_CAP`, grant-only by construction (0 prior shifts = today's exact
+`experience: 0`, never worse). `GrifterSlot` gained `shiftsCoveredByRole` (per-role, not the
+flat `reputationProgress` counter). `shiftCoverOpportunities` now carries a role tag so a
+successful cover credits the SPECIFIC role. Threaded through `stepWorld`'s conscription event
+loop: for each Miller/Baker `genuineFill`/`conscriptionFromGrifters` this tick, the removed
+grifter's real shift history (captured before removal) is zipped against the newly-FILLED
+buildingIds (same order-based pairing discipline `justFilledSet` already relies on) into an
+experience-floor map, passed into `stepCompetitiveLayer`.
+
+9 new tests (5 unit + 4 world-integration, including a full round-trip: a grifter with 5 real
+prior Miller covers starts measurably ahead of a green grifter once conscripted into Miller;
+a grifter with none starts at exactly 0, same as today). 549 tests total, typecheck clean.
+
+**Deliberately not built**: fixing the level-2 trap itself (still the real, larger lever for
+a deeper "veteran bench" — this session's earlier open question, still unanswered) and
+extending the floor to support roles (Courier/Journalist/Detective/Import-Export have no
+tracked `experience` field at all yet, so there's nothing to floor there).
+
+---
+
+---
+
 ## 2026-08-13 — Personal resource stock built and wired; external "v8 spec" material saved but not adopted as verified
 
 User brought outside design material (a "v8 master document," three "simulation run reports,"

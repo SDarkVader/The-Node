@@ -133,6 +133,7 @@ import type { WallPost, SelfState } from '../comms/grammar.js';
 import { createDiaryStore, writeDiaryEntry, type DiaryEntry, type Observation, type Reading, type ContextTag } from '../engine/diary.js';
 import type { PrivateStore } from '../engine/privateStore.js';
 import { emptyPersonalStock, stepPersonalStock } from '../engine/personalResourceStock.js';
+import { experienceFloorFromShiftsCovered } from '../engine/experienceFloor.js';
 
 /** Adapts `stepPersonalStock`'s `{stock, daysSinceRestock}` shape to a slot's own
  *  `personalResourceStock`/`daysSinceRestock` field names. */
@@ -366,6 +367,16 @@ export interface GrifterSlot {
    *  becomes a NEW grifter — see `reputation.ts`'s own header for why that's a real, known
    *  limitation, not a bug in this field. */
   reputationProgress?: number;
+  /** Per-role breakdown of successful Shift Cover completions (2026-08-13,
+   *  `engine/experienceFloor.ts`) — real, role-specific practice, tracked separately from
+   *  the flat `reputationProgress` counter above because the experience head-start a
+   *  conscripted grifter starts a role with is keyed to practice in THAT role specifically,
+   *  not overall reputation level (grifters essentially never reach level 2 — the "level-2
+   *  trap" — so a level-based floor would almost never have anything to draw from). Missing
+   *  entries read as 0, same `?? 0` convention as `reputationProgress`. Same known
+   *  limitation as `reputationProgress`: resets if this identity later becomes a new
+   *  grifter after filling a role. */
+  shiftsCoveredByRole?: Partial<Record<RoleType, number>>;
 }
 
 export interface SabotageLogEntry {
@@ -734,6 +745,7 @@ function stepCompetitiveLayer(
   justFilled: Set<string>,
   competitor: (values: number[]) => number[],
   freshDraw: () => number,
+  experienceFloorByBuildingId?: ReadonlyMap<string, number>,
 ): RoleEconomicSlot[] {
   const filledIndices = slots.map((s, i) => (s.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
   const filledValues = filledIndices.map((i) => slots[i]!.value);
@@ -744,8 +756,10 @@ function stepCompetitiveLayer(
     if (wasJustFilled) {
       // wealth resets too — a new occupant inherits nothing from whoever held this slot
       // before. Income for this same day still accrues afterward, in stepWorld's market
-      // stage, once flourPrice is known.
-      return { ...s, value: freshDraw(), experience: 0, wealth: 0, ...emptySlotStock() };
+      // stage, once flourPrice is known. `experience` defaults to 0 (the common case — a
+      // green grifter) unless a real experience floor was earned via role-specific Shift
+      // Cover practice — see `engine/experienceFloor.ts`.
+      return { ...s, value: freshDraw(), experience: experienceFloorByBuildingId?.get(s.buildingId) ?? 0, wealth: 0, ...emptySlotStock() };
     }
     const filledPos = filledIndices.indexOf(i);
     if (filledPos >= 0) {
@@ -988,6 +1002,13 @@ export function stepWorld(world: World): World {
   // policy (not left unspecified) that directly answers "the effect of grifters being
   // under the floor until they obtain a role."
   grifters = grifters.map((g) => ({ ...g, daysAsGrifter: g.daysAsGrifter + 1 }));
+  // Experience-floor queues (2026-08-13, engine/experienceFloor.ts): for each Miller/Baker
+  // fill this tick, capture the REMOVED grifter's real role-specific Shift Cover history
+  // BEFORE they're popped from the pool, in event order. Zipped against millerJustFilled/
+  // bakerJustFilled (in slot-array order) below — the same order-based pairing discipline
+  // `justFilledSet` itself already relies on, not a new kind of assumption.
+  const millerFloorQueue: number[] = [];
+  const bakerFloorQueue: number[] = [];
   for (const event of conscriptionResult.events) {
     if (event.type === 'churn') {
       grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
@@ -1017,6 +1038,8 @@ export function stepWorld(world: World): World {
         const atLowestLevel = eligible.filter((o) => o.level === lowestEligibleLevel);
         let longest = atLowestLevel[0]!;
         for (const o of atLowestLevel) if (o.days > longest.days) longest = o;
+        if (event.roleId === 'miller') millerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.miller ?? 0);
+        else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.baker ?? 0);
         grifters = grifters.filter((_, i) => i !== longest.i);
       }
     } else if (event.type === 'conscriptionFromGrifters') {
@@ -1038,12 +1061,29 @@ export function stepWorld(world: World): World {
           if (reputationLevelForProgress(grifters[i]!.reputationProgress ?? 0) !== lowestLevel) continue;
           if (longestIdx === -1 || grifters[i]!.daysAsGrifter > grifters[longestIdx]!.daysAsGrifter) longestIdx = i;
         }
+        if (longestIdx >= 0) {
+          if (event.roleId === 'miller') millerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.miller ?? 0);
+          else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.baker ?? 0);
+        }
         grifters = grifters.filter((_, i) => i !== longestIdx);
       }
     }
     // conscriptionFromOtherRole / backstopFires: no grifter-pool change — that player
     // moves directly between roles, or the slot stays mechanically covered.
   }
+
+  // Zip the floor queues (event order) against the actual newly-FILLED buildingIds (slot-
+  // array order, from justFilledSet above) — cardinality matches by construction, since
+  // every genuineFill/conscriptionFromGrifters event for a role corresponds to exactly one
+  // newly-FILLED slot in that role's array this same tick.
+  const millerExperienceFloor = new Map<string, number>();
+  [...millerJustFilled].forEach((buildingId, i) => {
+    if (millerFloorQueue[i] !== undefined) millerExperienceFloor.set(buildingId, experienceFloorFromShiftsCovered(millerFloorQueue[i]!));
+  });
+  const bakerExperienceFloor = new Map<string, number>();
+  [...bakerJustFilled].forEach((buildingId, i) => {
+    if (bakerFloorQueue[i] !== undefined) bakerExperienceFloor.set(buildingId, experienceFloorFromShiftsCovered(bakerFloorQueue[i]!));
+  });
 
   // Forced 2-week deadline draft (2026-08-11): any grifter whose consolidation window has
   // expired must be placed into an open role today if one exists anywhere — "2 weeks to
@@ -1107,6 +1147,7 @@ export function stepWorld(world: World): World {
     millerJustFilled,
     (values) => stepMillers(values, noise),
     () => 0.3 + rng() * 0.2,
+    millerExperienceFloor,
   );
 
   // BACKSTOPPED millers participate mechanically, not competitively — this is the
@@ -1135,6 +1176,7 @@ export function stepWorld(world: World): World {
     bakerJustFilled,
     (values) => stepBakers(values, flourPriceValue, config.gamma, noise),
     () => 0.5 + rng() * 0.2,
+    bakerExperienceFloor,
   );
 
   // Wealth accrual (2026-08-10, user-requested; demand model + downtime window revised
@@ -1299,27 +1341,31 @@ export function stepWorld(world: World): World {
   };
   const meanFilledMillerIncome = meanOf(millerIncomes);
   const meanFilledBakerIncome = meanOf(bakerIncomes);
-  const shiftCoverOpportunities: number[] = [];
+  // Each opportunity now carries which role it's covering (2026-08-13,
+  // engine/experienceFloor.ts) — needed so a successful cover can credit that SPECIFIC
+  // role in the grifter's `shiftsCoveredByRole`, not just the flat `reputationProgress`
+  // counter. Payout math is completely unchanged; only the role tag is new.
+  const shiftCoverOpportunities: Array<{ role: RoleType; payout: number }> = [];
   millers.forEach((m) => {
-    if (m.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(meanFilledMillerIncome);
+    if (m.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'miller', payout: meanFilledMillerIncome });
   });
   bakers.forEach((b) => {
-    if (b.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(meanFilledBakerIncome);
+    if (b.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'baker', payout: meanFilledBakerIncome });
   });
   couriers.forEach((c) => {
     if (c.slot.state === 'BACKSTOPPED') {
       const dist = courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? '');
-      shiftCoverOpportunities.push(courierDailyPay(dist, DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)));
+      shiftCoverOpportunities.push({ role: 'courier', payout: courierDailyPay(dist, DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) });
     }
   });
   journalists.forEach((j) => {
-    if (j.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(j.buildingId));
+    if (j.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'journalist', payout: supportDaily * frictionFor(j.buildingId) });
   });
   detectives.forEach((d) => {
-    if (d.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(d.buildingId));
+    if (d.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'detective', payout: supportDaily * frictionFor(d.buildingId) });
   });
   importExporters.forEach((x) => {
-    if (x.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push(supportDaily * frictionFor(x.buildingId));
+    if (x.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'importExport', payout: supportDaily * frictionFor(x.buildingId) });
   });
   const noticedIdx = shiftCoverNoticedIndices(shiftCoverOpportunities.length, grifters.length, rng);
   if (noticedIdx.length > 0) {
@@ -1329,14 +1375,19 @@ export function stepWorld(world: World): World {
       .map((g, i) => ({ i, wealth: g.wealth }))
       .sort((a, b) => a.wealth - b.wealth || a.i - b.i)
       .slice(0, noticedIdx.length);
-    const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!));
+    const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!.payout));
     grifters = grifters.map((g, i) => {
       const pos = grifterOrder.findIndex((o) => o.i === i);
+      if (pos < 0) return g;
       // A successful cover also earns one reputation progress-tick (2026-08-13,
       // docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.3/§2.1) — the SAME once-per-
       // BACKSTOPPED-slot-per-day cap that already governs the pay itself IS the anti-grind
-      // limiter here; no separate reputation-specific rate limit needed.
-      return pos >= 0 ? { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1 } : g;
+      // limiter here; no separate reputation-specific rate limit needed. It also now credits
+      // the SPECIFIC role covered (engine/experienceFloor.ts) — real practice this grifter
+      // can draw an experience head-start from if they later take over that same role.
+      const role = shiftCoverOpportunities[noticedIdx[pos]!]!.role;
+      const shiftsCoveredByRole = { ...g.shiftsCoveredByRole, [role]: (g.shiftsCoveredByRole?.[role] ?? 0) + 1 };
+      return { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1, shiftsCoveredByRole };
     });
   }
 

@@ -351,22 +351,37 @@ user's call, not resolved here.
 flows, not a personal balance any role-holder can spend. Cap=5 (independently proposed twice:
 the fines doc's own illustrative guess AND the external material's `UNIT_CAP=5` — real
 convergent agreement). Wired into `stepWorld`'s wealth-accrual stage for all six roles, reset
-at every real fill-transition point. 9 new tests (5 unit + 4 integration against the live
-engine), 541 total, typecheck clean. This unblocks the Firestarter (arson) and Key (trespass)
+at every real fill-transition point. This unblocks the Firestarter (arson) and Key (trespass)
 crafting items.
+
+**Then, a real design question, worked through to a shipped answer**: user asked what happens
+economically when a level-2 Miller/Baker is lost and only a grifter is available (shard
+survival was never in question — backstop/conscription already bypass the reputation gate,
+constraint 2 — but role `experience` resets to 0, a real productivity dip). First answer
+(experience head-start scaled by overall reputation level) was wrong — caught directly:
+*"grifters don't start at lvl 2"* — the level-2 trap means one's essentially never available
+to draw from. User's own fix: *"perhaps only if you've done open shift work as a grifter"* —
+scale by real, role-SPECIFIC Shift Cover practice instead. Built and wired end-to-end:
+`src/engine/experienceFloor.ts`, `GrifterSlot.shiftsCoveredByRole` (per-role, not the flat
+`reputationProgress` counter), threaded through the conscription event loop for Miller/Baker
+fills. 9 new tests including a full world-level round-trip. **549 tests total, typecheck
+clean, all committed and pushed to `main`.**
 
 **Next, in rough priority order:**
 1. The `V_i`/constraint-6 question above — needs the user's answer before any velocity-shield
    mechanic gets built.
-2. The level-2 reputation-gate mechanism question — user hasn't specified one yet, still
-   genuinely open; the reputation-retention research prompt sent earlier this session may
-   inform this once answered.
-3. Proximity conversation wiring into `stepWorld` (the natural next module — diary is wired,
-   this is the next candidate with the same shape).
+2. The level-2 reputation-gate mechanism itself — still genuinely open, and now has a second
+   real reason to matter (it's also the lever for a deeper "veteran bench" the experience-floor
+   work above surfaced); the reputation-retention research prompt sent earlier this session
+   may inform this once answered.
+3. Proximity conversation wiring into `stepWorld` (diary is wired, this is the next candidate
+   with the same shape).
 4. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
    reputation level — proposed, never confirmed, buildable once #3 above is wired.
 5. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
    decision) — arson's wiring is blocked on this.
+6. Extend the experience floor to support roles once they get a tracked `experience` field —
+   not needed yet, none of the four support roles have one.
 6. The Firestarter/Key crafting items themselves, now that `personalResourceStock` exists.
 7. The population-scale re-simulation Oracle's own §5 needs.
 
