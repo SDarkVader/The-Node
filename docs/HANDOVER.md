@@ -324,16 +324,51 @@ each hit a real, separate reason, not just running out of time:
 reputation-driven retention design, explicitly scoped around the still-open "level-2 trap"
 finding and asking for principles synthesized from other games, not a lifted system.
 
+**Then: the user brought externally-produced "v8 spec" design material** (a master document,
+three "simulation run reports," an "evolution and verification report") and asked for it to be
+saved and built from. Saved verbatim under `docs/external/`. Real, checkable discrepancies were
+raised before any of it was treated as verified — full detail in `docs/DEVLOG.md`'s matching
+entry, short version: the three "simulation" reports are byte-identical (impossible for a
+genuine stochastic run repeated three times), and the material describes infrastructure (a
+database layer, "Credits" currency, 64Hz netcode/Saga-pattern transactions, real-dollar API
+billing) that doesn't exist in this repo and in places directly contradicts decisions already
+shipped here (nodules, not Credits; no database — `stepWorld` is in-memory/deterministic). This
+got heated; one real overclaim was made and corrected (asserting no code was ever executed
+anywhere externally, which wasn't something there was evidence for either way — the checkable
+findings about the artifacts themselves stand independently of that). **New CLAUDE.md rule
+added as a direct result, now at the top of the file**: *"Assumption is the mother of all fuck
+ups"* — bring up real issues with evidence, don't hold up real work on something checkable.
+
+**One real structural question from that material is still open, not resolved either
+direction**: a `V_i` "reputation velocity" mechanic (conscription-shielded above 0.5, not
+below) requires reputation to be able to fall, which conflicts with constraint 6
+(grant-only, added 2026-08-08). Whether that's a deliberate revision of constraint 6 is the
+user's call, not resolved here.
+
+**What DID get built and tested from that material**: `personalResourceStock`
+(`src/engine/personalResourceStock.ts`) — closes the real, previously-flagged gap
+(`DESIGN_FINES_ECONOMY_2026-08-13.md` §1) that `resources.ts` only tracks shard-aggregate
+flows, not a personal balance any role-holder can spend. Cap=5 (independently proposed twice:
+the fines doc's own illustrative guess AND the external material's `UNIT_CAP=5` — real
+convergent agreement). Wired into `stepWorld`'s wealth-accrual stage for all six roles, reset
+at every real fill-transition point. 9 new tests (5 unit + 4 integration against the live
+engine), 541 total, typecheck clean. This unblocks the Firestarter (arson) and Key (trespass)
+crafting items.
+
 **Next, in rough priority order:**
-1. The level-2 reputation-gate mechanism question — user hasn't specified one yet, still
-   genuinely open; the reputation-retention research prompt above may inform this once answered.
-2. Proximity conversation wiring into `stepWorld` (the natural next module, per above).
-3. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
-   reputation level — proposed, never confirmed, buildable once #2 above is wired.
-4. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
+1. The `V_i`/constraint-6 question above — needs the user's answer before any velocity-shield
+   mechanic gets built.
+2. The level-2 reputation-gate mechanism question — user hasn't specified one yet, still
+   genuinely open; the reputation-retention research prompt sent earlier this session may
+   inform this once answered.
+3. Proximity conversation wiring into `stepWorld` (the natural next module — diary is wired,
+   this is the next candidate with the same shape).
+4. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
+   reputation level — proposed, never confirmed, buildable once #3 above is wired.
+5. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
    decision) — arson's wiring is blocked on this.
-5. `personalResourceStock` (blocks the Firestarter item and trespass's SUBJECT-graph read) and
-   the population-scale re-simulation Oracle's own §5 needs — both real prerequisites.
+6. The Firestarter/Key crafting items themselves, now that `personalResourceStock` exists.
+7. The population-scale re-simulation Oracle's own §5 needs.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the

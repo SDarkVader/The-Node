@@ -132,6 +132,25 @@ import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
 import { createDiaryStore, writeDiaryEntry, type DiaryEntry, type Observation, type Reading, type ContextTag } from '../engine/diary.js';
 import type { PrivateStore } from '../engine/privateStore.js';
+import { emptyPersonalStock, stepPersonalStock } from '../engine/personalResourceStock.js';
+
+/** Adapts `stepPersonalStock`'s `{stock, daysSinceRestock}` shape to a slot's own
+ *  `personalResourceStock`/`daysSinceRestock` field names. */
+function stepSlotStock<T extends { personalResourceStock: number; daysSinceRestock: number }>(
+  s: T,
+): Pick<T, 'personalResourceStock' | 'daysSinceRestock'> {
+  const next = stepPersonalStock({ stock: s.personalResourceStock, daysSinceRestock: s.daysSinceRestock });
+  return { personalResourceStock: next.stock, daysSinceRestock: next.daysSinceRestock } as Pick<
+    T,
+    'personalResourceStock' | 'daysSinceRestock'
+  >;
+}
+
+/** Same field-name adapter as `stepSlotStock`, for a slot's initial/reset state. */
+function emptySlotStock(): { personalResourceStock: number; daysSinceRestock: number } {
+  const empty = emptyPersonalStock();
+  return { personalResourceStock: empty.stock, daysSinceRestock: empty.daysSinceRestock };
+}
 import {
   millerDailyIncome,
   bakerDailyIncome,
@@ -293,6 +312,13 @@ export interface RoleEconomicSlot {
    *  (a new occupant starts with nothing — no inherited wealth from whoever held the slot
    *  before); frozen while VACANT/BACKSTOPPED (nobody there to earn or lose anything). */
   wealth: number;
+  /** Personal crafting-resource stock (`engine/personalResourceStock.ts`, 2026-08-13) — the
+   *  gap `docs/DESIGN_FINES_ECONOMY_2026-08-13.md` §1 flagged. Same reset-on-new-occupant,
+   *  frozen-while-not-FILLED convention as `wealth`. */
+  personalResourceStock: number;
+  /** Days since this slot's last +1 restock — internal counter for `stepPersonalStock`,
+   *  resets alongside `personalResourceStock` on a new occupant. */
+  daysSinceRestock: number;
 }
 
 /** Courier/Journalist/Detective — same slot/wealth reset convention as RoleEconomicSlot,
@@ -301,6 +327,8 @@ export interface SupportRoleSlot {
   slot: RoleSlot;
   buildingId: string;
   wealth: number;
+  personalResourceStock: number;
+  daysSinceRestock: number;
 }
 
 /** A roleless community player ("grifter" — user's own term). Individually tracked, unlike
@@ -576,6 +604,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     value: 0.3 + rng() * 0.2, // matches initMarket's own initial-quantity draw
     experience: EXPERIENCE_CAP, // "start maxed, established shard" — matches ecosystemHarness's convention
     wealth: 0,
+    ...emptySlotStock(),
   }));
   const bakers: RoleEconomicSlot[] = assigned.baker.map((b) => ({
     slot: { state: 'FILLED', vacantSince: null },
@@ -583,11 +612,12 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     value: 0.5 + rng() * 0.2, // matches initMarket's own initial-price draw
     experience: EXPERIENCE_CAP,
     wealth: 0,
+    ...emptySlotStock(),
   }));
-  const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
-  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
-  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
-  const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0 }));
+  const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock() }));
+  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock() }));
+  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock() }));
+  const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock() }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
   const flourPriceValue = computeFlourPrice(supply);
@@ -715,7 +745,7 @@ function stepCompetitiveLayer(
       // wealth resets too — a new occupant inherits nothing from whoever held this slot
       // before. Income for this same day still accrues afterward, in stepWorld's market
       // stage, once flourPrice is known.
-      return { ...s, value: freshDraw(), experience: 0, wealth: 0 };
+      return { ...s, value: freshDraw(), experience: 0, wealth: 0, ...emptySlotStock() };
     }
     const filledPos = filledIndices.indexOf(i);
     if (filledPos >= 0) {
@@ -937,19 +967,19 @@ export function stepWorld(world: World): World {
   bakers = bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
   couriers = couriers.map((c, i) => {
     const slot = byRole.get('courier')![i]!;
-    return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0 } : { ...c, slot };
+    return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0, ...emptySlotStock() } : { ...c, slot };
   });
   journalists = journalists.map((j, i) => {
     const slot = byRole.get('journalist')![i]!;
-    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0 } : { ...j, slot };
+    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0, ...emptySlotStock() } : { ...j, slot };
   });
   detectives = detectives.map((d, i) => {
     const slot = byRole.get('detective')![i]!;
-    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0 } : { ...d, slot };
+    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0, ...emptySlotStock() } : { ...d, slot };
   });
   importExporters = importExporters.map((x, i) => {
     const slot = byRole.get('importExport')![i]!;
-    return importExportJustFilled.has(x.buildingId) ? { ...x, slot, wealth: 0 } : { ...x, slot };
+    return importExportJustFilled.has(x.buildingId) ? { ...x, slot, wealth: 0, ...emptySlotStock() } : { ...x, slot };
   });
 
   // Grifter pool bookkeeping: age everyone still waiting by one day, then apply today's
@@ -1054,17 +1084,17 @@ export function stepWorld(world: World): World {
       placedGrifterIds.add(grifter.id);
       const fill = { state: 'FILLED' as const, vacantSince: null };
       if (target.role === 'miller') {
-        millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0 } : m));
+        millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock() } : m));
       } else if (target.role === 'baker') {
-        bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0 } : b));
+        bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock() } : b));
       } else if (target.role === 'courier') {
-        couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0 } : c));
+        couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0, ...emptySlotStock() } : c));
       } else if (target.role === 'journalist') {
-        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0 } : j));
+        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0, ...emptySlotStock() } : j));
       } else if (target.role === 'detective') {
-        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0 } : d));
+        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0, ...emptySlotStock() } : d));
       } else {
-        importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0 } : x));
+        importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0, ...emptySlotStock() } : x));
       }
     }
     if (placedGrifterIds.size > 0) grifters = grifters.filter((g) => !placedGrifterIds.has(g.id));
@@ -1214,8 +1244,8 @@ export function stepWorld(world: World): World {
     }
   }
 
-  millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]! } : m));
-  bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]! } : b));
+  millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]!, ...stepSlotStock(m) } : m));
+  bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]!, ...stepSlotStock(b) } : b));
 
   if (config.wealthCap !== undefined) {
     const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
@@ -1248,12 +1278,13 @@ export function stepWorld(world: World): World {
           wealth:
             c.wealth +
             courierDailyPay(courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? ''), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)),
+          ...stepSlotStock(c),
         }
       : c,
   );
-  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId) } : j));
-  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId) } : d));
-  importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId) } : x));
+  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId), ...stepSlotStock(j) } : j));
+  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId), ...stepSlotStock(d) } : d));
+  importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId), ...stepSlotStock(x) } : x));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
 
   // Shift Cover (2026-08-11 addendum item 7) — every BACKSTOPPED slot across all six roles is

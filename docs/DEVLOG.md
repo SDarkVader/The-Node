@@ -6,6 +6,56 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Personal resource stock built and wired; external "v8 spec" material saved but not adopted as verified
+
+User brought outside design material (a "v8 master document," three "simulation run reports,"
+and an "evolution and verification report") produced externally and asked for it to be saved
+to the repo, then built from. Saved verbatim under `docs/external/` for reference.
+
+**Real, checkable discrepancies were found and raised before treating any of it as verified**,
+per the newly-added CLAUDE.md rule ("assumption is the mother of all fuck ups" — added this
+session, user directive, now at the top of the file): the three "simulation run reports" were
+byte-identical across all three files, which a genuinely stochastic simulation run three times
+cannot produce; the material described infrastructure (a database layer, a "Credits" currency,
+64Hz netcode with Saga-pattern distributed transactions, real-dollar API billing, FFT-based
+input-timing anti-cheat) that doesn't exist anywhere in this actual repository and in several
+cases directly contradicts decisions already shipped here (nodules, not Credits — the closed-
+loop economy item 5 built 2026-08-11; no database at all — `stepWorld` is in-memory and
+deterministic). One overclaim was made and corrected in the same conversation: asserting no
+code was ever executed anywhere by the external tooling, which wasn't a claim there was
+evidence for either way. The specific, checkable findings (identical files; content mismatched
+with this repo) stand independently of that correction.
+
+**One real structural question raised and not yet resolved**: the v8 material's `V_i`
+reputation-velocity mechanic (conscription-shielded above 0.5, unshielded below) requires
+reputation to be able to fall, which conflicts directly with constraint 6 ("reputation may only
+ever grant, never remove," added 2026-08-08 after resolving a real prior contradiction in this
+same project). Not resolved by fiat either direction — flagged for the user to decide whether
+it's a deliberate revision of constraint 6, since that's not a call this session makes alone.
+
+**What actually got built from the material, tested for real**: `personalResourceStock`
+(`src/engine/personalResourceStock.ts`), closing the real gap
+`docs/DESIGN_FINES_ECONOMY_2026-08-13.md` §1 already flagged (resources.ts only tracks
+shard-aggregate flows, not a personal balance any role-holder can spend toward a crafted item).
+The cap value (5) was independently proposed twice — the fines doc's own "[ILLUSTRATIVE]...
+e.g. 5" and, separately, the external v8 material's `UNIT_CAP = 5` — real convergent agreement,
+noted as such. Refill cadence (`RESTOCK_INTERVAL_DAYS = 3`) remains genuinely unmeasured,
+labeled provisional. Wired into `stepWorld`'s existing wealth-accrual stage for all six roles,
+reset on every real fill-transition point (mirroring `wealth`'s own established convention),
+capped and verified deterministic against 4 new integration tests running the real engine, on
+top of 5 standalone unit tests for the pure step function. 541 tests total (526 + 6 diary-wiring
++ 5 unit + 4 integration), typecheck clean.
+
+**Deliberately not built from the v8 material this pass**: k-anonymity spatial identity
+scrambling, squeeze-and-evict detection (pressureDetection.ts already covers similar ground),
+the velocity/reputation shield (blocked on the constraint-6 question above), illegal transit
+interception. Not rejected — genuinely not attempted yet, pending the one open question and
+further scoping.
+
+---
+
+---
+
 ## 2026-08-13 — Diary wired into `stepWorld`; reputation-retention research prompt sent
 
 User: *"start wiring it in."* First of the four new modules actually connected to the live

@@ -1,5 +1,10 @@
 # Working on NODE — session rules
 
+**Assumption is the mother of all fuck ups.** (2026-08-13, user directive.) Bring up real
+issues when you find them — directly, with evidence, no hedging and no attitude about it —
+but don't assert something you haven't actually checked, and don't hold up real work on a
+question you could resolve yourself by reading the code or running it.
+
 NODE is a persistent multiplayer social-economic game. The design source of truth is
 `docs/NODE_Build_Brief_v1.pdf` — its §0 (design intent) and build order are load-bearing;
 everything else in it is an explicitly revisable hypothesis. Read it before starting work

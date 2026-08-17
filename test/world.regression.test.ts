@@ -109,7 +109,15 @@ describe('stepWorld — tick order is pinned (golden-value characterization test
 
 describe('computeMillerSupply — a BACKSTOPPED Miller actually participates in pricing', () => {
   function makeMiller(state: RoleEconomicSlot['slot']['state'], value: number): RoleEconomicSlot {
-    return { slot: { state, vacantSince: state === 'FILLED' ? null : 0 }, buildingId: `b-${state}-${value}`, value, experience: 0, wealth: 0 };
+    return {
+      slot: { state, vacantSince: state === 'FILLED' ? null : 0 },
+      buildingId: `b-${state}-${value}`,
+      value,
+      experience: 0,
+      wealth: 0,
+      personalResourceStock: 0,
+      daysSinceRestock: 0,
+    };
   }
 
   it('a BACKSTOPPED slot contributes exactly BACKSTOP_PRODUCTIVITY, not zero and not its stale value', () => {

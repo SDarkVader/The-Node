@@ -3579,6 +3579,32 @@ fines doc's own §1) and `world.ts` tick-loop wiring (needs real per-tick witnes
 
 ---
 
+**2026-08-13, later — `personalResourceStock` built and wired, closing the exact gap flagged
+above.** `src/engine/personalResourceStock.ts`: a pure `stepPersonalStock` function, capped at
+`PERSONAL_RESOURCE_CAP = 5` (independently proposed twice — the fines doc's own illustrative
+"e.g. 5" and, separately, external design material's `UNIT_CAP = 5` — real convergent
+agreement, not one unchecked guess), refilling +1 every `RESTOCK_INTERVAL_DAYS` (=3,
+genuinely unmeasured, labeled provisional). Wired into `World`'s existing wealth-accrual stage
+for all six roles via a `stepSlotStock`/`emptySlotStock` field-name adapter (the engine
+function's generic `{stock, daysSinceRestock}` shape vs. the slot's own
+`personalResourceStock`/`daysSinceRestock` field names), reset at every one of the ~15 real
+fill-transition points in `world.ts` that already reset `wealth` to 0, same convention. 5 unit
+tests for the pure function, 4 new integration tests running the real engine (caps under
+sustained real ticks, frozen while not FILLED, starts at 0 on a new occupant, deterministic
+across identical seeds). 541 tests total, typecheck clean.
+
+This unblocks the Firestarter (arson) and Key (trespass) crafting items both flagged as
+blocked on this exact gap — neither built yet, this only supplies the personal balance they'd
+draw from.
+
+**Context**: built while auditing externally-produced "v8 spec" material the user brought in
+(saved under `docs/external/`) — see `docs/DEVLOG.md`'s matching entry for the specific,
+checkable discrepancies raised before treating any of that material as verified, and the one
+still-open structural question (whether a reputation-velocity mechanic that can fall below a
+threshold is a deliberate revision of constraint 6, not yet answered).
+
+---
+
 **2026-08-13, later still — diary wired into `stepWorld`, the first of the four new modules
 actually connected to the live World kernel.** New `World.diary: PrivateStore<DiaryEntry>` and
 `World.pendingDiaryEntries: PendingDiaryEntry[]`, mirroring `pendingWallPosts`' exact
