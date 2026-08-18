@@ -103,11 +103,13 @@ import {
 import {
   emptyCompletionStats,
   recordAttempt,
+  completionRatio,
   averageRivalValue,
   millerTaskCompleted,
   bakerTaskCompleted,
   supportTaskCompleted,
   COMPLETION_REWARD,
+  TYPICAL_COMPLETION_RATIO,
   type CompletionStats,
 } from '../engine/roleCompletion.js';
 import { stepMillers, flourPrice as computeFlourPrice } from '../engine/millers.js';
@@ -970,13 +972,23 @@ export function stepWorld(world: World): World {
   // its slots array — feeds conscriptionFromOtherRole's eviction-preference bias (see
   // multiRoleConscription.ts's occupantTenure/ESTABLISHED_TENURE_DAYS doc comments). Built
   // from today's real state, same convention as grifterLevelCounts above.
+  //
+  // occupantPerformance (2026-08-18, "grinders should have greater upward mobility than lazy
+  // players... activity is the fastest path to reward"): each slot's REAL career
+  // `completionRatio` (world.completionStats, item 4's own signal), normalized against that
+  // role's own typical rate so a Miller's ~55% and a Courier's ~97% are comparable on the
+  // same scale (1.0 = exactly typical). Fresh/never-attempted slots read as 0 — no track
+  // record yet reads as "not established," matching daysInRole also being 0 on a fresh fill.
+  function occupantPerformanceFor(buildingId: string, role: keyof typeof TYPICAL_COMPLETION_RATIO): number {
+    return completionRatio(world.completionStats[buildingId] ?? emptyCompletionStats()) / TYPICAL_COMPLETION_RATIO[role];
+  }
   const roleGroupsIn: RoleGroupState[] = [
-    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('miller'), occupantTenure: millers.map((m) => m.daysInRole) },
-    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('baker'), occupantTenure: bakers.map((b) => b.daysInRole) },
-    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('courier'), occupantTenure: couriers.map((c) => c.daysInRole) },
-    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('journalist'), occupantTenure: journalists.map((j) => j.daysInRole) },
-    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('detective'), occupantTenure: detectives.map((d) => d.daysInRole) },
-    { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('importExport'), occupantTenure: importExporters.map((x) => x.daysInRole) },
+    { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('miller'), occupantTenure: millers.map((m) => m.daysInRole), occupantPerformance: millers.map((m) => occupantPerformanceFor(m.buildingId, 'miller')) },
+    { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('baker'), occupantTenure: bakers.map((b) => b.daysInRole), occupantPerformance: bakers.map((b) => occupantPerformanceFor(b.buildingId, 'baker')) },
+    { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('courier'), occupantTenure: couriers.map((c) => c.daysInRole), occupantPerformance: couriers.map((c) => occupantPerformanceFor(c.buildingId, 'courier')) },
+    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('journalist'), occupantTenure: journalists.map((j) => j.daysInRole), occupantPerformance: journalists.map((j) => occupantPerformanceFor(j.buildingId, 'journalist')) },
+    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('detective'), occupantTenure: detectives.map((d) => d.daysInRole), occupantPerformance: detectives.map((d) => occupantPerformanceFor(d.buildingId, 'detective')) },
+    { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('importExport'), occupantTenure: importExporters.map((x) => x.daysInRole), occupantPerformance: importExporters.map((x) => occupantPerformanceFor(x.buildingId, 'importExport')) },
   ];
   const conscriptionResult = stepMultiRoleConscriptionDay(
     roleGroupsIn,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type World } from '../src/world/world.js';
 import { ESTABLISHED_TENURE_DAYS } from '../src/sim/multiRoleConscription.js';
+import { TYPICAL_COMPLETION_RATIO, type CompletionStats } from '../src/engine/roleCompletion.js';
 
 /**
  * Real, wired integration for the `occupantTenure`/`ESTABLISHED_TENURE_DAYS`
@@ -107,5 +108,61 @@ describe('conscriptionFromOtherRole eviction preference — real World, establis
     ];
     const vacatedCount = greenCandidates.filter((s) => s !== 'FILLED').length;
     expect(vacatedCount).toBe(1);
+  });
+});
+
+describe('conscriptionFromOtherRole eviction preference — real World, tenure alone is not enough, real performance also has to hold up (2026-08-18)', () => {
+  it('a tenured but chronically underperforming courier is evicted before an equally-tenured, genuinely productive one', () => {
+    let world = createWorld(21, {
+      ...DEFAULT_WORLD_CONFIG,
+      rMiller: 1,
+      rBaker: 1,
+      rCourier: 2,
+      rJournalist: 1,
+      rDetective: 1,
+      rImportExport: 1,
+      targetPopulation: 7,
+      pMonthly: 0,
+      conscriptionDelay: 0,
+    });
+    expect(world.grifters.length).toBe(0);
+
+    // Both couriers are equally, fully established by tenure. Only their real completion
+    // history differs: courier[0] has a career of near-total failure; courier[1] performs
+    // exactly at the role's own typical rate.
+    const poorStats: CompletionStats = { attempts: 100, completions: 1 };
+    const typicalStatsFor = (role: keyof typeof TYPICAL_COMPLETION_RATIO): CompletionStats => ({
+      attempts: 100,
+      completions: Math.round(TYPICAL_COMPLETION_RATIO[role] * 100),
+    });
+    world = {
+      ...world,
+      couriers: world.couriers.map((c) => ({ ...c, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      completionStats: {
+        ...world.completionStats,
+        [world.couriers[0]!.buildingId]: poorStats,
+        [world.couriers[1]!.buildingId]: typicalStatsFor('courier'),
+        // Every OTHER other-role candidate is made FULLY established (tenure AND real
+        // typical performance) so the eviction pool contains exactly one candidate —
+        // courier[0] — rather than a random pick among several green ones. That isolates
+        // the performance check specifically; it is not what this test is measuring.
+        [world.bakers[0]!.buildingId]: typicalStatsFor('baker'),
+        [world.journalists[0]!.buildingId]: typicalStatsFor('journalist'),
+        [world.detectives[0]!.buildingId]: typicalStatsFor('detective'),
+        [world.importExporters[0]!.buildingId]: typicalStatsFor('importExport'),
+      },
+      bakers: world.bakers.map((b) => ({ ...b, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      journalists: world.journalists.map((j) => ({ ...j, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      detectives: world.detectives.map((d) => ({ ...d, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      importExporters: world.importExporters.map((x) => ({ ...x, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      millers: world.millers.map((m) => ({ ...m, slot: { state: 'BACKSTOPPED' as const, vacantSince: world.tick - 1_000_000 } })),
+    };
+
+    const after = stepWorld(world);
+    expect(after.millers[0]!.slot.state).toBe('FILLED');
+    // The chronically underperforming courier loses their slot despite equal tenure...
+    expect(after.couriers[0]!.slot.state).toBe('VACANT');
+    // ...while the genuinely productive one, at equal tenure, keeps theirs.
+    expect(after.couriers[1]!.slot.state).toBe('FILLED');
   });
 });

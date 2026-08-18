@@ -108,6 +108,33 @@ export const COMPLETION_REWARD: Readonly<Record<CompletionRoleType, number>> = {
 export const SUPPORT_TASK_FRICTION_BAR = 0.9;
 
 /**
+ * Real, measured typical career `completionRatio` per role (2026-08-18) — the same numbers
+ * this file's own header already documents in prose (Miller/Baker's zero-sum competitive task
+ * completes ~54-58% of the time; the four friction-bar roles complete ~97-100%), named here so
+ * a caller can compare one occupant's REAL performance against what's normal FOR THEIR OWN
+ * ROLE, not a single global bar that would be meaningless across two structurally different
+ * task difficulties (the exact reasoning `COMPLETION_REWARD` above is calibrated per-type for,
+ * reused here for the same underlying reason).
+ *
+ * Built for `multiRoleConscription.ts`'s eviction-preference: an occupant only counts as
+ * genuinely "established" (protected from `conscriptionFromOtherRole`) if they're both
+ * tenured AND actually performing at or near their own role's typical rate — a long-tenured
+ * but chronically underperforming occupant should not get the same protection as a
+ * long-tenured, genuinely productive one. See `world.ts`'s own wiring for how
+ * `completionRatio(...) / TYPICAL_COMPLETION_RATIO[role]` becomes a single, role-agnostic
+ * normalized score (1.0 = exactly typical) that the eviction-preference logic can compare
+ * against one shared bar regardless of which role an occupant holds.
+ */
+export const TYPICAL_COMPLETION_RATIO: Readonly<Record<CompletionRoleType, number>> = {
+  miller: 0.55,
+  baker: 0.55,
+  courier: 0.97,
+  journalist: 0.97,
+  detective: 0.97,
+  importExport: 0.97,
+};
+
+/**
  * Average of every OTHER entry in `values` (excludes `values[index]` itself) — the same
  * "average rival" comparison `millers.ts`/`bakers.ts` already compute internally for their
  * own competitive dynamics, exposed here so a completion task can reuse it rather than

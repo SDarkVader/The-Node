@@ -1,7 +1,8 @@
 import { createWorld, stepWorld, type World, type WorldConfig } from '../world/world.js';
-import { stepMultiRoleConscriptionDay, ESTABLISHED_TENURE_DAYS, type RoleGroupState } from './multiRoleConscription.js';
+import { stepMultiRoleConscriptionDay, ESTABLISHED_TENURE_DAYS, PERFORMANCE_BAR, type RoleGroupState } from './multiRoleConscription.js';
 import { dailyChurnFromMonthly, type VacancyParams } from '../engine/vacancy.js';
 import { DEFAULTS } from './vacancyHarness.js';
+import { TYPICAL_COMPLETION_RATIO, type CompletionStats, type CompletionRoleType } from '../engine/roleCompletion.js';
 import { mulberry32 } from './rng.js';
 
 /**
@@ -35,6 +36,17 @@ import { mulberry32 } from './rng.js';
  * before every `stepWorld` call in the "without" arm — that reset is what actually neutralizes
  * SELECTION (the real counterfactual manipulation) — but it is never read back out as a
  * measurement again.
+ *
+ * SECOND STALENESS BUG CAUGHT (2026-08-18, same day the performance dimension was added):
+ * once `world.ts` started passing real `occupantPerformance` unconditionally (from
+ * `completionStats`, never optional the way `occupantTenure` was designed to be skippable),
+ * `neutralizeTenure` alone stopped being a true "no eviction preference at all" baseline —
+ * the "without" arm still had a live, real performance-based preference running underneath,
+ * silently understating the measured effect. Fixed by also resetting `completionStats` to the
+ * exact "meets PERFORMANCE_BAR, no more" value for every FILLED slot, mirroring
+ * `ESTABLISHED_TENURE_DAYS`'s own "reset to exactly the bar" convention — caught by comparing
+ * this run's numbers against the pre-performance-dimension measurement and noticing the
+ * "without" arm's own mean tenure had moved, which it should never do on its own.
  */
 
 export interface EvictionProtectionRunResult {
@@ -60,7 +72,25 @@ function slotViews(w: World): SlotView[] {
   }));
 }
 
-function neutralizeTenure(world: World): World {
+/** The exact-bar `CompletionStats` for one role — completionRatio/typical lands precisely at
+ *  PERFORMANCE_BAR, the same "reset to exactly the threshold, no more" convention
+ *  ESTABLISHED_TENURE_DAYS itself uses for daysInRole below. */
+function neutralCompletionStats(role: CompletionRoleType): CompletionStats {
+  const attempts = 100;
+  return { attempts, completions: Math.round(PERFORMANCE_BAR * TYPICAL_COMPLETION_RATIO[role] * attempts) };
+}
+
+/** Neutralizes BOTH dimensions the 2026-08-18 eviction preference can act on — tenure AND
+ *  real performance — so the "without" arm is a true "as if this whole feature didn't exist"
+ *  baseline, not just half of one. See this module's header for the staleness bug this fixes. */
+function neutralizeEvictionPreference(world: World): World {
+  const completionStats: Record<string, CompletionStats> = { ...world.completionStats };
+  for (const m of world.millers) completionStats[m.buildingId] = neutralCompletionStats('miller');
+  for (const b of world.bakers) completionStats[b.buildingId] = neutralCompletionStats('baker');
+  for (const c of world.couriers) completionStats[c.buildingId] = neutralCompletionStats('courier');
+  for (const j of world.journalists) completionStats[j.buildingId] = neutralCompletionStats('journalist');
+  for (const d of world.detectives) completionStats[d.buildingId] = neutralCompletionStats('detective');
+  for (const x of world.importExporters) completionStats[x.buildingId] = neutralCompletionStats('importExport');
   return {
     ...world,
     millers: world.millers.map((m) => ({ ...m, daysInRole: ESTABLISHED_TENURE_DAYS })),
@@ -69,6 +99,7 @@ function neutralizeTenure(world: World): World {
     journalists: world.journalists.map((j) => ({ ...j, daysInRole: ESTABLISHED_TENURE_DAYS })),
     detectives: world.detectives.map((d) => ({ ...d, daysInRole: ESTABLISHED_TENURE_DAYS })),
     importExporters: world.importExporters.map((x) => ({ ...x, daysInRole: ESTABLISHED_TENURE_DAYS })),
+    completionStats,
   };
 }
 
@@ -176,7 +207,7 @@ export function runEvictionProtectionComparison(
     withoutPreference.meanFilledTenure.push(ledger.meanFilled());
     withoutPreference.economicHealthSeries.push(steppedWithout.economicHealth);
     withoutPreference.totalAccountedFor.push(steppedWithout.grifters.length + totalFilledCount(steppedWithout));
-    withoutWorld = neutralizeTenure(steppedWithout); // neutralizes SELECTION for the next tick only
+    withoutWorld = neutralizeEvictionPreference(steppedWithout); // neutralizes SELECTION for the next tick only
   }
 
   return { withPreference, withoutPreference };

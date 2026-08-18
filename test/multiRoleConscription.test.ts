@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../src/sim/rng.js';
 import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../src/engine/vacancy.js';
 import { DEFAULTS } from '../src/sim/vacancyHarness.js';
-import { stepMultiRoleConscriptionDay, ESTABLISHED_TENURE_DAYS, type RoleGroupState } from '../src/sim/multiRoleConscription.js';
+import { stepMultiRoleConscriptionDay, ESTABLISHED_TENURE_DAYS, PERFORMANCE_BAR, type RoleGroupState } from '../src/sim/multiRoleConscription.js';
 
 /**
  * Regression tests for the N-role conscription generalization (2026-08-11, the 5-role
@@ -356,6 +356,104 @@ describe('stepMultiRoleConscriptionDay — occupantTenure eviction preference (2
           slots: sourceSlots,
           params: sourceParams(),
           ...(withTenure ? { occupantTenure: [ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS] } : {}),
+        },
+        { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+      ];
+    };
+    const runTally = (groups: RoleGroupState[], seed: number) => {
+      const rng = mulberry32(seed);
+      let working = groups;
+      const tally: Record<string, number> = {};
+      for (let day = 0; day < 200; day++) {
+        const result = stepMultiRoleConscriptionDay(working, 0, day, 0, rng);
+        working = result.roleGroups;
+        for (const e of result.events) tally[e.type] = (tally[e.type] ?? 0) + 1;
+      }
+      return tally;
+    };
+    for (const seed of [1, 2, 3]) {
+      expect(runTally(buildGroups(false), seed)).toEqual(runTally(buildGroups(true), seed));
+    }
+  });
+});
+
+describe('stepMultiRoleConscriptionDay — occupantPerformance eviction preference (2026-08-18, "grinders get more mobility than lazy players")', () => {
+  function sourceParams(): VacancyParams {
+    return { ...makeParams(4, 20, 999), pDaily: 0 };
+  }
+  function targetParams(slotCount: number): VacancyParams {
+    return { ...makeParams(slotCount, 20, 0), pDaily: 0 };
+  }
+
+  it('a tenured but chronically underperforming candidate is evicted before an equally-tenured, high-performing one', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+      const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+      const groups: RoleGroupState[] = [
+        {
+          roleId: 'source',
+          slots: sourceSlots,
+          params: sourceParams(),
+          // All four are equally tenured (established); only performance differs.
+          occupantTenure: [ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS],
+          occupantPerformance: [0, 0, PERFORMANCE_BAR, PERFORMANCE_BAR],
+        },
+        { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+      ];
+      const rng = mulberry32(seed);
+      const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+      const sourceAfter = result.roleGroups.find((g) => g.roleId === 'source')!.slots;
+      const underperformerVacated = sourceAfter.slice(0, 2).filter((s) => s.state === 'VACANT').length;
+      const performerVacated = sourceAfter.slice(2, 4).filter((s) => s.state === 'VACANT').length;
+      expect(underperformerVacated).toBe(1);
+      expect(performerVacated).toBe(0);
+    }
+  });
+
+  it('a genuinely high-performing but freshly-started candidate is STILL evicted before a tenured, established one — tenure and performance are both required, neither alone is enough', () => {
+    const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+    const sourceSlots: RoleSlot[] = Array.from({ length: 2 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [
+      {
+        roleId: 'source',
+        slots: sourceSlots,
+        params: sourceParams(),
+        occupantTenure: [0, ESTABLISHED_TENURE_DAYS], // index 0: new hire; index 1: veteran
+        occupantPerformance: [1, PERFORMANCE_BAR], // index 0: perfect performer despite being new
+      },
+      { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+    ];
+    const rng = mulberry32(7);
+    const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+    const sourceAfter = result.roleGroups.find((g) => g.roleId === 'source')!.slots;
+    expect(sourceAfter[0]!.state).toBe('VACANT'); // the new hire, despite perfect performance
+    expect(sourceAfter[1]!.state).toBe('FILLED'); // the tenured veteran survives
+  });
+
+  it('falls back to the full candidate pool once nobody clears both bars — never stalls', () => {
+    const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+    const sourceSlots: RoleSlot[] = Array.from({ length: 3 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [
+      { roleId: 'source', slots: sourceSlots, params: sourceParams(), occupantTenure: [0, 0, 0], occupantPerformance: [0, 0, 0] },
+      { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+    ];
+    const rng = mulberry32(9);
+    const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+    const evictionEvents = result.events.filter((e) => e.type === 'conscriptionFromOtherRole');
+    expect(evictionEvents.length).toBe(1);
+  });
+
+  it('omitting occupantPerformance entirely reproduces the exact same event tally as the tenure-only behavior — the backward-compatibility guarantee', () => {
+    const buildGroups = (withPerformance: boolean): RoleGroupState[] => {
+      const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+      const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+      return [
+        {
+          roleId: 'source',
+          slots: sourceSlots,
+          params: sourceParams(),
+          occupantTenure: [0, 0, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS],
+          ...(withPerformance ? { occupantPerformance: [PERFORMANCE_BAR, PERFORMANCE_BAR, PERFORMANCE_BAR, PERFORMANCE_BAR] } : {}),
         },
         { roleId: 'target', slots: targetSlots, params: targetParams(1) },
       ];

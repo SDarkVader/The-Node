@@ -71,7 +71,36 @@ export interface RoleGroupState {
    *  cleared the bar, selection falls back to plain uniform random (no permanent ranking
    *  even among established players, same "no permanent zero-state"-adjacent discipline). */
   occupantTenure?: readonly number[];
+  /** Per-slot REAL performance, normalized against this occupant's own role's typical
+   *  `completionRatio` (1.0 = exactly typical; see `engine/roleCompletion.ts`'s
+   *  `TYPICAL_COMPLETION_RATIO`) — parallel array to `slots`, meaningful only where FILLED.
+   *  Optional; omitted (every pre-2026-08-18 caller, and any caller that only wants the
+   *  original tenure-only preference) reproduces the exact prior eviction-preference
+   *  behavior — tenure alone decides "established."
+   *
+   *  2026-08-18, user directive: *"grinders should have greater upward mobility than lazy
+   *  players... activity is the fastest path to reward, inactivity over time should bite."*
+   *  `occupantTenure` alone can't express this — it only measures how LONG someone has held
+   *  a slot, not whether they've actually been doing the job. This field closes that gap:
+   *  an occupant now only counts as "established" (protected) if they clear BOTH the tenure
+   *  floor AND this performance floor. A long-tenured but chronically underperforming
+   *  occupant loses the protection a long-tenured, genuinely productive one keeps — the
+   *  "bite" lands on a bonus that was never guaranteed to begin with (the original uniform-
+   *  random floor everyone already had), never on anything already earned, keeping this the
+   *  same "preference on top of a neutral floor" shape as everything else built this
+   *  session, not a new subtraction constraint 6 would forbid. */
+  occupantPerformance?: readonly number[];
 }
+
+/** [CALIBRATED — provisional, 2026-08-18] The normalized-performance floor (see
+ *  `occupantPerformance` above) an occupant must clear, on top of `ESTABLISHED_TENURE_DAYS`,
+ *  to count as "established" for eviction-preference purposes. 1.0 would mean "at or above
+ *  your own role's typical completion rate" with zero slack for an ordinary bad stretch;
+ *  0.8 gives real slack (20% below typical) before the protection is lost — filters
+ *  chronic underperformance, not ordinary variance. Exported standalone, same reasoning as
+ *  `ESTABLISHED_TENURE_DAYS`: a dev can retune it without touching the selection logic. No
+ *  simulation run has calibrated this exact number yet. */
+export const PERFORMANCE_BAR = 0.8;
 
 /** [CALIBRATED — provisional, 2026-08-18] How many consecutive days a role-holder must have
  *  held their current slot before counting as "established" for `conscriptionFromOtherRole`
@@ -209,15 +238,22 @@ export function stepMultiRoleConscriptionDay(
 
       // BACKSTOPPED
       if (tau - params.tHard >= conscriptionDelay) {
-        const otherCandidates: { gi: number; si: number; tenure: number }[] = [];
+        const otherCandidates: { gi: number; si: number; tenure: number; performance: number }[] = [];
         for (let oi = 0; oi < working.length; oi++) {
           if (oi === gi) continue;
           working[oi]!.forEach((s, si) => {
-            // Missing tenure data defaults to ESTABLISHED_TENURE_DAYS (i.e. "already
-            // established, no preference applied") — the one value that makes the pool
-            // below collapse back to every candidate, reproducing old byte-identical
-            // behavior whenever a caller doesn't pass occupantTenure at all.
-            if (s.state === 'FILLED') otherCandidates.push({ gi: oi, si, tenure: roleGroups[oi]!.occupantTenure?.[si] ?? ESTABLISHED_TENURE_DAYS });
+            // Missing tenure/performance data defaults to their own bar exactly (i.e.
+            // "already established, no preference applied") — the one value that makes the
+            // pool below collapse back to every candidate, reproducing old byte-identical
+            // behavior whenever a caller doesn't pass occupantTenure/occupantPerformance.
+            if (s.state === 'FILLED') {
+              otherCandidates.push({
+                gi: oi,
+                si,
+                tenure: roleGroups[oi]!.occupantTenure?.[si] ?? ESTABLISHED_TENURE_DAYS,
+                performance: roleGroups[oi]!.occupantPerformance?.[si] ?? PERFORMANCE_BAR,
+              });
+            }
           });
         }
         const effectiveGrifterPool = Math.max(0, grifterPoolSize + grifterPoolDelta);
@@ -230,10 +266,12 @@ export function stepMultiRoleConscriptionDay(
         }
         const draftFromOther = rng() < otherCandidates.length / denom;
         if (draftFromOther) {
-          // Prefer whoever hasn't cleared ESTABLISHED_TENURE_DAYS yet; only fall back to
-          // the full candidate pool once nobody qualifies as "not yet established" — see
-          // occupantTenure's own doc comment above for why this is preference, not immunity.
-          const notYetEstablished = otherCandidates.filter((c) => c.tenure < ESTABLISHED_TENURE_DAYS);
+          // Prefer whoever hasn't cleared BOTH bars yet — tenure AND real performance; only
+          // fall back to the full candidate pool once nobody qualifies as "not yet
+          // established." See occupantTenure's/occupantPerformance's own doc comments above
+          // for why this is preference, not immunity, and why performance was added
+          // alongside tenure rather than replacing it.
+          const notYetEstablished = otherCandidates.filter((c) => c.tenure < ESTABLISHED_TENURE_DAYS || c.performance < PERFORMANCE_BAR);
           const evictionPool = notYetEstablished.length > 0 ? notYetEstablished : otherCandidates;
           const pick = evictionPool[Math.floor(rng() * evictionPool.length)]!;
           const fromRoleId = roleGroups[pick.gi]!.roleId;
@@ -266,6 +304,7 @@ export function stepMultiRoleConscriptionDay(
       params: g.params,
       minReputationLevelForFill: g.minReputationLevelForFill,
       occupantTenure: g.occupantTenure,
+      occupantPerformance: g.occupantPerformance,
     })),
     grifterPoolDelta,
     events,
