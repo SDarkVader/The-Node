@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",     "x": 0,    "y": 0,   "w": 640, "h": 600 },
+    { "file": "Ember.dc.html",    "x": 700,  "y": 0,   "w": 840, "h": 600 },
+    { "file": "Signal.dc.html",   "x": 1600, "y": 0,   "w": 840, "h": 600 },
+    { "file": "Phosphor.dc.html", "x": 700,  "y": 660, "w": 840, "h": 600 },
+    { "file": "Ledger.dc.html",   "x": 1600, "y": 660, "w": 840, "h": 600 }
+  ],
+  "annotations": [
+    { "id": "range-toggle", "x": 0, "y": 660, "w": 640,
+      "text": "Each board carries its own tweaks:\n\n• auto-ranged vs raw 0-1 — the dynamic-range fix\n• tension on/off\n• hot / cool ramp ends\n• cell width\n\nChange them per board; whatever you land on becomes the palette constants in playtestRenderer.ts." }
+  ],
+  "launch": { "view": "canvas" }
+}

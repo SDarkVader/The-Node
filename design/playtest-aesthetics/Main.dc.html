@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffab3e; } a:hover { color: #d9c9b0; }
+  </style>
+</helmet>
+<div style="width:640px;height:600px;background:#0d0a08;color:#d9c9b0;font-family:'JetBrains Mono',ui-monospace,monospace;padding:34px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+
+  <div style="display:flex;flex-direction:column;gap:7px">
+    <div style="font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#7d6f5f">NODE — playtest harness</div>
+    <div style="font-size:27px;font-weight:700;line-height:1.15">Four ways the node<br>could look</div>
+  </div>
+
+  <div style="font-size:11.5px;line-height:1.65;color:#a8977f">
+    Every cell is one real plot from <span style="color:#d9c9b0">seed 7, day 220</span> — 62 buildings,
+    38 held, 7 backstopped, 1 vacant. Nothing here is invented for the mockup, so what you pick is
+    what the terminal actually renders.
+  </div>
+
+  <div style="height:1px;background:#4a4038;opacity:.6"></div>
+
+  <div style="display:flex;flex-direction:column;gap:13px">
+    <div style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#7d6f5f">The problem each one has to solve</div>
+    <div style="font-size:11.5px;line-height:1.65;color:#a8977f">
+      The two signals driving colour barely move. District tension sits at
+      <span style="color:#ffab3e">0.08</span>; economic heat spans
+      <span style="color:#ffab3e">0&#8202;–&#8202;0.5</span> and is <span style="color:#d9c9b0">zero for every support
+      role</span> while the district is healthy. On a naive 0–1 ramp the whole node reads flat and dead.
+    </div>
+    <div style="font-size:11.5px;line-height:1.65;color:#a8977f">
+      Toggle <span style="color:#d9c9b0">auto-ranged</span> against <span style="color:#d9c9b0">raw 0–1</span>
+      on any board to see the difference. Auto-ranging is the fix; the tradeoff is that a genuinely calm
+      node stops looking calm.
+    </div>
+  </div>
+
+  <div style="height:1px;background:#4a4038;opacity:.6"></div>
+
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#7d6f5f">What the map already tells you</div>
+    <div style="font-size:11.5px;line-height:1.65;color:#a8977f">
+      Millers are the only consistently hot points on the board. That falls out of the economics rather
+      than the palette — Miller is the role the design keeps deliberately starved, and it turns out to be
+      the thing your eye lands on first without anyone deciding it should.
+    </div>
+  </div>
+
+  <div style="flex-grow:1"></div>
+
+  <div style="display:flex;gap:26px;font-size:10.5px;color:#7d6f5f;letter-spacing:.06em">
+    <span><span style="color:#ffab3e">Ember</span> lamplit</span>
+    <span><span style="color:#8ceaff">Signal</span> observed</span>
+    <span><span style="color:#ffc247">Phosphor</span> CRT</span>
+    <span><span style="color:#b4451f">Ledger</span> paper</span>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

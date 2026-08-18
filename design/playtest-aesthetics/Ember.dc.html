@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffab3e; } a:hover { color: #d9c9b0; }
+    .scan{display:none;}
+  </style>
+</helmet>
+<div style="position:relative;width:840px;height:600px;background:#0d0a08;font-family:'JetBrains Mono', ui-monospace, monospace;padding:26px 28px;box-sizing:border-box;color:#d9c9b0">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+    <div style="font-size:15px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">Ember</div>
+    <div style="font-size:11px;color:#7d6f5f;letter-spacing:.08em">{{modeLabel}}</div>
+  </div>
+  <div style="font-size:11px;color:#7d6f5f;margin-bottom:16px;max-width:520px;line-height:1.5">Warm, low, lamplit. The settlement reads as a town at dusk; scarcity glows.</div>
+
+  <div style="display:flex;gap:30px;align-items:flex-start">
+    <div style="position:relative">
+      <sc-for list="{{rows}}" as="row" hint-placeholder-count="12">
+        <div style="display:flex;line-height:1">
+          <sc-for list="{{row.cells}}" as="c" hint-placeholder-count="14">
+            <span style="{{c.style}}">{{c.ch}}</span>
+          </sc-for>
+        </div>
+      </sc-for>
+      <div class="scan"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px;font-size:11.5px;min-width:236px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:.04em;line-height:1">Day 220</div>
+      <div style="height:1px;background:#4a4038;opacity:.5"></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#7d6f5f">Population</span><span>64</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#7d6f5f">Grifters</span><span>26</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#7d6f5f">Roles held</span><span>38/46</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#7d6f5f">Flour</span><span>0.050</span></div>
+      <div style="height:1px;background:#4a4038;opacity:.5"></div>
+      <sc-for list="{{meters}}" as="m" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#7d6f5f">{{m.name}}</span><span>{{m.value}}</span></div>
+          <div style="height:5px;background:#4a4038;opacity:.85;border-radius:1px;overflow:hidden">
+            <div style="{{m.barStyle}}"></div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="height:1px;background:#4a4038;opacity:.5"></div>
+      <div style="color:#7d6f5f;line-height:1.7">
+        <div><span style="color:#ffab3e;font-weight:700">M</span> miller &nbsp; <span style="color:#d9c9b0">B</span> baker &nbsp; <span style="color:#d9c9b0">C</span> courier</div>
+        <div><span style="color:#d9c9b0">J</span> journalist &nbsp; <span style="color:#d9c9b0">D</span> detective &nbsp; <span style="color:#d9c9b0">X</span> import</div>
+        <div><span style="color:#efdcae;font-weight:700">#</span> the Wall &nbsp; <span style="color:#b09056">+</span> plaza</div>
+        <div>UPPER held &nbsp; <span style="opacity:.5">dim backstopped</span> &nbsp; <span style="opacity:.3">lower vacant</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{
+  "rangeMode": {"editor":"enum","options":["auto-ranged","raw 0-1"],"default":"auto-ranged","section":"Signal"},
+  "showTension": {"editor":"boolean","default":true,"section":"Signal"},
+  "hot": {"editor":"color","default":"#ffab3e","section":"Palette"},
+  "cool": {"editor":"color","default":"#4a6b7a","section":"Palette"},
+  "cellW": {"editor":"range","min":12,"max":30,"step":1,"default":20,"unit":"px","section":"Grid"}
+}'>
+class Component extends DCLogic {
+  hexToRgb(h) {
+    const s = String(h).replace('#','');
+    const n = s.length === 3 ? s.split('').map(c=>c+c).join('') : s;
+    return [parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)];
+  }
+  mix(a, b, t) {
+    const A = this.hexToRgb(a), B = this.hexToRgb(b);
+    const u = Math.max(0, Math.min(1, t));
+    return 'rgb(' + A.map((v,i)=>Math.round(v+(B[i]-v)*u)).join(',') + ')';
+  }
+  renderVals() {
+    const grid = [". . . . D:F:0 . _s .:N:0 M:F:0.497 X:F:0 . . . .",". . . . . . .:N:0 _s M:B:0 _s X:F:0 . . .",". . _s _s .:N:0 _s .:N:0 D:F:0 X:F:0 J:B:0 J:F:0 _s _s .",". C:F:0 . _s D:F:0 B:B:0 M:F:0.498 .:N:0 J:B:0 B:F:0.08 .:N:0 X:F:0 . J:F:0","M:F:0.488 C:F:0 _s .:N:0 _s .:N:0 D:F:0 _p _s M:F:0.489 M:F:0.49 _s C:F:0 M:F:0.474","_s C:B:0 _s . .:N:0 _s _s _s C:F:0 _s B:F:0.084 _s X:F:0 B:F:0.072","@ . . _s . _s .:N:0 B:B:0 C:V:0 .:N:0 . _s D:F:0 .",". . . . X:F:0 J:F:0 .:N:0 M:F:0.499 J:F:0 M:F:0.498 D:B:0 .:N:0 . .",". . . . . _s .:N:0 _s B:F:0.086 _s C:F:0 . . .",". . . . . . B:F:0.081 . _s . . . . .",". . . . . . .:N:0 D:F:0 _s . . . . .",". . . . . . . B:F:0.061 . . . . . ."];
+    const hot = this.props.hot ?? '#ffab3e';
+    const cool = this.props.cool ?? '#4a6b7a';
+    const w = this.props.cellW ?? 20;
+    const ranged = (this.props.rangeMode ?? 'auto-ranged') === 'auto-ranged';
+    const showTension = this.props.showTension !== false;
+    // THE dynamic-range decision, made visible: observed heat tops out near 0.5 and
+    // district tension sits near 0.08, so a naive 0..1 ramp renders the whole node flat.
+    const HEAT_OBSERVED_MAX = 0.5;
+    const TENSION_OBSERVED_MAX = 0.25;
+    const tension = showTension ? (ranged ? 0.08 / TENSION_OBSERVED_MAX : 0.08) : 0;
+    const groundCell = this.mix('#14100c', '#43170f', tension);
+    const base = 'display:inline-block;width:' + w + 'px;height:' + Math.round(w*1.35) + 'px;line-height:' + Math.round(w*1.35) + 'px;text-align:center;font-size:' + Math.round(w*0.78) + 'px;';
+    const STATE_ALPHA = { F: 1, B: 0.5, V: 0.3, N: 0.42 };
+
+    const rows = grid.map((line) => ({
+      cells: line.split(' ').map((tok) => {
+        if (tok === '.') return { ch: '\u00a0', style: base + 'background:transparent' };
+        if (tok === '@') return { ch: '#', style: base + 'background:' + groundCell + ';color:#efdcae;font-weight:700' };
+        if (tok === '_s') return { ch: ':', style: base + 'background:' + groundCell + ';color:#2f2822' };
+        if (tok === '_p') return { ch: '+', style: base + 'background:' + groundCell + ';color:#b09056' };
+        const [g, st, h] = tok.split(':');
+        const heat = parseFloat(h) || 0;
+        if (g === '.') return { ch: '.', style: base + 'background:' + groundCell + ';color:#4a4038' };
+        const t = ranged ? heat / HEAT_OBSERVED_MAX : heat;
+        const colour = this.mix(cool, hot, t);
+        const alpha = STATE_ALPHA[st] ?? 1;
+        const weight = st === 'F' && t > 0.6 ? ';font-weight:700' : '';
+        return {
+          ch: st === 'V' ? g.toLowerCase() : g,
+          style: base + 'background:' + groundCell + ';color:' + colour + ';opacity:' + alpha + weight,
+        };
+      }),
+    }));
+
+    const meter = (name, value, max) => ({
+      name, value: value.toFixed(3),
+      barStyle: 'height:100%;width:' + Math.round((value/max)*100) + '%;background:' + this.mix(cool, hot, value/max),
+    });
+
+    return {
+      rows,
+      modeLabel: ranged ? 'auto-ranged signal' : 'raw 0-1 signal',
+      meters: [
+        meter('Health', 0.896, 1),
+        meter('Health w/ exp', 0.809, 1),
+        meter('Tension', 0.08, ranged ? 0.25 : 1),
+        meter('Gini', 0.662, 1),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
