@@ -3674,3 +3674,30 @@ steady-state effect is 0.37% relative on mean experience, 0.00074 on
 measurement, not just intent. 4 new regression tests lock the actual numbers in (most fills
 land zero, non-zero fills stay small, aggregate diff stays under 2%, floor never produces a
 worse outcome than no floor). 553 tests total, typecheck clean.
+
+---
+
+**2026-08-18 — `V_i`/constraint-6 open question (flagged 2026-08-13, line ~3603 above)
+resolved: rejected as specified, constraint 6 unrevised.** Direct answer to the user's
+instruction *"answer the V_i / constraint 6 question."* No code changed — this is a design
+decision, not a build.
+
+The external v8 material's `V_i` "reputation velocity" mechanic (conscription-shielded above
+0.5, shield drops below 0.5) doesn't ship, for two reasons:
+1. A shield that switches off below a threshold requires reputation to fall — a demotion.
+   Constraint 6 forbids that outright; this was already known before this pass.
+2. New this pass: even made grant-only and *permanent* (shield can be gained, never lost),
+   the mechanic is independently dangerous to constraint 2 (no permanent zero-state). A
+   population of permanently-unconscriptable players can only grow over a shard's lifetime,
+   which can eventually starve the shard's own backstop/conscription mechanism of the
+   candidates it's allowed to draft from — a slower, structural route to the exact zero-state
+   failure constraint 2 exists to rule out. Grant-only reputation and permanent immunity from
+   the shard's own survival mechanism don't compose safely at any threshold.
+
+**Proposed, explicitly NOT built**: extend the already-shipped "prefer lowest-standing eligible
+candidate first, longest wait" conscription selection bias (built this session for grifter
+conscription) to established players more broadly. Preference, not immunity — real protection
+from being drafted ahead of a green candidate, without ever making anyone permanently
+un-pickable, and it degrades gracefully under population pressure instead of failing
+catastrophically once too many players accumulate an un-revocable status. Needs the user's
+explicit go-ahead before any of it gets built.

@@ -6,6 +6,36 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — V_i / constraint 6 resolved: rejected as specified
+
+Direct answer to the user's instruction: *"answer the V_i / constraint 6 question."* The
+`V_i` "reputation velocity" mechanic from the external v8 material (conscription-shielded
+above 0.5, shield drops below 0.5) was left open in the 2026-08-13 HANDOVER entry. Resolution:
+**no, don't build it as specified — constraint 6 stays unrevised.**
+
+Two reasons:
+1. The shield switching off below a threshold requires reputation to fall. That's a demotion.
+   Constraint 6 (reputation may only ever grant, never remove) forbids it directly — no
+   ambiguity here, this was already known before this pass.
+2. New this pass: even a grant-only, *permanent* version of a conscription shield is dangerous
+   to constraint 2 (no permanent zero-state) on its own, independent of constraint 6. A
+   monotonically-growing population of permanently-unconscriptable players can, given enough
+   shard lifetime, shrink the pool the shard's own backstop/conscription mechanism is allowed
+   to draft from — a slower, structural path to the same zero-state failure constraint 2 was
+   written to prevent. Grant-only reputation and a permanent immunity-from-the-shard's-own-
+   survival-mechanism don't compose safely, regardless of the threshold chosen.
+
+Proposed, NOT built: extend the already-shipped "prefer lowest-standing eligible candidate
+first, longest wait" conscription selection bias (built this session for grifter conscription)
+to established players more broadly. Preference instead of immunity — real felt protection
+without ever making anyone permanently un-pickable, and it degrades gracefully under pressure
+instead of failing catastrophically once too many players accumulate a status that can never be
+taken back. Explicitly not implemented this pass; needs the user's confirmation first, since it
+was offered as a future direction, not a build request. `docs/HANDOVER.md` updated to record
+the resolution instead of leaving it open.
+
+---
+
 ## 2026-08-13 — Experience floor's real effect measured, not just corrected by feel
 
 Direct follow-up to the same-day cap correction (previous entry): *"simulate the dip

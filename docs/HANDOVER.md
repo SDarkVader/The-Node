@@ -339,11 +339,26 @@ findings about the artifacts themselves stand independently of that). **New CLAU
 added as a direct result, now at the top of the file**: *"Assumption is the mother of all fuck
 ups"* — bring up real issues with evidence, don't hold up real work on something checkable.
 
-**One real structural question from that material is still open, not resolved either
-direction**: a `V_i` "reputation velocity" mechanic (conscription-shielded above 0.5, not
-below) requires reputation to be able to fall, which conflicts with constraint 6
-(grant-only, added 2026-08-08). Whether that's a deliberate revision of constraint 6 is the
-user's call, not resolved here.
+**The `V_i`/constraint-6 question is resolved (2026-08-18, user directive "answer the V_i /
+constraint 6 question"): rejected as specified, constraint 6 stays unrevised.** Two reasons,
+not just one:
+1. The known one — a shield that switches off below a threshold requires the underlying value
+   to be able to fall. That's a demotion. Constraint 6 forbids it outright.
+2. A sharper one, derived this pass — a grant-only *permanent* conscription shield is also a
+   structural threat to constraint 2 (no permanent zero-state), not just constraint 6. If the
+   shield can only be gained and never lost, the population of permanently-unconscriptable
+   players can only grow. Given enough shard lifetime, that pool can crowd out the shard's own
+   backstop/conscription draft pool — a new, slower path to the exact zero-state failure
+   constraint 2 exists to rule out. Grant-only and permanent-immunity-from-the-shard's-own-
+   survival-mechanism don't coexist safely.
+
+**Buildable alternative, offered but NOT built or confirmed** (do not build without the user
+explicitly asking): extend the already-shipped "prefer lowest-standing eligible candidate
+first, longest wait" conscription selection bias (built this session for grifters) more
+broadly. Preference, not immunity — gives established players real, felt protection from being
+drafted ahead of a green candidate, without ever making anyone permanently un-pickable, and it
+degrades gracefully under population pressure instead of failing catastrophically once too many
+players accumulate a status that can never be taken back.
 
 **What DID get built and tested from that material**: `personalResourceStock`
 (`src/engine/personalResourceStock.ts`) — closes the real, previously-flagged gap
