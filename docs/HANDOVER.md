@@ -364,10 +364,25 @@ to draw from. User's own fix: *"perhaps only if you've done open shift work as a
 scale by real, role-SPECIFIC Shift Cover practice instead. Built and wired end-to-end:
 `src/engine/experienceFloor.ts`, `GrifterSlot.shiftsCoveredByRole` (per-role, not the flat
 `reputationProgress` counter), threaded through the conscription event loop for Miller/Baker
-fills. 9 new tests including a full world-level round-trip. **549 tests total, typecheck
-clean, all committed and pushed to `main`.**
+fills. 9 new tests including a full world-level round-trip.
+
+**Then, caught again — same day, before it caused any real damage**: user flagged the cap
+itself as a real compounding-advantage risk, not a style nitpick — *"if a lvl 2 player had a
+distinct advantage over a grifter after the backstop... the experienced become the only
+players."* Clarified directly that selection was never actually affected (still pure
+lowest-level/longest-wait, zero input from shift history — nobody skips the queue), but the
+boost's SIZE was a legitimate, unmeasured gap. Cut hard: `EXPERIENCE_FLOOR_MAX_FRACTION`
+0.5→0.15, `EXPERIENCE_FLOOR_PER_SHIFT` scaled to match (still 5 real shifts to max out the now
+much smaller ceiling). Both remain `[CALIBRATED — provisional]` — a considered correction
+under real time constraints, not a measured one. **549 tests total (unchanged — they reference
+the constants symbolically), typecheck clean, all committed and pushed to `main`.**
 
 **Next, in rough priority order:**
+0. The experience-floor constants (`EXPERIENCE_FLOOR_MAX_FRACTION`/`_PER_SHIFT`) are still
+   `[CALIBRATED — provisional]` — a considered correction, not a simulated one. Real next step:
+   measure the actual size of the productivity dip with/without the floor at the new, smaller
+   cap before trusting it further, same "simulate before trusting" discipline as every other
+   constant in this repo.
 1. The `V_i`/constraint-6 question above — needs the user's answer before any velocity-shield
    mechanic gets built.
 2. The level-2 reputation-gate mechanism itself — still genuinely open, and now has a second

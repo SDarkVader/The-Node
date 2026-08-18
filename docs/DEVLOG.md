@@ -6,6 +6,40 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Experience floor cut hard: 50%→15% of EXPERIENCE_CAP, same day it shipped
+
+User caught a real risk in the experience-floor mechanic (previous entry) before it had a
+chance to cause damage: *"if a lvl 2 player had a distinct advantage over a grifter after the
+backstop, then we're also giving people an opportunity to just jump the queue and grifters
+won't be able to get anywhere... otherwise the experienced become the only players."*
+
+Two separate things, both worth stating plainly rather than just fixing quietly:
+
+1. **Selection was never actually affected** — worth clarifying directly, since this may have
+   been the bigger part of the worry. `stepWorld`'s conscription event loop picks WHO fills a
+   vacant Miller/Baker slot purely by lowest reputation level then longest wait;
+   `shiftsCoveredByRole` has zero input into that choice. Nobody skips the queue because of
+   this mechanism.
+2. **But the SIZE of the starting boost was a real, legitimate gap** — 50% of `EXPERIENCE_CAP`,
+   reachable in just 5 shift-covers, was large enough to stop reading as "a cushion" and start
+   reading as "a real edge," the same compounding-advantage shape constraint 6 exists to rule
+   out elsewhere in this design. Never simulated before shipping — a guess, not a measurement,
+   and the guess was too generous.
+
+**Cut hard, not trimmed**: `EXPERIENCE_FLOOR_MAX_FRACTION` 0.5→0.15, `EXPERIENCE_FLOOR_PER_SHIFT`
+scaled down to match (still exactly 5 real shift-covers to max out the now-much-smaller
+ceiling — genuine practice still means something, but the ceiling itself can now only ever be
+a small cushion). Both constants remain `[CALIBRATED — provisional]` — this is a considered,
+conservative correction made under real time constraints, not a measured one; still needs a
+real simulation before being trusted further, same discipline as everything else in this file.
+All 549 tests still pass unchanged (they reference the constants symbolically, not hardcoded
+numbers — confirms the test suite itself was built correctly the first time, even though the
+constants it was checking needed correcting).
+
+---
+
+---
+
 ## 2026-08-13 — Experience floor from role-specific Shift Cover practice, wired end-to-end
 
 Real design question from the user, prompted by disagreeing with an external "v8" spec's

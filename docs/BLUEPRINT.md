@@ -3649,3 +3649,14 @@ shift history captured before removal, zipped against newly-FILLED buildingIds).
 including a full world-level round-trip, 549 total, typecheck clean. Not built: fixing the
 level-2 trap itself (the real lever for a deeper veteran bench, still open), or extending the
 floor to support roles (no tracked `experience` field exists there to floor).
+
+**Corrected, same day, before any downstream code depended on the old number**: the 50%-of-
+`EXPERIENCE_CAP` cap was a real compounding-advantage risk, not just an uncalibrated guess —
+user: *"if a lvl 2 player had a distinct advantage over a grifter after the backstop... the
+experienced become the only players."* Selection itself was never affected (still pure
+lowest-level/longest-wait, zero input from shift history) — worth stating plainly since that
+may have been the larger part of the concern — but the boost's SIZE was a legitimate gap. Cut
+hard: `EXPERIENCE_FLOOR_MAX_FRACTION` 0.5→0.15, `EXPERIENCE_FLOOR_PER_SHIFT` scaled to match
+(still exactly 5 shifts to max out the now much smaller ceiling). Both remain `[CALIBRATED —
+provisional]` — a considered correction, not a measured one; real simulation still needed
+before trusting further. All 549 tests unchanged (reference the constants symbolically).
