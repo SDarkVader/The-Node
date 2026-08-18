@@ -134,7 +134,16 @@ import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
 import { createDiaryStore, writeDiaryEntry, type DiaryEntry, type Observation, type Reading, type ContextTag } from '../engine/diary.js';
 import type { PrivateStore } from '../engine/privateStore.js';
-import { emptyPersonalStock, stepPersonalStock } from '../engine/personalResourceStock.js';
+import { emptyPersonalStock, stepPersonalStock, PERSONAL_RESOURCE_CAP } from '../engine/personalResourceStock.js';
+import {
+  oracleWinProbability,
+  pickPrizeType,
+  ORACLE_ENTRY_COST,
+  ORACLE_PARTICIPATION_PROBABILITY,
+  ORACLE_WEALTH_PRIZE_AMOUNT,
+  ORACLE_RESOURCE_STOCK_PRIZE_AMOUNT,
+  ORACLE_TIME_NUDGE_DAYS,
+} from '../engine/oracle.js';
 import { experienceFloorFromShiftsCovered } from '../engine/experienceFloor.js';
 
 /** Adapts `stepPersonalStock`'s `{stock, daysSinceRestock}` shape to a slot's own
@@ -1421,6 +1430,51 @@ export function stepWorld(world: World): World {
       const shiftsCoveredByRole = { ...g.shiftsCoveredByRole, [role]: (g.shiftsCoveredByRole?.[role] ?? 0) + 1 };
       return { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1, shiftsCoveredByRole };
     });
+  }
+
+  // The Oracle (2026-08-18, docs/DESIGN_ORACLE_2026-08-13.md) — first code for a mechanic
+  // specified since 2026-08-06 but never built. A daily, flat-odds draw for every grifter and
+  // every FILLED role slot: independent Bernoulli "did they choose to enter" (no real
+  // per-player session to read, same modeling convention Shift Cover's own "noticing" already
+  // uses), then — only if they can afford ORACLE_ENTRY_COST — an independent win roll at
+  // odds tied to YESTERDAY's real economicHealthWithExperience (today's isn't computed yet at
+  // this point in the tick). A win grants exactly one prize, drawn only from what this exact
+  // candidate already has real access to (see engine/oracle.ts's header for why that's what
+  // keeps this from ever being a route to a role, a reputation level, or a solo-assembled
+  // crafting recipe).
+  {
+    const winProbability = oracleWinProbability(world.economicHealthWithExperience);
+    const applyOracleRoll = <T extends { wealth: number }>(entrant: T, isGrifter: boolean): T => {
+      if (rng() >= ORACLE_PARTICIPATION_PROBABILITY) return entrant;
+      if (entrant.wealth < ORACLE_ENTRY_COST) return entrant;
+      const afterEntry = { ...entrant, wealth: entrant.wealth - ORACLE_ENTRY_COST };
+      if (rng() >= winProbability) return afterEntry;
+      const prize = pickPrizeType(isGrifter, rng);
+      if (prize === 'wealth') return { ...afterEntry, wealth: afterEntry.wealth + ORACLE_WEALTH_PRIZE_AMOUNT };
+      if (prize === 'resourceStock' && 'personalResourceStock' in afterEntry) {
+        const s = afterEntry as unknown as { personalResourceStock: number };
+        return { ...afterEntry, personalResourceStock: Math.min(PERSONAL_RESOURCE_CAP, s.personalResourceStock + ORACLE_RESOURCE_STOCK_PRIZE_AMOUNT) };
+      }
+      if (prize === 'time') {
+        if (isGrifter && 'daysAsGrifter' in afterEntry) {
+          const g = afterEntry as unknown as { daysAsGrifter: number };
+          return { ...afterEntry, daysAsGrifter: g.daysAsGrifter + ORACLE_TIME_NUDGE_DAYS };
+        }
+        if (!isGrifter && 'daysInRole' in afterEntry) {
+          const s = afterEntry as unknown as { daysInRole: number };
+          return { ...afterEntry, daysInRole: s.daysInRole + ORACLE_TIME_NUDGE_DAYS };
+        }
+      }
+      return afterEntry; // ineligible prize type rolled for this candidate shape — entry cost still applies, no prize wasted on nobody
+    };
+    grifters = grifters.map((g) => applyOracleRoll(g, true));
+    const rollRole = <T extends { slot: RoleSlot; wealth: number }>(s: T): T => (s.slot.state === 'FILLED' ? applyOracleRoll(s, false) : s);
+    millers = millers.map(rollRole);
+    bakers = bakers.map(rollRole);
+    couriers = couriers.map(rollRole);
+    journalists = journalists.map(rollRole);
+    detectives = detectives.map(rollRole);
+    importExporters = importExporters.map(rollRole);
   }
 
   // Named per-role resource flows (2026-08-11). Miller/Baker figures are the quantities

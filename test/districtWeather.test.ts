@@ -166,6 +166,13 @@ describe('integration — weatherHistory is actually wired into stepWorld', () =
     // A tiny, understaffed shard so consolidation genuinely triggers within a short run —
     // same shrink-the-world approach districtConsolidation.test.ts's own integration
     // checks use, rather than asserting against the shipped (deliberately healthy) config.
+    //
+    // Aggregated across many seeds at 90 days (2026-08-18: a single seed at 60 days became
+    // fragile once the Oracle's own daily rng draws — engine/oracle.ts, unrelated to district
+    // weather — started shifting every downstream tick's trajectory; a single seed's specific
+    // consolidated-vs-healthy pairing could land either way by chance on any given trajectory.
+    // The real property still holds robustly in aggregate — verified directly before changing
+    // this test, not assumed).
     const config = {
       ...DEFAULT_WORLD_CONFIG,
       rMiller: 2,
@@ -183,26 +190,23 @@ describe('integration — weatherHistory is actually wired into stepWorld', () =
         buildingsPerPeripheryDistrict: 5,
       },
     };
-    let world = createWorld(3, config);
-    for (let day = 0; day < 60; day++) world = stepWorld(world);
+    const consolidatedMax: number[] = [];
+    const healthyMax: number[] = [];
+    for (let seed = 1; seed <= 15; seed++) {
+      let world = createWorld(seed, config);
+      for (let day = 0; day < 90; day++) world = stepWorld(world);
+      for (const d of world.shard.districts) {
+        const max = d.weatherHistory.reduce((m, s) => Math.max(m, s.tension), 0);
+        if (world.districtHealth[d.id]!.state !== 'ACTIVE') consolidatedMax.push(max);
+        else healthyMax.push(max);
+      }
+    }
+    // Not every seed/config combination is guaranteed to trip the ratchet — if NEITHER group
+    // ever populated across all 15 seeds, the comparison this test exists to make can't be
+    // drawn at all, so skip rather than assert something the run didn't actually produce.
+    if (consolidatedMax.length === 0 || healthyMax.length === 0) return;
 
-    const anyConsolidating = Object.values(world.districtHealth).some((h) => h.state !== 'ACTIVE');
-    // Not every seed/config combination is guaranteed to trip the ratchet in 60 days — if it
-    // didn't here, the comparison this test exists to make can't be drawn, so skip rather
-    // than assert something the run didn't actually produce.
-    if (!anyConsolidating) return;
-
-    const maxTensionByDistrict = world.shard.districts.map((d) => ({
-      id: d.id,
-      max: d.weatherHistory.reduce((m, s) => Math.max(m, s.tension), 0),
-      state: world.districtHealth[d.id]!.state,
-    }));
-    const consolidated = maxTensionByDistrict.filter((d) => d.state !== 'ACTIVE');
-    const healthy = maxTensionByDistrict.filter((d) => d.state === 'ACTIVE');
-    if (consolidated.length === 0 || healthy.length === 0) return;
-
-    const avgConsolidated = consolidated.reduce((a, d) => a + d.max, 0) / consolidated.length;
-    const avgHealthy = healthy.reduce((a, d) => a + d.max, 0) / healthy.length;
-    expect(avgConsolidated).toBeGreaterThan(avgHealthy);
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(avg(consolidatedMax)).toBeGreaterThan(avg(healthyMax));
   });
 });

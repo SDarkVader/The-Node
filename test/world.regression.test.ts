@@ -14,6 +14,7 @@ import { giniCoefficient, SUPPORT_ROLE_DAILY_WAGE, GRIFTER_DAILY_INCOME, DAILY_A
 import { COMPLETION_REWARD } from '../src/engine/roleCompletion.js';
 import { courierDailyPay, courierRouteDistance } from '../src/engine/courierPay.js';
 import { DEFAULT_SHARD_CONFIG, type ShardLayoutConfig } from '../src/engine/space.js';
+import { ORACLE_ENTRY_COST, ORACLE_WEALTH_PRIZE_AMOUNT } from '../src/engine/oracle.js';
 
 /** Test-only helper: real district-for-a-building lookup, same shape world.ts builds internally. */
 function districtIdForBuilding(world: World, buildingId: string): string {
@@ -555,14 +556,20 @@ describe('stepWorld — population conservation across ticks (5 roles + grifter 
 });
 
 describe('stepWorld — grifter income floor and daysAsGrifter wait-time tracking', () => {
-  it('every grifter accrues exactly GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER per day they remain roleless', () => {
+  it('every grifter accrues GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER per day they remain roleless, plus/minus at most one real Oracle entry/prize (2026-08-18)', () => {
+    // The Oracle (engine/oracle.ts) now also touches grifter wealth once per tick — a real,
+    // deliberate interaction, not drift. The flat-income floor itself stays exact; a grifter
+    // who entered the Oracle that day may also be ORACLE_ENTRY_COST poorer or
+    // ORACLE_WEALTH_PRIZE_AMOUNT richer on top of it.
     let world = createWorld(1);
     const before = new Map(world.grifters.map((g) => [g.id, g.wealth]));
     world = stepWorld(world);
     for (const g of world.grifters) {
       const wealthBefore = before.get(g.id);
       if (wealthBefore !== undefined) {
-        expect(g.wealth).toBeCloseTo(wealthBefore + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER, 10);
+        const flatIncome = wealthBefore + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER;
+        expect(g.wealth).toBeGreaterThanOrEqual(flatIncome - ORACLE_ENTRY_COST - 1e-9);
+        expect(g.wealth).toBeLessThanOrEqual(flatIncome + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
       }
     }
   });
@@ -591,11 +598,13 @@ describe('stepWorld — grifter income floor and daysAsGrifter wait-time trackin
 });
 
 describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () => {
-  it('a FILLED support-role slot accrues SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day, plus a completion bonus when it clears the friction bar', () => {
+  it('a FILLED support-role slot accrues SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day, plus a completion bonus when it clears the friction bar, plus/minus at most one real Oracle entry/prize (2026-08-18)', () => {
     // A freshly created world has every district ACTIVE (friction === 1), which always
     // clears roleCompletion.ts's SUPPORT_TASK_FRICTION_BAR (0.9) — so on day 1 the
     // completion bonus is not just possible but deterministic, and belongs in the exact
-    // expected total rather than a tolerance (Design Addendum item 4, 2026-08-11).
+    // expected total rather than a tolerance (Design Addendum item 4, 2026-08-11). The
+    // Oracle (engine/oracle.ts) now also touches wealth once per tick for every FILLED
+    // slot — a real, deliberate interaction, bounded rather than exact.
     let world = createWorld(1);
     const before = { c: world.couriers.map((c) => c.wealth), j: world.journalists.map((j) => j.wealth), d: world.detectives.map((d) => d.wealth) };
     world = stepWorld(world);
@@ -606,16 +615,24 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         // freshly created world, so this is the exact expected total, not a tolerance.
         const routeDistance = courierRouteDistance(world.shard, districtIdForBuilding(world, c.buildingId));
         const expectedPay = courierDailyPay(routeDistance, DAILY_ACTIVITY_MULTIPLIER, 1);
-        expect(c.wealth).toBeCloseTo(before.c[i]! + expectedPay + COMPLETION_REWARD.courier, 10);
+        const expectedTotal = before.c[i]! + expectedPay + COMPLETION_REWARD.courier;
+        expect(c.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
+        expect(c.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
       }
     });
     world.journalists.forEach((j, i) => {
-      if (j.slot.state === 'FILLED')
-        expect(j.wealth).toBeCloseTo(before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.journalist, 10);
+      if (j.slot.state === 'FILLED') {
+        const expectedTotal = before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.journalist;
+        expect(j.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
+        expect(j.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
+      }
     });
     world.detectives.forEach((d, i) => {
-      if (d.slot.state === 'FILLED')
-        expect(d.wealth).toBeCloseTo(before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.detective, 10);
+      if (d.slot.state === 'FILLED') {
+        const expectedTotal = before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.detective;
+        expect(d.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
+        expect(d.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
+      }
     });
   });
 
