@@ -3902,3 +3902,55 @@ true no-op, a real positive "actually heard" signal across a few seeds, one reje
 blocking a valid turn, and direct confirmation of ephemerality — a second tick with nothing
 newly queued reports nothing heard). 603 tests total, typecheck clean. Full account:
 `docs/DEVLOG.md`'s matching entry.
+
+## Playtest harness Phase A built — Ember, and the drivers wired (2026-08-18, later same day)
+
+`npm run playtest`. The first thing in this repo that gets LOOKED at rather than measured.
+Three files, split so neither the renderer nor the driver applier needs a terminal to be
+testable: `sim/playtestRenderer.ts` (pure — `World` in, strings out), `sim/playtestDrivers.ts`
+(the applier), `sim/playtestCli.ts` (raw-mode stdin and the alternate screen buffer, nothing
+else). Same harness/cli split every other `src/sim/` mechanic uses.
+
+**Ember** chosen from four directions (Ember / Signal / Phosphor / Ledger) explored on a
+real-data design canvas, working files kept in `design/playtest-aesthetics/`. Warm, low,
+lamplit; scarcity glows. District Weather `tension` is the cell background, Economic Heat the
+building foreground — the two fields deliberately share one 0..1 scale. Slot state follows
+`ecosystem.ts`'s already-stated contract: FILLED solid, BACKSTOPPED dim, VACANT quietest,
+never absent.
+
+**Auto-ranging is on by default**, and the tradeoff is stated in code rather than hidden.
+Measured tension sits at 0.08; heat spans 0-0.5 and reads exactly 0 for all four support roles
+while the district is healthy (their heat derives from consolidation friction that isn't
+present). Naively mapped to a 0-1 ramp the whole node renders flat, defeating the "read
+scarcity from the plaza" intent. Both signals are therefore normalized against observed
+maxima — `HEAT_OBSERVED_MAX` / `TENSION_OBSERVED_MAX`, both `[CALIBRATED — provisional]` from
+one config. Honest cost: a genuinely calm shard no longer looks calm.
+
+**The synthetic drivers are finally applied.** `src/sim/drivers/` has held four strategies
+since Observatory Phase C with nothing ever calling them; `playtestDrivers.ts` is the applier
+they never had, deliberately on the sim side of `test/drivers.importGuard.test.ts`'s boundary
+so `stepWorld` still knows nothing about it and no shipped behaviour changed. Reuses
+`drivers/index.ts`'s existing `DRIVERS` + `assignDriverStrategy` rather than a second scheme;
+the only new part is `stablePlayerIndex`, since participant-list position isn't stable.
+
+Checked against every driver's real emissions rather than the `DriverAction` union's breadth:
+five of eight types are ever emitted, and exactly one — `postToWall` — has anywhere to land.
+`occupySlot` would fight the conscription pass, `move` has nowhere to go (grifters carry a
+housing `districtId`, never coordinates), `attemptSabotageStep` is blocked on the campaign
+restructure. `sendEnvelope` has no `World` queue at all and no driver emits it.
+
+That one action is enough: a Wall post drives rumour propagation -> identity resolution ->
+diary writes -> pressure detection -> District Weather, a chain that sits dead when nothing
+posts. Seed 7 day 220 goes from zero rumours ever to 33 in a day.
+
+**Two findings worth carrying forward.** (1) Wiring posts did NOT move tension (0.080 either
+way) — `pressureDetection.ts` keys off negative-skewed posting and the `honest` driver posts
+positive states while health is high. Correct behaviour, not a bug: the dynamic-range issue is
+a legibility problem, not a signal problem. (2) A driven run is **not comparable** to a
+driverless one — the rumour stage draws from `world.rng` per post per neighbour, so seed 7
+day 220 reads Gini 0.662 / 8-of-9 Millers driverless and 0.705 / 6-of-9 driven. This harness
+is for feel; its numbers must never be quoted as simulation results.
+
+12 new tests, 615 total. The load-bearing one: 60 stepped days are byte-identical with and
+without a render each tick, extending `economicHeat.ts`'s purity guarantee to the whole view
+layer. Phase B (inspection) and Phase C (the flashlight) not built.

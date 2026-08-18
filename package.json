@@ -17,6 +17,7 @@
     "experience-floor-sim": "tsx src/sim/experienceFloorCli.ts",
     "eviction-protection-sim": "tsx src/sim/evictionProtectionCli.ts",
     "oracle-sim": "tsx src/sim/oracleCli.ts",
+    "playtest": "tsx src/sim/playtestCli.ts",
     "level-two-reachability-sim": "tsx src/sim/levelTwoReachabilityCli.ts",
     "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "world-sim": "tsx src/sim/worldCli.ts",

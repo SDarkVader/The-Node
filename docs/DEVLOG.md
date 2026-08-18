@@ -6,6 +6,82 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Playtest harness Phase A BUILT: Ember, and the drivers finally wired
+
+User picked **Ember** from four aesthetic directions explored on a real-data design canvas
+(Ember / Signal / Phosphor / Ledger, each drawn from an actual seed-7 day-220 world so the
+choice was made against real output, not a fantasy mockup), and asked for the synthetic
+drivers wired at the same time. Both done. `npm run playtest`. 615 tests, typecheck clean.
+
+**Three files, split so nothing needs a terminal to be testable**: `sim/playtestRenderer.ts`
+(pure — `World` in, strings out), `sim/playtestDrivers.ts` (the applier), `sim/playtestCli.ts`
+(owns raw-mode stdin, the alternate screen buffer, and nothing else). Same harness/cli split
+every other `src/sim/` mechanic already uses.
+
+**The NPC question answered without building any NPCs.** User: *"we need simulated players,
+NPC's... what can we do that's feasible."* They already existed — `src/sim/drivers/` has had
+four strategies (honest, opportunist, saboteur, idle) since Observatory Phase C, each a pure
+function from visible state to one bounded action, with `test/drivers.importGuard.test.ts`
+failing the build if `src/engine`/`src/world`/`src/server` ever import them. That guard IS the
+resolution to constraint 3, written down in the drivers' own README. What never existed was
+the APPLIER. Built it on the sim side of that line, so `stepWorld` still knows nothing about
+it and no shipped behaviour changed.
+
+**Also reused rather than reinvented, after writing the duplicate first**: `drivers/index.ts`
+already exported `DRIVERS` and `assignDriverStrategy(seed, playerIndex)` — a deliberately
+weighted, documented "chosen by seed" assignment. The first draft of the applier shipped its
+own `strategyFor` + strategy-mix array before that was noticed; deleted in favour of theirs.
+The only genuinely new part is `stablePlayerIndex`, because participant-list POSITION isn't
+stable (slots fill and vacate, grifters arrive and leave) so the index has to key off the id.
+
+**Two claims I made to the user that were wrong, corrected by checking**: I said
+`sendEnvelope` was wireable now — it isn't, `World` has no pending-envelope queue at all, AND
+no driver ever emits that action. Checking every driver's real emissions (rather than reading
+breadth off the `DriverAction` union) gives the honest picture: only five of eight types are
+ever emitted, and exactly **one** — `postToWall` — has anywhere to land today. `occupySlot`
+would fight the conscription pass for the same slots; `move` has nowhere to go (grifters carry
+a housing `districtId`, never coordinates); `attemptSabotageStep` is blocked on the
+campaign-persistence finding from earlier today.
+
+**One action turned out to be enough.** A Wall post drives rumour propagation -> identity
+resolution -> diary writes -> pressure detection -> District Weather, an entire causal chain
+that sits dead when nothing posts. Driverless at seed 7 day 220: zero rumours, ever. Driven:
+33 on day 220 alone. The node visibly talks to itself now.
+
+**A prediction of mine that only half held, reported rather than quietly dropped.** I expected
+wiring posts would make District Weather tension climb and thereby fix the low-dynamic-range
+problem. It didn't move (0.080 driven vs 0.080 driverless) — because `pressureDetection.ts`
+keys off NEGATIVE-skewed posting, and the `honest` driver posts positive states while
+`economicHealth` is high (0.896 here). That is the system working correctly: a healthy shard
+has calm citizens, and tension should stay low. The dynamic-range problem is therefore a
+LEGIBILITY problem, not a signal problem, and auto-ranging (below) is the right fix for it
+rather than a workaround.
+
+**Auto-ranging shipped on by default**, with the tradeoff stated in the code rather than
+hidden: measured tension sits at 0.08 and heat spans 0-0.5 (and reads exactly 0 for all four
+support roles while the district is healthy, since their heat derives from consolidation
+friction that isn't present), so both are normalized against observed maxima. The honest cost
+— a genuinely calm shard no longer LOOKS calm, because calm is now the bottom of a stretched
+scale. Both constants are `[CALIBRATED — provisional]` from one config's measurement.
+
+**A real caveat found by measuring, now documented at the top of the applier**: a driven run
+is NOT comparable to a driverless one. `stepWorld`'s rumour stage draws from `world.rng` once
+per post per neighbour, so queuing posts shifts the world's trajectory from that tick on —
+seed 7 day 220 reads Gini 0.662 / 8-of-9 Millers driverless, 0.705 / 6-of-9 driven. Inherent
+to there being activity at all, not a defect, but it means **this harness is for feel and its
+numbers must never be quoted as simulation results**. The measurement harnesses stay the place
+numbers come from.
+
+12 new tests in `test/playtestHarness.test.ts`, including the one that matters most: 60 stepped
+days are byte-identical with and without a render each tick, extending `economicHeat.ts`'s own
+purity guarantee to the whole view layer. If that ever fails, the harness has become part of
+the simulation.
+
+**Not built**: Phase B (cursor/inspection) and Phase C (the flashlight, still blocked on the
+sabotage campaign restructure).
+
+---
+
 ## 2026-08-18 — Playtest harness scoped, and a blocking finding that reorders the sabotage work
 
 User: *"I really need to get to the position where I can play test the game and design the

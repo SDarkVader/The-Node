@@ -530,6 +530,41 @@ relative on mean experience, 0.00074 on `economicHealthWithExperience` — genui
 cap correction held under real measurement, not just intent. 4 new regression tests lock the
 actual numbers in. **553 tests total, typecheck clean, all committed and pushed to `main`.**
 
+**Then: the playtest harness got scoped AND its Phase A built** — the first thing in this repo
+you can watch rather than measure, prompted by the user directly: *"I really need to get to the
+position where I can play test the game and design the precise gameplay from experience and
+what's fun, rather than assuming simulations will do so."* `npm run playtest`.
+
+Scoped as `docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md`. **The measurement that de-risked it**:
+the shipped shard is a 14x15 grid (90 plots, 62 buildings, probed not estimated), so the whole
+settlement is 28x15 characters — fits in 80x24 with a status panel. **The Ember palette** was
+chosen from four directions explored on a real-data design canvas (working files kept in
+`design/playtest-aesthetics/`). **Auto-ranging is on by default** because measured tension sits
+at 0.08 and heat spans 0-0.5 — a naive 0-1 ramp renders the node flat; the honest cost is that
+a genuinely calm shard no longer looks calm.
+
+**The synthetic drivers are finally wired.** `src/sim/drivers/` has held four strategies since
+Observatory Phase C with nothing ever calling them — `sim/playtestDrivers.ts` is the applier
+they never had, on the sim side of `test/drivers.importGuard.test.ts`'s boundary so `stepWorld`
+still knows nothing about it. Only `postToWall` actually lands (checked against every driver's
+real emissions), and it's enough: seed 7 day 220 goes from zero rumours ever to 33 in a day.
+**Two caveats that matter**: wiring posts did NOT move tension (correct — `pressureDetection`
+keys off negative-skewed posting, and healthy shards have calm citizens), and a driven run is
+**not comparable** to a driverless one (the rumour stage draws from `world.rng` per post, so
+trajectories diverge) — **this harness is for feel; its numbers are never simulation results.**
+
+12 new tests, **615 total, typecheck clean.** Phase B (cursor/inspection) and Phase C (the
+flashlight — still blocked on the sabotage campaign restructure) are not built.
+
+**THE BLOCKING FINDING from the scoping pass, which reorders the sabotage work and revises an
+earlier claim**: `ecosystem.ts`'s `patternSabotageAttempt()` resolves an ENTIRE campaign inside
+one function call, with `detectiveActive` fixed as a parameter at call time. A Detective
+therefore cannot intervene mid-campaign, because a campaign has no "mid" — which directly
+blocks the locked flashlight design. Promoting pattern-sabotage to shipped-default is a
+**restructure** (persistent `World.sabotageCampaigns` + a per-tick stepper), not the swap it was
+earlier described as. Knock-on: the 71.1%/40.2% calibration was measured against a fixed witness
+count and **must be re-measured** against a live stepper.
+
 **Next, in rough priority order (refreshed 2026-08-18, second pass — proximity conversation's
 own wiring is now DONE, see the entry directly above; renumbered):**
 1. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by

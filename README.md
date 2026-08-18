@@ -380,7 +380,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 603 automated tests cover all of it.
+citations, and open questions left. 615 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -520,6 +520,19 @@ relayed onward by the system itself — if you want to keep or repeat what
 you heard, you have to actually write it down (the Wall, an Envelope, your
 own diary), same as everything else here.
 
+**You can watch it now.** `npm run playtest` opens the node in a
+terminal — the real settlement, one cell per plot, warm and low and
+lamplit, with the mood of each district in the ground colour and
+scarcity glowing on the buildings that have it. Press space for a day.
+The people in it are synthetic stand-ins, not characters: each one is a
+plain rule reading numbers anyone could see, walled off by a test that
+fails the build if that scaffolding ever leaks into the game itself.
+They only do one thing so far — talk on the Wall — but that turns out
+to be enough to bring the place alive, because talk is what starts
+rumours, and rumours are how anyone here comes to know anyone. It is
+for feel, not for figures: the numbers on screen are a run with people
+in it, not a measurement.
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
@@ -532,7 +545,7 @@ something a player can walk into yet.
 
 ```
 npm install
-npm test               # 603 tests
+npm test               # 615 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -556,7 +569,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (603 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (615 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

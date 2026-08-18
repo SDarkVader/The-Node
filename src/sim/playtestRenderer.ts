@@ -62,15 +62,45 @@ interface BuildingRender {
 
 type Rgb = readonly [number, number, number];
 
-/** Background ramp: calm (cool, near-black blue) -> tense (dim ember red). Kept dark on
- *  purpose so foreground glyphs stay legible on top of it at every tension value. */
-const TENSION_CALM: Rgb = [10, 14, 26];
-const TENSION_TENSE: Rgb = [54, 17, 15];
+/**
+ * The EMBER palette (chosen 2026-08-18 from four directions explored on a real-data design
+ * canvas — Ember / Signal / Phosphor / Ledger). Warm, low, lamplit: the settlement reads as a
+ * town at dusk, and scarcity glows. Kept dark on purpose so foreground glyphs stay legible on
+ * top of the background at every tension value.
+ */
+const TENSION_CALM: Rgb = [20, 16, 12];
+const TENSION_TENSE: Rgb = [67, 23, 15];
 
 /** Foreground ramp for role buildings: cool/supplied -> hot/scarce. Matches the addendum's
  *  "read scarcity from the plaza" intent — a hot station is visibly hot. */
-const HEAT_COOL: Rgb = [92, 172, 204];
-const HEAT_HOT: Rgb = [255, 170, 62];
+const HEAT_COOL: Rgb = [74, 107, 122];
+const HEAT_HOT: Rgb = [255, 171, 62];
+
+const COLOUR_WALL: Rgb = [239, 220, 174];
+const COLOUR_PLAZA: Rgb = [176, 144, 86];
+const COLOUR_STREET: Rgb = [47, 40, 34];
+/** A real building carrying no role slot — 16 of the shipped config's 62. */
+const COLOUR_PLAIN: Rgb = [74, 64, 56];
+
+/**
+ * AUTO-RANGING, and why it is on by default.
+ *
+ * Both mood fields have far less dynamic range than their 0..1 scale suggests. Measured on a
+ * real 220-day run at `DEFAULT_WORLD_CONFIG`: district tension sat at 0.08, and economic heat
+ * spanned 0 to 0.499 — and reads exactly 0 for all four support roles while the district is
+ * healthy, since their heat derives from consolidation friction that simply isn't present.
+ * Mapped naively onto the full ramp, the entire node renders flat and near-monochrome, which
+ * defeats the whole "read scarcity from the plaza rather than computing it from numbers"
+ * intent this view exists to serve.
+ *
+ * So both signals are normalized against their OBSERVED maxima rather than their theoretical
+ * ones. [CALIBRATED — provisional]: these are two measurements from one config, not a
+ * derivation — if the economy is retuned, re-measure them. The honest tradeoff, stated rather
+ * than hidden: a genuinely calm shard no longer looks calm, because calm is now the bottom of
+ * a stretched scale rather than the bottom of an absolute one.
+ */
+export const HEAT_OBSERVED_MAX = 0.5;
+export const TENSION_OBSERVED_MAX = 0.25;
 
 /**
  * Brightness by slot state, implementing `ecosystem.ts`'s already-stated visual contract:
@@ -194,19 +224,20 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
 
       if (key === hubKey) {
         glyph = '#'; // The Wall — the shard's one landmark, equidistant from everything, owned by nobody.
-        colour = [214, 206, 180];
+        colour = COLOUR_WALL;
       } else if (building) {
         glyph = building.state === 'VACANT' ? building.glyph.toLowerCase() : building.glyph;
-        colour = scaleRgb(lerpRgb(HEAT_COOL, HEAT_HOT, building.heat), STATE_BRIGHTNESS[building.state]);
+        const t = Math.min(1, building.heat / HEAT_OBSERVED_MAX);
+        colour = scaleRgb(lerpRgb(HEAT_COOL, HEAT_HOT, t), STATE_BRIGHTNESS[building.state]);
       } else if (buildingId) {
         glyph = '.'; // a real building with no role slot attached to it
-        colour = [70, 70, 78];
+        colour = COLOUR_PLAIN;
       } else if (plazaAt.has(key)) {
         glyph = '+';
-        colour = [150, 140, 110];
+        colour = COLOUR_PLAZA;
       } else if (plot) {
         glyph = ':';
-        colour = [48, 50, 58];
+        colour = COLOUR_STREET;
       }
 
       if (!opts.color) {
@@ -221,7 +252,8 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
         continue;
       }
 
-      const tension = plot ? (tensions.get(plot.districtId) ?? 0) : 0;
+      const raw = plot ? (tensions.get(plot.districtId) ?? 0) : 0;
+      const tension = Math.min(1, raw / TENSION_OBSERVED_MAX);
       line += `${bg(lerpRgb(TENSION_CALM, TENSION_TENSE, tension))}${fg(colour)}${glyph}${pad}${RESET}`;
     }
     lines.push(line);
@@ -275,7 +307,9 @@ export function renderStatus(world: World, opts: RenderOptions): string[] {
   lines.push(`Flour price  ${world.flourPrice.toFixed(3)}`);
   lines.push(`Health       ${bar(world.economicHealth, 12)} ${world.economicHealth.toFixed(3)}`);
   lines.push(`  w/ exp     ${bar(world.economicHealthWithExperience, 12)} ${world.economicHealthWithExperience.toFixed(3)}`);
-  lines.push(`Tension      ${bar(meanTension, 12)} ${meanTension.toFixed(3)}`);
+  // Drawn against the same stretched scale the map's background uses, so the meter and the
+  // colour agree — a bar filling while the node stays visually calm would be a lie.
+  lines.push(`Tension      ${bar(meanTension, 12, TENSION_OBSERVED_MAX)} ${meanTension.toFixed(3)}`);
   lines.push(`Gini         ${bar(world.wealthGini, 12)} ${world.wealthGini.toFixed(3)}`);
   lines.push('');
   for (const [name, slots] of roles) {
