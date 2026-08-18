@@ -1,5 +1,7 @@
-import type { World } from '../world/world.js';
+import type { World, RoleEconomicSlot, SupportRoleSlot } from '../world/world.js';
 import { computeEconomicHeat, type EconomicHeatField } from '../engine/economicHeat.js';
+import { completionRatio, TYPICAL_COMPLETION_RATIO, type CompletionRoleType } from '../engine/roleCompletion.js';
+import { knownFraction } from '../engine/pressureDetection.js';
 import type { Shard } from '../engine/space.js';
 
 /**
@@ -45,6 +47,9 @@ export interface RenderOptions {
    *  `World` only ever reports its OWN tick's `last*` fields. Kept out of this module so it
    *  stays pure. */
   eventLog: readonly string[];
+  /** Phase B: the inspection cursor's world position, or undefined for no cursor. Held by the
+   *  caller (the CLI owns input); this module only draws it and reports what is under it. */
+  cursor?: { x: number; y: number };
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = { color: true, width: 80, eventLog: [] };
@@ -75,6 +80,12 @@ const TENSION_TENSE: Rgb = [67, 23, 15];
  *  "read scarcity from the plaza" intent — a hot station is visibly hot. */
 const HEAT_COOL: Rgb = [74, 107, 122];
 const HEAT_HOT: Rgb = [255, 171, 62];
+
+/** The inspection cursor. Deliberately a lifted, warmer ground rather than a full inversion —
+ *  Ember's whole point is that nothing in the node is high-contrast, and an inverted block
+ *  would read as a UI element sitting on top of the town rather than a light moved across it. */
+const CURSOR_BG: Rgb = [92, 62, 34];
+const CURSOR_EMPTY_FG: Rgb = [150, 120, 88];
 
 const COLOUR_WALL: Rgb = [239, 220, 174];
 const COLOUR_PLAZA: Rgb = [176, 144, 86];
@@ -240,21 +251,29 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
         colour = COLOUR_STREET;
       }
 
+      const onCursor = opts.cursor !== undefined && opts.cursor.x === x && opts.cursor.y === y;
+
       if (!opts.color) {
-        line += glyph + pad;
+        // Plain mode still has to show the cursor, or the inspection pane refers to a cell
+        // nobody can locate. Brackets are the only affordance available without colour.
+        line += onCursor ? `[${glyph}` : glyph + pad;
         continue;
       }
 
       // Outside the settlement entirely: emit plain spaces rather than a coloured run —
-      // there is nothing there to tint, and the escapes were pure noise on the wire.
-      if (!plot && key !== hubKey) {
+      // there is nothing there to tint, and the escapes were pure noise on the wire. The
+      // cursor still draws, so it can be moved across empty ground.
+      if (!plot && key !== hubKey && !onCursor) {
         line += ' '.repeat(CELL_WIDTH);
         continue;
       }
 
       const raw = plot ? (tensions.get(plot.districtId) ?? 0) : 0;
       const tension = Math.min(1, raw / TENSION_OBSERVED_MAX);
-      line += `${bg(lerpRgb(TENSION_CALM, TENSION_TENSE, tension))}${fg(colour)}${glyph}${pad}${RESET}`;
+      const cellBg = onCursor ? CURSOR_BG : lerpRgb(TENSION_CALM, TENSION_TENSE, tension);
+      const cellFg = onCursor && glyph === ' ' ? CURSOR_EMPTY_FG : colour;
+      const cellGlyph = onCursor && glyph === ' ' ? '·' : glyph;
+      line += `${bg(cellBg)}${fg(cellFg)}${cellGlyph}${pad}${RESET}`;
     }
     lines.push(line);
   }
@@ -324,6 +343,109 @@ export function renderStatus(world: World, opts: RenderOptions): string[] {
   return lines;
 }
 
+// ---- Inspection (Phase B) ----------------------------------------------------------------
+
+const ROLE_NAMES: Record<RoleGlyph, string> = {
+  M: 'Miller',
+  B: 'Baker',
+  C: 'Courier',
+  J: 'Journalist',
+  D: 'Detective',
+  X: 'Import/Export',
+};
+
+/** Which of `World`'s six role arrays holds this building, plus the slot itself. Role is only
+ *  ever derivable this way — `space.ts` keeps `Building.roleSlotRef` deliberately opaque. */
+function roleSlotFor(
+  world: World,
+  buildingId: string,
+): { glyph: RoleGlyph; role: CompletionRoleType; slot: RoleEconomicSlot | SupportRoleSlot } | undefined {
+  const groups: [RoleGlyph, CompletionRoleType, readonly (RoleEconomicSlot | SupportRoleSlot)[]][] = [
+    ['M', 'miller', world.millers],
+    ['B', 'baker', world.bakers],
+    ['C', 'courier', world.couriers],
+    ['J', 'journalist', world.journalists],
+    ['D', 'detective', world.detectives],
+    ['X', 'importExport', world.importExporters],
+  ];
+  for (const [glyph, role, slots] of groups) {
+    const slot = slots.find((s) => s.buildingId === buildingId);
+    if (slot) return { glyph, role, slot };
+  }
+  return undefined;
+}
+
+/**
+ * What is actually under the cursor, read straight off the `World` snapshot. Nothing is
+ * derived or invented here beyond calling existing pure projections (`completionRatio`,
+ * `knownFraction`, `computeEconomicHeat`) — this pane's job is to make already-real state
+ * legible, which is the whole of Phase B.
+ *
+ * A REAL LIMITATION, surfaced rather than hidden: grifters cannot be inspected, because they
+ * have no coordinates anywhere in this engine — they carry a housing `districtId` and nothing
+ * finer (`world.ts`'s own header). At the shipped config that is 20-26 of ~64 people who are
+ * simply not on the map. The status pane's own grifter count is the only view of them.
+ */
+export function renderInspector(world: World, opts: RenderOptions, heat: EconomicHeatField): string[] {
+  if (!opts.cursor) return [];
+  const { x, y } = opts.cursor;
+  // Hard-capped to the map's own width so the status column never shifts as the cursor moves.
+  // A pane that jostles the rest of the screen is worse than one that abbreviates.
+  const width = mapWidth(world);
+  const out: string[] = [];
+  const push = (s: string) => out.push(s.length > width ? s.slice(0, width) : s);
+
+  const label = ` (${x}, ${y}) `;
+  push(`──${label}${'─'.repeat(Math.max(0, width - 2 - label.length))}`);
+
+  const district = world.shard.districts.find((d) => d.plots.some((p) => p.x === x && p.y === y));
+  const building = world.shard.districts.flatMap((d) => d.buildings).find((b) => b.x === x && b.y === y);
+  const isHub = world.shard.hubPlot.x === x && world.shard.hubPlot.y === y;
+  const isPlaza = world.shard.districts.some((d) => d.plazaPlot.x === x && d.plazaPlot.y === y);
+
+  if (isHub) push('  The Wall — shard hub');
+  if (!district && !building) {
+    push('  outside the settlement');
+    return out;
+  }
+  if (district) {
+    const tension = district.weatherHistory.at(-1)?.tension ?? 0;
+    push(`  ${district.id} (${district.classification})`);
+    push(`  tension ${tension.toFixed(3)}  pop ${district.population}`);
+  }
+
+  if (!building) {
+    push(isPlaza ? '  the plaza' : isHub ? '  open ground' : '  street');
+    return out;
+  }
+
+  const found = roleSlotFor(world, building.id);
+  if (!found) {
+    push(`  ${building.id} — no role`);
+    push(`  ${building.floors} residential floors`);
+    return out;
+  }
+
+  const { glyph, role, slot } = found;
+  const stats = world.completionStats[building.id];
+  push(`  ${ROLE_NAMES[glyph]} — ${slot.slot.state}`);
+  push(`  ${building.id}`);
+  push(`  wealth ${slot.wealth.toFixed(2)}  stock ${slot.personalResourceStock}`);
+  push(`  in role ${slot.daysInRole}d`);
+  if ('experience' in slot) push(`  exp ${slot.experience.toFixed(3)}  val ${slot.value.toFixed(3)}`);
+  push(`  heat ${(heat[building.id] ?? 0).toFixed(3)}`);
+  push(
+    stats && stats.attempts > 0
+      ? `  done ${(completionRatio(stats) * 100).toFixed(0)}% of ${stats.attempts} (typ ${(TYPICAL_COMPLETION_RATIO[role] * 100).toFixed(0)}%)`
+      : '  done — no attempts yet',
+  );
+  push(`  known to ${(knownFraction(world.identityLedger, building.id) * 100).toFixed(0)}% of node`);
+  if (slot.slot.state !== 'FILLED' && slot.slot.vacantSince !== null) {
+    push(`  empty since day ${slot.slot.vacantSince}`);
+  }
+  return out;
+}
+
 // ---- Events ------------------------------------------------------------------------------
 
 /**
@@ -358,7 +480,7 @@ export function collectEvents(world: World): string[] {
 // ---- Frame -------------------------------------------------------------------------------
 
 const LEGEND = 'M B C J D X = roles   # Wall   + plaza   UPPER held  lower vacant  dim backstopped';
-const KEYS = '[space] next day   [n] x10 days   [q] quit';
+const KEYS = '[space] day  [n] x10  [hjkl/arrows] look  [i] cursor  [d] drivers  [q] quit';
 
 /**
  * One complete frame. Side-by-side when the terminal is wide enough for both panes, stacked
@@ -369,6 +491,7 @@ export function renderFrame(world: World, opts: RenderOptions = DEFAULT_RENDER_O
   const heat = computeEconomicHeat(world);
   const map = renderMap(world, opts, heat);
   const status = renderStatus(world, opts);
+  const inspector = renderInspector(world, opts, heat);
   const mw = mapWidth(world);
   const gap = 3;
   const sideBySide = opts.width >= mw + gap + 34;
@@ -378,16 +501,24 @@ export function renderFrame(world: World, opts: RenderOptions = DEFAULT_RENDER_O
   lines.push('');
 
   if (sideBySide) {
-    const rows = Math.max(map.length, status.length);
+    // The map column carries the inspector beneath it, so the map's own position on screen
+    // never shifts as the cursor moves on and off something inspectable.
+    const left = inspector.length > 0 ? [...map, '', ...inspector] : map;
+    const rows = Math.max(left.length, status.length);
     for (let i = 0; i < rows; i++) {
-      // The map cell strings carry escape sequences, so their visible width is not their
-      // string length — pad against the known geometry (mw) instead of measuring the string.
-      const left = map[i] ?? '';
-      const leftWidth = map[i] === undefined ? 0 : mw;
-      lines.push(left + ' '.repeat(Math.max(0, mw - leftWidth) + gap) + (status[i] ?? ''));
+      // Map cell strings carry escape sequences, so visible width is not string length — pad
+      // against known geometry for map rows, and against real length for the plain-text
+      // inspector rows below them.
+      const row = left[i] ?? '';
+      const visibleWidth = row === '' ? 0 : i < map.length ? mw : row.length;
+      lines.push(row + ' '.repeat(Math.max(0, mw - visibleWidth) + gap) + (status[i] ?? ''));
     }
   } else {
     lines.push(...map);
+    if (inspector.length > 0) {
+      lines.push('');
+      lines.push(...inspector);
+    }
     lines.push('');
     lines.push(...status);
   }

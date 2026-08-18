@@ -6,6 +6,46 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Playtest harness Phase B: the node became legible
+
+Cursor and inspection, per `docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md`'s Phase B — "selecting
+a building shows its real state... still strictly read-only against `World`, no new mechanics,
+no writes." Held to that literally: `renderInspector` calls only existing pure projections
+(`completionRatio`, `knownFraction`, `computeEconomicHeat`) and invents no derived state. 621
+tests, typecheck clean.
+
+`hjkl`/arrows move the cursor, `i` hides it. The cursor starts on the plaza — the one place in
+the settlement that means something before you know anything else. It draws as a lifted, warmer
+ground rather than an inversion, because Ember's whole point is that nothing in the node is
+high-contrast and an inverted block would read as UI sitting on top of the town rather than a
+light moved across it.
+
+**It paid for itself on the first look.** Cursor on a Miller at (9,-2): BACKSTOPPED, empty since
+day 209, completing 0% of 5 attempts against a 55% typical. A slot the backstop is visibly
+running badly, legible at a glance — precisely the kind of thing the numbers in a sim report
+never surface because nobody thinks to ask for that cross-section.
+
+**Three real defects found by looking, all fixed**: inspector lines could exceed the map width
+and shove the status column sideways (now hard-capped to `mapWidth`, with a test sweeping EVERY
+cursor position on the grid); the plaza was described as generic "open ground"; and the key
+legend still advertised the Phase A keys only.
+
+**A false alarm worth recording, because the reasoning was wrong twice.** I read the rendered
+output as misaligned by two columns and started hunting a padding bug. Instrumenting it showed
+the layout was correct all along — the two "outlier" columns are the status pane's own
+deliberately-indented role-count lines (`  Journalist 5/7`). Eyeball-counting terminal columns
+is not evidence; measuring is. Cost a detour that a two-line probe would have avoided.
+
+Also a real limitation, surfaced in the module rather than hidden: **grifters cannot be
+inspected at all**, because they have no coordinates anywhere in this engine — they carry a
+housing `districtId` and nothing finer. At the shipped config that is 20-26 of ~64 people who
+are simply not on the map, and the status pane's count is the only view of them.
+
+6 new tests (18 in the harness file, 621 total), including a sweep asserting no inspector line
+at any cursor position can exceed the map width, and that inspecting mutates nothing.
+
+---
+
 ## 2026-08-18 — Playtest harness Phase A BUILT: Ember, and the drivers finally wired
 
 User picked **Ember** from four aesthetic directions explored on a real-data design canvas

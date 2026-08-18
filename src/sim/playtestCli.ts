@@ -1,5 +1,5 @@
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type World } from '../world/world.js';
-import { renderFrame, collectEvents } from './playtestRenderer.js';
+import { renderFrame, collectEvents, shardBounds } from './playtestRenderer.js';
 import { applyDriverTick, summarizeActions } from './playtestDrivers.js';
 import { mulberry32 } from './rng.js';
 
@@ -17,7 +17,8 @@ import { mulberry32 } from './rng.js';
  * change rather than on a frame clock.
  *
  *   space  advance one day        n  advance ten days
- *   d      toggle the drivers     q  quit
+ *   hjkl / arrows  move the inspection cursor (Phase B)
+ *   i      show/hide the cursor   d  toggle the drivers      q  quit
  */
 
 const SEED = Number(process.argv[2] ?? 7);
@@ -40,6 +41,21 @@ const eventLog: string[] = [];
 let driversOn = true;
 let lastActions: Record<string, number> = {};
 
+// Phase B. The cursor starts on the shard's plaza — the one place in the settlement that
+// means something before you know anything about it.
+const bounds = shardBounds(world.shard);
+const startPlot = world.shard.districts[0]?.plazaPlot ?? world.shard.hubPlot;
+let cursor = { x: startPlot.x, y: startPlot.y };
+let cursorOn = true;
+
+function moveCursor(dx: number, dy: number): void {
+  cursor = {
+    x: Math.max(bounds.minX, Math.min(bounds.maxX, cursor.x + dx)),
+    y: Math.max(bounds.minY, Math.min(bounds.maxY, cursor.y + dy)),
+  };
+  cursorOn = true;
+}
+
 function advance(days: number): void {
   for (let i = 0; i < days; i++) {
     if (driversOn) {
@@ -54,11 +70,13 @@ function advance(days: number): void {
 
 function paint(): void {
   const width = process.stdout.columns ?? 80;
-  const frame = renderFrame(world, { color: useColour, width, eventLog });
+  const frame = renderFrame(world, { color: useColour, width, eventLog, cursor: cursorOn ? cursor : undefined });
   const driverLine = driversOn
     ? `drivers ON  ${Object.entries(lastActions).map(([k, v]) => `${k}:${v}`).join('  ') || '(no actions yet)'}`
     : 'drivers OFF — the node only churns';
-  process.stdout.write(`${HOME}${frame}\n${driverLine}\n[space] day  [n] x10  [d] drivers  [q] quit\n`);
+  process.stdout.write(
+    `${HOME}${frame}\n${driverLine}\n[space] day  [n] x10  [hjkl/arrows] look  [i] cursor  [d] drivers  [q] quit\n`,
+  );
 }
 
 function shutdown(): void {
@@ -84,9 +102,15 @@ paint();
 process.stdin.on('data', (buf: Buffer) => {
   const key = buf.toString();
   if (key === 'q' || key === '\x03') return shutdown(); // ^C included: raw mode swallows the usual SIGINT
+  // Arrow keys arrive as a three-byte CSI sequence, not a single character.
   if (key === ' ') advance(1);
   else if (key === 'n') advance(10);
   else if (key === 'd') driversOn = !driversOn;
+  else if (key === 'i') cursorOn = !cursorOn;
+  else if (key === 'h' || key === '\x1b[D') moveCursor(-1, 0);
+  else if (key === 'l' || key === '\x1b[C') moveCursor(1, 0);
+  else if (key === 'k' || key === '\x1b[A') moveCursor(0, -1);
+  else if (key === 'j' || key === '\x1b[B') moveCursor(0, 1);
   else return;
   paint();
 });

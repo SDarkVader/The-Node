@@ -3954,3 +3954,25 @@ is for feel; its numbers must never be quoted as simulation results.
 12 new tests, 615 total. The load-bearing one: 60 stepped days are byte-identical with and
 without a render each tick, extending `economicHeat.ts`'s purity guarantee to the whole view
 layer. Phase B (inspection) and Phase C (the flashlight) not built.
+
+## Playtest harness Phase B — cursor and inspection (2026-08-18, later same day)
+
+`hjkl`/arrows move an inspection cursor; `i` hides it. Selecting a cell reports what is really
+there — role, slot state, wealth, personal stock, days in role, experience/value for market
+roles, economic heat, completion ratio against that role's `TYPICAL_COMPLETION_RATIO`, identity
+resolution, and how long a non-FILLED slot has been empty. Strictly read-only: `renderInspector`
+calls only existing pure projections and invents nothing.
+
+Hard-capped to `mapWidth` so the status column never shifts as the cursor moves — a pane that
+jostles the rest of the screen is worse than one that abbreviates. Tested by sweeping every
+cursor position on the grid.
+
+**Immediately useful**: a Miller reading BACKSTOPPED, empty since day 209, completing 0% of 5
+attempts against a 55% typical — the backstop visibly running a slot badly, legible at a glance
+in a way no sim report surfaces.
+
+**Real limitation, surfaced not hidden**: grifters cannot be inspected, having no coordinates
+anywhere in this engine (housing `districtId` only). That is 20-26 of ~64 people off the map.
+
+6 new tests, 621 total, typecheck clean. Phase C (the flashlight) remains blocked on the
+sabotage campaign restructure.

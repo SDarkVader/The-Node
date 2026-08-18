@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type World } from '../src/world/world.js';
-import { renderFrame, renderMap, shardBounds, mapWidth, collectEvents, CELL_WIDTH } from '../src/sim/playtestRenderer.js';
+import { renderFrame, renderMap, renderInspector, shardBounds, mapWidth, collectEvents, CELL_WIDTH } from '../src/sim/playtestRenderer.js';
 import { applyDriverTick, participantsOf, stablePlayerIndex, summarizeActions } from '../src/sim/playtestDrivers.js';
 import { computeEconomicHeat } from '../src/engine/economicHeat.js';
 import { mulberry32 } from '../src/sim/rng.js';
@@ -77,6 +77,79 @@ describe('playtest renderer — pure projection', () => {
       events.push(...collectEvents(world));
     }
     expect(events.some((e) => e.toLowerCase().includes('oracle'))).toBe(false);
+  });
+});
+
+describe('playtest inspector — Phase B, strictly read-only', () => {
+  it('reports a real role slot under the cursor, with state read straight off the World', () => {
+    const world = stepN(createWorld(7, DEFAULT_WORLD_CONFIG), 120);
+    const building = world.shard.districts[0]!.buildings.find((b) => world.millers.some((m) => m.buildingId === b.id))!;
+    const lines = renderInspector(
+      world,
+      { color: false, width: 100, eventLog: [], cursor: { x: building.x, y: building.y } },
+      computeEconomicHeat(world),
+    );
+    const text = lines.join('\n');
+    expect(text).toContain('Miller');
+    expect(text).toContain(building.id);
+    expect(text).toMatch(/FILLED|VACANT|BACKSTOPPED/);
+  });
+
+  it('never exceeds the map width, so the status column cannot be pushed out of alignment', () => {
+    // A pane that jostles the rest of the screen is worse than one that abbreviates. Checked
+    // across many cursor positions, including the longest-rendering ones (a FILLED market role
+    // with real completion stats).
+    const world = stepN(createWorld(7, DEFAULT_WORLD_CONFIG), 200);
+    const heat = computeEconomicHeat(world);
+    const bounds = shardBounds(world.shard);
+    const width = mapWidth(world);
+    for (let y = bounds.minY; y <= bounds.maxY; y++) {
+      for (let x = bounds.minX; x <= bounds.maxX; x++) {
+        for (const line of renderInspector(world, { color: false, width: 100, eventLog: [], cursor: { x, y } }, heat)) {
+          expect(line.length).toBeLessThanOrEqual(width);
+        }
+      }
+    }
+  });
+
+  it('inspecting does not mutate the world, at any cursor position', () => {
+    const world = stepN(createWorld(5, DEFAULT_WORLD_CONFIG), 60);
+    const heat = computeEconomicHeat(world);
+    const before = JSON.stringify({ g: world.wealthGini, p: world.population, m: world.millers.map((m) => m.wealth) });
+    const bounds = shardBounds(world.shard);
+    for (let y = bounds.minY; y <= bounds.maxY; y++) {
+      for (let x = bounds.minX; x <= bounds.maxX; x++) {
+        renderInspector(world, { color: false, width: 100, eventLog: [], cursor: { x, y } }, heat);
+      }
+    }
+    expect(JSON.stringify({ g: world.wealthGini, p: world.population, m: world.millers.map((m) => m.wealth) })).toBe(before);
+  });
+
+  it('says so plainly outside the settlement rather than rendering an empty pane', () => {
+    const world = createWorld(7, DEFAULT_WORLD_CONFIG);
+    const bounds = shardBounds(world.shard);
+    const lines = renderInspector(
+      world,
+      { color: false, width: 100, eventLog: [], cursor: { x: bounds.maxX, y: bounds.maxY } },
+      computeEconomicHeat(world),
+    );
+    // That corner is outside the generated plot set at this config; either way the pane must
+    // describe what is there, never come back blank.
+    expect(lines.length).toBeGreaterThan(0);
+  });
+
+  it('no cursor means no pane at all — the map stands alone', () => {
+    const world = stepN(createWorld(7, DEFAULT_WORLD_CONFIG), 30);
+    expect(renderInspector(world, { color: false, width: 100, eventLog: [] }, computeEconomicHeat(world))).toEqual([]);
+  });
+
+  it('the cursor is visible in plain mode too, so the pane always refers to a locatable cell', () => {
+    const world = stepN(createWorld(7, DEFAULT_WORLD_CONFIG), 30);
+    const plaza = world.shard.districts[0]!.plazaPlot;
+    const withCursor = renderFrame(world, { color: false, width: 110, eventLog: [], cursor: { x: plaza.x, y: plaza.y } });
+    const without = renderFrame(world, { color: false, width: 110, eventLog: [] });
+    expect(withCursor).toContain('[');
+    expect(without.split('\n')[3]).not.toContain('[');
   });
 });
 
