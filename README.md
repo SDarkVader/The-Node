@@ -61,12 +61,14 @@ price and watch your customers drift next door. It's a smaller, steadier
 kind of pressure than Miller's, but it's real, and it's felt by everyone who
 eats bread, which is everyone.
 
-**Couriers, Journalists, and Detectives** keep everything else moving —
-three "stable" roles, less individually exposed than Miller, no less
-necessary. A slow Courier shift is a Baker running short on flour by
-evening. What each of them actually *does*, day to day, is still being
-worked out — right now they share a flat wage, a deliberate placeholder
-until each gets its own real mechanic, the same way Miller and Baker did.
+**Couriers, Journalists, Detectives, and Import/Export** keep everything
+else moving — four "stable" roles, less individually exposed than Miller,
+no less necessary. A slow Courier shift is a Baker running short on flour
+by evening. Courier pay is real now, not a placeholder — earned from the
+actual distance between a Courier's own district and the shard hub, not a
+flat number. Journalist, Detective, and Import/Export still share a flat
+wage for now, a deliberate placeholder until each gets its own real
+mechanic, the same way Miller, Baker, and Courier did.
 
 **Everyone else is a community player — a "grifter," in the project's own
 shorthand** — with no role at all, yet. Not sitting outside the economy:
@@ -80,7 +82,7 @@ disappear — including out of a role and back into the grifter pool, not
 out of the node entirely. The node doesn't stop for them, but it doesn't
 pretend nothing happened either.
 
-The specific roster (five roles plus the grifter pool) is real and built
+The specific roster (six roles plus the grifter pool) is real and built
 now, and how many of each role a node should hold has been simulated and
 decided, not just assumed — checked against the actual multi-shard system
 rather than one shard in isolation. It's a real answer, not necessarily
@@ -179,10 +181,18 @@ The private diary, face-to-face conversation, and arson (below) now have
 real, tested engine code — `src/engine/diary.ts`,
 `src/comms/proximityConversation.ts`, `src/infra/moderationLog.ts`,
 `src/engine/arson.ts` — calibrated and verified the same way everything
-else in this repo is, but not yet wired into the live running world (no
-`world.ts` tick-loop integration yet), so still not something you could
-actually play with today. Everything else below remains design only —
-reasoned through, simulated, argued about, but no code yet:
+else in this repo is. **The diary is now actually wired into the live
+running world** (`stepWorld` processes queued diary entries every tick,
+rejecting a self-entry or an unresolved SUBJECT without blocking anything
+else that tick); face-to-face conversation and arson still aren't (no
+`world.ts` tick-loop integration for either yet), so neither is something
+you could actually play with today. A home for every player — including
+grifters — is also real and wired now, not just designed: one universal
+housing type, density added via real per-building floor counts rather than
+more buildings, with reputation levels gating role access already live in
+the same conscription pass that fills every role. Everything else below
+remains design only — reasoned through, simulated, argued about, but no
+code yet:
 
 - **The Oracle** — a battered, unglamorous fixture anyone can visit once a
   day for a real probability draw, the same odds for a three-year veteran as
@@ -198,12 +208,13 @@ reasoned through, simulated, argued about, but no code yet:
   survives quietly drifts a little further from exactly-what-happened each
   day it's still around, no warning, no fade-in. It's a place to process a
   feeling, not a dossier that follows someone forever, and not a reliable
-  transcript either.
+  transcript either. (Now wired into the live world — see above.)
 - **Face-to-face conversation** — real-time, addressed, in the room, built
   from the same kind of composed vocabulary as the Wall rather than typed
   free text. Nothing about it is ever recorded. Once it's said, it exists
   only in whoever was standing close enough to hear it.
-- **A home for everyone, including grifters** — one housing type, not a
+- **A home for everyone, including grifters** *(built and wired, not just
+  designed — see above)* — one housing type, not a
   separate tier for people without a role yet. Whoever you are, you live
   somewhere real — above a bakery, or elsewhere across the city — with
   density handled by adding floors to a building rather than adding more
@@ -339,9 +350,9 @@ a proven property turned up along the way: tightening it narrows the gap
 *between* Millers and Bakers but does nothing for inequality *among*
 bakers themselves, since relative demand shares don't change.
 
-The full 5-role roster (Miller, Baker, Courier, Journalist, Detective)
-plus an individually-tracked "grifter" pool for roleless community
-players is now built and wired into the world kernel — every role can
+The full 6-role roster (Miller, Baker, Courier, Journalist, Detective,
+Import/Export) plus an individually-tracked "grifter" pool for roleless
+community players is now built and wired into the world kernel — every role can
 draft an open slot from the grifter pool or from another role's holder,
 not just Miller as before. **A real, honestly-reported finding came out
 of deriving how many of each role a node should hold**: population
@@ -368,7 +379,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 432 automated tests cover all of it.
+citations, and open questions left. 562 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -428,20 +439,45 @@ forever just for standing somewhere quieter. A visual framework
 Market sit and how the Wall's ambient "Emissive Soul" mood should be
 computed — design only, not yet rendered anywhere.
 
+Since then (2026-08-13 through today), the housing-and-reputation question
+got resolved for real: universal housing (one type, density via real
+per-building floor counts) is built and wired, paired with reputation
+levels that gate which roles a grifter can voluntarily fill — genuinely
+tested, not just designed. The same pass built and tested (but did not all
+wire live) the private diary — since wired, and now processed every tick —
+plus face-to-face conversation and arson, and closed a real gap where
+role-holders had no personal crafting-resource balance to draw from. A
+grifter conscripted into a role now gets a small, capped, grant-only
+experience head start if they'd genuinely covered shifts in that specific
+role before (calibrated down hard after a real "does this let the
+experienced jump the queue" objection, then measured against a real
+simulation to confirm the effect stays small). And an externally-produced
+design document was checked against this actual codebase point by point
+rather than taken on faith — most of it didn't hold up (a database layer,
+"Credits" currency, and infrastructure this repo doesn't have), but one
+real, useful idea survived the audit: whether an established role-holder
+should have some protection from being drafted out of their role to cover
+someone else's vacancy. Built as *preference, not immunity* — an
+established occupant is now preferred to keep their slot over a newer one
+when a role elsewhere needs an emergency draft, but nobody is ever
+permanently un-pickable, on purpose (a permanent shield would have created
+its own slow path back to the exact "nobody left to draft" failure the
+whole conscription system exists to prevent).
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
-mechanics are built on top of it), the Oracle, the private diary,
-face-to-face conversation, real Phase 4 visual rendering (today's client is
-plain text — it proves the wiring works, not what the world looks like),
-the voice/safety architecture, the Wall's Emissive Soul rendering itself,
-and the multi-shard ecosystem's actual playable form — the mechanics above
-are real and tested, but nothing about them is something a player can walk
-into yet.
+mechanics are built on top of it), the Oracle, face-to-face conversation
+(built and tested, not yet wired into the live tick loop), real Phase 4
+visual rendering (today's client is plain text — it proves the wiring
+works, not what the world looks like), the voice/safety architecture, the
+Wall's Emissive Soul rendering itself, and the multi-shard ecosystem's
+actual playable form — the mechanics above are real and tested, but
+nothing about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 432 tests
+npm test               # 562 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -465,7 +501,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (432 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (562 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

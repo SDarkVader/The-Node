@@ -16,7 +16,28 @@ personal memory is mortal, civic memory is immortal; let outcomes be real, don't
 them; reputation may only ever grant, never remove) that apply to everything built from
 here on.
 
-## Current state (as of 2026-08-13, mid-session — see below before assuming this is a stopping point)
+## Current state (as of 2026-08-18)
+
+**2026-08-18**: the `V_i`/constraint-6 open question (below, was still-open as of 2026-08-13)
+is resolved — rejected as specified, constraint 6 stays unrevised — and the buildable
+alternative offered instead is now BUILT and tested: `multiRoleConscription.ts`'s
+`conscriptionFromOtherRole` eviction pick (which existing role-holder gets pulled out of their
+role to cover a BACKSTOPPED slot elsewhere) now prefers evicting whoever hasn't held their
+current slot for `ESTABLISHED_TENURE_DAYS` days yet (`[CALIBRATED — provisional]`, 30,
+adjustable in one place — a named exported constant, not a hardcoded literal, specifically so
+the feel can be retuned without touching the selection logic) over anyone who has. This is
+PREFERENCE, not immunity: once every other-role candidate has cleared the bar, the pick falls
+back to plain uniform random exactly like before — no permanent ranking even among established
+players, and nobody is ever permanently un-pickable, unlike the rejected `V_i` shield. New
+`RoleEconomicSlot.daysInRole`/`SupportRoleSlot.daysInRole` (uncapped, unlike `experience` which
+saturates at `EXPERIENCE_CAP`) feeds this — 0 the moment a slot transitions into FILLED, +1
+each day it stays FILLED, frozen otherwise, `ESTABLISHED_TENURE_DAYS` at world creation ("start
+maxed, established shard," matching `experience: EXPERIENCE_CAP`'s existing convention). Fully
+optional/backward-compatible at the pure-function level — every one of the 553 pre-existing
+tests passed unchanged before any new ones were added, proving the omitted-field path is
+byte-identical to before. 9 new tests (4 pure-function in `multiRoleConscription.test.ts`, 5
+real-`World` integration in the new `test/world.evictionProtection.test.ts`), 562 total,
+typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
 
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
@@ -352,13 +373,13 @@ not just one:
    constraint 2 exists to rule out. Grant-only and permanent-immunity-from-the-shard's-own-
    survival-mechanism don't coexist safely.
 
-**Buildable alternative, offered but NOT built or confirmed** (do not build without the user
-explicitly asking): extend the already-shipped "prefer lowest-standing eligible candidate
-first, longest wait" conscription selection bias (built this session for grifters) more
-broadly. Preference, not immunity — gives established players real, felt protection from being
-drafted ahead of a green candidate, without ever making anyone permanently un-pickable, and it
-degrades gracefully under population pressure instead of failing catastrophically once too many
-players accumulate a status that can never be taken back.
+**Buildable alternative, offered — and then, same day, built and tested (user: "yeah, build the
+selection bias extension").** Extended the already-shipped "prefer lowest-standing eligible
+candidate first, longest wait" conscription selection bias (built earlier this session for
+grifters) to `conscriptionFromOtherRole`: an established occupant (>= `ESTABLISHED_TENURE_DAYS`
+in their current slot) is now preferred to survive eviction over a green one, wherever a green
+alternative still exists. Preference, not immunity — see the top-of-file 2026-08-18 entry for
+the full build summary and `docs/DEVLOG.md`'s matching entry for the complete reasoning.
 
 **What DID get built and tested from that material**: `personalResourceStock`
 (`src/engine/personalResourceStock.ts`) — closes the real, previously-flagged gap

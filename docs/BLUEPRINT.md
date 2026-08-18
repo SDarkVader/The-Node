@@ -3694,10 +3694,39 @@ The external v8 material's `V_i` "reputation velocity" mechanic (conscription-sh
    failure constraint 2 exists to rule out. Grant-only reputation and permanent immunity from
    the shard's own survival mechanism don't compose safely at any threshold.
 
-**Proposed, explicitly NOT built**: extend the already-shipped "prefer lowest-standing eligible
-candidate first, longest wait" conscription selection bias (built this session for grifter
-conscription) to established players more broadly. Preference, not immunity — real protection
-from being drafted ahead of a green candidate, without ever making anyone permanently
-un-pickable, and it degrades gracefully under population pressure instead of failing
-catastrophically once too many players accumulate an un-revocable status. Needs the user's
-explicit go-ahead before any of it gets built.
+**Proposed, then — same day, user: "yeah, build the selection bias extension" — built.** See the
+next entry below for the shipped implementation.
+
+---
+
+**2026-08-18, later — the proposed alternative shipped: `occupantTenure`/
+`ESTABLISHED_TENURE_DAYS` eviction preference on `conscriptionFromOtherRole`.**
+`multiRoleConscription.ts`'s `RoleGroupState` gains an optional `occupantTenure?: readonly
+number[]` (parallel to `slots`, per-slot days the current occupant has held it). When an other-
+role FILLED candidate must be evicted to cover a BACKSTOPPED slot elsewhere, the pick now
+prefers whoever hasn't held their slot for `ESTABLISHED_TENURE_DAYS` days yet (`[CALIBRATED —
+provisional]`, 30, exported alone so a dev can retune it without touching the selection logic —
+user: *"make sure it's adjustable by the dev as a [variable] we can change if it doesn't play
+well"*) over anyone who has; once nobody remains below the bar, the pick falls back to the
+original uniform-random pool — preference, never a permanent ranking even among veterans
+themselves, and never immunity. Omitting `occupantTenure` (every pre-2026-08-18 caller)
+reproduces the exact old behavior — proven, not just claimed: all 553 pre-existing tests passed
+unchanged before a single new test was written.
+
+`world.ts` gains `RoleEconomicSlot.daysInRole`/`SupportRoleSlot.daysInRole` to feed it: 0 on a
+fresh FILLED transition, +1 per day FILLED, frozen otherwise — same reset convention as
+`wealth`, touched at all ~15 real fill-transition points, incremented in `stepCompetitiveLayer`
+for Miller/Baker (alongside `experience`) and in the Stage 3 wealth-accrual stage for the four
+support roles. Deliberately separate from `experience`, which caps at `EXPERIENCE_CAP` (0.5)
+and saturates too fast to rank two long-tenured occupants against each other; `daysInRole` is
+uncapped. World creation seeds FILLED slots at `ESTABLISHED_TENURE_DAYS`, not 0 — "start maxed,
+established shard," matching `experience: EXPERIENCE_CAP`'s existing convention.
+
+9 new tests: 4 pure-function (`test/multiRoleConscription.test.ts` — green-before-established
+across 5 seeds, both green candidates exhausted before either established one when 2 slots need
+filling same day, falls back to the full pool once nobody qualifies as green, and the explicit
+omit-vs-all-established-tenure equivalence proof), 5 real-`World` integration (new
+`test/world.evictionProtection.test.ts` — `daysInRole` tracking correctness, plus the real
+end-to-end case: an established courier survives across 5 seeds against an otherwise all-green
+cast of other-role candidates while a green one gets evicted in its place). 562 tests total,
+typecheck clean. Full reasoning: `docs/DEVLOG.md`'s matching entry.

@@ -6,6 +6,58 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Eviction-preference bias built: the V_i alternative, shipped and tested
+
+Direct follow-up to the same-day V_i resolution (next entry below): *"yeah, build the selection
+bias extension."* Extends the already-shipped "prefer lowest-standing eligible candidate first,
+longest wait" grifter-conscription selection bias to `multiRoleConscription.ts`'s
+`conscriptionFromOtherRole` event — the mechanism where an existing role-holder in one role gets
+evicted to cover a different role's BACKSTOPPED slot. Previously this pick was pure uniform
+random across every other-role FILLED candidate, with zero regard for how long they'd held
+their slot; a player who'd just started was exactly as likely to be pulled as a long-tenured
+veteran.
+
+**New `RoleGroupState.occupantTenure?: readonly number[]`** (parallel array to `slots`, per-slot
+days the current occupant has held it). Optional, and its default when omitted
+(`ESTABLISHED_TENURE_DAYS`, meaning "already established, no preference") is specifically chosen
+so that omitting the field reproduces the EXACT old uniform-random behavior — verified directly:
+every one of the 553 pre-existing tests passed unchanged with zero modification before any new
+test was added, proving this isn't just intent but a checked property. When tenure data IS
+provided, the eviction pick prefers candidates below `ESTABLISHED_TENURE_DAYS` (a
+`[CALIBRATED — provisional]` constant, deliberately exported by itself so a dev can retune it
+in one place without touching the selection logic — user: *"make sure it's adjustable by the
+dev as a [variable] we can change if it doesn't play well"*); once nobody remains below the bar,
+the pick falls back to the full uniform-random pool exactly as before — deliberately not a
+permanent ranking even among established players themselves, matching the "preference, not
+immunity, never a permanent hierarchy" discipline the V_i rejection itself was argued on.
+
+**New `RoleEconomicSlot.daysInRole`/`SupportRoleSlot.daysInRole`** (`world.ts`) feeds it: 0 the
+moment a slot transitions into FILLED, +1 every day it stays FILLED, frozen while VACANT/
+BACKSTOPPED — same reset convention as `wealth`/`personalResourceStock`, touched at all ~15 real
+fill-transition points plus the Stage 3 wealth-accrual stage for the daily increment (Miller/
+Baker handled entirely inside `stepCompetitiveLayer`, mirroring how `experience` already works
+there). Deliberately a SEPARATE field from `experience` — `experience` caps at `EXPERIENCE_CAP`
+(0.5) and saturates fast, useless for ranking "how established" two long-tenured occupants are
+relative to each other; `daysInRole` is uncapped. At world creation, FILLED slots start at
+`ESTABLISHED_TENURE_DAYS` (not 0) — "start maxed, established shard," the same convention
+`experience: EXPERIENCE_CAP` already uses.
+
+**Tests**: 4 new pure-function tests in `test/multiRoleConscription.test.ts` (green candidate
+evicted before an established one, across 5 seeds; both green candidates exhausted before either
+established one is touched when 2 slots need filling the same day; falls back to the full pool
+once nobody is below the bar, never stalls; omitting `occupantTenure` entirely reproduces the
+exact same event tally as passing it filled with `ESTABLISHED_TENURE_DAYS` everywhere — the
+explicit backward-compatibility guarantee). 5 new integration tests in the new
+`test/world.evictionProtection.test.ts` against a real `World`: `daysInRole` starts at
+`ESTABLISHED_TENURE_DAYS` at creation, increments/freezes correctly, resets to 0 on conscription;
+and, the real end-to-end case — a deliberately constructed fixture (zero grifters so every
+conscription event is forced through `conscriptionFromOtherRole`, one established courier among
+an otherwise all-green cast of other-role candidates, one Miller slot forced BACKSTOPPED) proves
+the established occupant survives across 5 seeds while exactly one green candidate gets evicted
+in its place. 562 tests total (553 + 9), typecheck clean.
+
+---
+
 ## 2026-08-18 — V_i / constraint 6 resolved: rejected as specified
 
 Direct answer to the user's instruction: *"answer the V_i / constraint 6 question."* The
