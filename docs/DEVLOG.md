@@ -6,6 +6,72 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Playtest harness scoped, and a blocking finding that reorders the sabotage work
+
+User: *"I really need to get to the position where I can play test the game and design the
+precise gameplay from experience and what's fun, rather than assuming simulations will do so."*
+Fair, and worth stating plainly: every mechanic in this repo has been validated by simulation
+against a deterministic baseline, which is right for economics and the wrong instrument for
+feel. Nothing built here has ever been looked at. Scoped as
+`docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md` — **design only, no code this pass.**
+
+**Measured before scoping, not estimated** — the shipped shard is a **14 × 15 grid** (90
+plots, 62 buildings, hub (0,0), plaza (7,1), probed against a real `createWorld`). That kills
+the one risk that could have sunk a terminal harness: at 2 columns per x-unit it's 28 × 15
+characters, comfortably inside 80 × 24 *with* a status panel. The single-district decision
+from 2026-08-13 is what makes this true — one district IS the settlement, so there is nothing
+else to draw.
+
+**Two corrections to my own verbal advice from earlier in the same conversation**, recorded
+rather than quietly dropped: (1) I'd suggested half-block `▀` sub-cell rendering to double
+vertical resolution — wrong technique once measured, since 90 discrete plots is a coarse grid
+and sub-plot detail carries no game state; one plot should be one chunky cell. (2) I'd
+mentioned 20–30fps ambient animation — needless and slightly wrong-headed, since `stepWorld`
+is a daily tick, so the harness is turn-based and repaints on state change, not on a frame
+clock. Both were stated before the numbers were in hand, which is exactly the failure mode
+CLAUDE.md's top rule is about.
+
+**THE FINDING, and it revises a claim I made earlier this session.**
+`ecosystem.ts`'s `patternSabotageAttempt()` resolves an entire campaign inside one function
+call — a `for` loop over every step, returning success/caught, with `detectiveActive` as a
+parameter **fixed for the whole campaign at the moment of the call**. So a Detective cannot
+intervene mid-campaign, because a campaign has no "mid": it begins and ends in one call.
+
+That directly blocks the locked design answer ("Detective selects a specific suspect, and
+that's what sets `detectiveActive` for that campaign") — there is nothing in flight to point a
+flashlight at. And it means my earlier characterization of promoting pattern-sabotage to
+shipped-default as roughly a swap of one resolver for another **was wrong**. It's a
+restructure: persistent `World.sabotageCampaigns`, a `stepWorld` stage advancing due campaigns
+one step per cadence interval, rolling detection against *live* witness counts.
+
+Two things fall out that I'd otherwise have gotten wrong later. First, the measured
+calibration (71.1%/55 days without a Detective, 40.2%/85 with) came from the one-shot resolver
+against a **fixed** witness count — a live stepper rolls against counts that move as slots
+fill and vacate, so those numbers **do not automatically carry over and must be re-measured**.
+The "simulate before trusting" constraint applies to the restructure itself, not just its
+inputs. Second, the caught-saboteur consequence gap (a KNOWN GAP in `ecosystem.ts` for both
+resolvers, resolved in neither) stops being deferrable, because the walk-of-shame design *is*
+that consequence.
+
+**Sequencing conclusion**: harness Phases A (viewer) and B (inspection) depend on none of
+this and can start immediately against the world as it already exists — helped a lot by
+`economicHeat.ts` having been built two weeks ago as an explicitly pure, `stepWorld`-uncoupled
+projection, and by `districtWeather.ts`'s `tension` deliberately sharing its 0..1 scale "since
+both feed the same visual contract." Phase C (the flashlight, the first real action) waits on
+the campaign restructure. Building the viewer first means the sabotage rework lands in
+something you can already watch, which is the whole point.
+
+Also captured in the doc: the two independent consequence tracks the user settled — functional
+(abode locked, Oracle visit clears it early, timer clears it regardless, no starvation) and
+social (walk of shame at the Wall via a new narrow **confession grammar**, the only place a
+player may ever name themselves, unlocked only once marked, leaving the existing Wall
+invariant intact for everyone else). Checked against constraint 6: neither track subtracts
+from reputation — exposure is a separate channel, shaped more like the Silhouette Shield's
+forced resolution than like a reputation score. The timer failsafe was the user's own instinct
+and satisfies constraint 2 without being told to.
+
+---
+
 ## 2026-08-18 — Proximity conversation wired into stepWorld
 
 Picked up HANDOVER's next-in-line item: "Proximity conversation wiring into `stepWorld`
