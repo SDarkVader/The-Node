@@ -14,6 +14,7 @@
     "ecosystem-sim": "tsx src/sim/ecosystemCli.ts",
     "sabotage-pattern-sim": "tsx src/sim/sabotagePatternCli.ts",
     "arson-sim": "tsx src/sim/arsonCli.ts",
+    "experience-floor-sim": "tsx src/sim/experienceFloorCli.ts",
     "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "world-sim": "tsx src/sim/worldCli.ts",
     "role-ratio-sweep": "tsx src/sim/roleRatioSweep.ts",

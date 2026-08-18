@@ -374,15 +374,20 @@ lowest-level/longest-wait, zero input from shift history — nobody skips the qu
 boost's SIZE was a legitimate, unmeasured gap. Cut hard: `EXPERIENCE_FLOOR_MAX_FRACTION`
 0.5→0.15, `EXPERIENCE_FLOOR_PER_SHIFT` scaled to match (still 5 real shifts to max out the now
 much smaller ceiling). Both remain `[CALIBRATED — provisional]` — a considered correction
-under real time constraints, not a measured one. **549 tests total (unchanged — they reference
-the constants symbolically), typecheck clean, all committed and pushed to `main`.**
+under real time constraints, not a measured one.
+
+**Then: "simulate the dip before/after the floor."** Done for real — `sim/
+experienceFloorHarness.ts` + `sim/experienceFloorCli.ts` (`npm run experience-floor-sim`): two
+`World`s from the same seed run in exact lockstep, one real, one with every grifter's
+`shiftsCoveredByRole` stripped each tick as an honest counterfactual (confirmed it never
+influences any rng draw or selection). Measured, 8 seeds x 3000 days: only 12.3% of Miller/
+Baker fills land any floor at all; among those, mean starting experience is 4.5% of
+`EXPERIENCE_CAP`, comfortably inside the 15% ceiling; aggregate steady-state effect is 0.37%
+relative on mean experience, 0.00074 on `economicHealthWithExperience` — genuinely small. The
+cap correction held under real measurement, not just intent. 4 new regression tests lock the
+actual numbers in. **553 tests total, typecheck clean, all committed and pushed to `main`.**
 
 **Next, in rough priority order:**
-0. The experience-floor constants (`EXPERIENCE_FLOOR_MAX_FRACTION`/`_PER_SHIFT`) are still
-   `[CALIBRATED — provisional]` — a considered correction, not a simulated one. Real next step:
-   measure the actual size of the productivity dip with/without the floor at the new, smaller
-   cap before trusting it further, same "simulate before trusting" discipline as every other
-   constant in this repo.
 1. The `V_i`/constraint-6 question above — needs the user's answer before any velocity-shield
    mechanic gets built.
 2. The level-2 reputation-gate mechanism itself — still genuinely open, and now has a second

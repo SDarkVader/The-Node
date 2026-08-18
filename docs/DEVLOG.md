@@ -6,6 +6,33 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-13 — Experience floor's real effect measured, not just corrected by feel
+
+Direct follow-up to the same-day cap correction (previous entry): *"simulate the dip
+before/after the floor."* Built `sim/experienceFloorHarness.ts` — runs two `World`s from the
+SAME seed and config in exact lockstep (`shiftsCoveredByRole` never influences any rng draw or
+selection, confirmed directly in `world.ts`), one real, one with every grifter's shift history
+stripped after each tick as an honest counterfactual — plus `sim/experienceFloorCli.ts`
+(`npm run experience-floor-sim`) as the permanent report.
+
+**Real numbers, 8 seeds x 3000 days, 300-day burn-in**: only 12.3% of all Miller/Baker fills
+land a non-zero floor at all — the large majority of conscripts are still green, matching the
+design intent exactly. Among the fills that DO get one, mean starting experience is 0.0225 of
+EXPERIENCE_CAP=0.5 (4.5%) — comfortably inside the new 15% ceiling, nowhere near it. Aggregate
+steady-state effect: mean Miller+Baker experience is 0.37% higher with the floor than without;
+`economicHealthWithExperience` differs by 0.00074. **The correction held**: at the new 15% cap,
+this mechanism is a genuinely small cushion in practice, not a measurement-shaped guess that
+happened to sound right.
+
+4 new regression tests lock the real numbers in, not just the design intent: most fills land
+zero floor, non-zero fills stay a small fraction of the cap, aggregate relative difference
+stays under 2%, and the floor never produces a WORSE outcome than no floor (grant-only holds
+in aggregate, not just per-entry). 553 tests total (549 + 4), typecheck clean.
+
+---
+
+---
+
 ## 2026-08-13 — Experience floor cut hard: 50%→15% of EXPERIENCE_CAP, same day it shipped
 
 User caught a real risk in the experience-floor mechanic (previous entry) before it had a

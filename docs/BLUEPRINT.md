@@ -3660,3 +3660,17 @@ hard: `EXPERIENCE_FLOOR_MAX_FRACTION` 0.5→0.15, `EXPERIENCE_FLOOR_PER_SHIFT` s
 (still exactly 5 shifts to max out the now much smaller ceiling). Both remain `[CALIBRATED —
 provisional]` — a considered correction, not a measured one; real simulation still needed
 before trusting further. All 549 tests unchanged (reference the constants symbolically).
+
+---
+
+**2026-08-13, later still — that simulation run for real.** `sim/experienceFloorHarness.ts` +
+`sim/experienceFloorCli.ts` (`npm run experience-floor-sim`): two `World`s from the same seed
+run in exact lockstep, one real, one with `shiftsCoveredByRole` stripped each tick as an
+honest counterfactual (never affects any rng draw or selection — confirmed directly). Measured,
+8 seeds x 3000 days: only 12.3% of Miller/Baker fills land any floor at all; among those, mean
+starting experience is 4.5% of `EXPERIENCE_CAP`, well inside the 15% ceiling; aggregate
+steady-state effect is 0.37% relative on mean experience, 0.00074 on
+`economicHealthWithExperience` — both genuinely small. The cap correction held under real
+measurement, not just intent. 4 new regression tests lock the actual numbers in (most fills
+land zero, non-zero fills stay small, aggregate diff stays under 2%, floor never produces a
+worse outcome than no floor). 553 tests total, typecheck clean.
