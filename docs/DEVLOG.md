@@ -6,6 +6,76 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Sabotage restructured into persistent campaigns; pattern-based sabotage is now SHIPPED
+
+User: *"do the sabotage campaign restructure."* Done, in the verified stages they asked for.
+647 tests, typecheck clean. `npm run sabotage-campaign-sim` is the permanent report.
+
+**What changed.** `patternSabotageAttempt()` resolved an entire campaign inside one call, with
+`detectiveActive` fixed at call time — so a campaign had no "mid" and nothing could intervene
+partway through it. New `src/engine/sabotageCampaign.ts` owns a state machine only: open, step
+when due, advance / catch / succeed. The detection math is imported unchanged from
+`ecosystem.ts` and deliberately NOT duplicated. `patternSabotageAttempt` is kept and still
+exported — it remains exactly right for `sabotagePatternHarness.ts`'s fixed-witness sweeps; it
+simply stops being what the live world uses. **Pattern-based sabotage is no longer a
+"PROPOSAL, not shipped"; it is the model.**
+
+`World` gained `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`. The hazard
+now OPENS a campaign rather than resolving one, `config.saboteurCount` caps concurrency (that
+is exactly what "how many saboteurs are active" already meant), and each step rolls against the
+witness count that is real *at that moment* rather than one frozen at open.
+
+**THE STRUCTURAL FINDING, which explains why the caught-saboteur gap was never closed.**
+`ecosystem.ts` has carried "no consequence for a caught saboteur" as a KNOWN GAP for both
+resolvers. Tracing it turned up the real reason: **the engine had no saboteur identity at all.**
+`sabotageAttempt(saboteurCount, ...)` takes an anonymous COUNT — nobody was ever named, so
+there has never been anyone to fine, mark, or lock out of their abode. `SabotageCampaign.saboteurId`
+closes that structurally (null for the ambient hazard, a real id once a driver or player opens
+one). **The consequence itself is still NOT invented here** — the walk of shame, abode lockout,
+Oracle unlock and fine are a design still being settled, and this pass deliberately stops at
+making them buildable.
+
+**Re-measurement, which the design doc demanded rather than assuming carry-over.** The old
+calibration (71.1% success without a Detective, 40.2% with) came from fixed-witness sweeps.
+Live, over 8 seeds x 3000 days: 1083 opened, 340 succeeded, 439 caught, 290 abandoned —
+**43.6% success among contested resolutions**, mean duration 28.9 days (max 42, well under the
+user's 100-day ceiling), mean 1.30 campaigns in flight, opening interval 22.1 days against a
+20-day hazard, 90 distinct opening gaps (still no learnable period). Constraint 2 re-verified
+directly: minimum `economicHealth` 0.7652 across every run, and a dedicated test holds it above
+`BACKSTOP_PRODUCTIVITY` under deliberately heavy pressure (saboteurCount 8, cadence 5).
+
+**A defect found by LOOKING, not reasoning — the playtest harness earning its keep.** Inspecting
+a building in the harness showed a campaign opened on day 2 still grinding on day ~45 against a
+Detective slot whose occupant had churned out on day 13. It would spend six weeks and one of
+only three campaign slots forcing out somebody already gone. Added an `abandoned` outcome: 290
+of 1069 resolved campaigns (27%) were in that state. Fixing it dropped mean concurrency
+1.49 -> 1.30 and tightened the opening interval 23.4 -> 22.2 days.
+
+**A finding I nearly shipped a wrong narrative about.** The report initially said the live
+success rate "sits between" the two harness figures. The data says otherwise: **96.5% of
+campaign-steps are under investigation**, because the interim assignment rule is "is a Detective
+FILLED in the target's district" and the shipped config is ONE district with 8 Detective slots.
+So investigation is near-constant rather than a scarce directed resource, and the live figure
+lands near the WITH-Detective number rather than between. Corrected in the report itself. This
+is a finding about the interim rule, not about sabotage — and it is precisely what the
+flashlight exists to fix. `investigatedBy` was deliberately built as a REPLACEABLE ASSIGNMENT
+RULE so Phase C changes who fills the field, not the field or anything downstream of it.
+
+**Four tests failed on the rng-trajectory shift; each fixed on its merits, none loosened.**
+The golden snapshot regenerated (its own documented policy for a deliberate order change). The
+sabotage-frequency and no-learnable-period tests were RETARGETED from `lastSabotage` to campaign
+OPENINGS, because that is where the hazard now lives. The multi-shard accounting test kept its
+invariant — which held on every tick — but its precondition ("failed migrations actually
+happen") stopped firing on one seed, so it went multi-seed. And the wealth-tax Gini test was
+re-sampled after measuring the truth: the tax's effect is REAL but SMALL (0.4932 vs 0.5007,
+~1.5% relative), and 5 single-tick samples cannot resolve it; 800 tail samples can. The
+assertion is still a strict inequality — only the sampling changed.
+
+25 new tests (13 pure, 12 world-level). Not built: the flashlight (Phase C), and any
+consequence for a caught saboteur.
+
+---
+
 ## 2026-08-18 — Playtest harness Phase B: the node became legible
 
 Cursor and inspection, per `docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md`'s Phase B — "selecting

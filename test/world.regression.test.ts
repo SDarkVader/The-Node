@@ -250,7 +250,13 @@ describe('createWorld — configuration errors are real, not silently swallowed'
 });
 
 describe('stepWorld — sabotage timing is a hazard, not a learnable clock', () => {
-  it('preserves the configured expected frequency', () => {
+  // RETARGETED 2026-08-18 (campaign restructure). These used to watch `lastSabotage`, which
+  // fired on every resolved ATTEMPT because an attempt was resolved the instant it was rolled.
+  // Campaigns separate opening from resolution by real days, so the HAZARD now lives in
+  // opening — that is what these must measure to still be testing what they claim.
+  const openings = (w: World) => w.lastSabotageCampaignEvents.filter((e) => e.type === 'opened').length;
+
+  it('preserves the configured expected frequency, allowing for the concurrency cap', () => {
     let events = 0;
     const DAYS = 3000;
     const SEEDS = [1, 2, 3];
@@ -258,12 +264,16 @@ describe('stepWorld — sabotage timing is a hazard, not a learnable clock', () 
       let w = createWorld(seed, DEFAULT_WORLD_CONFIG);
       for (let i = 0; i < DAYS; i++) {
         w = stepWorld(w);
-        if (w.lastSabotage) events++;
+        events += openings(w);
       }
     }
     const meanInterval = (DAYS * SEEDS.length) / events;
-    expect(meanInterval).toBeGreaterThan(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 0.75);
-    expect(meanInterval).toBeLessThan(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 1.25);
+    // A campaign takes real days now, and `saboteurCount` caps how many run at once, so the
+    // observed interval sits ABOVE the raw hazard rate whenever the cap bites — it can never
+    // sit below it. Measured at the shipped config: 23.4 days against a 20-day hazard, with
+    // mean 1.49 campaigns in flight and the cap of 3 reached occasionally.
+    expect(meanInterval).toBeGreaterThanOrEqual(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 0.95);
+    expect(meanInterval).toBeLessThan(DEFAULT_WORLD_CONFIG.sabotageCadenceDays * 1.45);
   });
 
   it('has no learnable period — intervals vary rather than repeating a fixed cadence', () => {
@@ -276,13 +286,35 @@ describe('stepWorld — sabotage timing is a hazard, not a learnable clock', () 
     let last = -1;
     for (let i = 0; i < 4000; i++) {
       w = stepWorld(w);
-      if (w.lastSabotage) {
+      if (openings(w) > 0) {
         if (last >= 0) gaps.push(i - last);
         last = i;
       }
     }
     expect(gaps.length).toBeGreaterThan(20);
     expect(new Set(gaps).size).toBeGreaterThan(10);
+  });
+
+  it('a campaign takes real days between opening and resolving — it is no longer instantaneous', () => {
+    // The restructure's whole point, asserted directly: there is now a "mid" for a Detective,
+    // or eventually a player, to act inside.
+    const openedOn = new Map<string, number>();
+    const durations: number[] = [];
+    let w = createWorld(5, DEFAULT_WORLD_CONFIG);
+    for (let day = 0; day < 2000; day++) {
+      w = stepWorld(w);
+      for (const e of w.lastSabotageCampaignEvents) {
+        if (e.type === 'opened') openedOn.set(e.campaignId, day);
+        else {
+          const start = openedOn.get(e.campaignId);
+          if (start !== undefined) durations.push(day - start);
+        }
+      }
+    }
+    expect(durations.length).toBeGreaterThan(10);
+    expect(Math.min(...durations)).toBeGreaterThan(0);
+    // Every campaign resolves inside the user's stated ceiling: "it can't take over 100 days."
+    expect(Math.max(...durations)).toBeLessThanOrEqual(100);
   });
 });
 
@@ -394,18 +426,33 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
     const millerBakerWealth = (w: World) =>
       [...w.millers, ...w.bakers].filter((s) => s.slot.state === 'FILLED').map((s) => s.wealth);
 
-    const SEEDS = [1, 2, 3, 4, 5];
+    // RE-SAMPLED 2026-08-18 (sabotage campaign restructure). This previously took ONE Gini
+    // reading per seed at day 300, across 5 seeds — 5 samples of a quantity the comment above
+    // already admits is noisy. Campaigns made it noisier for a real reason: a sabotage
+    // eviction resets the new occupant's wealth to 0, and campaigns now evict the slot they
+    // actually targeted, so instantaneous Gini jumps around with recent turnover.
+    //
+    // Measured before touching this: the tax's effect is REAL but SMALL — tail-averaged over
+    // 100 ticks x 8 seeds it reads 0.4932 taxed vs 0.5007 untaxed, ~1.5% relative. At 8
+    // single-tick samples it does not resolve at all (0.4964 vs 0.4852, the wrong way round).
+    // So the fix is to sample properly, not to weaken the claim: the assertion below is still
+    // a strict inequality, it just has 800 samples per arm behind it instead of 5.
+    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
+    const DAYS = 400;
+    const TAIL = 100;
     const taxedGinis: number[] = [];
     const untaxedGinis: number[] = [];
     for (const seed of SEEDS) {
       let worldTaxed = createWorld(seed, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0.8 });
       let worldUntaxed = createWorld(seed, { ...DEFAULT_WORLD_CONFIG, wealthTaxRate: 0 });
-      for (let i = 0; i < 300; i++) {
+      for (let i = 0; i < DAYS; i++) {
         worldTaxed = stepWorld(worldTaxed);
         worldUntaxed = stepWorld(worldUntaxed);
+        if (i >= DAYS - TAIL) {
+          taxedGinis.push(giniCoefficient(millerBakerWealth(worldTaxed)));
+          untaxedGinis.push(giniCoefficient(millerBakerWealth(worldUntaxed)));
+        }
       }
-      taxedGinis.push(giniCoefficient(millerBakerWealth(worldTaxed)));
-      untaxedGinis.push(giniCoefficient(millerBakerWealth(worldUntaxed)));
     }
     const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
     expect(mean(taxedGinis)).toBeLessThan(mean(untaxedGinis));

@@ -131,12 +131,20 @@ gone quiet and thin is a different story: fewer people watching means a
 real opening. A crowded node polices itself just by being crowded, not
 through any rule anyone wrote down.
 
+Working against someone now takes real time. A campaign against a shop
+runs over weeks, a step at a time, and each step is judged by who
+happens to be around *at that moment* — so a node that empties out
+mid-campaign genuinely becomes easier to work in, and one that fills up
+becomes harder. Roughly two in five campaigns get their target out; the
+rest are noticed first, or quietly abandoned because the person walked
+away on their own before anyone could push them.
+
 *Real, tested math, now actually running inside one composed world — a
-BACKSTOPPED or conscripted Miller genuinely feeds the flour price, sabotage
-rolls against real spatial witness counts, not an assumed number. A
-harness-only saboteur decision-maker exists for testing purposes, but
-nothing a real player can attempt yet — that needs actual decisions to
-reach the running world, which is a later, deliberate step, not this one.*
+BACKSTOPPED or conscripted Miller genuinely feeds the flour price, and
+sabotage rolls against real spatial witness counts, not an assumed
+number. What still doesn't exist: anything that happens to somebody who
+gets caught. The system can now name them, which it never could before,
+but what the node does about it is still being worked out.*
 
 ## How the city talks
 
@@ -380,7 +388,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 621 automated tests cover all of it.
+citations, and open questions left. 647 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -551,7 +559,7 @@ something a player can walk into yet.
 
 ```
 npm install
-npm test               # 621 tests
+npm test               # 647 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -575,7 +583,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (621 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (647 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

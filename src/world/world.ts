@@ -144,6 +144,7 @@ import {
 } from '../comms/proximityConversation.js';
 import type { PrivateStore } from '../engine/privateStore.js';
 import { emptyPersonalStock, stepPersonalStock, PERSONAL_RESOURCE_CAP } from '../engine/personalResourceStock.js';
+import { openCampaign, stepCampaign, type SabotageCampaign } from '../engine/sabotageCampaign.js';
 import {
   oracleWinProbability,
   pickPrizeType,
@@ -420,6 +421,24 @@ export interface SabotageLogEntry {
   evicted: number;
 }
 
+/**
+ * One thing that happened to a sabotage campaign this tick (2026-08-18 restructure). Richer
+ * than `SabotageLogEntry`, which only ever described a resolved attempt and is kept for the
+ * consumers already reading it — a campaign now has a life (`opened` -> `caught` | `succeeded`)
+ * worth reporting at each stage, not just an outcome.
+ */
+export interface SabotageCampaignEvent {
+  tick: number;
+  type: 'opened' | 'caught' | 'succeeded' | 'abandoned';
+  campaignId: string;
+  targetBuildingId: string;
+  /** Null for the ambient hazard, which names nobody. See `engine/sabotageCampaign.ts`. */
+  saboteurId: string | null;
+  /** Steps completed at this point — the step that gave it away, for `caught`. */
+  atStep: number;
+  witnesses: number;
+}
+
 export interface RumourEventLite {
   heardBy: PlayerId;
   heardFrom: PlayerId;
@@ -564,6 +583,16 @@ export interface World {
    *  in proximity range) — `composeUtterance` throws on these rather than silently dropping
    *  them, same convention as `lastDiaryRejections`. */
   lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }>;
+  /** Sabotage campaigns currently in flight (2026-08-18 restructure). Real multi-tick state —
+   *  this is what makes a campaign something a Detective, or eventually a player, can act on
+   *  partway through. See `engine/sabotageCampaign.ts`. */
+  sabotageCampaigns: SabotageCampaign[];
+  /** Monotonic campaign id counter — ids only ever grow, same convention as `nextGrifterId`
+   *  and `shardRegistry.ts`'s own shard ids. */
+  nextCampaignId: number;
+  /** Everything that happened to a campaign this tick, `opened` included — so the hazard's own
+   *  timing stays observable now that opening and resolving are days apart. */
+  lastSabotageCampaignEvents: SabotageCampaignEvent[];
 }
 
 /** See `World.lastOracleStats`. `entrants` chose to participate (before affordability is
@@ -766,6 +795,9 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     pendingProximityUtterances: [],
     lastProximityConversations: [],
     lastProximityRejections: [],
+    sabotageCampaigns: [],
+    nextCampaignId: 0,
+    lastSabotageCampaignEvents: [],
   };
 }
 
@@ -1601,6 +1633,8 @@ export function stepWorld(world: World): World {
   // finding — checked before choosing this order, not reinvented.
   let population = world.population;
   let lastSabotage: SabotageLogEntry | null = null;
+  let sabotageCampaigns: SabotageCampaign[] = world.sabotageCampaigns;
+  let nextCampaignId = world.nextCampaignId;
 
   // Sabotage opportunity arrives as a HAZARD, not on a clock (2026-08-11). It previously
   // fired on `day % sabotageCadenceDays === 0` — a covert mechanic running on a public
@@ -1611,47 +1645,162 @@ export function stepWorld(world: World): World {
   // timing rather than to probability. Expected frequency is unchanged — a 1/cadence daily
   // hazard has the same mean interval as a fixed cadence — so no calibration moves; only
   // predictability is removed.
-  if (day > 0 && rng() < 1 / config.sabotageCadenceDays) {
-    const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters });
-    if (filled.length > 0) {
-      const targetIdx = Math.floor(rng() * filled.length);
-      const target = filled[targetIdx]!;
-      const targetBuilding = allBuildingsById.get(target.buildingId)!;
+  // SABOTAGE AS PERSISTENT CAMPAIGNS (restructured 2026-08-18). Pattern-based sabotage is now
+  // the shipped model, replacing `sabotageAttempt`'s one-shot resolve. See
+  // `engine/sabotageCampaign.ts` for why this had to become multi-tick state rather than a
+  // swap of one resolver for another: a campaign resolved inside a single call has no "mid",
+  // so nothing — Detective, player, or the node emptying out around it — can intervene partway.
+  //
+  // `config.acquireDays` and `config.damagePerSuccess` are no longer read here. They still
+  // describe the legacy resolver, which `sim/ecosystemHarness.ts` continues to exercise, so
+  // they stay on `WorldConfig` rather than being deleted out from under it.
+  const sabotageEvents: SabotageCampaignEvent[] = [];
+  {
+    const occupantsForWitness = [
+      ...occupantsOf(millers),
+      ...occupantsOf(bakers),
+      ...occupantsOf(couriers),
+      ...occupantsOf(journalists),
+      ...occupantsOf(detectives),
+    ];
+    const witnessesAround = (buildingId: string): number => {
+      const b = allBuildingsById.get(buildingId);
+      if (!b) return 0;
+      return occupantsWithin(world.shard, occupantsForWitness.filter((o) => o.playerId !== buildingId), b, config.witnessRadius).length;
+    };
 
-      const occupants = [
-        ...occupantsOf(millers),
-        ...occupantsOf(bakers),
-        ...occupantsOf(couriers),
-        ...occupantsOf(journalists),
-        ...occupantsOf(detectives),
-      ].filter((o) => o.playerId !== target.buildingId);
-      const witnesses = occupantsWithin(world.shard, occupants, targetBuilding, config.witnessRadius).length;
+    // Who, if anyone, is investigating each campaign. Mechanical and re-evaluated every tick:
+    // a FILLED Detective in the target's own district. That is a real, observable fact — not a
+    // modelled intent (constraint 3) — and it is deliberately a REPLACEABLE ASSIGNMENT RULE:
+    // the flashlight, when built, changes who fills `investigatedBy`, nothing downstream of it.
+    const filledDetectiveByDistrict = new Map<string, string>();
+    for (const d of detectives) {
+      if (d.slot.state !== 'FILLED') continue;
+      const districtId = buildingDistrictId.get(d.buildingId);
+      if (districtId && !filledDetectiveByDistrict.has(districtId)) filledDetectiveByDistrict.set(districtId, d.buildingId);
+    }
 
-      const successfulSaboteurs = sabotageAttempt(config.saboteurCount, config.acquireDays, detectionProbability(witnesses), rng);
-      const remainingAfterDamage = applySabotageDamage(filled.length, successfulSaboteurs, config.damagePerSuccess);
-      const evictCount = filled.length - remainingAfterDamage;
+    const currentlyFilled = new Set(
+      filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).map((e) => e.buildingId),
+    );
 
-      if (evictCount > 0) {
-        const evictable = [...filled];
-        for (let k = 0; k < evictCount; k++) {
-          const pick = Math.floor(rng() * evictable.length);
-          const chosen = evictable.splice(pick, 1)[0]!;
-          // Evicted to BACKSTOPPED, and rejoins the grifter pool — sabotage costs someone
-          // their role, not their place in the population (same framing as ordinary churn).
-          grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
-          nextGrifterId += 1;
-          const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
-          if (chosen.role === 'miller') millers = millers.map((m, i) => (i === chosen.index ? { ...m, slot: evict } : m));
-          else if (chosen.role === 'baker') bakers = bakers.map((b, i) => (i === chosen.index ? { ...b, slot: evict } : b));
-          else if (chosen.role === 'courier') couriers = couriers.map((c, i) => (i === chosen.index ? { ...c, slot: evict } : c));
-          else if (chosen.role === 'journalist') journalists = journalists.map((j, i) => (i === chosen.index ? { ...j, slot: evict } : j));
-          else if (chosen.role === 'detective') detectives = detectives.map((d, i) => (i === chosen.index ? { ...d, slot: evict } : d));
-          else importExporters = importExporters.map((x, i) => (i === chosen.index ? { ...x, slot: evict } : x));
-        }
+    const stillRunning: SabotageCampaign[] = [];
+    for (const existing of world.sabotageCampaigns) {
+      // ABANDON a campaign whose target already left. Found by watching a real run: a campaign
+      // opened on day 2 was still grinding away on day ~45 at a slot whose occupant had churned
+      // out on day 13 — burning six weeks and one of only `saboteurCount` campaign slots to
+      // force out somebody who had already gone. The mechanic is "force a role-holder out of
+      // their own shop"; with nobody in the shop there is nothing to force.
+      if (!currentlyFilled.has(existing.targetBuildingId)) {
+        sabotageEvents.push({
+          tick: day,
+          type: 'abandoned',
+          campaignId: existing.id,
+          targetBuildingId: existing.targetBuildingId,
+          saboteurId: existing.saboteurId,
+          atStep: existing.stepsCompleted,
+          witnesses: witnessesAround(existing.targetBuildingId),
+        });
+        continue;
+      }
+      const targetDistrict = buildingDistrictId.get(existing.targetBuildingId);
+      const campaign: SabotageCampaign = {
+        ...existing,
+        investigatedBy: (targetDistrict ? filledDetectiveByDistrict.get(targetDistrict) : undefined) ?? null,
+      };
+
+      const outcome = stepCampaign(campaign, day, witnessesAround(campaign.targetBuildingId), rng);
+      if (!outcome) {
+        stillRunning.push(campaign); // not due this tick
+        continue;
       }
 
-      lastSabotage = { tick: day, targetBuildingId: target.buildingId, witnesses, successfulSaboteurs, evicted: evictCount };
+      if (outcome.type === 'caught') {
+        sabotageEvents.push({
+          tick: day,
+          type: 'caught',
+          campaignId: campaign.id,
+          targetBuildingId: campaign.targetBuildingId,
+          saboteurId: campaign.saboteurId,
+          atStep: outcome.atStep,
+          witnesses: witnessesAround(campaign.targetBuildingId),
+        });
+        // NO CONSEQUENCE IS APPLIED TO A CAUGHT SABOTEUR — `ecosystem.ts` has carried that as a
+        // KNOWN GAP for both resolvers, and it stays open deliberately rather than being
+        // invented here. What this restructure DOES change is that there is now a `saboteurId`
+        // to apply one to; the consequence itself (abode lockout, the Oracle unlock, the walk
+        // of shame at the Wall, the fine) is a design still being settled.
+        continue;
+      }
+
+      if (outcome.type === 'advanced') {
+        stillRunning.push(outcome.campaign);
+        continue;
+      }
+
+      // Succeeded: the target itself is evicted — unlike the legacy resolver, which counted
+      // successes and then evicted a RANDOM set of slots that need not have included the slot
+      // it rolled witnesses against. A campaign now costs the slot it was actually run against.
+      const target = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).find(
+        (e) => e.buildingId === outcome.campaign.targetBuildingId,
+      );
+      if (target) {
+        grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+        nextGrifterId += 1;
+        const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
+        if (target.role === 'miller') millers = millers.map((m, i) => (i === target.index ? { ...m, slot: evict } : m));
+        else if (target.role === 'baker') bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: evict } : b));
+        else if (target.role === 'courier') couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: evict } : c));
+        else if (target.role === 'journalist') journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: evict } : j));
+        else if (target.role === 'detective') detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: evict } : d));
+        else importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: evict } : x));
+      }
+      const witnesses = witnessesAround(outcome.campaign.targetBuildingId);
+      sabotageEvents.push({
+        tick: day,
+        type: 'succeeded',
+        campaignId: outcome.campaign.id,
+        targetBuildingId: outcome.campaign.targetBuildingId,
+        saboteurId: outcome.campaign.saboteurId,
+        atStep: outcome.campaign.stepsCompleted,
+        witnesses,
+      });
+      lastSabotage = {
+        tick: day,
+        targetBuildingId: outcome.campaign.targetBuildingId,
+        witnesses,
+        successfulSaboteurs: 1, // a campaign is one saboteur's work, not a count of attackers
+        evicted: target ? 1 : 0,
+      };
     }
+
+    // OPENING is where the hazard now lives — the same daily 1/cadence roll, and the same
+    // reasoning as before (2026-08-11: a covert mechanic must not run on a public timetable).
+    // What it produces changed: a campaign that will take real days, not an instant resolution.
+    // `config.saboteurCount` caps how many run at once — that is exactly what "how many
+    // saboteurs are active" already meant, so it is reused rather than a new constant added.
+    if (day > 0 && stillRunning.length < config.saboteurCount && rng() < 1 / config.sabotageCadenceDays) {
+      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).filter(
+        (e) => !stillRunning.some((c) => c.targetBuildingId === e.buildingId),
+      );
+      if (filled.length > 0) {
+        const target = filled[Math.floor(rng() * filled.length)]!;
+        const campaign = openCampaign(`sab-${day}-${nextCampaignId}`, target.buildingId, day, null);
+        nextCampaignId += 1;
+        stillRunning.push(campaign);
+        sabotageEvents.push({
+          tick: day,
+          type: 'opened',
+          campaignId: campaign.id,
+          targetBuildingId: campaign.targetBuildingId,
+          saboteurId: null,
+          atStep: 0,
+          witnesses: witnessesAround(campaign.targetBuildingId),
+        });
+      }
+    }
+
+    sabotageCampaigns = stillRunning;
   }
 
   let lastNewArrivals = 0;
@@ -1961,5 +2110,8 @@ export function stepWorld(world: World): World {
     pendingProximityUtterances: [],
     lastProximityConversations,
     lastProximityRejections,
+    sabotageCampaigns,
+    nextCampaignId,
+    lastSabotageCampaignEvents: sabotageEvents,
   };
 }

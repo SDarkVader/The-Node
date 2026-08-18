@@ -443,6 +443,15 @@ export function renderInspector(world: World, opts: RenderOptions, heat: Economi
   if (slot.slot.state !== 'FILLED' && slot.slot.vacantSince !== null) {
     push(`  empty since day ${slot.slot.vacantSince}`);
   }
+
+  // A DESIGNER'S X-RAY, and worth being clear about: a real player could never see this. A
+  // sabotage campaign is covert by design — that is the entire mechanic. It is shown here
+  // because this harness is an instrument for building the game, not the player's view of it.
+  const campaign = world.sabotageCampaigns.find((c) => c.targetBuildingId === building.id);
+  if (campaign) {
+    push(`  ⚠ campaign ${campaign.stepsCompleted}/${campaign.stepsRequired} since d${campaign.startedDay}`);
+    push(campaign.investigatedBy ? '  ⚠ a detective is on it' : '  ⚠ nobody is investigating');
+  }
   return out;
 }
 
@@ -458,9 +467,13 @@ export function collectEvents(world: World): string[] {
   const out: string[] = [];
   const d = world.tick;
 
-  if (world.lastSabotage) {
-    const s = world.lastSabotage;
-    out.push(`d${d} sabotage on ${s.targetBuildingId}: ${s.witnesses} witnesses, ${s.successfulSaboteurs} through, ${s.evicted} evicted`);
+  // Campaign events, not `lastSabotage` — richer, and a campaign now has a life worth watching
+  // (opened -> caught | succeeded) rather than only an outcome.
+  for (const e of world.lastSabotageCampaignEvents) {
+    if (e.type === 'opened') out.push(`d${d} someone starts working on ${e.targetBuildingId} (${e.witnesses} nearby)`);
+    else if (e.type === 'caught') out.push(`d${d} caught at ${e.targetBuildingId}, step ${e.atStep} (${e.witnesses} nearby)`);
+    else if (e.type === 'abandoned') out.push(`d${d} gave up on ${e.targetBuildingId} — already gone`);
+    else out.push(`d${d} ${e.targetBuildingId} FORCED OUT after ${e.atStep} steps`);
   }
   if (world.lastRumourEvents.length > 0) out.push(`d${d} ${world.lastRumourEvents.length} rumour(s) heard`);
   if (world.lastProximityConversations.length > 0) out.push(`d${d} ${world.lastProximityConversations.length} overheard nearby`);

@@ -46,14 +46,23 @@ describe('stepMultiShard — population accounting across shards (with migration
     // from cross-shard migration (successful transfers net to zero; failed ones are a
     // real, tracked loss) — under that condition, total population lost must exactly
     // match totalFailedMigrations, every single day.
+    // Made multi-seed 2026-08-18 by the sabotage-campaign restructure, which shifted every
+    // world's rng trajectory: the ACCOUNTING invariant below still held on every tick of the
+    // original seed 3, but that seed stopped producing any failed migration at all, so the
+    // "the failure rate actually bites" precondition no longer fired. Widened to several seeds
+    // rather than dropped — the precondition is what stops the invariant passing vacuously.
     const noArrivalsConfig: WorldConfig = { ...SMALL_CONFIG, arrivalPDaily: 0 };
-    let state = createMultiShardState(3, noArrivalsConfig);
-    const initialTotal = totalPopulation(state);
-    for (let i = 0; i < 300; i++) {
-      state = stepMultiShard(state);
-      expect(initialTotal - totalPopulation(state)).toBe(state.totalFailedMigrations);
+    let sawFailures = 0;
+    for (const seed of [3, 4, 5, 6, 7]) {
+      let state = createMultiShardState(seed, noArrivalsConfig);
+      const initialTotal = totalPopulation(state);
+      for (let i = 0; i < 300; i++) {
+        state = stepMultiShard(state);
+        expect(initialTotal - totalPopulation(state)).toBe(state.totalFailedMigrations);
+      }
+      sawFailures += state.totalFailedMigrations;
     }
-    expect(state.totalFailedMigrations).toBeGreaterThan(0); // the failure rate actually bites over 300 days
+    expect(sawFailures).toBeGreaterThan(0); // the failure rate really does bite somewhere
   });
 
   it('with the flat arrival trickle enabled, total population never goes negative and grows over a long run despite migration losses', () => {

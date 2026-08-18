@@ -3976,3 +3976,41 @@ anywhere in this engine (housing `districtId` only). That is 20-26 of ~64 people
 
 6 new tests, 621 total, typecheck clean. Phase C (the flashlight) remains blocked on the
 sabotage campaign restructure.
+
+## Sabotage restructured into persistent campaigns (2026-08-18) — pattern-based sabotage SHIPPED
+
+New `src/engine/sabotageCampaign.ts`: a state machine (open / step when due / advance / catch /
+succeed) over `ecosystem.ts`'s UNCHANGED detection math. `patternSabotageAttempt` is kept and
+still exported for `sabotagePatternHarness.ts`'s fixed-witness sweeps, but the live world no
+longer uses it. Pattern-based sabotage is no longer a "PROPOSAL, not shipped."
+
+`World` gained `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`. The daily
+hazard now OPENS a campaign instead of resolving one; `config.saboteurCount` caps concurrency;
+each step rolls against the witness count real at that moment. A successful campaign evicts the
+slot it actually targeted — a real change from the legacy resolver, which counted successes and
+then evicted a random set that need not have included the slot it rolled against.
+`config.acquireDays`/`damagePerSuccess` are no longer read by `world.ts` but stay on
+`WorldConfig` for the legacy resolver the ecosystem harness still exercises.
+
+**Saboteur identity.** The caught-saboteur KNOWN GAP was never closable because the engine had
+no saboteur to name — `sabotageAttempt` took an anonymous count. `SabotageCampaign.saboteurId`
+closes that structurally (null for the ambient hazard, a real id once a driver or player opens
+one). The consequence itself is deliberately not invented here.
+
+**Measured live** (`npm run sabotage-campaign-sim`, 8 seeds x 3000 days): 1083 opened, 340
+succeeded, 439 caught, 290 abandoned; **43.6% success among contested resolutions**; mean
+duration 28.9 days, max 42 (ceiling 100); mean 1.30 in flight; opening interval 22.1 days vs a
+20-day hazard; 90 distinct gaps. Constraint 2 re-verified: min `economicHealth` 0.7652, and a
+test holds it above `BACKSTOP_PRODUCTIVITY` under saboteurCount 8 / cadence 5.
+
+**`abandoned` outcome added after watching a real run** — a campaign was grinding for six weeks
+against a slot whose occupant had churned out, burning one of three campaign slots. 27% of
+resolved campaigns were in that state.
+
+**Open, and now measured**: 96.5% of campaign-steps run "under investigation", because the
+interim rule is "a FILLED Detective in the target's district" and the shipped config is one
+district with 8 Detective slots. Investigation is near-constant rather than scarce and directed
+— exactly what the flashlight is for. `investigatedBy` is built as a replaceable ASSIGNMENT
+RULE so Phase C changes only who fills it.
+
+25 new tests, 647 total, typecheck clean.
