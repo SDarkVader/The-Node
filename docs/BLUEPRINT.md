@@ -3838,3 +3838,34 @@ trusting the illustrative constants further; the shard-wide "nodule bonus" prize
 design doc's §3; a "postcard boost" prize (no real per-player postcard balance exists yet).
 
 18 new tests, 594 total, typecheck clean. Full account: `docs/DEVLOG.md`'s matching entry.
+
+## The Oracle's simulation harness/CLI built (2026-08-18, later same day) — closing the item flagged directly above
+
+The deferred item this file's own entry above named — `oracleHarness.ts`/`oracleCli.ts`,
+matching every other mechanic's harness this session — is now built, resolving
+`docs/DESIGN_ORACLE_2026-08-13.md` §5's suggested next step.
+
+Not a with/without counterfactual like `experienceFloorHarness.ts`/`evictionProtectionHarness.ts`
+use — the Oracle is unconditionally wired into every tick (no config flag), and its wealth/
+`personalResourceStock`/`daysAsGrifter`/`daysInRole` effects compound with ordinary market
+activity within the same tick, so a "strip the field back out" counterfactual can't honestly
+isolate its effect. Instead: a new `World.lastOracleStats` side-channel
+(`entrants`/`entered`/`wins`/`winsByPrize`), populated directly inside `world.ts`'s existing
+Oracle stage, same "report what actually happened" convention `lastDiaryRejections` already
+established — purely additive, all 594 pre-existing tests passed unchanged before any new one
+was added.
+
+**Real, measured result** (8 seeds x 3000 days, `DEFAULT_WORLD_CONFIG`): observed win rate
+**21.24%** vs. theoretical health-linked curve **21.25%** — the mechanism is calibrated
+correctly, confirmed directly rather than assumed from the pure-function tests alone. Below
+the "healthy shard" ~28-30% reference because real steady-state `economicHealthWithExperience`
+(~0.79-0.80) sits below `ORACLE_HEALTH_REFERENCE` (0.96) — expected, not a bug. Prize mix:
+wealth 39.5%, time 39.8%, resourceStock 20.7% — the ~2:1 skew is structurally correct
+(`resourceStock` is role-holder-only; grifters, the candidate majority, can only win
+wealth/time). **No death-spiral**: `wealthGini` (0.6693 -> 0.6766), economic health
+(0.8044 -> 0.7903), population (62.53 -> 61.31) all stay stable early-to-late-tail.
+
+6 new tests (4 in `test/world.oracle.test.ts` covering the side-channel directly), 596 total,
+typecheck clean. `npm run oracle-sim`. Not done this pass: re-deriving new constants,
+extending health-linkage to prize odds (§4's still-open question), the nodule-bonus/postcard
+prizes. Full account: `docs/DEVLOG.md`'s matching entry.

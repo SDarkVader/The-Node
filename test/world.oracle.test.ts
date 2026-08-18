@@ -5,9 +5,10 @@ import { PERSONAL_RESOURCE_CAP } from '../src/engine/personalResourceStock.js';
 /**
  * Real, wired integration for the Oracle (2026-08-18, docs/DESIGN_ORACLE_2026-08-13.md) —
  * verifies the whole chain against a real `World`, not just the standalone pure-function
- * tests in `test/oracle.test.ts`. A full population-scale simulation harness/CLI (matching
- * every other mechanic this session) is a deliberately deferred follow-up, not built this
- * pass — see docs/HANDOVER.md.
+ * tests in `test/oracle.test.ts`. The population-scale simulation harness/CLI this file's
+ * own header used to flag as deferred is now built — `sim/oracleHarness.ts`/`oracleCli.ts`
+ * (`npm run oracle-sim`) — and reads `World.lastOracleStats`, the side-channel this file
+ * also covers below.
  */
 
 describe('the Oracle — wired end-to-end through a real stepWorld run', () => {
@@ -64,5 +65,25 @@ describe('the Oracle — wired end-to-end through a real stepWorld run', () => {
       });
     }
     expect(sawNudge).toBe(true);
+  });
+
+  it('lastOracleStats stays internally consistent every tick — entrants >= entered >= wins, winsByPrize sums to wins', () => {
+    let world = createWorld(7, DEFAULT_WORLD_CONFIG);
+    let sawAnyWin = false;
+    for (let day = 0; day < 300; day++) {
+      world = stepWorld(world);
+      const s = world.lastOracleStats;
+      expect(s.entrants).toBeGreaterThanOrEqual(s.entered);
+      expect(s.entered).toBeGreaterThanOrEqual(s.wins);
+      expect(s.winsByPrize.wealth + s.winsByPrize.resourceStock + s.winsByPrize.time).toBe(s.wins);
+      if (s.wins > 0) sawAnyWin = true;
+    }
+    // Real, positive signal the side-channel actually reports real activity, not just zeros.
+    expect(sawAnyWin).toBe(true);
+  });
+
+  it('a freshly created World starts with an all-zero lastOracleStats — nothing has happened yet', () => {
+    const world = createWorld(8, DEFAULT_WORLD_CONFIG);
+    expect(world.lastOracleStats).toEqual({ entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } });
   });
 });

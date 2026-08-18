@@ -6,6 +6,59 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Oracle simulation harness/CLI built, closing HANDOVER's top deferred item
+
+Picked up `docs/HANDOVER.md`'s explicitly-flagged top "what's next" item from the Oracle
+build entry below: "the full population-scale simulation harness/CLI every other mechanic
+this session got, to measure the Oracle's real win rates and wealth/Gini impact under load
+before trusting its illustrative constants further" — the exact re-simulation
+`docs/DESIGN_ORACLE_2026-08-13.md` §5 asked for before the Oracle proceeded to code at all.
+
+**Real gap first**: unlike `experienceFloorHarness.ts`/`evictionProtectionHarness.ts`, a
+with/without counterfactual doesn't honestly apply here — the Oracle is unconditionally wired
+into every `stepWorld` tick (no config flag gates it), and its wealth/`personalResourceStock`/
+`daysAsGrifter`/`daysInRole` effects compound with ordinary market activity within the same
+tick in ways a "strip the field back out before the next tick" approach can't cleanly
+separate. Rather than force a counterfactual that wouldn't be honest, added a real side-channel
+instead: `World.lastOracleStats` (`entrants`/`entered`/`wins`/`winsByPrize`), populated
+directly inside `world.ts`'s existing Oracle stage — same "report what actually happened,
+don't make the caller infer it from field deltas" convention `lastDiaryRejections` already
+established. Purely additive (new field, always populated, no existing behavior touched) —
+all 594 pre-existing tests passed unchanged before any new one was added. 6 new tests: 4 in
+`test/world.oracle.test.ts` covering the new side-channel directly (internal consistency each
+tick, real non-zero win activity over a long run, zero-state at creation), plus the harness
+itself gets exercised by the CLI run below (not unit-tested in isolation — matches the
+project's existing convention of trusting a harness's real CLI output over a synthetic
+harness-of-the-harness test, same as `experienceFloorCli.ts`/`evictionProtectionCli.ts`).
+
+**`sim/oracleHarness.ts`** runs a real single-world `stepWorld` loop, capturing
+`lastOracleStats` each tick alongside `oracleWinProbability` evaluated on the exact same
+pre-tick `economicHealthWithExperience` value that tick's real roll used (avoids any
+off-by-one risk against the "tied to YESTERDAY's health" timing `world.ts`'s own Oracle-stage
+comment documents) and the `wealthGini`/`economicHealthWithExperience`/`population` `World`
+already tracks every tick. `sim/oracleCli.ts` (`npm run oracle-sim`) aggregates 8 seeds x 3000
+days (this session's established convention), reporting the entry funnel, observed-vs-
+theoretical win rate, prize mix, and an early-vs-late-tail stability check.
+
+**Real, measured result**: observed win rate (21.24%) tracks the theoretical health-linked
+curve (21.25%) almost exactly — direct confirmation the mechanism is calibrated correctly,
+not just internally consistent. Below the `ORACLE_BASE_ODDS_HEALTHY` ~28-30% "healthy shard"
+reference because `DEFAULT_WORLD_CONFIG`'s real steady-state `economicHealthWithExperience`
+(~0.79-0.80) sits below `ORACLE_HEALTH_REFERENCE` (0.96) — an honest, expected consequence of
+the health-linkage doing its job, not a miscalibration. Prize mix: wealth 39.5%, time 39.8%,
+resourceStock 20.7% — the ~2:1 ratio is exactly right, not a bug: `resourceStock` is
+role-holder-only (`ORACLE_PRIZE_TABLE`), while grifters (the majority of candidates) can only
+win wealth or time. **No death-spiral** — `wealthGini` (0.6693 -> 0.6766), economic health
+(0.8044 -> 0.7903), and population (62.53 -> 61.31) all stay stable early-to-late-tail within
+the same run, none diverging. 596 tests total, typecheck clean.
+
+**Not done this pass, flagged not silently skipped**: this validates the ALREADY-SHIPPED
+constants under load, matching §5's ask exactly — it does not re-derive new constants, extend
+the health-linkage to prize odds (§4's still-open question), or build the shard-wide "nodule
+bonus"/"postcard boost" prizes HANDOVER also lists as deferred.
+
+---
+
 ## 2026-08-18 — The Oracle built: first code for a mechanic specified since 2026-08-06
 
 User: "build the oracle lottery but leave it so we can consider alterations to prizes etc.

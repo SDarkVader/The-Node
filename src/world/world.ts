@@ -143,6 +143,7 @@ import {
   ORACLE_WEALTH_PRIZE_AMOUNT,
   ORACLE_RESOURCE_STOCK_PRIZE_AMOUNT,
   ORACLE_TIME_NUDGE_DAYS,
+  type OraclePrizeType,
 } from '../engine/oracle.js';
 import { experienceFloorFromShiftsCovered } from '../engine/experienceFloor.js';
 
@@ -516,6 +517,22 @@ export interface World {
    *  author) — `writeDiaryEntry` throws on these rather than silently dropping them, so
    *  `stepWorld` catches and reports them here instead of crashing the tick. */
   lastDiaryRejections: Array<{ authorId: PlayerId; reason: string }>;
+  /** Real, observed counts from this tick's Oracle draw (`engine/oracle.ts`) — entirely a
+   *  side-channel for measurement (the sim harness's win-rate/prize-mix validation against
+   *  `oracleWinProbability`'s theoretical curve), never read by any selection or economic
+   *  logic itself. Same "report what actually happened, don't make the caller infer it from
+   *  field deltas" convention as `lastDiaryRejections`. */
+  lastOracleStats: OracleTickStats;
+}
+
+/** See `World.lastOracleStats`. `entrants` chose to participate (before affordability is
+ *  even checked); `entered` could also afford `ORACLE_ENTRY_COST` and actually paid it —
+ *  `wins`/`winsByPrize` are counted only among `entered`. */
+export interface OracleTickStats {
+  entrants: number;
+  entered: number;
+  wins: number;
+  winsByPrize: Record<OraclePrizeType, number>;
 }
 
 /**
@@ -704,6 +721,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     pendingDiaryEntries: [],
     lastDiaryWrites: [],
     lastDiaryRejections: [],
+    lastOracleStats: { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } },
   };
 }
 
@@ -1442,14 +1460,19 @@ export function stepWorld(world: World): World {
   // candidate already has real access to (see engine/oracle.ts's header for why that's what
   // keeps this from ever being a route to a role, a reputation level, or a solo-assembled
   // crafting recipe).
+  const oracleStats: OracleTickStats = { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } };
   {
     const winProbability = oracleWinProbability(world.economicHealthWithExperience);
     const applyOracleRoll = <T extends { wealth: number }>(entrant: T, isGrifter: boolean): T => {
       if (rng() >= ORACLE_PARTICIPATION_PROBABILITY) return entrant;
+      oracleStats.entrants++;
       if (entrant.wealth < ORACLE_ENTRY_COST) return entrant;
+      oracleStats.entered++;
       const afterEntry = { ...entrant, wealth: entrant.wealth - ORACLE_ENTRY_COST };
       if (rng() >= winProbability) return afterEntry;
+      oracleStats.wins++;
       const prize = pickPrizeType(isGrifter, rng);
+      oracleStats.winsByPrize[prize]++;
       if (prize === 'wealth') return { ...afterEntry, wealth: afterEntry.wealth + ORACLE_WEALTH_PRIZE_AMOUNT };
       if (prize === 'resourceStock' && 'personalResourceStock' in afterEntry) {
         const s = afterEntry as unknown as { personalResourceStock: number };
@@ -1847,5 +1870,6 @@ export function stepWorld(world: World): World {
     pendingDiaryEntries: [],
     lastDiaryWrites,
     lastDiaryRejections,
+    lastOracleStats: oracleStats,
   };
 }

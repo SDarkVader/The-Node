@@ -110,11 +110,25 @@ order change); two exact-wealth assertions widened to bounded ranges; two experi
 tests and one district-weather test made multi-seed after directly re-verifying the underlying
 properties still hold. 18 new tests, 594 total, typecheck clean.
 
-**Deliberately deferred, not silently skipped — see "What's next" below, now the top item**:
-the full population-scale simulation harness/CLI every other mechanic this session got, to
-measure the Oracle's real win rates and wealth/Gini impact under load before trusting its
-illustrative constants further; the design doc's shard-wide "nodule bonus" prize; a "postcard
-boost" prize (no real per-player postcard balance exists yet to grant one from).
+**Then: the deferred population-scale simulation harness/CLI got built** (`sim/oracleHarness.ts`/
+`oracleCli.ts`, `npm run oracle-sim`), closing `docs/DESIGN_ORACLE_2026-08-13.md` §5's
+suggested next step. Not a with/without counterfactual (the Oracle is unconditionally wired,
+no config flag, and its effects compound with ordinary market activity within the same tick —
+a "strip the field back out" comparison couldn't honestly isolate it); instead a new
+`World.lastOracleStats` side-channel (`entrants`/`entered`/`wins`/`winsByPrize`), same
+"report what actually happened" convention `lastDiaryRejections` already established, purely
+additive. **Real, measured result** (8 seeds x 3000 days): observed win rate **21.24%** tracks
+the theoretical health-linked curve **21.25%** almost exactly — the mechanism is calibrated
+correctly. Below the ~28-30% "healthy" reference because real steady-state
+`economicHealthWithExperience` (~0.79-0.80) sits below `ORACLE_HEALTH_REFERENCE` (0.96) —
+expected, not a miscalibration. Prize mix wealth 39.5% / time 39.8% / resourceStock 20.7% (the
+skew is structural — resourceStock is role-holder-only). **No death-spiral**: wealthGini,
+economic health, and population all stay stable early-to-late-tail in the same run. 6 new
+tests, 596 total, typecheck clean.
+
+**Still not done, not silently skipped**: the design doc's shard-wide "nodule bonus" prize; a
+"postcard boost" prize (no real per-player postcard balance exists yet to grant one from);
+extending the health-linkage to prize odds themselves (§4's still-open question).
 
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
@@ -500,23 +514,24 @@ relative on mean experience, 0.00074 on `economicHealthWithExperience` — genui
 cap correction held under real measurement, not just intent. 4 new regression tests lock the
 actual numbers in. **553 tests total, typecheck clean, all committed and pushed to `main`.**
 
-**Next, in rough priority order:**
-1. The `V_i`/constraint-6 question above — needs the user's answer before any velocity-shield
-   mechanic gets built.
-2. The level-2 reputation-gate mechanism itself — still genuinely open, and now has a second
-   real reason to matter (it's also the lever for a deeper "veteran bench" the experience-floor
-   work above surfaced); the reputation-retention research prompt sent earlier this session
-   may inform this once answered.
-3. Proximity conversation wiring into `stepWorld` (diary is wired, this is the next candidate
+**Next, in rough priority order (refreshed 2026-08-18 — items 1/2/7 from the original list are
+now DONE, see the entries above; renumbered, and two new Oracle-specific items added from the
+harness's own "not done this pass" list):**
+1. Proximity conversation wiring into `stepWorld` (diary is wired, this is the next candidate
    with the same shape).
-4. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
-   reputation level — proposed, never confirmed, buildable once #3 above is wired.
-5. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
+2. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
+   reputation level — proposed, never confirmed, buildable once #1 above is wired.
+3. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
    decision) — arson's wiring is blocked on this.
-6. Extend the experience floor to support roles once they get a tracked `experience` field —
+4. Extend the experience floor to support roles once they get a tracked `experience` field —
    not needed yet, none of the four support roles have one.
-6. The Firestarter/Key crafting items themselves, now that `personalResourceStock` exists.
-7. The population-scale re-simulation Oracle's own §5 needs.
+5. The Firestarter/Key crafting items themselves, now that `personalResourceStock` exists.
+6. The Oracle's shard-wide "nodule bonus" prize (`DESIGN_ORACLE_2026-08-13.md` §3).
+7. The Oracle's "postcard boost" prize — blocked on a real per-player postcard balance not
+   existing in this engine yet.
+8. Whether the Oracle's prize odds should ALSO float on economic health the way the win-roll
+   odds do, or stay flat regardless of shard condition — `DESIGN_ORACLE_2026-08-13.md` §4's own
+   still-open question, not assumed either way by the harness work above.
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
