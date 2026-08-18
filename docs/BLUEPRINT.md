@@ -3869,3 +3869,36 @@ wealth/time). **No death-spiral**: `wealthGini` (0.6693 -> 0.6766), economic hea
 typecheck clean. `npm run oracle-sim`. Not done this pass: re-deriving new constants,
 extending health-linkage to prize odds (§4's still-open question), the nodule-bonus/postcard
 prizes. Full account: `docs/DEVLOG.md`'s matching entry.
+
+## Proximity conversation wired into `stepWorld` (2026-08-18, later same day)
+
+`comms/proximityConversation.ts` (built earlier this session, task #67) is now live in the
+real `World` kernel, closing HANDOVER's next-in-line item. The "real per-utterance listener
+resolution across the connection graph" HANDOVER flagged as the reason this was bigger than
+diary's simple queue turned out to already exist: `world.ts`'s Stage 5 already builds a real
+`ConnectionGraph` from every currently-FILLED role slot's building position
+(`buildProximityGraph`, the exact machinery Wall-post rumour propagation already uses) — this
+wiring reuses that SAME graph rather than building a second listener-resolution mechanism.
+
+New `World` fields: `pendingProximityUtterances` (queue-in/consume-and-clear, same convention
+as `pendingWallPosts`/`pendingDiaryEntries`), `lastProximityConversations` (per-tick report of
+who heard what at what degraded clarity), `lastProximityRejections` (self-address or an
+absent REFERENT, same `lastDiaryRejections` convention). Deliberately respects
+`comms/proximityConversation.ts`'s own "ephemerality is architectural" header literally: no
+identity-ledger update, no diary write, no pressure-ledger update, nothing accumulated across
+ticks — a player still has to route what they heard back through Wall/Envelope by hand if they
+want to keep it. Grifters stay out of scope, same as Wall-post comms already excludes them
+(no fixed building position).
+
+Opt-in and default-empty (only consumes `rng()` when the queue is non-empty) — all 596
+pre-existing tests passed unchanged before any new one was added, unlike the Oracle's own
+wiring which broke 6 tests by consuming rng unconditionally every tick. Minor real cleanup
+enabled along the way: the Wall-post stage's own `occupants`/graph construction moved out from
+inside its `if (pendingWallPosts.length > 0)` guard so both mechanics share one build instead
+of each rebuilding it.
+
+7 new tests in `test/world.proximityConversation.test.ts` (rejection cases, queue clearing,
+true no-op, a real positive "actually heard" signal across a few seeds, one rejection not
+blocking a valid turn, and direct confirmation of ephemerality — a second tick with nothing
+newly queued reports nothing heard). 603 tests total, typecheck clean. Full account:
+`docs/DEVLOG.md`'s matching entry.

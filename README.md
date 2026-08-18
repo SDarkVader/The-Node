@@ -181,12 +181,13 @@ The private diary, face-to-face conversation, and arson (below) now have
 real, tested engine code — `src/engine/diary.ts`,
 `src/comms/proximityConversation.ts`, `src/infra/moderationLog.ts`,
 `src/engine/arson.ts` — calibrated and verified the same way everything
-else in this repo is. **The diary is now actually wired into the live
-running world** (`stepWorld` processes queued diary entries every tick,
-rejecting a self-entry or an unresolved SUBJECT without blocking anything
-else that tick); face-to-face conversation and arson still aren't (no
-`world.ts` tick-loop integration for either yet), so neither is something
-you could actually play with today. A home for every player — including
+else in this repo is. **The diary and face-to-face conversation are now
+actually wired into the live running world** (`stepWorld` processes queued
+diary entries and proximity-conversation turns every tick, rejecting a
+self-entry/unresolved SUBJECT or a self-address/absent listener without
+blocking anything else that tick); arson still isn't (no `world.ts`
+tick-loop integration yet), so it isn't something you could actually play
+with today. A home for every player — including
 grifters — is also real and wired now, not just designed: one universal
 housing type, density added via real per-building floor counts rather than
 more buildings, with reputation levels gating role access already live in
@@ -379,7 +380,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 596 automated tests cover all of it.
+citations, and open questions left. 603 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -444,9 +445,10 @@ got resolved for real: universal housing (one type, density via real
 per-building floor counts) is built and wired, paired with reputation
 levels that gate which roles a grifter can voluntarily fill — genuinely
 tested, not just designed. The same pass built and tested (but did not all
-wire live) the private diary — since wired, and now processed every tick —
-plus face-to-face conversation and arson, and closed a real gap where
-role-holders had no personal crafting-resource balance to draw from. A
+wire live) the private diary and face-to-face conversation — both since
+wired, and now processed every tick — plus arson (still unwired), and
+closed a real gap where role-holders had no personal crafting-resource
+balance to draw from. A
 grifter conscripted into a role now gets a small, capped, grant-only
 experience head start if they'd genuinely covered shifts in that specific
 role before (calibrated down hard after a real "does this let the
@@ -508,20 +510,29 @@ those numbers is now done too: 8 seeds x 3000 days, observed win rate
 tracking the theoretical health-linked curve almost exactly (21.24% vs.
 21.25%), no runaway inequality or health collapse across the run.
 
+**Face-to-face conversation is wired into the live world now too** — two
+people sharing real physical proximity can address the room or each other
+directly (never a third party who isn't there), and what gets heard
+degrades with real distance, reusing the exact same spatial graph Wall
+posts already propagate through rather than a second one. It stays
+deliberately ephemeral, exactly as designed: nothing about it is stored or
+relayed onward by the system itself — if you want to keep or repeat what
+you heard, you have to actually write it down (the Wall, an Envelope, your
+own diary), same as everything else here.
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
-mechanics are built on top of it), face-to-face conversation (built and
-tested, not yet wired into the live tick loop), real Phase 4 visual
-rendering (today's client is plain text — it proves the wiring works, not
-what the world looks like), the voice/safety architecture, the Wall's
-Emissive Soul rendering itself, and the multi-shard ecosystem's actual
-playable form — the mechanics above are real and tested, but nothing
-about them is something a player can walk into yet.
+mechanics are built on top of it), real Phase 4 visual rendering (today's
+client is plain text — it proves the wiring works, not what the world
+looks like), the voice/safety architecture, the Wall's Emissive Soul
+rendering itself, and the multi-shard ecosystem's actual playable form —
+the mechanics above are real and tested, but nothing about them is
+something a player can walk into yet.
 
 ```
 npm install
-npm test               # 596 tests
+npm test               # 603 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -545,7 +556,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (596 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (603 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

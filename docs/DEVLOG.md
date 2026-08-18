@@ -6,6 +6,63 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Proximity conversation wired into stepWorld
+
+Picked up HANDOVER's next-in-line item: "Proximity conversation wiring into `stepWorld`
+(diary is wired, this is the next candidate with the same shape)." Real gap first, not
+assumed away: HANDOVER had flagged this needs "real per-utterance listener resolution across
+the connection graph (bigger than diary's simple queue)" — checked directly rather than
+guessed at, and it turned out the connection graph already exists and is already live.
+`world.ts`'s Stage 5 (comms) already builds a real `ConnectionGraph` from every currently-
+FILLED role slot's building position (`buildProximityGraph`, feeding Wall-post rumour
+propagation) — proximity conversation reuses that SAME graph rather than inventing a second
+listener-resolution mechanism, which is what made this genuinely "the same shape as diary"
+once the real machinery was found, not a bigger lift than advertised.
+
+**New `World` fields**: `pendingProximityUtterances` (queue-in/consume-and-clear, same
+convention as `pendingWallPosts`/`pendingDiaryEntries`), `lastProximityConversations`
+(per-tick report of who heard what, at what degraded clarity), `lastProximityRejections`
+(self-address or an absent REFERENT — `composeUtterance` throws on these rather than
+silently dropping them, same convention `lastDiaryRejections` already established).
+
+**Real, deliberate scope boundary, not silently narrowed**: `comms/proximityConversation.ts`'s
+own header is explicit this channel has NO relay path and NO persistence — "ephemerality is
+architectural, not a runtime check." Wiring respects that literally: no identity-ledger
+update, no diary write, no pressure-ledger update, nothing accumulated across ticks. A player
+who wants to keep or relay what they heard still has to route it back through Wall/Envelope
+by hand, unchanged. This also means grifters stay out of scope here exactly as they already
+are for Wall-post comms (`world.ts`'s own header note: no fixed building position, not part
+of the proximity graph) — not a new limitation introduced by this pass, the same one Wall
+posts already carry.
+
+**Opt-in and default-empty, same discipline diary's wiring used (and Oracle's did NOT,
+which is exactly why Oracle broke 6 pre-existing tests and this doesn't)**: the new stage
+only consumes `rng()` when `pendingProximityUtterances` is non-empty, and nothing populates
+that queue by default. All 596 pre-existing tests passed completely unchanged before any new
+one was added — confirmed directly, not assumed from the pattern alone.
+
+Refactored the Wall-post rumour stage's own `occupants`/graph construction out from inside its
+`if (pendingWallPosts.length > 0)` guard so both mechanics share one build (cheap, pure, no
+rng) instead of each rebuilding it — real, minor cleanup enabled by the reuse, not a
+behavior change (confirmed by the full suite passing byte-identical).
+
+7 new tests in `test/world.proximityConversation.test.ts`: self-address and absent-REFERENT
+rejection, queue clearing, true no-op with nothing queued, a real positive signal (a
+room-directed turn from a real occupant is actually heard, tried across a few seeds per the
+same "not guaranteed on every seed" discipline the existing Wall-post regression test already
+uses), one rejection not blocking a different valid turn the same tick, and direct
+confirmation of ephemerality (a second tick with nothing newly queued reports nothing heard —
+no accumulation, unlike the diary's real persistent store). 603 tests total, typecheck clean.
+
+**Not done this pass**: gating proximity conversation's vocabulary by reputation level
+(HANDOVER's own next item after this one, "proposed, never confirmed"); promoting
+pattern-based sabotage to shipped-default status (separate, still-blocking arson's own
+wiring); moderation-logging's own consumption of this channel (its import guard explicitly
+forbids `src/world` from importing it — a real, separate wiring point outside `world.ts`,
+not touched here).
+
+---
+
 ## 2026-08-18 — Oracle simulation harness/CLI built, closing HANDOVER's top deferred item
 
 Picked up `docs/HANDOVER.md`'s explicitly-flagged top "what's next" item from the Oracle

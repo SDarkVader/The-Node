@@ -133,6 +133,15 @@ import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
 import { createDiaryStore, writeDiaryEntry, type DiaryEntry, type Observation, type Reading, type ContextTag } from '../engine/diary.js';
+import {
+  composeUtterance,
+  degradeForListener,
+  type Intent as ProximityIntent,
+  type Tone as ProximityTone,
+  type Referent as ProximityReferent,
+  type ContextTag as ProximityContextTag,
+  type HeardUtterance,
+} from '../comms/proximityConversation.js';
 import type { PrivateStore } from '../engine/privateStore.js';
 import { emptyPersonalStock, stepPersonalStock, PERSONAL_RESOURCE_CAP } from '../engine/personalResourceStock.js';
 import {
@@ -430,6 +439,26 @@ export interface PendingDiaryEntry {
   context?: ContextTag;
 }
 
+/** A queued proximity-conversation turn — same "caller populates, `stepWorld` consumes and
+ *  clears" shape as `pendingWallPosts`/`pendingDiaryEntries`. `speakerId` is a buildingId
+ *  (a currently-FILLED role slot), the same identity convention `WallPost.authorId` already
+ *  uses — see this file's header note on why grifters are out of scope for any spatial comms
+ *  mechanic today. */
+export interface PendingProximityUtterance {
+  speakerId: PlayerId;
+  intent: ProximityIntent;
+  tone: ProximityTone;
+  referent: ProximityReferent;
+  context?: ProximityContextTag;
+}
+
+/** One listener's degraded hearing of one proximity-conversation turn, reported for exactly
+ *  the tick it happened — see `World.lastProximityConversations`. */
+export interface ProximityConversationHeardEvent {
+  listenerId: PlayerId;
+  heard: HeardUtterance;
+}
+
 export interface World {
   seed: number;
   tick: number;
@@ -523,6 +552,18 @@ export interface World {
    *  logic itself. Same "report what actually happened, don't make the caller infer it from
    *  field deltas" convention as `lastDiaryRejections`. */
   lastOracleStats: OracleTickStats;
+  /** Queued proximity-conversation turns — consumed and cleared every `stepWorld` call, same
+   *  pattern as `pendingWallPosts`/`pendingDiaryEntries`. */
+  pendingProximityUtterances: PendingProximityUtterance[];
+  /** Every listener's degraded hearing of a proximity-conversation turn THIS tick only —
+   *  ephemeral by the mechanic's own design (`comms/proximityConversation.ts`'s header:
+   *  no store, nothing to persist), never accumulated across ticks, same "report what
+   *  actually happened" shape as `lastRumourEvents`. */
+  lastProximityConversations: ProximityConversationHeardEvent[];
+  /** Queued turns rejected this tick (self-address, or REFERENT naming someone not actually
+   *  in proximity range) — `composeUtterance` throws on these rather than silently dropping
+   *  them, same convention as `lastDiaryRejections`. */
+  lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }>;
 }
 
 /** See `World.lastOracleStats`. `entrants` chose to participate (before affordability is
@@ -722,6 +763,9 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastDiaryWrites: [],
     lastDiaryRejections: [],
     lastOracleStats: { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } },
+    pendingProximityUtterances: [],
+    lastProximityConversations: [],
+    lastProximityRejections: [],
   };
 }
 
@@ -1671,43 +1715,86 @@ export function stepWorld(world: World): World {
     ...grifters.map((g) => g.wealth),
   ];
 
-  // ---- Stage 5: comms (rumour propagation) ------------------------------------------
+  // ---- Stage 5: comms (rumour propagation + proximity conversation) ------------------
+  // Both share the same real spatial graph — buildingId-keyed occupant positions for every
+  // currently-FILLED role slot (see this file's header note on why grifters, with no fixed
+  // building position, are out of scope for either). Built unconditionally (cheap, pure, no
+  // rng) rather than duplicated per-mechanic.
+  const occupants = [
+    ...occupantsOf(millers),
+    ...occupantsOf(bakers),
+    ...occupantsOf(couriers),
+    ...occupantsOf(journalists),
+    ...occupantsOf(detectives),
+    ...occupantsOf(importExporters),
+  ];
+  const occupantPositionById = new Map(occupants.map((o) => [o.playerId, { x: o.x, y: o.y }]));
+  const proximityGraph = buildProximityGraph(occupants, config.commsProximityRange);
+
   let lastRumourEvents: RumourEventLite[] = [];
-  if (world.pendingWallPosts.length > 0) {
-    const occupants = [
-      ...occupantsOf(millers),
-      ...occupantsOf(bakers),
-      ...occupantsOf(couriers),
-      ...occupantsOf(journalists),
-      ...occupantsOf(detectives),
-      ...occupantsOf(importExporters),
-    ];
-    const graph = buildProximityGraph(occupants, config.commsProximityRange);
-    for (const post of world.pendingWallPosts) {
-      for (const { id: neighborId, weight } of graph.neighbors(post.authorId)) {
-        const step = stepClarity(1, weight, { baseSuccessChance: 0.6, decayPerStep: 0.3, clarityFloor: 0.15 }, rng);
-        if (!step.passed) continue;
-        const { value: state, distorted } = applyDistortion(
-          post.state,
-          {
-            distortionRate: 0.25,
-            neighbors: {
-              isolated: ['distrustful', 'overwhelmed'],
-              manipulated: ['exploited', 'suspicious'],
-              distrustful: ['suspicious', 'isolated'],
-              exploited: ['manipulated', 'overwhelmed'],
-              suspicious: ['distrustful', 'manipulated'],
-              uneasy: ['suspicious', 'overwhelmed'],
-              overwhelmed: ['uneasy', 'isolated'],
-              hopeful: ['secure', 'grateful'],
-              secure: ['hopeful', 'grateful'],
-              grateful: ['hopeful', 'secure'],
-            },
+  for (const post of world.pendingWallPosts) {
+    for (const { id: neighborId, weight } of proximityGraph.neighbors(post.authorId)) {
+      const step = stepClarity(1, weight, { baseSuccessChance: 0.6, decayPerStep: 0.3, clarityFloor: 0.15 }, rng);
+      if (!step.passed) continue;
+      const { value: state, distorted } = applyDistortion(
+        post.state,
+        {
+          distortionRate: 0.25,
+          neighbors: {
+            isolated: ['distrustful', 'overwhelmed'],
+            manipulated: ['exploited', 'suspicious'],
+            distrustful: ['suspicious', 'isolated'],
+            exploited: ['manipulated', 'overwhelmed'],
+            suspicious: ['distrustful', 'manipulated'],
+            uneasy: ['suspicious', 'overwhelmed'],
+            overwhelmed: ['uneasy', 'isolated'],
+            hopeful: ['secure', 'grateful'],
+            secure: ['hopeful', 'grateful'],
+            grateful: ['hopeful', 'secure'],
           },
-          rng,
-        );
-        lastRumourEvents.push({ heardBy: neighborId, heardFrom: post.authorId, state, distorted, clarity: step.nextClarity });
+        },
+        rng,
+      );
+      lastRumourEvents.push({ heardBy: neighborId, heardFrom: post.authorId, state, distorted, clarity: step.nextClarity });
+    }
+  }
+
+  // Proximity conversation (`comms/proximityConversation.ts`, wired 2026-08-18). Unprompted-
+  // only per `pendingWallPosts`/`pendingDiaryEntries`'s own convention — never generated by
+  // `stepWorld` itself. `speakerId` reuses the SAME buildingId-as-identity convention Wall
+  // posts already use (`post.authorId`), so "who's present" resolves off the identical
+  // `proximityGraph` rather than a second listener-resolution mechanism. Deliberately does
+  // NOT touch `identityLedger`, `diary`, or `pressureLedger` — the module's own header is
+  // explicit that this channel has no relay path of its own; a player who wants to keep what
+  // they heard has to route it back through Wall/Envelope by hand. Ephemeral by the module's
+  // own design (no store, nothing to persist) — `lastProximityConversations` reports exactly
+  // what happened this tick and nothing accumulates across ticks, same shape as
+  // `lastRumourEvents`.
+  const lastProximityConversations: ProximityConversationHeardEvent[] = [];
+  const lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }> = [];
+  for (const pending of world.pendingProximityUtterances) {
+    const neighbors = proximityGraph.neighbors(pending.speakerId);
+    const presentPlayerIds = new Set(neighbors.map((n) => n.id));
+    try {
+      const utterance = composeUtterance(
+        pending.speakerId,
+        pending.intent,
+        pending.tone,
+        pending.referent,
+        day,
+        presentPlayerIds,
+        pending.context,
+      );
+      const speakerPos = occupantPositionById.get(pending.speakerId);
+      for (const { id: listenerId } of neighbors) {
+        const listenerPos = occupantPositionById.get(listenerId);
+        if (!speakerPos || !listenerPos) continue; // defensive only — every neighbor came from occupantPositionById's own keys
+        const distanceToListener = Math.abs(speakerPos.x - listenerPos.x) + Math.abs(speakerPos.y - listenerPos.y);
+        const heard = degradeForListener(utterance, distanceToListener, config.commsProximityRange, [...presentPlayerIds], rng);
+        if (heard) lastProximityConversations.push({ listenerId, heard });
       }
+    } catch (err) {
+      lastProximityRejections.push({ speakerId: pending.speakerId, reason: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -1871,5 +1958,8 @@ export function stepWorld(world: World): World {
     lastDiaryWrites,
     lastDiaryRejections,
     lastOracleStats: oracleStats,
+    pendingProximityUtterances: [],
+    lastProximityConversations,
+    lastProximityRejections,
   };
 }
