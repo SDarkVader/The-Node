@@ -3408,6 +3408,43 @@ user with these numbers; response was to explore a different mechanism instead o
 change — specifics requested, not yet supplied. Not resolved this entry; picking up once a
 concrete alternative mechanism is named.
 
+---
+
+## The level-2 gate, finally resolved with a real mechanism, not a threshold change (2026-08-18)
+
+User: *"tackle the level-2 reputation gate."* Picks up the thread left open immediately above —
+a concrete alternative mechanism, not a threshold change.
+
+**Root cause, re-read precisely**: the four-roles-competing-for-one-pool dynamic sweeps a
+level-1 grifter into a role fast — but the ONLY way a grifter earns the 3 additional progress
+ticks level 2 needs is Shift Cover, and Shift Cover's own grifter-selection rule ("neediest —
+lowest current wealth — first") had never given level-1 grifters any priority for the one
+resource that actually determines whether they win the race. Once a grifter has already covered
+a shift or two (which is HOW they reached level 1 in the first place), their wealth is higher
+than a brand-new grifter's, so the existing rule actively deprioritizes them for FURTHER
+opportunities at exactly the moment they need more of them.
+
+**Fix**: `engine/shiftCover.ts`'s new `orderGrifterCandidatesForNotice` — grifters at EXACTLY
+level 1 (racing toward level 2) are preferred for Shift Cover notice, closest-to-the-threshold
+first among themselves; everyone else falls back to the original wealth-only rule unchanged.
+Same "prefer X, fall back to the existing rule" shape already used twice this session (grifter
+conscription's lowest-level-first; the eviction preference's `occupantTenure`). Preference, not
+a new state and never permanent — the moment a racing grifter reaches level 2 (or gets swept
+into a role) they stop being preferred. `REPUTATION_LEVEL_THRESHOLDS` itself was NOT touched.
+
+**Measured, not just argued for** (`sim/levelTwoReachabilityHarness.ts` + `levelTwoReachabilityCli.ts`,
+`npm run level-two-reachability-sim`, reconstructing real `DEFAULT_WORLD_CONFIG`-scale dynamics
+from the same real engine primitives `world.ts` itself uses, same discipline
+`evictionProtectionHarness.ts`'s `realisticEventFrequency` already established): 8 seeds x 800
+days (matching the original 2026-08-13 measurement's own run length) — distinct grifters
+reaching level 2: **66 without the fix, 235 with it — a 256% relative increase**. Trap events
+(removed while still stuck at level 1) dropped from 604 to 351. Safety check: level-0 grifters
+still receive **75.9%** of all Shift Cover completions with the fix (down from 86.4% without
+it) — a real but not remotely starving tradeoff, the large majority of practice opportunities
+still go to brand-new grifters. 10 new tests (6 pure-function in `test/shiftCover.test.ts`, 4
+harness-level regression locks in `test/levelTwoReachabilityImpact.test.ts`). 577 tests total,
+typecheck clean.
+
 ## Sabotage recalibrated: relatively easy now, arson gets a real difficulty target (2026-08-13, same session)
 
 Separate thread, same session: user directive — *"sabotage must be relatively easy, but

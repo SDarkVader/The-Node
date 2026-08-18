@@ -379,7 +379,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 567 automated tests cover all of it.
+citations, and open questions left. 577 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -469,6 +469,25 @@ just-reset baseline), and once fixed, an established role-holder keeps
 their role roughly 50% longer on average under this preference than
 without it, at effectively no cost to the shard's overall economic health.
 
+**Then the actual reputation-ladder bottleneck got fixed, not just the two
+symptoms next to it.** A grifter who becomes visible enough to earn a role
+(reputation level 1) had been getting swept into one of four cooperative
+roles within about a week to two weeks on average, almost always before
+ever earning enough further standing (level 2) to be voluntarily trusted
+with Miller or Baker — meaning that top tier was, in practice, something
+nobody actually climbed into, only got drafted into cold. Root cause,
+found by tracing it rather than re-deriving the already-known "too many
+roles chasing one pool" framing one more time: the one path to earning
+more standing (helping cover a role nobody's currently staffing) had never
+given people already close to that next tier any priority for it — if
+anything, once you'd proven yourself once or twice, you'd become slightly
+*less* likely to get the next chance, not more, since that opportunity was
+always handed to whoever needed it most that day. Fixed by giving people
+who are actually close to the next tier real priority for that next
+chance, without taking anything away from anyone else. Measured, not
+assumed: roughly three and a half times as many people now make it all
+the way to that second tier of trust.
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
@@ -482,7 +501,7 @@ nothing about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 567 tests
+npm test               # 577 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -506,7 +525,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (567 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (577 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

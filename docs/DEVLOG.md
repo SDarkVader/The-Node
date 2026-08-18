@@ -6,6 +6,65 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — The level-2 reputation gate tackled — a real mechanism, not a threshold change
+
+User: *"tackle the level-2 reputation gate."* This was HANDOVER's #1 open item as of the
+refresh two entries below, and picks up a thread left explicitly open 2026-08-13
+(`docs/BLUEPRINT.md`'s "Investigating the level-2 rarity" entry): the user had already been
+shown real threshold-sensitivity numbers (lowering the level-2 threshold 6→5 or 6→4 would raise
+reachability 1.75x-3.7x) and explicitly asked for "a different mechanism instead" — no specifics
+supplied at the time, so it sat unresolved.
+
+**Re-reading the root cause precisely, not just re-stating it**: the measured cause was "reaching
+level 1 makes a grifter an immediate target for FOUR roles' `genuineFill` at once." True, but
+that framing stops one level too shallow — the actual, fixable lever is that Shift Cover (the
+ONLY way a grifter earns the 3 more progress ticks level 2 needs) had a selection rule
+("neediest — lowest wealth — first") that was never aware of reputation progress at all. Once a
+grifter has already covered a shift or two — which is HOW they got to level 1 — their wealth
+rises above a brand-new grifter's, so the existing rule progressively deprioritizes them for
+MORE Shift Cover chances right when the race against `genuineFill`'s clock is tightest. Nobody
+had connected these two mechanisms before; found by tracing what actually determines how fast a
+level-1 grifter can earn more progress, not by re-running the same threshold experiment.
+
+**Built**: `engine/shiftCover.ts`'s `orderGrifterCandidatesForNotice` — grifters at EXACTLY
+level 1 get first pick for Shift Cover notice (closest-to-level-2 first among themselves);
+everyone else falls back to the untouched original wealth-only rule. Wired into `world.ts`'s
+existing Shift Cover selection, replacing the inline sort. `REPUTATION_LEVEL_THRESHOLDS` was
+NOT touched — genuinely a different mechanism, honoring the earlier explicit request.
+
+**Simulated before trusting, not just argued for**: built `sim/levelTwoReachabilityHarness.ts`
+(+ `levelTwoReachabilityCli.ts`, `npm run level-two-reachability-sim`) — reconstructs real
+`DEFAULT_WORLD_CONFIG`-scale dynamics (M9 B9 C7 J7 D8 IE6, N=100) directly from the same real
+engine primitives `world.ts` itself uses (`stepMultiRoleConscriptionDay`, the real reputation
+gate, the exact grifter-removal selection mirrored from `world.ts`'s own code), not a toy model
+— same discipline `evictionProtectionHarness.ts`'s `realisticEventFrequency` already
+established for a comparable question. Real, measured result, 8 seeds x 800 days (matching the
+original 2026-08-13 measurement's own run length): distinct grifters reaching level 2 went from
+**66 to 235 — a 256% relative increase**. Trap events (grifters removed while still stuck at
+level 1, never reaching level 2) dropped from 604 to 351. A real, honest secondary observation,
+not smoothed over: among grifters who STILL get trapped under the new ordering, the mean days
+spent at level 1 before removal actually DROPPED (7.25→3.80) — a selection effect, not a
+regression: the borderline cases that used to eventually succeed now mostly DO succeed (removed
+from the "trapped" population entirely), leaving only the genuinely fast failures in the
+remaining sample.
+
+**Safety check, not assumed**: does prioritizing level-1 grifters starve level-0 grifters of
+Shift Cover practice (which they need too, for the experience-floor mechanism)? Measured: level-0
+grifters still receive **75.9%** of all Shift Cover completions with the fix (down from 86.4%
+without it) — a real, honest tradeoff, but nowhere close to starvation; the large majority of
+opportunities still go to brand-new grifters.
+
+10 new tests: 6 pure-function in `test/shiftCover.test.ts` (racing-grifter preference, closest-
+to-threshold-first among racers, the preference is scoped to exactly level 1 not "any progress,"
+undefined `reputationProgress` never crashes, byte-identical to the original rule when nobody is
+racing, and a total-ordering sanity check), 4 harness-level regression locks in the new
+`test/levelTwoReachabilityImpact.test.ts` (measurably more grifters reach level 2, level-0
+grifters aren't starved, the fix is a provable no-op when nobody could possibly be racing yet,
+and the harness never crashes or produces invalid counts across several seeds). 577 tests
+total, typecheck clean.
+
+---
+
 ## 2026-08-18 — HANDOVER's "What's next" refreshed — had gone stale since 2026-08-12
 
 User: *"refresh HANDOVER's What's next section first"* (in response to "what's next on the

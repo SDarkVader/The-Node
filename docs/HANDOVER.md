@@ -55,6 +55,26 @@ protection costs the shard nothing measurable; population/occupancy accounting n
 numbers in. 567 tests total, typecheck clean. Full reasoning and the caught-bug account in
 `docs/DEVLOG.md`'s matching entries.
 
+**Then the level-2 reputation gate itself — "the level-2 trap," this file's own #1 open item
+until now — was tackled** (user: "tackle the level-2 reputation gate"), resolving the thread
+left explicitly open 2026-08-13 ("explore a different mechanism instead of a threshold change
+— specifics requested, not yet supplied"). Root cause re-read one level deeper than the
+original finding: the ONLY way a grifter earns the progress level 2 needs is Shift Cover, and
+Shift Cover's own selection rule ("neediest — lowest wealth — first") had never given level-1
+grifters any priority — worse, once a grifter has already covered a shift or two (which is HOW
+they reached level 1), their wealth rises above a brand-new grifter's, so the OLD rule actively
+deprioritized them right when the race against `genuineFill`'s 4-role sweep is tightest. Fixed
+with `engine/shiftCover.ts`'s `orderGrifterCandidatesForNotice`: grifters at EXACTLY level 1
+get first pick, closest-to-level-2 first among themselves; everyone else falls back to the
+untouched original rule. `REPUTATION_LEVEL_THRESHOLDS` was NOT touched — genuinely a different
+mechanism. Simulated (`sim/levelTwoReachabilityHarness.ts`/`Cli.ts`, `npm run
+level-two-reachability-sim`, reconstructing real `DEFAULT_WORLD_CONFIG` dynamics from the same
+primitives `world.ts` uses), 8 seeds x 800 days (matching the original 2026-08-13 measurement's
+run length): distinct grifters reaching level 2 went from **66 to 235 — a 256% relative
+increase**; trap events dropped 604→351; level-0 grifters still receive **75.9%** of all Shift
+Cover completions (down from 86.4%, a real but non-starving tradeoff). 10 new tests, 577 total,
+typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
+
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
 turned out to be stale (traced to a pre-port Python toy model). Verified its underlying
@@ -731,8 +751,9 @@ script logic, not the GUI experience.
 **Scope directive (2026-08-11, from the user): the role roster is CLOSED at six. Not looking
 to keep expanding roles — build "enough for stability and fun."** Still binding. The work
 below is about making what exists hold up, not adding to it. Resist the pull to add another
-role or system to solve a balance problem; the last several balance problems (level-2 trap
-aside — see #1) were solved by fixing a constant or a mechanism, not by adding anything.
+role or system to solve a balance problem; the last several balance problems — including the
+level-2 trap (now resolved, see this file's top entry) — were solved by fixing a constant or a
+mechanism, not by adding anything.
 
 **The addendum's entire build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) and its "report back
 explicitly on" section are fully closed, as of 2026-08-12** — full detail in
@@ -750,63 +771,61 @@ correction and simulated real dip size; the `V_i`/constraint-6 question (rejecte
 constraint 6 stays unrevised); and its buildable alternative, the `occupantTenure`/
 `ESTABLISHED_TENURE_DAYS` eviction preference, which is now built AND simulated under real
 load (~50% real tenure uplift, negligible economic cost — see this file's top entry and
-`docs/DEVLOG.md`). None of that was reflected in this section before this refresh.
+`docs/DEVLOG.md`); and the level-2 reputation gate itself, resolved via Shift Cover's new
+racing-grifter priority (256% more grifters reach level 2, measured — see this file's top
+entry). None of that was reflected in this section before this refresh.
 
-**1. The level-2 reputation gate ("the level-2 trap") — the single biggest open retention
-problem, and nothing built this session fixes its root cause.** Measured, real, still
-unresolved: 83-90% of grifters who reach reputation level 1 get conscripted into a role within
-7-16 days, before ever reaching level 2. The experience floor and the eviction preference both
-address real, adjacent symptoms (what a conscripted grifter starts with; who gets drafted out
-of an existing role) — neither touches WHY level 2 is nearly unreachable in the first place.
-No fix design has been agreed yet. Directly connects to the user's own framing this session
-("player retention is number 1 and reputation is the entire game") — this is where to look
-next if retention is the priority, not a numbered standing constraint from `CLAUDE.md`.
+~~**The level-2 reputation gate ("the level-2 trap")**~~ — **RESOLVED 2026-08-18**, see this
+file's top entry and `docs/DEVLOG.md`'s matching entry. Shift Cover now prefers level-1
+("racing") grifters for notice; measured 256% more grifters reach level 2 (66→235, 8 seeds/800
+days). Was this list's #1 item; do not re-litigate without a real new finding.
 
-**2. Answer the research questions that simulation cannot.** See `docs/RESEARCH_QUESTIONS.md`.
+**1. Answer the research questions that simulation cannot.** See `docs/RESEARCH_QUESTIONS.md`.
 Three are load-bearing and structurally invisible to us, because **the simulation models
 compliance as certain** — conscripted players always accept, grifters always wait, displaced
 players always take the new role. Nothing in the model can output "the player just quit."
 Question 1 (how long will someone tolerate having no role — we currently make them wait ~22
-days mean, 100+ worst case) is the single largest untested assumption in the design.
+days mean, 100+ worst case) is the single largest untested assumption in the design. This is
+now the single biggest open retention question, with the level-2 gate closed.
 
-**3. Built-but-not-wired: face-to-face conversation and arson still have no `world.ts`
+**2. Built-but-not-wired: face-to-face conversation and arson still have no `world.ts`
 tick-loop integration.** (Diary got wired this session; these two didn't.) Proximity
 conversation specifically needs real per-utterance listener resolution — bigger than the
 simple queue-in/consume-and-clear pattern that worked for diary, since "who heard this" isn't
-a fixed target the way a diary entry's SUBJECT is. Wiring arson also means deciding #4 below
+a fixed target the way a diary entry's SUBJECT is. Wiring arson also means deciding #3 below
 first, since it currently reads as a pattern-sabotage-adjacent PROPOSAL, not shipped default.
 
-**4. The sabotage model decision (act-based, shipped, vs. the simulated pattern-based
+**3. The sabotage model decision (act-based, shipped, vs. the simulated pattern-based
 proposal) is still undecided — and now blocks THREE things, not two.** Item 4's Detective task
 had to use a friction bar instead of the addendum's own "catch a saboteur" example; arson's
-wiring (#3 above) needs this resolved first too.
+wiring (#2 above) needs this resolved first too.
 
-**5. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
+**4. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
 still draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
 per-player postcard holdings. The last placeholder in an otherwise complete mechanic.
 
-**6. Courier/Journalist/Detective's differentiated resources still feed nothing.** All six
+**5. Courier/Journalist/Detective's differentiated resources still feed nothing.** All six
 roles have a real completion signal and reward (item 4) — "nothing distinguishes holding the
 role well" is resolved — but parcels/stories/leads are still produced and tracked with no
 consumer. Easiest place in the project to accidentally over-build; keep it to whatever makes
 them distinct and fun to hold, not a full economy each.
 
-**7. Extend the experience floor to support roles.** `engine/experienceFloor.ts` only applies
+**6. Extend the experience floor to support roles.** `engine/experienceFloor.ts` only applies
 to Miller/Baker because only they have a tracked `experience` field. If Courier/Journalist/
-Detective/Import/Export ever get one (see #6), the same grant-only, role-specific-practice
+Detective/Import/Export ever get one (see #5), the same grant-only, role-specific-practice
 mechanism should extend to them rather than a new one being invented.
 
-**8. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ in
+**7. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ in
 name and local role framing (`engine/shardIdentity.ts`) — mechanics are identical everywhere,
 enforced structurally (`world.ts` cannot import the module, and a test proves it). **Tier 2
 (per-shard mechanical differences) is blocked** on research question 10 —
 `chooseMigrationDestination` assumes shards are interchangeable, so the moment they differ in
 quality the simulation would report a stability it is no longer testing.
 
-**9. Physical building relocation on MERGE.** A merged district's buildings stay in place,
+**8. Physical building relocation on MERGE.** A merged district's buildings stay in place,
 permanently friction-penalised, rather than relocating capacity into a surviving district.
 
-**10. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
+**9. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
 monuments) — not started.
 
 **Still open, unchanged, lower priority:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8
