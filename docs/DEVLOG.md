@@ -6,6 +6,48 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Eviction preference now requires real performance too, not just tenure
+
+Follow-up to the same-day eviction-preference build, prompted by user directive: *"grinders
+should have greater upward mobility than lazy players etc. activity is the fastest path to
+reward, inactivity over time should bite."* Real gap in what shipped earlier: the preference
+protected by `daysInRole` (tenure — how LONG someone held a slot) with no signal for whether
+they were actually doing the job well. A long-tenured but chronically underperforming occupant
+got the same protection as a long-tenured, genuinely productive one — tenure, not activity.
+
+**Fix**: `multiRoleConscription.ts`'s `RoleGroupState` gains `occupantPerformance?: readonly
+number[]` and `PERFORMANCE_BAR = 0.8`. An occupant now only counts as "established" (protected
+from `conscriptionFromOtherRole`) if they clear BOTH the tenure floor AND the performance floor
+— a long-tenured chronic underperformer loses the protection a long-tenured, genuinely
+productive peer keeps. The performance signal reuses `engine/roleCompletion.ts`'s real,
+already-shipped `completionStats`/`completionRatio` (item 4's own signal, career-long, resets
+on new occupant) rather than inventing a parallel one — normalized against a new
+`TYPICAL_COMPLETION_RATIO` per role (Miller/Baker ~0.55, the four friction-bar roles ~0.97,
+the same numbers `roleCompletion.ts`'s own header already documented) so a Miller's 55% and a
+Courier's 97% are comparable on one shared scale. Same "preference on top of the original
+neutral floor" shape as everything else this session — the bite lands on a bonus that was never
+guaranteed, never on anything actually earned, so constraint 6 doesn't apply to it.
+
+**A second real harness bug was caught before trusting the re-measurement, not after.** Once
+`world.ts` started passing real `occupantPerformance` unconditionally, `evictionProtection
+Harness.ts`'s existing "without" arm — which only neutralized `daysInRole` — silently stopped
+being a true "feature doesn't exist" baseline; it still had a live performance-based preference
+running underneath. Caught by noticing the "without" arm's own mean tenure had moved between
+runs, which it should never do on its own. Fixed by also resetting `completionStats` to the
+exact "meets `PERFORMANCE_BAR`, no more" value for every FILLED slot, mirroring
+`ESTABLISHED_TENURE_DAYS`'s own "reset to exactly the bar" convention.
+
+**Re-measured after the fix** (8 seeds x 3000 days, `DEFAULT_WORLD_CONFIG`): steady-state mean
+`daysInRole` across every FILLED slot is **115.94 days WITH the (now tenure+performance)
+preference vs. 94.40 WITHOUT — a real ~22.8% relative uplift** (down from the pure-tenure
+figure of ~50%, since some previously-"established" occupants no longer qualify once
+performance is also required — expected, not a regression). `economicHealth` moves by only
++0.00523 — still no measurable cost. 5 new tests (4 pure-function in
+`test/multiRoleConscription.test.ts`, 1 real-`World` integration in
+`test/world.evictionProtection.test.ts`). 582 tests total, typecheck clean.
+
+---
+
 ## 2026-08-18 — The level-2 reputation gate tackled — a real mechanism, not a threshold change
 
 User: *"tackle the level-2 reputation gate."* This was HANDOVER's #1 open item as of the

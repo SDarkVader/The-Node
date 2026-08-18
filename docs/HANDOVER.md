@@ -75,6 +75,27 @@ increase**; trap events dropped 604→351; level-0 grifters still receive **75.9
 Cover completions (down from 86.4%, a real but non-starving tradeoff). 10 new tests, 577 total,
 typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
 
+**Then the eviction preference was sharpened to require real performance, not just tenure**
+(user: "grinders should have greater upward mobility than lazy players... activity is the
+fastest path to reward, inactivity over time should bite"). A long-tenured but chronically
+underperforming occupant was getting the same protection as a genuinely productive one —
+tenure measures how LONG someone held a slot, not whether they did the job well. Fixed:
+`multiRoleConscription.ts`'s eviction preference now requires BOTH `daysInRole >=
+ESTABLISHED_TENURE_DAYS` AND a new `occupantPerformance >= PERFORMANCE_BAR` (0.8), reusing item
+4's real `completionStats`/`completionRatio` (normalized per-role via a new
+`TYPICAL_COMPLETION_RATIO`, since Miller/Baker's ~55% and the four friction-bar roles' ~97%
+aren't otherwise comparable). Same "preference on a neutral floor" shape — the bite lands on an
+unearned bonus, never on anything actually held. **A second harness bug was caught before
+re-trusting the re-measurement**: `evictionProtectionHarness.ts`'s "without" arm only
+neutralized tenure, so once `world.ts` started passing real performance data unconditionally,
+it silently stopped being a true "feature doesn't exist" baseline — caught by noticing the
+"without" arm's own mean had moved between runs, which it should never do on its own. Fixed;
+re-measured (8 seeds x 3000 days): steady-state mean `daysInRole` is **115.94 days WITH the
+combined preference vs. 94.40 WITHOUT — a real ~22.8% relative uplift** (down from the
+pure-tenure ~50%, expected — some previously-"established" occupants no longer qualify once
+performance is also required). `economicHealth` moves by only +0.00523. 5 new tests, 582
+total, typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
+
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
 turned out to be stale (traced to a pre-port Python toy model). Verified its underlying

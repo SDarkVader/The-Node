@@ -3783,3 +3783,28 @@ WITH the preference vs. 75.28 WITHOUT, a real ~50% relative uplift; `economicHea
 only -0.00221 — the protection costs the shard nothing measurable. 5 new regression tests lock
 these numbers in. 567 tests total, typecheck clean. Full numbers and the caught-bug account:
 `docs/DEVLOG.md`'s matching entry.
+
+---
+
+## Eviction preference now requires real performance, not just tenure (2026-08-18, later still)
+
+User: *"grinders should have greater upward mobility than lazy players... activity is the
+fastest path to reward, inactivity over time should bite."* Real gap in the shipped
+tenure-only preference: a long-tenured but chronically underperforming occupant got the same
+protection as a genuinely productive one. Fixed by requiring BOTH `daysInRole >=
+ESTABLISHED_TENURE_DAYS` AND a new `occupantPerformance >= PERFORMANCE_BAR` (0.8) —
+`occupantPerformance` reuses item 4's real `completionStats`/`completionRatio`, normalized
+against a new `TYPICAL_COMPLETION_RATIO` per role (Miller/Baker ~0.55, the four friction-bar
+roles ~0.97) so different roles' completion rates are comparable on one shared scale. Same
+"preference on top of a neutral floor" shape as everything else this session — the bite lands
+on an unearned bonus, never on anything actually held, so constraint 6 doesn't apply.
+
+**A second harness bug caught before re-trusting the numbers**: `evictionProtectionHarness.ts`'s
+"without" arm only neutralized tenure, so once `world.ts` started passing real performance data
+unconditionally, that arm silently stopped being a true "feature doesn't exist" baseline. Fixed
+by also resetting `completionStats` to the exact "meets `PERFORMANCE_BAR`, no more" value for
+every FILLED slot. Re-measured (8 seeds x 3000 days): steady-state mean `daysInRole` is 115.94
+days WITH the combined tenure+performance preference vs. 94.40 WITHOUT — a real ~22.8%
+relative uplift (down from the pure-tenure ~50%, expected once some previously-"established"
+occupants no longer qualify). `economicHealth` moves by only +0.00523. 5 new tests, 582 total,
+typecheck clean. Full account: `docs/DEVLOG.md`'s matching entry.
