@@ -726,100 +726,91 @@ in Godot 4.3+ and run the main scene (set `player_id` on Main.gd to `wren`/`sabl
 **Still worth opening in a real editor** — the headless run confirms wire protocol and
 script logic, not the GUI experience.
 
-## What's next
+## What's next (refreshed 2026-08-18 — the list below had gone stale since 2026-08-12)
 
 **Scope directive (2026-08-11, from the user): the role roster is CLOSED at six. Not looking
-to keep expanding roles — build "enough for stability and fun."** Treat that as binding: the
-work below is about making what exists hold up, not adding to it. Resist the pull to add
-another role or system to solve a balance problem; the last several balance problems were
-solved by fixing a constant or a mechanism, not by adding anything.
+to keep expanding roles — build "enough for stability and fun."** Still binding. The work
+below is about making what exists hold up, not adding to it. Resist the pull to add another
+role or system to solve a balance problem; the last several balance problems (level-2 trap
+aside — see #1) were solved by fixing a constant or a mechanism, not by adding anything.
 
-**0. THE ADDENDUM'S BUILD ORDER IS COMPLETE (items 0/3, 1, 2, 4, 5, 6, 7, 8 all done,
-2026-08-12).** `docs/DESIGN_ADDENDUM_2026-08-11.md` has the full brief for each;
-`docs/BLUEPRINT.md` has a dedicated entry for every one under its own "Item N" heading. Two
-things flagged as genuinely open rather than silently closed while building this, worth
-reading before touching either area again:
-- **Item 6 (Courier pay)**: the addendum's "paid by whoever commissioned the delivery" was
-  read as its honest-buildable core (pay earned from real geometry) rather than a literal
-  Miller/Baker wealth debit — a literal debit would remove ~1/3 of their combined income and
-  is a new cross-role mechanic outside one item's scope. If a literal transfer is ever
-  wanted, it needs its own calibration pass, not a quick patch.
-- **Item 8 (throttle windows)**: verified against the pre-existing `DAILY_ACTIVITY_MULTIPLIER`
-  downtime mechanic rather than building a second one — deliberately, since a genuinely
-  second throttle would have doubled dampened hours and silently invalidated every wealth/
-  Gini/flourRatio number calibrated against the single-window value. If item 8 is ever read
-  as needing REAL wall-clock scheduling (specific windows at specific UTC hours, distinct
-  from the daily-average blend this kernel can represent), that's `src/server/ws.ts` work
-  once a real-time server exists, not something this deterministic kernel can do at all.
+**The addendum's entire build order (items 0/3, 1, 2, 4, 5, 6, 7, 8) and its "report back
+explicitly on" section are fully closed, as of 2026-08-12** — full detail in
+`docs/BLUEPRINT.md`'s per-item entries, not repeated here. Two scoping notes from that work
+still worth knowing before touching Courier pay or the throttle windows: Courier pay is real
+geometry-earned pay, not a literal Miller/Baker wealth debit (a literal debit removes ~1/3 of
+their combined income and would need its own calibration pass); the throttle windows reuse the
+pre-existing `DAILY_ACTIVITY_MULTIPLIER` rather than a second downtime mechanic, deliberately.
 
-**What's left from the addendum is only its own "report back explicitly on" section** — and
-several of those questions are now directly answerable from work already done this session,
-not still open:
-- Does the closed nodule loop balance long-run or accumulate/starve? Answered structurally by
-  item 5's hard-filter test (`grainConsumed/grainDelivered < 1.05` across seeds/1500 days) —
-  it balances, by construction and by measurement both.
-- Is coordinated slot-farming genuinely net-negative? Answered exactly, not just simulated, by
-  item 7: `SHIFT_COVER_FRACTION < 1` makes it net-negative on every single day, for any
-  alternation pattern — a stronger guarantee than a simulated scenario could give.
-- Do cross-role completion rewards land at real parity? Already answered by item 4's hard
-  filter (+-30% band around the cross-role mean).
-- ~~Does identity resolution produce a meaningful core-vs-periphery difference?~~ **Answered
-  2026-08-12** — see `docs/BLUEPRINT.md`'s "Identity resolution core-vs-periphery sweep"
-  entry. `sim/identityResolutionHarness.ts` + `npm run identity-resolution-report`: averaged
-  across 5 seeds at the shipped default, periphery role-holders take **~35% longer** to
-  resolve than core ones (measured ~30.1 vs ~40.4 days) — real and worth feeling, not
-  negligible, though noisy per-seed (one seed of five reversed the direction). The effect is
-  on SPEED only: given enough time (250 days), periphery resolution reaches >85% too, so this
-  is a pacing difference, not a structural exclusion (constraint 2/6 both still hold). The
-  addendum's own build order and its entire "report back" section are now fully closed.
-- **Item 8's own verification was also strengthened** (it has no line in the addendum's
-  "report back" section, but was checked to the same standard anyway): proved EXACTLY that
-  the windows never distort market-clearing dynamics (grain supply/demand both scale linearly
-  with the activity multiplier, so `flourPrice` is provably invariant to it), and confirmed
-  with real measured numbers that grifter income — the one role with no completion-bonus
-  contamination — lands at exactly the proven 30% reduction, in every seed tested. See
-  `docs/BLUEPRINT.md`'s "Item 8 report-back verification" entry.
+**Also fully closed since then, from the 2026-08-13 → 2026-08-18 work** (so nobody re-derives
+or re-litigates these): universal housing + reputation-level role gating (built, wired,
+tested); the diary (built, wired into `stepWorld`, tested); `personalResourceStock` (built,
+wired); the experience floor for grifters conscripted into Miller/Baker, including its cap
+correction and simulated real dip size; the `V_i`/constraint-6 question (rejected as specified,
+constraint 6 stays unrevised); and its buildable alternative, the `occupantTenure`/
+`ESTABLISHED_TENURE_DAYS` eviction preference, which is now built AND simulated under real
+load (~50% real tenure uplift, negligible economic cost — see this file's top entry and
+`docs/DEVLOG.md`). None of that was reflected in this section before this refresh.
 
-**1. Answer the research questions that simulation cannot.** See
-`docs/RESEARCH_QUESTIONS.md`. Three of them are load-bearing and structurally invisible to
-us, because **the simulation models compliance as certain** — conscripted players always
-accept, grifters always wait, displaced players always take the new role. Nothing in the
-model can output "the player just quit". Question 1 (how long will someone tolerate having
-no role — we currently make them wait ~22 days mean, 100+ worst case) is the single largest
-untested assumption in the design, and the addendum explicitly does not address it.
+**1. The level-2 reputation gate ("the level-2 trap") — the single biggest open retention
+problem, and nothing built this session fixes its root cause.** Measured, real, still
+unresolved: 83-90% of grifters who reach reputation level 1 get conscripted into a role within
+7-16 days, before ever reaching level 2. The experience floor and the eviction preference both
+address real, adjacent symptoms (what a conscripted grifter starts with; who gets drafted out
+of an existing role) — neither touches WHY level 2 is nearly unreachable in the first place.
+No fix design has been agreed yet. Directly connects to the user's own framing this session
+("player retention is number 1 and reputation is the entire game") — this is where to look
+next if retention is the priority, not a numbered standing constraint from `CLAUDE.md`.
 
-**2. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
-draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
+**2. Answer the research questions that simulation cannot.** See `docs/RESEARCH_QUESTIONS.md`.
+Three are load-bearing and structurally invisible to us, because **the simulation models
+compliance as certain** — conscripted players always accept, grifters always wait, displaced
+players always take the new role. Nothing in the model can output "the player just quit."
+Question 1 (how long will someone tolerate having no role — we currently make them wait ~22
+days mean, 100+ worst case) is the single largest untested assumption in the design.
+
+**3. Built-but-not-wired: face-to-face conversation and arson still have no `world.ts`
+tick-loop integration.** (Diary got wired this session; these two didn't.) Proximity
+conversation specifically needs real per-utterance listener resolution — bigger than the
+simple queue-in/consume-and-clear pattern that worked for diary, since "who heard this" isn't
+a fixed target the way a diary entry's SUBJECT is. Wiring arson also means deciding #4 below
+first, since it currently reads as a pattern-sabotage-adjacent PROPOSAL, not shipped default.
+
+**4. The sabotage model decision (act-based, shipped, vs. the simulated pattern-based
+proposal) is still undecided — and now blocks THREE things, not two.** Item 4's Detective task
+had to use a friction bar instead of the addendum's own "catch a saboteur" example; arson's
+wiring (#3 above) needs this resolved first too.
+
+**5. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
+still draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
 per-player postcard holdings. The last placeholder in an otherwise complete mechanic.
 
-**3. Courier/Journalist/Detective's differentiated resources still feed nothing.** Item 4
-gave all six roles a real completion signal and reward, so "nothing distinguishes holding
-the role well" is **resolved** — but parcels/stories/leads are still produced and tracked
-with no consumer. Item 5's closed loop is the natural place to decide whether they should
-have one. Easiest place in the project to accidentally over-build; keep it to whatever makes
+**6. Courier/Journalist/Detective's differentiated resources still feed nothing.** All six
+roles have a real completion signal and reward (item 4) — "nothing distinguishes holding the
+role well" is resolved — but parcels/stories/leads are still produced and tracked with no
+consumer. Easiest place in the project to accidentally over-build; keep it to whatever makes
 them distinct and fun to hold, not a full economy each.
 
-**4. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ
-in name and local role framing (`engine/shardIdentity.ts`, `npm run shard-identity-report`) —
-Miller and Baker keep recognisable titles as the economic spine, the other four are reframed
-locally so a migrant's knowledge is partially wrong. Mechanics are identical everywhere, and
-that is enforced structurally: `world.ts` cannot import the module, and a test proves it.
-**Tier 2 (per-shard mechanical differences) is blocked** on research question 10 —
+**7. Extend the experience floor to support roles.** `engine/experienceFloor.ts` only applies
+to Miller/Baker because only they have a tracked `experience` field. If Courier/Journalist/
+Detective/Import/Export ever get one (see #6), the same grant-only, role-specific-practice
+mechanism should extend to them rather than a new one being invented.
+
+**8. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ in
+name and local role framing (`engine/shardIdentity.ts`) — mechanics are identical everywhere,
+enforced structurally (`world.ts` cannot import the module, and a test proves it). **Tier 2
+(per-shard mechanical differences) is blocked** on research question 10 —
 `chooseMigrationDestination` assumes shards are interchangeable, so the moment they differ in
 quality the simulation would report a stability it is no longer testing.
 
-**5. Physical building relocation on MERGE.** A merged district's buildings stay in place,
+**9. Physical building relocation on MERGE.** A merged district's buildings stay in place,
 permanently friction-penalised, rather than relocating capacity into a surviving district.
 
-**6. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
+**10. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
 monuments) — not started.
 
-**Still open from before, unchanged:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8 week
-target; the sabotage model decision (act-based vs the simulated pattern-based proposal — note
-this one now blocks a *second* thing, since item 4's Detective task had to use a friction bar
-rather than the addendum's own "catch a saboteur" example precisely because the pattern-based
-model isn't shipped); real Phase 4 rendering; Phase 5 voice/safety (hard-gated on legal
-review). Phase 2's §2.6 Shift Cover is **done** — see addendum item 7 above.
+**Still open, unchanged, lower priority:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8
+week target; real Phase 4 rendering; Phase 5 voice/safety (hard-gated on legal review).
 
 ## Things to know before you touch this
 

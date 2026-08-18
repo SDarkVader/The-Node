@@ -6,6 +6,31 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — HANDOVER's "What's next" refreshed — had gone stale since 2026-08-12
+
+User: *"refresh HANDOVER's What's next section first"* (in response to "what's next on the
+roadmap"). The section still read as of the 2026-08-11 addendum's build order — it never
+mentioned anything from the 2026-08-13 through 2026-08-18 work (housing/reputation levels,
+diary, personalResourceStock, the experience floor, the `V_i` resolution, the eviction
+preference), so a reader following it cold would have re-derived or re-litigated work that was
+already done. Rewrote it: compressed the now-fully-historical addendum build-order section,
+added an explicit "also fully closed since then" list naming everything shipped this session so
+it can't be silently reopened, and — most importantly — surfaced **the level-2 reputation gate
+("the level-2 trap")** as the #1 open item, which had NEVER been recorded in this section at
+all despite being a real, measured, still-unresolved finding from earlier this session (83-90%
+of grifters who reach level 1 get conscripted within 7-16 days, never reaching level 2). Also
+added two items this session's work directly created: face-to-face conversation/arson's
+missing `world.ts` wiring (diary got wired, they didn't), and extending the experience floor to
+support roles once/if they get a tracked `experience` field. Renumbered the remaining
+already-known-open items (exit-ticket accrual, differentiated support-role resources, shard
+diversity Tier 2, building relocation on merge, Observatory phases) into rough priority order
+under the new list, none of their content changed. One correction caught before committing:
+first draft misattributed the level-2 trap's urgency to "constraint 3" (which is actually about
+minimizing agent-modelable behavior, unrelated) — fixed to cite the user's own "reputation is
+the entire game" framing instead, not a numbered `CLAUDE.md` constraint that doesn't say that.
+
+---
+
 ## 2026-08-18 — Eviction preference simulated under real load — real effect, real bug caught first
 
 Direct follow-up to the same-day build: *"simulate it — verify the eviction preference under
