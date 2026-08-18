@@ -10,3 +10,6 @@ client/export_presets.cfg
 # Seeded Claude Design canvas — 2MB+ editor payload, regenerated from
 # design/playtest-aesthetics/ working files via that dir's generate.mjs + the design skill.
 node-playtest-look.html
+
+# Generated world recordings for the browser viewer (regenerate with npm run web-export)
+docs/web/world.json

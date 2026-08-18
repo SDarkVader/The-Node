@@ -19,6 +19,7 @@
     "oracle-sim": "tsx src/sim/oracleCli.ts",
     "sabotage-campaign-sim": "tsx src/sim/sabotageCampaignCli.ts",
     "playtest": "tsx src/sim/playtestCli.ts",
+    "web-export": "tsx src/sim/webExportCli.ts",
     "level-two-reachability-sim": "tsx src/sim/levelTwoReachabilityCli.ts",
     "spatial-witness-report": "tsx src/sim/spatialWitnessReport.ts",
     "world-sim": "tsx src/sim/worldCli.ts",
