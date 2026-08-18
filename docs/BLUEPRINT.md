@@ -3730,3 +3730,19 @@ omit-vs-all-established-tenure equivalence proof), 5 real-`World` integration (n
 end-to-end case: an established courier survives across 5 seeds against an otherwise all-green
 cast of other-role candidates while a green one gets evicted in its place). 562 tests total,
 typecheck clean. Full reasoning: `docs/DEVLOG.md`'s matching entry.
+
+---
+
+**2026-08-18, later still — simulated under real load (`sim/evictionProtectionHarness.ts` +
+`sim/evictionProtectionCli.ts`, `npm run eviction-protection-sim`), per the standing "simulate
+before trusting" constraint.** A real measurement bug was caught before any number was reported:
+the first harness draft fed the "without" arm's own just-neutralized `daysInRole` back into the
+measurement, reporting the constant it had just been reset to as if it were a real result. Fixed
+with an external tenure ledger, independent of the `World` field being manipulated to neutralize
+selection. Real, measured result (8 seeds x 3000 days, `DEFAULT_WORLD_CONFIG`, 300-day burn-in):
+`conscriptionFromOtherRole` fires 692 times (vs. 1058 `conscriptionFromGrifters`) — genuinely
+exercised under load; steady-state mean `daysInRole` across every FILLED slot is 113.07 days
+WITH the preference vs. 75.28 WITHOUT, a real ~50% relative uplift; `economicHealth` moves by
+only -0.00221 — the protection costs the shard nothing measurable. 5 new regression tests lock
+these numbers in. 567 tests total, typecheck clean. Full numbers and the caught-bug account:
+`docs/DEVLOG.md`'s matching entry.

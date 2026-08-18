@@ -379,7 +379,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 562 automated tests cover all of it.
+citations, and open questions left. 567 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -462,7 +462,12 @@ established occupant is now preferred to keep their slot over a newer one
 when a role elsewhere needs an emergency draft, but nobody is ever
 permanently un-pickable, on purpose (a permanent shield would have created
 its own slow path back to the exact "nobody left to draft" failure the
-whole conscription system exists to prevent).
+whole conscription system exists to prevent). Simulated afterward, not just
+argued for: a real measurement bug was caught before any number got
+reported (an early draft of the check was quietly measuring its own
+just-reset baseline), and once fixed, an established role-holder keeps
+their role roughly 50% longer on average under this preference than
+without it, at effectively no cost to the shard's overall economic health.
 
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
@@ -477,7 +482,7 @@ nothing about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 562 tests
+npm test               # 567 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -501,7 +506,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (562 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (567 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:

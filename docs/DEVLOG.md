@@ -6,6 +6,48 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — Eviction preference simulated under real load — real effect, real bug caught first
+
+Direct follow-up to the same-day build: *"simulate it — verify the eviction preference under
+real load."* Built `sim/evictionProtectionHarness.ts` + `sim/evictionProtectionCli.ts`
+(`npm run eviction-protection-sim`), following the exact "same seed, honest counterfactual"
+discipline `experienceFloorHarness.ts` established — but this case is NOT a same-tick rng-
+lockstep comparison like that one: `occupantTenure` changes SELECTION itself (which candidate a
+conscription event picks), not a value computed after an already-identical pick, so the two
+arms genuinely diverge in which specific building fills/vacates on which day. Compared on
+steady-state aggregate statistics instead.
+
+**A real bug was caught before any number got reported, not after.** The first version of the
+harness fed the "without" arm's own just-stripped `daysInRole` straight back into the
+measurement — so it reported "30.00 days" every single day, by construction, since that's
+exactly the constant it had just been reset to. That produced a fabricated "276% protective
+effect" number that was really just "30.00 equals 30.00." Caught by inspection before writing
+it down anywhere. Fixed with an `ExternalTenureLedger` — tracks what tenure would REALLY have
+accumulated under no-preference dynamics, entirely outside `World` and independent of the field
+being stripped to neutralize selection for the next tick. `world.daysInRole` still gets reset
+before each `stepWorld` call (that's the real counterfactual manipulation, forcing uniform-
+random selection); it's just never read back out as the measurement anymore.
+
+**Real, measured results (8 seeds x 3000 days, DEFAULT_WORLD_CONFIG, 300-day burn-in):**
+- `conscriptionFromOtherRole` fires 692 times across the full run (vs. 1058
+  `conscriptionFromGrifters`) — the mechanism the preference touches is real and exercised
+  under load, not dead code that only fires in synthetic fixtures.
+- Steady-state mean `daysInRole` across every FILLED slot, all six roles: **113.07 days WITH
+  the preference vs. 75.28 days WITHOUT** — a genuine, positive, ~50% relative uplift in how
+  long established role-holders actually keep their roles.
+- `economicHealth` barely moves (-0.00221 difference, WITH minus WITHOUT) — the preference
+  protects tenure without costing the shard anything measurable.
+- Population/occupancy accounting never breaks across any seed (minimum grifters+FILLED
+  observed: 50, never negative).
+
+5 new regression tests in `test/evictionProtectionImpact.test.ts` lock these real numbers in
+(loosely bounded, not brittle exact pins, since they run a smaller/shorter sample than the full
+CLI report): the event type fires at all, the tenure uplift is measurably positive and above a
+real floor, economicHealth stays within a tight band, accounting never goes negative. 567 tests
+total, typecheck clean.
+
+---
+
 ## 2026-08-18 — Eviction-preference bias built: the V_i alternative, shipped and tested
 
 Direct follow-up to the same-day V_i resolution (next entry below): *"yeah, build the selection

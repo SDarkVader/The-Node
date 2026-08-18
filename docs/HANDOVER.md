@@ -37,7 +37,23 @@ optional/backward-compatible at the pure-function level — every one of the 553
 tests passed unchanged before any new ones were added, proving the omitted-field path is
 byte-identical to before. 9 new tests (4 pure-function in `multiRoleConscription.test.ts`, 5
 real-`World` integration in the new `test/world.evictionProtection.test.ts`), 562 total,
-typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
+typecheck clean.
+
+**Then simulated under real load** (user: "simulate it — verify the eviction preference under
+real load"), per the standing "simulate before trusting" constraint —
+`sim/evictionProtectionHarness.ts`/`evictionProtectionCli.ts`, `npm run eviction-protection-sim`.
+A real measurement bug was caught and fixed BEFORE any number got reported: the first draft fed
+the "without" arm's own just-neutralized `daysInRole` back into the measurement, so it reported
+the constant it had just been reset to every day — fixed with an external tenure ledger
+independent of the field being manipulated to neutralize selection. Real, measured result (8
+seeds x 3000 days, `DEFAULT_WORLD_CONFIG`): `conscriptionFromOtherRole` fires 692 times (vs.
+1058 `conscriptionFromGrifters`) — genuinely exercised under load, not dead code; steady-state
+mean `daysInRole` across every FILLED slot is **113.07 days WITH the preference vs. 75.28
+WITHOUT — a real ~50% relative uplift**; `economicHealth` moves by only -0.00221 — the
+protection costs the shard nothing measurable; population/occupancy accounting never breaks
+(minimum grifters+FILLED observed across all runs: 50). 5 new regression tests lock these
+numbers in. 567 tests total, typecheck clean. Full reasoning and the caught-bug account in
+`docs/DEVLOG.md`'s matching entries.
 
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
