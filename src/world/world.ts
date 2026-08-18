@@ -126,7 +126,7 @@ import {
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
-import { shiftCoverPay, shiftCoverNoticedIndices } from '../engine/shiftCover.js';
+import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
 import { ConnectionGraph } from '../comms/connections.js';
 import type { WallPost, SelfState } from '../comms/grammar.js';
@@ -1388,15 +1388,16 @@ export function stepWorld(world: World): World {
   });
   const noticedIdx = shiftCoverNoticedIndices(shiftCoverOpportunities.length, grifters.length, rng);
   if (noticedIdx.length > 0) {
-    // Neediest grifters (lowest current wealth) get first pick — deterministic, no scheduler,
-    // no per-grifter notice draw beyond the aggregate noticedIdx above.
-    const grifterOrder = grifters
-      .map((g, i) => ({ i, wealth: g.wealth }))
-      .sort((a, b) => a.wealth - b.wealth || a.i - b.i)
-      .slice(0, noticedIdx.length);
+    // Grifters racing toward level 2 (exactly level 1) get first pick, closest-to-the-
+    // threshold first; everyone else falls back to the original "neediest (lowest wealth)
+    // first" rule — deterministic, no scheduler, no per-grifter notice draw beyond the
+    // aggregate noticedIdx above. See `engine/shiftCover.ts`'s
+    // `orderGrifterCandidatesForNotice` doc comment for the full reasoning (2026-08-18,
+    // tackles the level-2 reputation gate).
+    const grifterOrder = orderGrifterCandidatesForNotice(grifters).slice(0, noticedIdx.length);
     const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!.payout));
     grifters = grifters.map((g, i) => {
-      const pos = grifterOrder.findIndex((o) => o.i === i);
+      const pos = grifterOrder.indexOf(i);
       if (pos < 0) return g;
       // A successful cover also earns one reputation progress-tick (2026-08-13,
       // docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §3.3/§2.1) — the SAME once-per-

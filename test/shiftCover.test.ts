@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../src/sim/rng.js';
-import { shiftCoverPay, shiftCoverNoticedIndices, SHIFT_COVER_FRACTION } from '../src/engine/shiftCover.js';
+import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice, SHIFT_COVER_FRACTION } from '../src/engine/shiftCover.js';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG, type WorldConfig } from '../src/world/world.js';
 import { reputationLevelForProgress, REPUTATION_LEVEL_THRESHOLDS } from '../src/engine/reputation.js';
 
@@ -75,6 +75,63 @@ describe('shiftCoverNoticedIndices', () => {
     const rand = mulberry32(5);
     const noticed = shiftCoverNoticedIndices(1000, 1000, rand, 0.9);
     expect(noticed.length).toBeGreaterThan(800);
+  });
+});
+
+describe('orderGrifterCandidatesForNotice — the level-2 gate fix (2026-08-18)', () => {
+  it('a grifter racing toward level 2 (exactly level 1) is preferred over a level-0 grifter with lower wealth', () => {
+    const grifters = [
+      { wealth: 0, reputationProgress: 0 }, // level 0, poorest — old rule would pick this first
+      { wealth: 100, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[0]! }, // level 1, racing, richer
+    ];
+    const order = orderGrifterCandidatesForNotice(grifters);
+    expect(order[0]).toBe(1);
+  });
+
+  it('among several racing grifters, whoever is closest to the level-2 threshold goes first', () => {
+    const grifters = [
+      { wealth: 0, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[0]! }, // just reached level 1
+      { wealth: 0, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[1]! - 1 }, // one tick from level 2
+    ];
+    const order = orderGrifterCandidatesForNotice(grifters);
+    expect(order[0]).toBe(1);
+  });
+
+  it('a grifter who already reached level 2 is NOT preferred — the preference is scoped to exactly level 1, not "any progress"', () => {
+    const grifters = [
+      { wealth: 100, reputationProgress: 0 }, // level 0, wealthy
+      { wealth: 0, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[1]! }, // level 2 already, poor
+    ];
+    // Neither is racing (level 0 and level 2 both fall outside "exactly level 1"), so this
+    // degenerates to the plain wealth rule: the poorer grifter (index 1) goes first regardless
+    // of already being level 2 — the racing preference gives it no special treatment either way.
+    const order = orderGrifterCandidatesForNotice(grifters);
+    expect(order[0]).toBe(1);
+  });
+
+  it('omitting reputationProgress entirely (undefined, reads as 0/level 0) never crashes and behaves as level 0', () => {
+    const grifters = [{ wealth: 5 }, { wealth: 1, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[0]! }];
+    const order = orderGrifterCandidatesForNotice(grifters);
+    expect(order[0]).toBe(1); // the racing (level 1) grifter still goes first
+  });
+
+  it('with NO racing grifter among the candidates, the ordering is byte-identical to the original plain wealth-ascending rule — the backward-compatibility guarantee', () => {
+    const grifters = [
+      { wealth: 5, reputationProgress: 0 },
+      { wealth: 1, reputationProgress: 0 },
+      { wealth: 3, reputationProgress: REPUTATION_LEVEL_THRESHOLDS[1]! }, // level 2, not racing
+    ];
+    const originalRule = grifters
+      .map((g, i) => ({ i, wealth: g.wealth }))
+      .sort((a, b) => a.wealth - b.wealth || a.i - b.i)
+      .map((o) => o.i);
+    expect(orderGrifterCandidatesForNotice(grifters)).toEqual(originalRule);
+  });
+
+  it('is a total ordering of every candidate index, never drops or duplicates one', () => {
+    const grifters = Array.from({ length: 20 }, (_, i) => ({ wealth: (i * 7) % 13, reputationProgress: i % 8 }));
+    const order = orderGrifterCandidatesForNotice(grifters);
+    expect([...order].sort((a, b) => a - b)).toEqual(grifters.map((_, i) => i));
   });
 });
 

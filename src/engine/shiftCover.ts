@@ -1,7 +1,10 @@
+import { reputationLevelForProgress } from './reputation.js';
+
 /**
  * Shift Cover (2026-08-11 addendum item 7, "offline slots as opportunity, not just backstop"
- * — fulfils the long-open brief §2.6 item, reshaped). Pure, dependency-free, same style as
- * every other `src/engine/` module.
+ * — fulfils the long-open brief §2.6 item, reshaped). Pure, same style as every other
+ * `src/engine/` module — a single, minimal dependency on `reputation.ts` was added 2026-08-18
+ * (see `orderGrifterCandidatesForNotice`'s own doc comment below), not dependency-free anymore.
  *
  * WHAT "OFFLINE" MEANS HERE, AND WHY. The brief's original §2.6 needed a real player-session/
  * presence concept ("is this specific player currently active") that this headless,
@@ -57,6 +60,7 @@
  * role properly" guarantee and the entire coordinated-abuse proof; nothing else needs tuning
  * against it.
  */
+
 export const SHIFT_COVER_FRACTION = 0.4;
 
 /**
@@ -74,6 +78,47 @@ export const SHIFT_COVER_NOTICE_PROBABILITY = 0.15;
  */
 export function shiftCoverPay(referenceFilledWage: number, fraction: number = SHIFT_COVER_FRACTION): number {
   return Math.max(0, referenceFilledWage) * fraction;
+}
+
+/**
+ * The level-2 reputation gate ("the level-2 trap," measured 2026-08-13,
+ * `docs/BLUEPRINT.md`'s "Investigating the level-2 rarity" entry): 83-90% of grifters who
+ * reach reputation level 1 get swept into a role via `genuineFill` within a mean 6.9-16.3
+ * days, before ever earning the 3 additional Shift Cover completions level 2 needs. Root
+ * cause, measured not guessed: reaching level 1 makes a grifter an immediate voluntary-fill
+ * target for FOUR roles at once (Courier/Journalist/Detective/Import-Export), each rolling its
+ * own daily hazard against the same shared pool — while THIS function, the only way a grifter
+ * earns MORE progress, had never given them any priority for it. A threshold change
+ * (`REPUTATION_LEVEL_THRESHOLDS`) was measured and offered 2026-08-13 but explicitly declined
+ * in favor of "a different mechanism" — this is that mechanism (2026-08-18).
+ *
+ * `orderGrifterCandidatesForNotice` is the SAME "prefer X, fall back to the existing rule"
+ * shape already used twice this session (grifter conscription's lowest-level-first;
+ * `conscriptionFromOtherRole`'s `occupantTenure`/`ESTABLISHED_TENURE_DAYS` eviction
+ * preference): grifters at EXACTLY level 1 (progress in `[REPUTATION_LEVEL_THRESHOLDS[0]`,
+ * `REPUTATION_LEVEL_THRESHOLDS[1])`) — the ones actually racing `genuineFill`'s clock toward
+ * level 2 — are preferred for Shift Cover, sorted closest-to-the-threshold first among
+ * themselves (most progress spent for least additional opportunity needed). Once no racing
+ * grifter remains among the candidates being considered, the ordering degenerates to the
+ * ORIGINAL "neediest (lowest wealth) first" rule, byte-identical to before this function
+ * existed — preference, not a replacement of the existing fairness signal, and never
+ * permanent: the moment a grifter reaches level 2 (or falls back to level 0, which cannot
+ * happen — reputation only grants, per constraint 6) they stop racing and this stops applying
+ * to them.
+ */
+export function orderGrifterCandidatesForNotice(
+  grifters: readonly { wealth: number; reputationProgress?: number }[],
+): number[] {
+  return grifters
+    .map((g, i) => ({ i, wealth: g.wealth, progress: g.reputationProgress ?? 0 }))
+    .sort((a, b) => {
+      const aRacing = reputationLevelForProgress(a.progress) === 1;
+      const bRacing = reputationLevelForProgress(b.progress) === 1;
+      if (aRacing !== bRacing) return aRacing ? -1 : 1;
+      if (aRacing) return b.progress - a.progress || a.i - b.i;
+      return a.wealth - b.wealth || a.i - b.i;
+    })
+    .map((o) => o.i);
 }
 
 /**
