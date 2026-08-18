@@ -3808,3 +3808,33 @@ days WITH the combined tenure+performance preference vs. 94.40 WITHOUT — a rea
 relative uplift (down from the pure-tenure ~50%, expected once some previously-"established"
 occupants no longer qualify). `economicHealth` moves by only +0.00523. 5 new tests, 582 total,
 typecheck clean. Full account: `docs/DEVLOG.md`'s matching entry.
+
+---
+
+## The Oracle built (2026-08-18) — first code for a 2026-08-06-specified mechanic
+
+Built directly from `docs/DESIGN_ORACLE_2026-08-13.md` (already-locked odds model and prize
+shape), not reinvented: new `src/engine/oracle.ts` — `economicHealthWithExperience`-linked win
+probability (linear, clamped, floor never zero per constraint 2), a weighted, data-driven
+`ORACLE_PRIZE_TABLE` (wealth / personal-resource-stock top-up / a "time" nudge to
+`daysAsGrifter`/`daysInRole`), participation modeled as an independent Bernoulli draw per
+candidate per day (no login/streak system — same convention `shiftCover.ts`'s "noticing"
+already uses). Never a role or reputation-level prize; a prize can only ever touch what the
+winner already has real access to (a grifter never gets `resourceStock`), which is what keeps
+a solo player from using lucky streaks to assemble a multi-role crafting recipe. Wired into
+`world.ts` right after Shift Cover.
+
+**Inserting a new rng-consuming stage into every tick shifted the whole downstream simulated
+trajectory, breaking 6 pre-existing tests — each fixed on its real merits**: the golden-value
+snapshot regenerated (its own documented policy); two exact-wealth assertions widened to
+bounded ranges reflecting the Oracle's real, deliberate wealth interaction; two experience-
+floor regression tests and one district-weather test made multi-seed/longer-horizon after
+directly re-verifying (not assuming) the underlying properties still hold in aggregate.
+
+**Deliberately deferred, flagged as the explicit next task in `docs/HANDOVER.md`**: the full
+population-scale simulation harness + CLI report (`oracleHarness.ts`/`oracleCli.ts`) every
+other mechanic this session got, to measure real win rates/wealth drift/Gini impact before
+trusting the illustrative constants further; the shard-wide "nodule bonus" prize from the
+design doc's §3; a "postcard boost" prize (no real per-player postcard balance exists yet).
+
+18 new tests, 594 total, typecheck clean. Full account: `docs/DEVLOG.md`'s matching entry.

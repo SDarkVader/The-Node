@@ -6,6 +6,60 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-18 — The Oracle built: first code for a mechanic specified since 2026-08-06
+
+User: "build the oracle lottery but leave it so we can consider alterations to prizes etc.
+can't be static otherwise we can't balance the numbers under testing." Long design
+conversation preceded the build (multiple corrections: no login/visit ritual — "active
+players receive it naturally"; odds uniform for everyone, confirmed via AskUserQuestion; no
+role or reputation-level prize, ever; prizes can only touch what the winner already has real
+access to, specifically so a solo player can never use lucky streaks to assemble a multi-role
+crafting recipe like a Key). Built directly from the ALREADY-EXISTING
+`docs/DESIGN_ORACLE_2026-08-13.md` rather than reinventing: `economicHealthWithExperience`-
+linked odds (linear, clamped, never zero — constraint 2), three prize categories (wealth,
+personal resource-stock top-up, a "time" nudge to `daysAsGrifter`/`daysInRole`), never a role
+or reputation grant.
+
+**New `src/engine/oracle.ts`.** Participation modeled as an independent Bernoulli draw per
+candidate per day (`ORACLE_PARTICIPATION_PROBABILITY`) — the same no-real-session convention
+`shiftCover.ts`'s "noticing" already established, not a login/streak system. Entry costs
+`ORACLE_ENTRY_COST` in wealth (not postcards — those stay reserved for the exit-ticket system,
+and no real per-player postcard balance exists yet to spend from anyway). `ORACLE_PRIZE_TABLE`
+is a plain, weighted data list, not a switch statement, specifically so rebalancing a prize's
+likelihood later is an edit to a number, not a restructure — every constant is named, exported,
+`[CALIBRATED — provisional]`, per the user's explicit "not static" requirement.
+
+**Wired into `world.ts`** right after Shift Cover: every grifter and every FILLED role slot
+gets an independent roll. A win's prize type is drawn only from what that exact candidate
+already has (grifters never get `resourceStock`, since they hold no personal stock).
+
+**Real ripple effects from inserting a new rng-consuming stage, caught and fixed, not
+ignored.** Adding this stage shifted every downstream tick's rng trajectory (same "any tick-
+order change moves every later number" property the golden-snapshot test's own docstring
+already warns about) — broke 6 pre-existing tests. Fixed each on its real merits, not by
+loosening blindly: the golden-value snapshot regenerated (its own documented policy for a
+deliberate, reviewed order change); two exact-wealth assertions changed to bounded ranges
+(the Oracle now genuinely also touches wealth, a real interaction, not drift); two
+experience-floor regression tests made multi-seed instead of single-seed (verified via
+`npm run experience-floor-sim` that the real aggregate effect is still genuinely tiny, ~0.13%
+— the single-seed sample had just become fragile against the new trajectory noise); one
+district-weather test made multi-seed/longer-horizon (verified directly, not assumed, that the
+consolidation-vs-healthy tension property still holds robustly in aggregate before changing it).
+
+**Deliberately deferred, not silently skipped** (credit/time constraints this pass): the
+full population-scale simulation harness + CLI report every other mechanic this session got
+(`oracleHarness.ts`/`oracleCli.ts`, not yet built) to actually measure real win rates, wealth
+drift, and Gini impact under `DEFAULT_WORLD_CONFIG` load before trusting the illustrative
+constants further; the shard-wide "nodule bonus" prize category from the design doc's §3
+(dropped for v1 in favor of three clean personal-grant prize types); a "postcard boost" prize
+(no real per-player postcard balance exists in this engine yet). **This is now the explicit
+next task — see `docs/HANDOVER.md`'s "What's next," not just noted here.**
+
+18 new tests (8 pure-function in `test/oracle.test.ts`, 4 real-`World` integration in the new
+`test/world.oracle.test.ts`, 6 pre-existing tests repaired). 594 tests total, typecheck clean.
+
+---
+
 ## 2026-08-18 — Eviction preference now requires real performance too, not just tenure
 
 Follow-up to the same-day eviction-preference build, prompted by user directive: *"grinders

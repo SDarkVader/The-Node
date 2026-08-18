@@ -96,6 +96,26 @@ pure-tenure ~50%, expected — some previously-"established" occupants no longer
 performance is also required). `economicHealth` moves by only +0.00523. 5 new tests, 582
 total, typecheck clean. Full reasoning in `docs/DEVLOG.md`'s matching entry.
 
+**Then the Oracle got built — first code for a mechanic specified since 2026-08-06.** Built
+directly from the already-locked `docs/DESIGN_ORACLE_2026-08-13.md` odds model and prize
+shape, not reinvented: new `src/engine/oracle.ts` — `economicHealthWithExperience`-linked win
+probability, a weighted, data-driven `ORACLE_PRIZE_TABLE` (wealth / personal resource-stock
+top-up / a "time" nudge to `daysAsGrifter`/`daysInRole`), never a role or reputation grant, and
+a prize can only ever touch what the winner already has real access to (keeps a solo player
+from assembling a multi-role crafting recipe via lucky streaks). Wired into `world.ts` right
+after Shift Cover. **Inserting this new rng-consuming stage shifted every downstream tick's
+trajectory and broke 6 pre-existing tests — each fixed on its real merits, not loosened
+blindly**: the golden-value snapshot regenerated (its own documented policy for a deliberate
+order change); two exact-wealth assertions widened to bounded ranges; two experience-floor
+tests and one district-weather test made multi-seed after directly re-verifying the underlying
+properties still hold. 18 new tests, 594 total, typecheck clean.
+
+**Deliberately deferred, not silently skipped — see "What's next" below, now the top item**:
+the full population-scale simulation harness/CLI every other mechanic this session got, to
+measure the Oracle's real win rates and wealth/Gini impact under load before trusting its
+illustrative constants further; the design doc's shard-wide "nodule bonus" prize; a "postcard
+boost" prize (no real per-player postcard balance exists yet to grant one from).
+
 **2026-08-13 so far**: a new design addendum (`docs/DESIGN_ADDENDUM_2026-08-13.md`) proposed a
 three-wedge/plaza/wall-gate district geometry and cited a "validated default" role split that
 turned out to be stale (traced to a pre-port Python toy model). Verified its underlying
@@ -801,7 +821,23 @@ file's top entry and `docs/DEVLOG.md`'s matching entry. Shift Cover now prefers 
 ("racing") grifters for notice; measured 256% more grifters reach level 2 (66→235, 8 seeds/800
 days). Was this list's #1 item; do not re-litigate without a real new finding.
 
-**1. Answer the research questions that simulation cannot.** See `docs/RESEARCH_QUESTIONS.md`.
+**1. Simulate the Oracle before trusting its illustrative constants further — the explicit
+next task, deferred this pass only for time, not by design.** `src/engine/oracle.ts` +
+`world.ts`'s wiring are real and tested at the unit/light-integration level
+(`test/oracle.test.ts`, `test/world.oracle.test.ts`), but — unlike every other mechanic built
+this session — has NO population-scale simulation harness/CLI yet. Build
+`sim/oracleHarness.ts`/`oracleCli.ts` (same pattern as `evictionProtectionHarness.ts`/
+`levelTwoReachabilityHarness.ts`) and measure, at real `DEFAULT_WORLD_CONFIG` scale: real win
+rate vs. the `ORACLE_BASE_ODDS_HEALTHY`/`ORACLE_ODDS_FLOOR` targets; whether
+`ORACLE_ENTRY_COST`/`ORACLE_WEALTH_PRIZE_AMOUNT` measurably move the wealth Gini
+`test/wealth.regression.test.ts` already locks in (the design doc's own explicit "be most
+careful with wealth" flag); whether `ORACLE_PARTICIPATION_PROBABILITY` produces a real,
+felt daily-return incentive without dominating other income sources. Also still open from the
+same pass, not yet built: the design doc's §3 shard-wide "nodule bonus" prize (dropped for v1
+in favor of three personal-grant prize types); a "postcard boost" prize (blocked on real
+per-player postcard accrual existing at all — see item 4 below).
+
+**2. Answer the research questions that simulation cannot.** See `docs/RESEARCH_QUESTIONS.md`.
 Three are load-bearing and structurally invisible to us, because **the simulation models
 compliance as certain** — conscripted players always accept, grifters always wait, displaced
 players always take the new role. Nothing in the model can output "the player just quit."
@@ -809,44 +845,45 @@ Question 1 (how long will someone tolerate having no role — we currently make 
 days mean, 100+ worst case) is the single largest untested assumption in the design. This is
 now the single biggest open retention question, with the level-2 gate closed.
 
-**2. Built-but-not-wired: face-to-face conversation and arson still have no `world.ts`
+**3. Built-but-not-wired: face-to-face conversation and arson still have no `world.ts`
 tick-loop integration.** (Diary got wired this session; these two didn't.) Proximity
 conversation specifically needs real per-utterance listener resolution — bigger than the
 simple queue-in/consume-and-clear pattern that worked for diary, since "who heard this" isn't
-a fixed target the way a diary entry's SUBJECT is. Wiring arson also means deciding #3 below
+a fixed target the way a diary entry's SUBJECT is. Wiring arson also means deciding #4 below
 first, since it currently reads as a pattern-sabotage-adjacent PROPOSAL, not shipped default.
 
-**3. The sabotage model decision (act-based, shipped, vs. the simulated pattern-based
+**4. The sabotage model decision (act-based, shipped, vs. the simulated pattern-based
 proposal) is still undecided — and now blocks THREE things, not two.** Item 4's Detective task
 had to use a friction bar instead of the addendum's own "catch a saboteur" example; arson's
-wiring (#2 above) needs this resolved first too.
+wiring (#3 above) needs this resolved first too.
 
-**4. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
+**5. Wire real exit-ticket accrual into Import/Export's route detection.** Crossing success
 still draws from an aggregate stand-in (`COMPLETE_TICKET_FRACTION`, 57%) rather than real
-per-player postcard holdings. The last placeholder in an otherwise complete mechanic.
+per-player postcard holdings. The last placeholder in an otherwise complete mechanic — also
+what the Oracle's own deferred "postcard boost" prize (#1 above) is blocked on.
 
-**5. Courier/Journalist/Detective's differentiated resources still feed nothing.** All six
+**6. Courier/Journalist/Detective's differentiated resources still feed nothing.** All six
 roles have a real completion signal and reward (item 4) — "nothing distinguishes holding the
 role well" is resolved — but parcels/stories/leads are still produced and tracked with no
 consumer. Easiest place in the project to accidentally over-build; keep it to whatever makes
 them distinct and fun to hold, not a full economy each.
 
-**6. Extend the experience floor to support roles.** `engine/experienceFloor.ts` only applies
+**7. Extend the experience floor to support roles.** `engine/experienceFloor.ts` only applies
 to Miller/Baker because only they have a tracked `experience` field. If Courier/Journalist/
-Detective/Import/Export ever get one (see #5), the same grant-only, role-specific-practice
+Detective/Import/Export ever get one (see #6), the same grant-only, role-specific-practice
 mechanism should extend to them rather than a new one being invented.
 
-**7. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ in
+**8. Shard diversity is at Tier 1 (cosmetic) and deliberately stops there.** Shards differ in
 name and local role framing (`engine/shardIdentity.ts`) — mechanics are identical everywhere,
 enforced structurally (`world.ts` cannot import the module, and a test proves it). **Tier 2
 (per-shard mechanical differences) is blocked** on research question 10 —
 `chooseMigrationDestination` assumes shards are interchangeable, so the moment they differ in
 quality the simulation would report a stability it is no longer testing.
 
-**8. Physical building relocation on MERGE.** A merged district's buildings stay in place,
+**9. Physical building relocation on MERGE.** A merged district's buildings stay in place,
 permanently friction-penalised, rather than relocating capacity into a surviving district.
 
-**9. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
+**10. Observatory Phases D-F** (snapshot/replay contract, the web app, civic-memory
 monuments) — not started.
 
 **Still open, unchanged, lower priority:** `TRAVEL_DAYS_TARGET=168` vs the postcard/tier 4-8

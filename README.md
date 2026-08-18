@@ -379,7 +379,7 @@ single shard collapses toward near-emptiness with nowhere for departing
 players to go; the multi-shard version stays meaningfully healthier,
 though not yet fully healthy either — reported honestly, not rounded up.
 See `docs/HANDOVER.md` and `docs/BLUEPRINT.md` for the full numbers,
-citations, and open questions left. 582 automated tests cover all of it.
+citations, and open questions left. 594 automated tests cover all of it.
 
 Since then, a design addendum has added four more tested mechanics. **District
 Weather** gives every district a real per-tick tension reading derived from
@@ -495,20 +495,31 @@ chance, without taking anything away from anyone else. Measured, not
 assumed: roughly three and a half times as many people now make it all
 the way to that second tier of trust.
 
+**The Oracle is real now too** — a daily, identical-odds-for-everyone draw
+that floats on the shard's own economic health, wired into the live world,
+not just described. A win pays out something small and real (a bit of
+wealth, a top-up to whatever personal stock a role-holder already has, or
+a nudge to how established someone reads as) — never a role, never
+standing, and never something a player didn't already have real access to,
+so no amount of luck lets one person quietly assemble what's supposed to
+take real cooperation across roles. Odds and payouts are deliberately left
+adjustable rather than locked in, and a real population-scale check of
+those numbers (not just unit tests) is the very next thing queued up.
+
 **What's still just design or vision**, honestly marked as such above and
 in the docs: the exit-ticket/postcard system (though district decline now
 uses the same "visible before forced" principle, and Import/Export's route
-mechanics are built on top of it), the Oracle, face-to-face conversation
-(built and tested, not yet wired into the live tick loop), real Phase 4
-visual rendering (today's client is plain text — it proves the wiring
-works, not what the world looks like), the voice/safety architecture, the
-Wall's Emissive Soul rendering itself, and the multi-shard ecosystem's
-actual playable form — the mechanics above are real and tested, but
-nothing about them is something a player can walk into yet.
+mechanics are built on top of it), face-to-face conversation (built and
+tested, not yet wired into the live tick loop), real Phase 4 visual
+rendering (today's client is plain text — it proves the wiring works, not
+what the world looks like), the voice/safety architecture, the Wall's
+Emissive Soul rendering itself, and the multi-shard ecosystem's actual
+playable form — the mechanics above are real and tested, but nothing
+about them is something a player can walk into yet.
 
 ```
 npm install
-npm test               # 582 tests
+npm test               # 594 tests
 npm run sim             # Phase 1 stability-curve sweep to stdout
 npm run vacancy-sim     # Phase 2 vacancy sweep to stdout
 npm run conscription-sim # old 2-role Miller conscription sweep (delay x N)
@@ -532,7 +543,7 @@ synthetic policy functions — never shipped, structurally guarded), `src/sim/`
 (deterministic seeded harnesses, sweeps, and the multi-shard harness),
 `src/comms/` (grammar, rumour mill, the shared decay primitive), `src/mvp/`
 and `src/server/` (the playable-today slice and its WebSocket server),
-`client/` (the Godot scaffold), `test/` (582 tests), `design/` (standalone
+`client/` (the Godot scaffold), `test/` (594 tests), `design/` (standalone
 verification/reference scripts for not-yet-integrated mechanics).
 
 Full docs:
