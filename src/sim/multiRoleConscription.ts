@@ -54,7 +54,36 @@ export interface RoleGroupState {
    *  also passed to `stepMultiRoleConscriptionDay`; never affects
    *  `conscriptionFromGrifters`/`conscriptionFromOtherRole`/`backstopFires`. */
   minReputationLevelForFill?: number;
+  /** Per-slot count of consecutive days the current occupant has held this exact slot —
+   *  parallel array to `slots`, meaningful only where the slot is FILLED. Optional; omitted
+   *  (every pre-2026-08-18 caller) reproduces the exact old `conscriptionFromOtherRole`
+   *  eviction pick — pure uniform random across every other-role FILLED candidate.
+   *
+   *  2026-08-18 (resolves the V_i/constraint-6 open question, docs/DEVLOG.md's matching
+   *  entry): the external v8 material proposed a `V_i` "reputation velocity" shield that
+   *  makes conscription-immunity conditional on reputation being able to FALL, which
+   *  constraint 6 (grant-only, never remove) forbids outright — and even a grant-only,
+   *  PERMANENT version of that shield is independently dangerous to constraint 2 (no
+   *  permanent zero-state), since a monotonically-growing unconscriptable population can
+   *  eventually starve the shard's own conscription draft pool. This field is the buildable
+   *  alternative offered instead: PREFERENCE, not immunity, via `ESTABLISHED_TENURE_DAYS`
+   *  below — nobody is ever permanently un-pickable, and once every other-role candidate has
+   *  cleared the bar, selection falls back to plain uniform random (no permanent ranking
+   *  even among established players, same "no permanent zero-state"-adjacent discipline). */
+  occupantTenure?: readonly number[];
 }
+
+/** [CALIBRATED — provisional, 2026-08-18] How many consecutive days a role-holder must have
+ *  held their current slot before counting as "established" for `conscriptionFromOtherRole`
+ *  eviction-preference purposes. Below this, an other-role FILLED candidate is preferred for
+ *  eviction over anyone at or above it (protects whoever just started from being drafted out
+ *  of a role they barely began, ahead of a genuine veteran elsewhere); once nobody remains
+ *  below the bar, the pick reverts to uniform random among all candidates — deliberately not
+ *  a permanent full ranking of veterans against each other. Exported specifically so a dev
+ *  can retune it in one place without touching the selection logic if the feel needs
+ *  adjusting — no simulation run has calibrated this number yet, unlike EXPERIENCE_FLOOR_*
+ *  in engine/experienceFloor.ts, which was. */
+export const ESTABLISHED_TENURE_DAYS = 30;
 
 export type MultiRoleEvent =
   | { type: 'churn'; roleId: string }
@@ -180,11 +209,15 @@ export function stepMultiRoleConscriptionDay(
 
       // BACKSTOPPED
       if (tau - params.tHard >= conscriptionDelay) {
-        const otherCandidates: { gi: number; si: number }[] = [];
+        const otherCandidates: { gi: number; si: number; tenure: number }[] = [];
         for (let oi = 0; oi < working.length; oi++) {
           if (oi === gi) continue;
           working[oi]!.forEach((s, si) => {
-            if (s.state === 'FILLED') otherCandidates.push({ gi: oi, si });
+            // Missing tenure data defaults to ESTABLISHED_TENURE_DAYS (i.e. "already
+            // established, no preference applied") — the one value that makes the pool
+            // below collapse back to every candidate, reproducing old byte-identical
+            // behavior whenever a caller doesn't pass occupantTenure at all.
+            if (s.state === 'FILLED') otherCandidates.push({ gi: oi, si, tenure: roleGroups[oi]!.occupantTenure?.[si] ?? ESTABLISHED_TENURE_DAYS });
           });
         }
         const effectiveGrifterPool = Math.max(0, grifterPoolSize + grifterPoolDelta);
@@ -197,7 +230,12 @@ export function stepMultiRoleConscriptionDay(
         }
         const draftFromOther = rng() < otherCandidates.length / denom;
         if (draftFromOther) {
-          const pick = otherCandidates[Math.floor(rng() * otherCandidates.length)]!;
+          // Prefer whoever hasn't cleared ESTABLISHED_TENURE_DAYS yet; only fall back to
+          // the full candidate pool once nobody qualifies as "not yet established" — see
+          // occupantTenure's own doc comment above for why this is preference, not immunity.
+          const notYetEstablished = otherCandidates.filter((c) => c.tenure < ESTABLISHED_TENURE_DAYS);
+          const evictionPool = notYetEstablished.length > 0 ? notYetEstablished : otherCandidates;
+          const pick = evictionPool[Math.floor(rng() * evictionPool.length)]!;
           const fromRoleId = roleGroups[pick.gi]!.roleId;
           working[pick.gi]![pick.si] = { state: 'VACANT', vacantSince: day };
           events.push({ type: 'conscriptionFromOtherRole', roleId: group.roleId, fromRoleId });
@@ -227,6 +265,7 @@ export function stepMultiRoleConscriptionDay(
       slots: working[i]!,
       params: g.params,
       minReputationLevelForFill: g.minReputationLevelForFill,
+      occupantTenure: g.occupantTenure,
     })),
     grifterPoolDelta,
     events,

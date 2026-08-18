@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../src/sim/rng.js';
 import { dailyChurnFromMonthly, type RoleSlot, type VacancyParams } from '../src/engine/vacancy.js';
 import { DEFAULTS } from '../src/sim/vacancyHarness.js';
-import { stepMultiRoleConscriptionDay, type RoleGroupState } from '../src/sim/multiRoleConscription.js';
+import { stepMultiRoleConscriptionDay, ESTABLISHED_TENURE_DAYS, type RoleGroupState } from '../src/sim/multiRoleConscription.js';
 
 /**
  * Regression tests for the N-role conscription generalization (2026-08-11, the 5-role
@@ -270,5 +270,109 @@ describe('stepMultiRoleConscriptionDay — reputation gate (2026-08-13, docs/DES
     // not identical). What matters, and IS asserted: conscription/backstop still fire at
     // all — the gate never blocks them outright (constraint 2/§3.5's actual guarantee).
     expect(gatedTally['conscriptionFromGrifters']!).toBeGreaterThanOrEqual(ungatedTally['conscriptionFromGrifters'] ?? 0);
+  });
+});
+
+describe('stepMultiRoleConscriptionDay — occupantTenure eviction preference (2026-08-18, resolves the V_i/constraint-6 question)', () => {
+  // Shared fixture: a 1- or 2-slot BACKSTOPPED "target" role that must draft from a
+  // 4-slot, never-churning "source" role (pDaily: 0, so source's own FILLED/VACANT
+  // transitions never confound which slot conscription actually picked). grifterPoolSize
+  // is 0 throughout, so conscription can ONLY come from other-role eviction
+  // (otherCandidates.length / (0 + otherCandidates.length) === 1) — every event is
+  // deterministically conscriptionFromOtherRole, never conscriptionFromGrifters.
+  function sourceParams(): VacancyParams {
+    return { ...makeParams(4, 20, 999), pDaily: 0 };
+  }
+  function targetParams(slotCount: number): VacancyParams {
+    return { ...makeParams(slotCount, 20, 0), pDaily: 0 };
+  }
+
+  it('a green (below ESTABLISHED_TENURE_DAYS) other-role candidate is evicted before an established one, every time, across many seeds', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+      const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+      const groups: RoleGroupState[] = [
+        { roleId: 'source', slots: sourceSlots, params: sourceParams(), occupantTenure: [0, 0, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS] },
+        { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+      ];
+      const rng = mulberry32(seed);
+      const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+      const evictionEvents = result.events.filter((e) => e.type === 'conscriptionFromOtherRole');
+      expect(evictionEvents.length).toBe(1);
+      expect(evictionEvents[0]).toMatchObject({ fromRoleId: 'source' });
+      // Whichever source index got evicted, it must be one of the two green (tenure 0)
+      // slots — check by confirming exactly one of the first two source slots went VACANT.
+      const sourceAfter = result.roleGroups.find((g) => g.roleId === 'source')!.slots;
+      const greenVacated = sourceAfter.slice(0, 2).filter((s) => s.state === 'VACANT').length;
+      const establishedVacated = sourceAfter.slice(2, 4).filter((s) => s.state === 'VACANT').length;
+      expect(greenVacated).toBe(1);
+      expect(establishedVacated).toBe(0);
+    }
+  });
+
+  it('both green candidates are exhausted before either established one is touched, when 2 target slots need filling the same day', () => {
+    const targetSlots: RoleSlot[] = [
+      { state: 'BACKSTOPPED', vacantSince: -1000 },
+      { state: 'BACKSTOPPED', vacantSince: -1000 },
+    ];
+    const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [
+      { roleId: 'source', slots: sourceSlots, params: sourceParams(), occupantTenure: [0, 0, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS] },
+      { roleId: 'target', slots: targetSlots, params: targetParams(2) },
+    ];
+    const rng = mulberry32(7);
+    const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+    const evictionEvents = result.events.filter((e) => e.type === 'conscriptionFromOtherRole');
+    expect(evictionEvents.length).toBe(2);
+    const sourceAfter = result.roleGroups.find((g) => g.roleId === 'source')!.slots;
+    // Both green slots (indices 0,1) got taken; neither established slot (2,3) was touched.
+    expect(sourceAfter[0]!.state).toBe('VACANT');
+    expect(sourceAfter[1]!.state).toBe('VACANT');
+    expect(sourceAfter[2]!.state).toBe('FILLED');
+    expect(sourceAfter[3]!.state).toBe('FILLED');
+  });
+
+  it('falls back to the full candidate pool once nobody is below ESTABLISHED_TENURE_DAYS — an established-only pool still gets drafted from, never stalls', () => {
+    const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+    const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+    const groups: RoleGroupState[] = [
+      { roleId: 'source', slots: sourceSlots, params: sourceParams(), occupantTenure: [ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS] },
+      { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+    ];
+    const rng = mulberry32(9);
+    const result = stepMultiRoleConscriptionDay(groups, 0, 0, 0, rng);
+    const evictionEvents = result.events.filter((e) => e.type === 'conscriptionFromOtherRole');
+    expect(evictionEvents.length).toBe(1);
+    expect(evictionEvents[0]).toMatchObject({ fromRoleId: 'source' });
+  });
+
+  it('omitting occupantTenure entirely reproduces the exact same event tally as passing it filled with ESTABLISHED_TENURE_DAYS everywhere — the backward-compatibility guarantee', () => {
+    const buildGroups = (withTenure: boolean): RoleGroupState[] => {
+      const targetSlots: RoleSlot[] = [{ state: 'BACKSTOPPED', vacantSince: -1000 }];
+      const sourceSlots: RoleSlot[] = Array.from({ length: 4 }, () => ({ state: 'FILLED' as const, vacantSince: null }));
+      return [
+        {
+          roleId: 'source',
+          slots: sourceSlots,
+          params: sourceParams(),
+          ...(withTenure ? { occupantTenure: [ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS, ESTABLISHED_TENURE_DAYS] } : {}),
+        },
+        { roleId: 'target', slots: targetSlots, params: targetParams(1) },
+      ];
+    };
+    const runTally = (groups: RoleGroupState[], seed: number) => {
+      const rng = mulberry32(seed);
+      let working = groups;
+      const tally: Record<string, number> = {};
+      for (let day = 0; day < 200; day++) {
+        const result = stepMultiRoleConscriptionDay(working, 0, day, 0, rng);
+        working = result.roleGroups;
+        for (const e of result.events) tally[e.type] = (tally[e.type] ?? 0) + 1;
+      }
+      return tally;
+    };
+    for (const seed of [1, 2, 3]) {
+      expect(runTally(buildGroups(false), seed)).toEqual(runTally(buildGroups(true), seed));
+    }
   });
 });
