@@ -553,7 +553,7 @@ keys off negative-skewed posting, and healthy shards have calm citizens), and a 
 **not comparable** to a driverless one (the rumour stage draws from `world.rng` per post, so
 trajectories diverge) — **this harness is for feel; its numbers are never simulation results.**
 
-12 new tests, **615 total, typecheck clean.** Phase B (cursor/inspection) and Phase C (the
+12 new tests, typecheck clean. Phase B (cursor/inspection) and Phase C (the
 flashlight — still blocked on the sabotage campaign restructure) are not built.
 
 **THE BLOCKING FINDING from the scoping pass, which reorders the sabotage work and revises an
@@ -565,12 +565,76 @@ blocks the locked flashlight design. Promoting pattern-sabotage to shipped-defau
 earlier described as. Knock-on: the 71.1%/40.2% calibration was measured against a fixed witness
 count and **must be re-measured** against a live stepper.
 
+**Then Phase B — cursor and inspection.** `hjkl`/arrows move an inspection light; `i` hides
+it. Selecting a cell reports real state: role, slot state, wealth, personal stock, days in role,
+experience/value, heat, completion ratio against that role's typical, identity resolution, and
+how long a non-FILLED slot has been empty. Strictly read-only, hard-capped to `mapWidth` so the
+status column never shifts. It paid for itself on the first look — a Miller reading BACKSTOPPED,
+empty since day 209, completing 0% of 5 attempts against a 55% typical. **A real limitation
+surfaced, not hidden**: grifters cannot be inspected, having no coordinates anywhere in this
+engine — ~a third of the population is simply not on the map.
+
+**Then THE SABOTAGE CAMPAIGN RESTRUCTURE — pattern-based sabotage is now SHIPPED**, no longer
+`ecosystem.ts`'s "PROPOSAL, not shipped". New `engine/sabotageCampaign.ts` is a state machine
+only (open / step when due / advance / catch / succeed) over UNCHANGED detection math;
+`patternSabotageAttempt` is kept for the fixed-witness harness sweeps but the live world no
+longer uses it. `World` gained `sabotageCampaigns`, `nextCampaignId`,
+`lastSabotageCampaignEvents`. The hazard now OPENS a campaign; `saboteurCount` caps concurrency;
+each step rolls against the witness count real AT THAT MOMENT. A successful campaign evicts the
+slot it actually targeted (a real change — the legacy resolver evicted a random set).
+
+**The structural finding**: the caught-saboteur KNOWN GAP was never closable because **the engine
+had no saboteur to name** — `sabotageAttempt` takes an anonymous COUNT. `saboteurId` closes that.
+The consequence itself (walk of shame, abode lockout, Oracle unlock, fine) is deliberately NOT
+invented — still yours to settle.
+
+**Re-measured live** (`npm run sabotage-campaign-sim`, 8 seeds x 3000 days): **43.6% success
+among contested resolutions** (vs the old fixed-witness 71.1%/40.2% — they did not carry over),
+mean duration 28.9 days (max 42, ceiling 100), opening interval 22.1d vs a 20-day hazard, no
+learnable period. Constraint 2 re-verified: min `economicHealth` 0.7652, plus a test holding it
+above `BACKSTOP_PRODUCTIVITY` under saboteurCount 8 / cadence 5. **`abandoned` outcome added
+after watching a real run** — 27% of campaigns were grinding against targets who had already
+churned out. **And a measured caveat**: 96.5% of campaign-steps run "under investigation",
+because the interim rule is "a FILLED Detective in the target's district" and the config is ONE
+district with 8 Detective slots — investigation is near-constant rather than scarce, which is
+exactly what the flashlight is for. `investigatedBy` is built as a REPLACEABLE ASSIGNMENT RULE.
+
+**Then a browser viewer** (`npm run web-export`, `docs/web/`) — a recorded run inlined into one
+self-contained page with a day scrubber and tap-to-inspect, so the shard can be seen from a
+phone. Explicitly a stopgap and labelled as one: no avatar, nothing moves, grifters absent.
+
+**647 tests, typecheck clean, all pushed to `main`.**
+
+## THE DIRECTION, set by the user 2026-08-19
+
+*"I need to be inside the place. PC Godot is the objective."* The viewer was accepted as a
+look-at-it stopgap with the explicit condition: *"if it ain't a game then we push on."* It is
+not a game. **So the objective is now the Godot client, and the blocker is not Godot.**
+
+The engine has no concept of a person in a place. In dependency order:
+
+1. **A player entity.** `player.ts` still flags identity as session-scoped/deferred; a "player"
+   is currently a `buildingId`. Being somewhere requires being someone first.
+2. **Position decoupled from occupancy** — THE one everything else stacks behind. Today a
+   role-holder IS their building's plot; those are the same fact, so movement is impossible.
+   Note this touches the witness counts sabotage rolls against, so it needs re-measuring after.
+3. **Grifters on the map** — once position exists independently, the missing third stops missing.
+4. **The server streaming a real `World`** — the Phase 3 WebSocket scaffold still broadcasts the
+   old MVP scenario.
+5. **Then Godot** — most visible payoff, least uncertainty, because by then it renders a world
+   that already knows where everyone is.
+
+Not yet decided: whether to scope this the way the playtest harness was scoped (measure first,
+find what is actually blocking rather than what looks blocking) or go straight at item 2.
+
 **Next, in rough priority order (refreshed 2026-08-18, second pass — proximity conversation's
 own wiring is now DONE, see the entry directly above; renumbered):**
+0. **The Godot path above is now the stated objective** — everything below is secondary to it.
 1. Whether "let's explore it on each level" meant gating proximity conversation's vocabulary by
-   reputation level — proposed, never confirmed, buildable now that the wiring above exists.
-2. Whether to promote pattern-based sabotage to shipped-default status (a real, separate
-   decision) — arson's wiring is blocked on this.
+   reputation level — proposed, never confirmed. **User asked to take this in a separate
+   session and consider it carefully; do not start it unprompted.**
+2. ~~Promote pattern-based sabotage~~ — **DONE 2026-08-18.** Arson's own wiring is now unblocked
+   by it, and Phase C (the flashlight) is unblocked too.
 3. Extend the experience floor to support roles once they get a tracked `experience` field —
    not needed yet, none of the four support roles have one.
 4. The Firestarter/Key crafting items themselves, now that `personalResourceStock` exists.
