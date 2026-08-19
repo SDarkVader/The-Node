@@ -605,6 +605,37 @@ phone. Explicitly a stopgap and labelled as one: no avatar, nothing moves, grift
 
 **647 tests, typecheck clean, all pushed to `main`.**
 
+## OPEN BUG, found 2026-08-19 — read before touching geometry or Courier pay
+
+User spotted it in the viewer: **the Wall is not in the centre of the town, it is outside it.**
+Measured across 8 seeds: zero of ~62 buildings lie west of the hub, all of them east; the hub is
+6.5-10.5 units off the district's geometric centre, while the plaza sits almost exactly on it.
+
+Cause: `placeDistrictCenters` (`space.ts`) rings core districts ~9 units around origin — right
+for several districts around a central hub, meaningless for the ONE district shipped since
+2026-08-13. `space.ts` still documents the hub as "true center, equidistant from all districts",
+which has been false since that decision.
+
+**Pulling the thread found a live pay bug.** `courierRouteDistance` is plaza→hub distance, so
+with one district every courier has an identical route and an identical wage — item 6's
+"distance-indexed, not a flat number" indexes nothing. Worse,
+`COURIER_FEE_PER_DISTANCE_UNIT = 0.075` was calibrated against ~20-unit routes in the old
+6-district layout; routes are now 8-9 units, so **couriers earn 0.420-0.472/day against the
+1.050 the other three support roles get** — ~40-45% of their peers, in every run since
+2026-08-13. No test asserts cross-role wage parity, which is why it went unseen.
+
+**The obvious fix is a trap**: centring the district on origin makes `plazaPlot === hubPlot`, so
+route distance becomes 0 and couriers earn *nothing*. The misplaced Wall is the only reason
+courier pay is nonzero. Fix them together or not at all.
+
+Options (none chosen): measure each courier's own BUILDING to the Wall (varies per courier,
+unlike the plaza); or restore a flat Courier wage and retire item 6 as superseded by the
+single-district decision; or reopen district count.
+
+**Deliberately not fixed** — geometry changes move witness counts, which feed sabotage detection,
+identity resolution and District Weather, all calibrated against the current layout. Needs a
+session with real re-measurement, same discipline as the sabotage restructure.
+
 ## THE DIRECTION, set by the user 2026-08-19
 
 *"I need to be inside the place. PC Godot is the objective."* The viewer was accepted as a

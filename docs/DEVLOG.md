@@ -6,6 +6,57 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — The Wall is outside the town, and pulling that thread found a live pay bug
+
+User, after looking at the published viewer: *"the wall is on the western edge, rather than the
+centre."* Correct, and worse than off-centre. **Investigated and measured, not fixed** — the fix
+invalidates geometry-dependent calibrations and deserves its own session.
+
+**Finding 1 — the Wall is outside the settlement entirely.** Measured across 8 seeds: **zero of
+the ~62 buildings lie west of the hub; all 61-62 are east of it.** The hub sits 6.5-10.5 units
+from the district's geometric centre, while the plaza sits almost exactly ON that centre
+(`plazaPlot = { x: center.x, y: center.y }`, `space.ts:420`).
+
+Cause: `placeDistrictCenters` puts core districts at radius `coreGap * 0.5 ± 2` around origin,
+where `coreGap = coreDistrictRadius * 2 + 4` — so ~9 units out at the shipped `coreDistrictRadius: 7`.
+That is correct behaviour for SEVERAL districts ringing a central hub, which is what it was
+written for. With `coreDistrictCount: 1` (the 2026-08-13 single-district decision) there is no
+ring to arrange — the lone district just gets shoved ~9 units off-origin and the hub ends up on
+its rim. `space.ts`'s own comment still describes the hub as *"true center, equidistant from all
+districts, never belonging to one"*, which has been false since 2026-08-13.
+
+**Finding 2 — "distance-indexed Courier pay" indexes nothing at the shipped config.**
+`courierRouteDistance` is `distance(district.plazaPlot, shard.hubPlot)`. With one district there
+is exactly one plaza, so all 7 couriers share an identical route distance and an identical wage.
+Addendum item 6's whole stated point — pay earned from real geometry "not the flat wage every
+support role used to share alike" — is dead at the current default: it IS a flat wage again,
+just derived a different way.
+
+**Finding 3, the one that actually bites — couriers are underpaid by more than half, and have
+been since 2026-08-13.** `COURIER_FEE_PER_DISTANCE_UNIT = 0.075` was calibrated 2026-08-12
+against a measured ~20-unit mean route at the then-6-district layout. Routes are now 8-9 units.
+Measured: courier pay **0.420-0.472/day against the 1.050 flat wage** Journalist, Detective and
+Import/Export still receive. Couriers have been earning ~40-45% of their peers in every
+simulation run since the district-topology change, and nothing flagged it because no test
+asserts cross-role wage parity.
+
+**And the trap in the obvious fix**: centring the district on origin makes `plazaPlot === hubPlot`,
+so `courierRouteDistance === 0` and **every courier earns exactly nothing**. The Wall being
+misplaced is the only reason courier pay is nonzero at all. These two cannot be fixed
+independently — "distance from your district's plaza to the hub" is simply not a meaningful
+quantity in a one-district shard, and needs replacing rather than recentring.
+
+Options, none chosen: measure courier routes against something real that still varies per courier
+(their own BUILDING to the Wall, rather than their district's plaza — this varies, unlike the
+plaza); or restore a flat wage for Couriers and retire item 6 honestly as superseded by the
+single-district decision; or revisit district count, which would reopen a resolved question.
+
+Recorded rather than acted on because a geometry change moves witness counts, and witness counts
+feed sabotage detection, identity resolution and District Weather — every one of which was
+calibrated against the current layout.
+
+---
+
 ## 2026-08-18 — Sabotage restructured into persistent campaigns; pattern-based sabotage is now SHIPPED
 
 User: *"do the sabotage campaign restructure."* Done, in the verified stages they asked for.
