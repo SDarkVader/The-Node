@@ -89,6 +89,7 @@
       <div id="grid"></div>
       <div class="controls">
         <button id="play">Play</button>
+        <button id="speed" title="Playback speed">1x</button>
         <input type="range" id="scrub" min="0" value="0" aria-label="Day">
         <span class="day">Day <b id="dayN">0</b> <span id="dayMax"></span></span>
       </div>
@@ -137,7 +138,10 @@ const ROLE = ['M','B','C','J','D','X'];
 const ROLE_NAME = ['Miller','Baker','Courier','Journalist','Detective','Import/Export'];
 const ROLE_KEY = ['miller','baker','courier','journalist','detective','importExport'];
 const STATE = ['Held','Backstopped','Empty'];
-const HEAT_MAX = 50, TEN_MAX = 25;
+// heat is stored x100 (0-50 for the observed 0-0.5 range); tension is stored as a RAW
+// float, so its max is 0.25, not 25. Getting these on different scales rendered the ground
+// permanently cold.
+const HEAT_MAX = 50, TEN_MAX = 0.25;
 
 const b = W.bounds, cols = b.maxX-b.minX+1, rows = b.maxY-b.minY+1;
 const grid = document.getElementById('grid');
@@ -161,7 +165,8 @@ for(let y=b.minY;y<=b.maxY;y++)for(let x=b.minX;x<=b.maxX;x++){
   grid.appendChild(d); cells.push({el:d,k,bi,x,y});
 }
 
-let sel=null, playing=false, timer=null;
+let sel=null, playing=false, timer=null, speed=0;
+const SPEEDS=[420,240,120]; const SPEED_LABEL=['1x','2x','4x'];
 const scrub=document.getElementById('scrub');
 scrub.max=W.frames.length-1;
 document.getElementById('dayMax').textContent='of '+(W.frames.length-1);
@@ -245,7 +250,14 @@ document.getElementById('play').addEventListener('click',()=>{
   if(playing){timer=setInterval(()=>{
     let v=+scrub.value+1; if(v>+scrub.max)v=0;
     scrub.value=v; draw(v);
-  },140)} else clearInterval(timer);
+  },SPEEDS[speed])} else clearInterval(timer);
+});
+document.getElementById('speed').addEventListener('click',()=>{
+  speed=(speed+1)%SPEEDS.length;
+  document.getElementById('speed').textContent=SPEED_LABEL[speed];
+  if(playing){clearInterval(timer);timer=setInterval(()=>{
+    let v=+scrub.value+1; if(v>+scrub.max)v=0; scrub.value=v; draw(v);
+  },SPEEDS[speed])}
 });
 draw(0);
 </script>

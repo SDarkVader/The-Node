@@ -26,10 +26,15 @@ const DAYS = Number(process.argv[4] ?? 180);
 let w: World = createWorld(SEED, DEFAULT_WORLD_CONFIG);
 const rng = mulberry32(SEED ^ 0x5eed);
 
-const d0 = w.shard.districts[0]!;
-const buildings = d0.buildings.map((b) => ({ id: b.id, x: b.x, y: b.y, f: b.floors }));
+// Captured once ONLY for geometry, which never changes after generation. Anything that
+// ACCUMULATES per tick (weatherHistory, population) must be re-read from the current `w` each
+// frame — `stepWorld` returns a fresh World with a fresh shard, so a reference held from day 0
+// silently reports day-0 values forever. That exact mistake shipped tension as a flat 0 across
+// a whole 180-day export before it was caught by looking at the render.
+const geom = w.shard.districts[0]!;
+const buildings = geom.buildings.map((b) => ({ id: b.id, x: b.x, y: b.y, f: b.floors }));
 const bIndex = new Map(buildings.map((b, i) => [b.id, i] as const));
-const streets = d0.plots.filter((p) => !p.buildingId).map((p) => ({ x: p.x, y: p.y, k: p.kind === 'plaza' ? 1 : 0 }));
+const streets = geom.plots.filter((p) => !p.buildingId).map((p) => ({ x: p.x, y: p.y, k: p.kind === 'plaza' ? 1 : 0 }));
 
 const ROLES: [string, CompletionRoleType, (w:World)=>any[]][] = [
   ['M','miller',w=>w.millers],['B','baker',w=>w.bakers],['C','courier',w=>w.couriers],
@@ -60,15 +65,15 @@ for (let day = 0; day < DAYS; day++) {
   frames.push({
     d: w.tick, p: w.population, g: w.grifters.length, fl: filled, tt: total,
     fp: +w.flourPrice.toFixed(3), h: +w.economicHealth.toFixed(3), hx: +w.economicHealthWithExperience.toFixed(3),
-    gi: +w.wealthGini.toFixed(3), t: +(d0.weatherHistory.at(-1)?.tension ?? 0).toFixed(3),
+    gi: +w.wealthGini.toFixed(3), t: +(w.shard.districts[0]!.weatherHistory.at(-1)?.tension ?? 0).toFixed(3),
     c: cells, e: collectEvents(w),
   });
 }
 writeFileSync(OUT, JSON.stringify({
-  seed: SEED, buildings, streets, hub: w.shard.hubPlot, plaza: d0.plazaPlot,
+  seed: SEED, buildings, streets, hub: w.shard.hubPlot, plaza: geom.plazaPlot,
   bounds: {
-    minX: Math.min(...d0.plots.map((p) => p.x)), maxX: Math.max(...d0.plots.map((p) => p.x)),
-    minY: Math.min(...d0.plots.map((p) => p.y)), maxY: Math.max(...d0.plots.map((p) => p.y)),
+    minX: Math.min(...geom.plots.map((p) => p.x)), maxX: Math.max(...geom.plots.map((p) => p.x)),
+    minY: Math.min(...geom.plots.map((p) => p.y)), maxY: Math.max(...geom.plots.map((p) => p.y)),
   },
   typical: Object.fromEntries(ROLES.map(([,r])=>[r, Math.round(TYPICAL_COMPLETION_RATIO[r]*100)])),
   frames,
