@@ -6,6 +6,64 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Godot installed, client verified, then pushed on what looking at it revealed
+
+User: *"let's test it's gonna run through godot before it fails by assumption."* Right call.
+Downloaded Godot 4.3 into the dev environment rather than shipping the client unverified.
+
+**It runs.** Connects, parses geometry and ticks, and `_draw` executes over the full settlement
+under a real OpenGL renderer (llvmpipe under xvfb), no script errors — verified both `--headless`
+and with a virtual display. Two lessons worth keeping: `--quit-after` is required or SIGTERM
+discards buffered output and a working client looks silent; and `--headless` never calls
+`_draw`, so it checks wiring, not rendering. Added two diagnostic prints so a headless run is a
+real smoke test.
+
+**Then screenshotted it and looked**, which immediately caught three things reading the code
+could not: the window background was Godot's default grey because `GROUND` was declared and
+never applied anywhere; the town rendered too small to read; and the Wall did not stand out from
+an ordinary pale building.
+
+**Then three rounds of real design iteration**, each one screenshotted:
+
+1. *"tone distributed box by box doesn't produce a granular display of activity. it should
+   behave as emissive particles that blend with other regions naturally."* Correct — flat
+   per-cell tint reads as a spreadsheet. Heat moved onto an additive `GlowLayer` (Godot's blend
+   mode is per-CanvasItem, so it genuinely needs its own node) where overlapping glows sum and
+   neighbouring stations merge into regions. The box keeps a low cool base carrying role and
+   slot state only — filling both would double-count the signal.
+
+2. *"make the glow contrast visibly noticeable. it has to be a signal not just vibe."* Also
+   correct — v1 was atmosphere you could not read. Heat now drives radius AND intensity, with a
+   near-white core above 0.35 so the hottest station in a cluster is identifiable. **First
+   attempt overcorrected and is worth recording**: an aggressive low-end lift (pow 0.65, alpha
+   0.85, 6.5-cell reach) made every station glow, blew the town out, and buried structure, the
+   Wall and the weather under amber. Pulled back to near-linear. The lesson is that contrast
+   came from making COLD DARK, not from making hot brighter.
+
+3. *"distinct contrast between red and blue for emotional weather... with ember as the median."*
+   The old mapping was near-black -> dark red against a 0.25 ceiling — "calm" had no colour, it
+   was just darkness, and measured tension (p05 0.03, **median 0.06**, p95 0.10, from 5600
+   district-day samples) meant the town sat permanently in the bottom third. Now diverging: cold
+   blue below the median, Ember at it, red above, anchored on those measured percentiles.
+   Mirrored into `playtestRenderer.ts` (still the source of truth) and pinned by the conformance
+   test so the two renderers cannot drift.
+
+**Also built, from the spec rather than from feedback**: the **Wall's Emissive Soul**, specified
+in `VISUAL_FRAMEWORK_2026-08-12.md` since August and never implemented. Gold when healthy, red
+when not, driven by `economicHealth` as an explicitly flagged stand-in (the spec names
+`soulTemperature`; nothing computes it). Hue only — brightness and structure stay constant, so a
+sick node gets a red Wall and never a dim one. And the ground wash stopped being a filled
+rectangle, which had given the settlement a hard border that read as a UI panel behind it.
+
+**Two real GDScript errors caught only by running it**: values read off an untyped
+`get_parent()` cannot be inferred with `:=`, and a `class_name` reference fails to resolve
+because global class registration is written by the *editor*, and this project has only ever
+been driven headless.
+
+693 tests, typecheck clean.
+
+---
+
 ## 2026-08-19 — Re-checking the patch report's downstream claims, and finding one I'd caused
 
 User asked directly whether the placement bug was patched, whether the report's downstream
