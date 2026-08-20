@@ -60,14 +60,33 @@ suite full of multi-second simulations — a real intermittent-failure source. N
 
 670 tests, typecheck clean, pushed to `main`.
 
-**IMMEDIATE NEXT TASK, half-done and committed by accident**: `src/server/worldProtocol.ts`
-(swept into `5276919`). It is the wire format for streaming a real `World` — chain item 4 — and
-is complete and typecheck-clean, but has **no tests and is not wired into `ws.ts`**, which still
-broadcasts the old two-Baker MVP scenario. Its design decisions are documented in its own header
-and are the load-bearing part: an explicit public/withheld/pseudonymous split (geometry and
-ambient mood public; wealth, Gini, diary and in-flight sabotage campaigns withheld; people
-identified only by a per-connection `handle` so the Silhouette Shield survives the wire, with
-resolution as a separate earned message). Finish that, then Godot.
+**Then chain item 4 landed too: the server streams a real `World`** (`a1203ef`).
+`startWorldServer` replaces the two-Baker MVP scenario (kept behind `NODE_LEGACY_MVP=1`, since
+the existing Godot scaffold still speaks it). `src/server/worldProtocol.ts` owns what may go on
+the wire — read its header before changing anything there, it is a privacy boundary and not a
+serialization detail:
+
+- **public**: geometry, role-per-building + slot state, per-building heat, per-district tension,
+  and that a body is at a position.
+- **withheld**: wealth, personal stock, experience, completion stats, `wealthGini`, anything
+  diary-shaped, and in-flight sabotage campaigns.
+- **pseudonymous**: people carry a per-connection `handle` derived from a SERVER-generated
+  secret, so two clients see disjoint handles for the same person and cannot correlate. Real ids
+  never go on the wire. `identityResolved` is the separate, earned message that turns a handle
+  into a face.
+
+Verified standalone on a real port, not only under vitest: 62 buildings, 87 plots, hub (0,0),
+**95 people per tick** — role-holders and grifters both. 688 tests, typecheck clean.
+
+**NEXT: Godot.** Everything it was waiting on now exists — people have positions, grifters are
+real, and the server streams a live world in a format built for a client. `client/` still holds
+the Phase 3 scaffold that speaks the old MVP protocol; it needs to consume `hello` + `tick`
+instead. That is the last item in THE DIRECTION.
+
+**Known gaps, deliberately left**: `identityResolvedMessages` is built and tested but nothing
+calls it — wiring it needs per-connection observer state and a real answer to "which player is
+this connection", which `player.ts` still flags as deferred. And nothing moves role-holders in
+the SHIPPED world yet (only the sim-side driver applier does).
 
 ## Current state (as of 2026-08-19, docs)
 
