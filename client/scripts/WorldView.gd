@@ -19,14 +19,24 @@ extends Node2D
 ##
 ## AUTO-RANGING, and why. Measured tension sits around 0.06-0.08 and heat tops out near 0.5, so
 ## a literal 0..1 mapping renders the whole town flat and permanently calm. HEAT_OBSERVED_MAX
-## and TENSION_OBSERVED_MAX are the same observed maxima the terminal renderer ranges against.
+## HEAT_OBSERVED_MAX is the same observed maximum the terminal renderer ranges against, and
+## tension uses a diverging scale anchored on its measured percentiles (see below).
 
 const SERVER_HOST := "ws://127.0.0.1:8080"
 
 # --- Ember palette, copied from src/sim/playtestRenderer.ts -------------------------------
 const GROUND := Color8(13, 10, 8)
-const TENSION_CALM := Color8(20, 16, 12)
-const TENSION_TENSE := Color8(67, 23, 15)
+## Emotional weather is a DIVERGING scale, not a ramp (2026-08-19). Cold blue below the median,
+## Ember's own warmth at it, real red above. Anchors are the measured p05/median/p95 of real
+## district tension (0.03 / 0.06 / 0.10, from 5600 district-day samples) — the old mapping ran
+## near-black to dark red against a 0.25 ceiling, so the town sat permanently in the bottom
+## third and "calm" was just darkness rather than a colour. Mirrors playtestRenderer.ts.
+const TENSION_COLD := Color8(20, 38, 66)
+const TENSION_EMBER := Color8(40, 30, 20)
+const TENSION_HOT := Color8(104, 28, 18)
+const TENSION_COLD_AT := 0.03
+const TENSION_MEDIAN := 0.06
+const TENSION_HOT_AT := 0.10
 const HEAT_COOL := Color8(74, 107, 122)
 const HEAT_HOT := Color8(255, 171, 62)
 const COLOUR_WALL := Color8(239, 220, 174)
@@ -37,7 +47,6 @@ const COLOUR_GRIFTER := Color8(217, 201, 176)
 const COLOUR_AWAY := Color8(232, 168, 92)
 
 const HEAT_OBSERVED_MAX := 0.5
-const TENSION_OBSERVED_MAX := 0.25
 
 ## Matches playtestRenderer's STATE_BRIGHTNESS exactly. A held station is full strength; a
 ## mechanically-backstopped one is dimmer but intact (constraint 2 — never renders as broken);
@@ -65,6 +74,7 @@ const PERSON_RADIUS := 6.0
 var socket := WebSocketPeer.new()
 var was_connected := false
 var logged_first_tick := false
+var _falloff: ImageTexture
 
 var have_geometry := false
 var plots: Array = []
@@ -80,6 +90,7 @@ var mean_tension := 0.0
 
 @onready var hud: Label = $HUD/Readout
 @onready var camera: Camera2D = $Camera2D
+@onready var glow: Node2D = $Glow
 
 
 func _ready() -> void:
@@ -91,6 +102,7 @@ func _ready() -> void:
 		hud.text = "Failed to start connection (error %d)" % err
 		return
 	hud.text = "Connecting to %s..." % SERVER_HOST
+	_falloff = _build_falloff(128)
 
 
 func _process(_delta: float) -> void:
@@ -117,6 +129,8 @@ func _handle_message(raw: String) -> void:
 		"tick":
 			_handle_tick(parsed)
 	queue_redraw()
+	if glow != null:
+		glow.queue_redraw()
 
 
 func _handle_hello(msg: Dictionary) -> void:
@@ -183,6 +197,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera.zoom = camera.zoom.clamp(Vector2(0.25, 0.25), Vector2(4.0, 4.0))
 
 
+## Diverging blue <- Ember -> red, anchored on the measured distribution. Mirrors
+## playtestRenderer.ts's tensionColour(); if the two ever disagree, the TypeScript one wins.
+func _tension_colour(tension: float) -> Color:
+	if tension <= TENSION_MEDIAN:
+		var t := clampf((tension - TENSION_COLD_AT) / (TENSION_MEDIAN - TENSION_COLD_AT), 0.0, 1.0)
+		return TENSION_COLD.lerp(TENSION_EMBER, t)
+	var t2 := clampf((tension - TENSION_MEDIAN) / (TENSION_HOT_AT - TENSION_MEDIAN), 0.0, 1.0)
+	return TENSION_EMBER.lerp(TENSION_HOT, t2)
+
+
+## Radial falloff, generated rather than shipped as an asset — keeps the client
+## self-contained (no import step, nothing to lose) and puts the curve in one place. Shared
+## with the additive glow layer via `_falloff`, so both use the same shape.
+##
+## Deliberately NOT a `class_name` static: registering a global class is something the Godot
+## EDITOR writes into project.godot, and this project has been driven headless, so a
+## class_name reference fails to resolve at load. Found by running it.
+func _build_falloff(tex_size: int) -> ImageTexture:
+	var img := Image.create(tex_size, tex_size, false, Image.FORMAT_RGBA8)
+	var c := (tex_size - 1) * 0.5
+	for y in tex_size:
+		for x in tex_size:
+			var d := Vector2(x - c, y - c).length() / c
+			var a := 0.0
+			if d < 1.0:
+				var f := 1.0 - d
+				a = f * f
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return ImageTexture.create_from_image(img)
+
+
 func _world_to_px(x: float, y: float) -> Vector2:
 	return Vector2(x, y) * CELL
 
@@ -193,13 +238,21 @@ func _draw() -> void:
 
 	# Ground wash carries district tension — the ambient mood layer, drawn under everything.
 	# Auto-ranged against the observed maximum, not the theoretical one.
-	var t: float = clampf(mean_tension / TENSION_OBSERVED_MAX, 0.0, 1.0)
-	var wash: Color = TENSION_CALM.lerp(TENSION_TENSE, t)
+	# Drawn as a soft radial field rather than a filled rectangle. A rect gave the settlement a
+	# hard rectangular border that read as a UI panel sitting behind the town — the mood is
+	# atmosphere, so it has to fade out rather than stop at an edge.
+	var wash: Color = _tension_colour(mean_tension)
 	if bounds.has("minX"):
-		var top_left := _world_to_px(float(bounds["minX"]) - 1.0, float(bounds["minY"]) - 1.0)
-		var size := _world_to_px(float(bounds["maxX"]) - float(bounds["minX"]) + 3.0,
-			float(bounds["maxY"]) - float(bounds["minY"]) + 3.0)
-		draw_rect(Rect2(top_left, size), wash, true)
+		var span := maxf(
+			float(bounds["maxX"]) - float(bounds["minX"]),
+			float(bounds["maxY"]) - float(bounds["minY"])
+		) + 6.0
+		var r: float = span * CELL
+		var centre := _world_to_px(
+			(float(bounds["minX"]) + float(bounds["maxX"])) * 0.5,
+			(float(bounds["minY"]) + float(bounds["maxY"])) * 0.5
+		)
+		draw_texture_rect(_falloff, Rect2(centre - Vector2(r, r) * 0.5, Vector2(r, r)), false, wash)
 
 	for p in plots:
 		var pos := _world_to_px(float(p["x"]), float(p["y"]))
@@ -214,10 +267,24 @@ func _draw() -> void:
 	# the doctrine's clearest single case.
 	var hub_px := _world_to_px(hub.x, hub.y)
 	var wall := Vector2(BUILDING_SIZE, BUILDING_SIZE) * 1.5
-	draw_rect(Rect2(hub_px - wall * 0.5, wall), COLOUR_WALL, true)
-	# A soft halo so the Wall reads as the settlement's landmark rather than a pale building.
-	# Brightness is constant — it does NOT track shard health, per the doctrine.
-	draw_arc(hub_px, BUILDING_SIZE * 1.25, 0.0, TAU, 32, Color(COLOUR_WALL, 0.35), 3.0)
+	# THE WALL'S EMISSIVE SOUL — specified in the visual framework since 2026-08-12 and never
+	# built until now. Shard-wide mood, gold when the node is healthy, red when it is not.
+	#
+	# [STAND-IN, flagged not hidden]: the spec names `soulTemperature` as its driver, and no
+	# such value exists in the engine — nothing computes it. This uses `economicHealth`, which
+	# is real, shard-wide, and already on the wire. If soulTemperature is ever built, this is
+	# the one line to repoint.
+	#
+	# HUE ONLY. Brightness and structure stay constant no matter how sick the shard is — that
+	# is the doctrine's clearest single case, and a dimming Wall would break it. A node in
+	# crisis gets a red Wall, never a dim or broken one.
+	var soul: float = clampf((0.95 - economic_health) / 0.25, 0.0, 1.0)
+	var soul_col: Color = COLOUR_WALL.lerp(Color8(214, 84, 54), soul)
+	draw_rect(Rect2(hub_px - wall * 0.5, wall), soul_col, true)
+	# Emissive bloom around it, same constant-brightness rule.
+	var glow_r: float = BUILDING_SIZE * 5.0
+	draw_texture_rect(_falloff, Rect2(hub_px - Vector2(glow_r, glow_r) * 0.5, Vector2(glow_r, glow_r)),
+		false, Color(soul_col, 0.30))
 
 	for person in people:
 		_draw_person(person)
@@ -234,11 +301,14 @@ func _draw_building(b: Dictionary) -> void:
 		draw_rect(rect, COLOUR_PLAIN, true)
 		return
 
-	var heat: float = clampf(float(station["heat"]) / HEAT_OBSERVED_MAX, 0.0, 1.0)
+	# Structure only. Heat used to be painted as a flat box fill here, which made the map read
+	# as a spreadsheet of tinted cells; it now lives in the additive glow layer above, where
+	# neighbouring stations blend into regions. Filling BOTH would double-count the one signal
+	# that has to stay honest, so this keeps a low, cool base that says "a station is here and
+	# it is held/quiet/empty" and says nothing about how busy it is.
 	var brightness: float = float(STATE_BRIGHTNESS.get(station["state"], 1.0))
-	var col: Color = HEAT_COOL.lerp(HEAT_HOT, heat)
-	col = Color(col.r * brightness, col.g * brightness, col.b * brightness)
-	draw_rect(rect, col, true)
+	var base := Color(HEAT_COOL.r * 0.45, HEAT_COOL.g * 0.45, HEAT_COOL.b * 0.45)
+	draw_rect(rect, Color(base.r * brightness, base.g * brightness, base.b * brightness), true)
 
 	# Role tint as a thin border rather than the fill: heat owns the fill, because heat is the
 	# signal that actually changes. Role is a constant fact and gets the quieter channel.

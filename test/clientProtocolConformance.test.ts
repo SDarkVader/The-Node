@@ -115,6 +115,9 @@ describe('Godot client / wire protocol conformance', () => {
       'Color8(239, 220, 174)', // COLOUR_WALL
       'Color8(176, 144, 86)', // COLOUR_PLAZA
       'Color8(217, 201, 176)', // COLOUR_GRIFTER
+      'Color8(20, 38, 66)', // TENSION_COLD
+      'Color8(40, 30, 20)', // TENSION_EMBER
+      'Color8(104, 28, 18)', // TENSION_HOT
     ]) {
       expect(source).toContain(rgb);
     }

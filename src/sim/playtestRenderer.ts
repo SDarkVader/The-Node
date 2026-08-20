@@ -73,8 +73,40 @@ type Rgb = readonly [number, number, number];
  * town at dusk, and scarcity glows. Kept dark on purpose so foreground glyphs stay legible on
  * top of the background at every tension value.
  */
-const TENSION_CALM: Rgb = [20, 16, 12];
-const TENSION_TENSE: Rgb = [67, 23, 15];
+/**
+ * EMOTIONAL WEATHER IS A DIVERGING SCALE, NOT A RAMP (2026-08-19, user direction: "distinct
+ * contrast between red and blue... with ember as the median").
+ *
+ * The old mapping ran near-black -> dark red against a 0.25 ceiling. Two things were wrong with
+ * it, both confirmed by measuring the real distribution (8 seeds x 800 days, 5600 district-day
+ * samples, 100-day burn-in): tension actually lives at **p05 0.03, median 0.06, p95 0.10** with
+ * a rare tail to 0.71. Against a 0.25 ceiling the town therefore sat permanently in the bottom
+ * third of the ramp — always reading calm, exactly the flatness auto-ranging exists to avoid —
+ * and "calm" had no colour of its own anyway, it was just darkness.
+ *
+ * Now it diverges around the real median: genuinely cold blue below, Ember's own warmth at the
+ * median (so the ordinary state of the node looks like the node), and real red above. Anchors
+ * are the measured percentiles, not guesses, so the full visual range is spent on the band
+ * tension actually occupies, and the rare spike pins fully red rather than wasting the scale.
+ */
+const TENSION_COLD: Rgb = [20, 38, 66];
+const TENSION_EMBER: Rgb = [40, 30, 20];
+const TENSION_HOT: Rgb = [104, 28, 18];
+
+/** Measured p05 / median / p95 of real district tension — see the note above. */
+export const TENSION_COLD_AT = 0.03;
+export const TENSION_MEDIAN = 0.06;
+export const TENSION_HOT_AT = 0.10;
+
+/** Diverging blue <- Ember -> red, anchored on the measured distribution. */
+export function tensionColour(tension: number): Rgb {
+  if (tension <= TENSION_MEDIAN) {
+    const t = (tension - TENSION_COLD_AT) / (TENSION_MEDIAN - TENSION_COLD_AT);
+    return lerpRgb(TENSION_COLD, TENSION_EMBER, t);
+  }
+  const t = (tension - TENSION_MEDIAN) / (TENSION_HOT_AT - TENSION_MEDIAN);
+  return lerpRgb(TENSION_EMBER, TENSION_HOT, t);
+}
 
 /** Foreground ramp for role buildings: cool/supplied -> hot/scarce. Matches the addendum's
  *  "read scarcity from the plaza" intent — a hot station is visibly hot. */
@@ -120,7 +152,9 @@ const COLOUR_AWAY: Rgb = [232, 168, 92];
  * a stretched scale rather than the bottom of an absolute one.
  */
 export const HEAT_OBSERVED_MAX = 0.5;
-export const TENSION_OBSERVED_MAX = 0.25;
+/** Status-bar ceiling. 0.12, just above the measured p95 of 0.10 — a 0.25 ceiling left
+ *  the bar permanently near-empty and told you nothing. */
+export const TENSION_OBSERVED_MAX = 0.12;
 
 /**
  * Brightness by slot state, implementing `ecosystem.ts`'s already-stated visual contract:
@@ -335,8 +369,7 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
       }
 
       const raw = plot ? (tensions.get(plot.districtId) ?? 0) : 0;
-      const tension = Math.min(1, raw / TENSION_OBSERVED_MAX);
-      const cellBg = onCursor ? CURSOR_BG : lerpRgb(TENSION_CALM, TENSION_TENSE, tension);
+      const cellBg = onCursor ? CURSOR_BG : tensionColour(raw);
       const cellFg = onCursor && glyph === ' ' ? CURSOR_EMPTY_FG : colour;
       const cellGlyph = onCursor && glyph === ' ' ? '·' : glyph;
       line += `${bg(cellBg)}${fg(cellFg)}${cellGlyph}${pad}${RESET}`;

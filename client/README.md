@@ -10,6 +10,13 @@ not: the window background was Godot's default grey rather than Ember's ground t
 constant was declared and never applied), the town rendered too small to read, and the Wall did
 not stand out from ordinary buildings. All three are fixed.
 
+Rendering was then pushed further, each step screenshotted and checked rather than assumed:
+heat moved out of flat per-box tint into an **additive emissive field** (flat boxes read as a
+spreadsheet; overlapping glows read as a town), the ground wash stopped being a hard rectangle,
+emotional weather became a **diverging blue↔Ember↔red** scale anchored on measured percentiles,
+and **the Wall's Emissive Soul** — specified since 2026-08-12, never built — now carries shard
+health as hue.
+
 Still unverified by anyone but me: whether it *feels* right to move around in, and the per-role
 palette, which is a first proposal rather than a derived decision.
 
@@ -57,16 +64,21 @@ that; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LE
 | Pale gold block, centre | **The Wall** (the hub). Always bright and intact, whatever the shard's state — that is deliberate. |
 | Ochre tiles | Plaza |
 | Dark brown tiles | Streets and open ground |
-| Squares, blue→amber | **Stations.** Colour is economic heat: blue-grey is cool, amber is hot. Thin border = role hue. |
-| Dimmer squares | `BACKSTOPPED` (half brightness) or `VACANT` (28%). Quieter, never broken. |
+| Squares with a coloured border | **Stations.** The box is structure only — border is the role. How busy it is comes from the glow, not the box. |
+| Emissive glow, amber → white core | **Economic heat.** Radius AND intensity both scale with it, so a hot station is obvious at a glance. Glows blend additively, so a cluster reads as one bright region. |
+| A dark, unlit box | A genuinely cold station. Contrast comes from cold being dark — that is what makes hot mean something. |
+| Dimmer glow | `BACKSTOPPED` (half) or `VACANT` (28%). Quieter, never broken. |
 | Flat grey-brown squares | Buildings with no role slot — housing only. 16 of 62 in the shipped config. |
 | Warm dots with a coloured ring | Role-holders, ring = their role |
 | Pale cream dots | Grifters (roleless players) |
-| Background wash, near-black → dark red | District tension |
+| Soft ground field: **blue → Ember → red** | District tension. Diverging, not a ramp — cold blue when unusually calm, Ember at the normal state, red when tense. |
+| Pale block at centre, gold → red | **The Wall**, carrying the shard's overall health as hue. Never dims — a sick node gets a red Wall, never a dark one. |
 
-Both mood signals **auto-range** against observed maxima (heat ~0.5, tension ~0.25) rather than
-a literal 0–1 scale. Real measured tension sits around 0.06–0.08, so a naive mapping renders the
-whole town permanently flat and calm. Same discipline as the terminal renderer.
+**Heat** auto-ranges against its observed maximum (~0.5). **Tension** uses a diverging scale
+anchored on its real measured distribution — p05 0.03, median 0.06, p95 0.10, from 5600
+district-day samples. The old 0.25 ceiling left the town permanently in the bottom third of the
+range, always reading calm; anchoring on the real median means the ordinary state of the node
+looks like the node, and genuine swings in either direction are visible.
 
 ## Verify without opening a window
 
