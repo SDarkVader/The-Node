@@ -153,6 +153,40 @@ describe('playtest inspector — Phase B, strictly read-only', () => {
   });
 });
 
+describe('playtest map — grifters are now rendered (2026-08-19)', () => {
+  it('a grifter at a real, non-building position renders as the grifter glyph', () => {
+    const world = stepWorld(createWorld(3, DEFAULT_WORLD_CONFIG));
+    // Placed deliberately off any building/street/plaza/hub cell so only the grifter overlay
+    // can explain the glyph — real off-grid ground is common at this shard's geometry.
+    const g = world.grifters[0]!;
+    const bounds = shardBounds(world.shard);
+    const moved: World = { ...world, grifters: world.grifters.map((x, i) => (i === 0 ? { ...x, x: bounds.minX, y: bounds.minY } : x)) };
+    const heat = computeEconomicHeat(moved);
+    const rows = renderMap(moved, { color: false, width: 100, eventLog: [] }, heat);
+    const col = bounds.minX - bounds.minX; // first column
+    void g;
+    expect(rows[0]!.slice(col * CELL_WIDTH, col * CELL_WIDTH + 1)).toBe('o');
+  });
+
+  it('every rendered colour channel stays within 0-255, including the multi-grifter brightness boost', () => {
+    // Regression for a real bug found by looking at actual rendered output: scaleRgb's
+    // multi-grifter factor (1.3) produced rgb(282,261,229) — an invalid ANSI truecolor
+    // sequence — before scaleRgb was made to clamp.
+    let world = stepWorld(createWorld(4, DEFAULT_WORLD_CONFIG));
+    // Force two grifters onto the exact same cell — the case that triggers the boost.
+    const target = { x: world.grifters[0]!.x, y: world.grifters[0]!.y };
+    world = { ...world, grifters: world.grifters.map((g, i) => (i < 2 ? { ...g, x: target.x, y: target.y } : g)) };
+    const heat = computeEconomicHeat(world);
+    const frame = renderMap(world, { color: true, width: 100, eventLog: [] }, heat).join('\n');
+    const channels = [...frame.matchAll(/\x1b\[3?8;2;(\d+);(\d+);(\d+)m/g)].flatMap((m) => [+m[1]!, +m[2]!, +m[3]!]);
+    expect(channels.length).toBeGreaterThan(0);
+    for (const c of channels) {
+      expect(c).toBeGreaterThanOrEqual(0);
+      expect(c).toBeLessThanOrEqual(255);
+    }
+  });
+});
+
 describe('playtest drivers — the applier src/sim/drivers/ never had', () => {
   it('does not mutate the world it is given, and returns a copy carrying the new posts', () => {
     const world = stepN(createWorld(7, DEFAULT_WORLD_CONFIG), 40);
@@ -188,6 +222,52 @@ describe('playtest drivers — the applier src/sim/drivers/ never had', () => {
     const summary = summarizeActions(actions);
     for (const type of Object.keys(summary)) {
       expect(['idle', 'move', 'postToWall', 'occupySlot', 'attemptSabotageStep']).toContain(type);
+    }
+  });
+
+  it('applies move for grifters (2026-08-19) — a grifter can end the tick somewhere new', () => {
+    let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
+    const rng = mulberry32(1);
+    let moved = false;
+    for (let i = 0; i < 40 && !moved; i++) {
+      const before = new Map(world.grifters.map((g) => [g.id, { x: g.x, y: g.y }]));
+      const result = applyDriverTick(world, rng);
+      for (const g of result.world.grifters) {
+        const prior = before.get(g.id);
+        if (prior && (prior.x !== g.x || prior.y !== g.y)) moved = true;
+      }
+      world = stepWorld(result.world);
+    }
+    expect(moved).toBe(true);
+  });
+
+  it('clamps grifter movement to the real plot bounds — no unbounded wandering', () => {
+    let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
+    const rng = mulberry32(2);
+    const bounds = shardBounds(world.shard);
+    for (let i = 0; i < 300; i++) {
+      const result = applyDriverTick(world, rng);
+      for (const g of result.world.grifters) {
+        expect(g.x).toBeGreaterThanOrEqual(bounds.minX);
+        expect(g.x).toBeLessThanOrEqual(bounds.maxX);
+        expect(g.y).toBeGreaterThanOrEqual(bounds.minY);
+        expect(g.y).toBeLessThanOrEqual(bounds.maxY);
+      }
+      world = stepWorld(result.world);
+    }
+  });
+
+  it("role-holders' own move actions are still NOT applied — millers/bakers are untouched by driver output", () => {
+    // A role-holder has no x/y field for a move action to even target (their position is
+    // still definitionally their building's, unchanged this pass), so the honest check is
+    // that applying drivers never mutates world.millers/world.bakers at all.
+    let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
+    const rng = mulberry32(3);
+    for (let i = 0; i < 40; i++) {
+      const result = applyDriverTick(world, rng);
+      expect(result.world.millers).toBe(world.millers);
+      expect(result.world.bakers).toBe(world.bakers);
+      world = stepWorld(result.world);
     }
   });
 

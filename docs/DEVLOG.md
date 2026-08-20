@@ -6,6 +6,34 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Grifters move and render: the playtest harness now shows the missing third
+
+Stage 2 of the "position decoupled from occupancy" work. `playtestDrivers.ts` now applies
+`move` for grifters (they finally have somewhere real to move to — the harder half,
+role-holder movement, is still deliberately untouched), and `playtestRenderer.ts` draws them
+as `o` on open ground. `npm run playtest` — the map is no longer missing roughly a third of
+the population.
+
+Movement is clamped to the shard's real plot bounds (a small local helper in
+`playtestDrivers.ts`, not imported from the renderer's own cursor-clamping — the two stay
+decoupled on purpose). Verified live before writing anything: 24 distinct positions among 42
+grifters after 40 driven days, none wildly out of range.
+
+**A real bug caught by looking at the actual rendered output, not by reasoning about it**:
+two grifters sharing a cell get a brightness boost (`scaleRgb(COLOUR_GRIFTER, 1.3)`), and
+`scaleRgb` never clamped — every existing caller only ever scaled by <=1 (`STATE_BRIGHTNESS`),
+so nothing had overflowed before. The boost produced `rgb(282,261,229)`, an invalid ANSI
+truecolor sequence, sitting silently in the output stream. Fixed by clamping inside
+`scaleRgb` itself (defensive for every future caller, zero behaviour change for the existing
+<=1 callers), with a regression test that greps every emitted escape sequence in a
+forced-collision frame and asserts every channel stays in 0-255.
+
+5 new tests, 659 total, typecheck clean. Still not done: role-holder movement itself (the
+harder half), and giving anyone — driver or eventual player — a reason to actually WANT to be
+somewhere specific rather than a random walk.
+
+---
+
 ## 2026-08-19 — Grifters get real position: the first case of position not tied to a role slot
 
 User: *"let's get going then.. we have to build it."* Starting the Godot dependency chain

@@ -32,9 +32,11 @@ import type { DriverAction, DriverRole, DriverStrategy, DriverVisibleState } fro
  *                    slot, including the reputation gate and the backstop. A driver grabbing
  *                    a slot behind its back would fight the mechanic under test rather than
  *                    exercise it.
- *   - `move`         NOT applied. There is nowhere to move to: role-holders are pinned to
- *                    their building's plot, and grifters carry only a housing `districtId`,
- *                    never coordinates (`world.ts`'s own header states this).
+ *   - `move`         APPLIED, for grifters only (2026-08-19, once `GrifterSlot.x`/`y` gave
+ *                    them somewhere real to move to). Clamped to the shard's real plot bounds.
+ *                    Role-holders' `move` is still NOT applied — they remain pinned to their
+ *                    building's plot, the harder half of "position decoupled from occupancy"
+ *                    this pass deliberately did not take on.
  *   - `attemptSabotageStep` NOT applied. Blocked on the campaign-persistence finding in
  *                    `docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md` §4 — `patternSabotageAttempt`
  *                    resolves a whole campaign in one call, so there is no in-flight campaign
@@ -95,11 +97,10 @@ export function participantsOf(world: World): Participant[] {
   addRole(world.millers, 'miller');
   addRole(world.bakers, 'baker');
 
-  const plazaOf = new Map(world.shard.districts.map((d) => [d.id, d.plazaPlot]));
-  const fallbackPlaza = world.shard.districts[0]?.plazaPlot ?? world.shard.hubPlot;
+  // 2026-08-19: grifters now carry a real World.GrifterSlot.x/y (see world.ts), so their
+  // driver-visible position is their own — no more standing in with the district plaza.
   for (const g of world.grifters) {
-    const plaza = (g.districtId ? plazaOf.get(g.districtId) : undefined) ?? fallbackPlaza;
-    out.push({ playerId: g.id, role: 'gossip', atBuildingId: null, atPlot: { x: plaza.x, y: plaza.y }, slotIsVacant: false });
+    out.push({ playerId: g.id, role: 'gossip', atBuildingId: null, atPlot: { x: g.x, y: g.y }, slotIsVacant: false });
   }
 
   return out;
@@ -158,10 +159,38 @@ export interface DriverTickResult {
  * measurement harnesses (`oracleCli`, `evictionProtectionCli`, and the rest) remain the place
  * numbers come from.
  */
+/** Real bounds of every generated plot in the shard, hub included. Movement clamps to this —
+ *  an unclamped random walk is recurrent but unbounded, and over enough ticks would wander a
+ *  grifter arbitrarily far from the settlement it's meant to be part of. Same clamping
+ *  discipline `playtestRenderer.ts`'s inspection cursor already uses, computed independently
+ *  here rather than imported from it: the applier stays self-contained, the renderer stays a
+ *  pure consumer of `World`, neither depends on the other. */
+function shardPlotBounds(shard: World['shard']): { minX: number; maxX: number; minY: number; maxY: number } {
+  let minX = shard.hubPlot.x;
+  let maxX = shard.hubPlot.x;
+  let minY = shard.hubPlot.y;
+  let maxY = shard.hubPlot.y;
+  for (const d of shard.districts) {
+    for (const p of d.plots) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  return { minX, maxX, minY, maxY };
+}
+
 export function applyDriverTick(world: World, rng: () => number): DriverTickResult {
   const radius = world.config.witnessRadius;
   const actions: DriverTickResult['actions'] = [];
   const posts: WallPost[] = [];
+  const bounds = shardPlotBounds(world.shard);
+  // 2026-08-19: grifters can now really move — the second action, alongside postToWall, that
+  // has somewhere to land. Role-holders' own `move` actions are still dropped: they remain
+  // pinned to their building, the harder half of "position decoupled from occupancy" this
+  // pass deliberately did not take on (see docs/HANDOVER.md).
+  const grifterMoves = new Map<string, { x: number; y: number }>();
 
   for (const p of participantsOf(world)) {
     const strategy: DriverStrategy = assignDriverStrategy(world.seed, stablePlayerIndex(p.playerId));
@@ -170,6 +199,11 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
 
     if (action.type === 'postToWall') {
       posts.push({ id: `drv-${world.tick}-${posts.length}`, authorId: p.playerId, state: action.state, day: world.tick });
+    } else if (action.type === 'move' && p.role === 'gossip') {
+      grifterMoves.set(p.playerId, {
+        x: Math.max(bounds.minX, Math.min(bounds.maxX, action.toX)),
+        y: Math.max(bounds.minY, Math.min(bounds.maxY, action.toY)),
+      });
     }
   }
 
@@ -178,7 +212,14 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
   // filtered: it still feeds the author's own pressure record (`pressureDetection.ts` tracks
   // POSTING behaviour, explicitly regardless of who heard it), which is real signal.
   return {
-    world: { ...world, pendingWallPosts: [...world.pendingWallPosts, ...posts] },
+    world: {
+      ...world,
+      pendingWallPosts: [...world.pendingWallPosts, ...posts],
+      grifters: grifterMoves.size === 0 ? world.grifters : world.grifters.map((g) => {
+        const moved = grifterMoves.get(g.id);
+        return moved ? { ...g, x: moved.x, y: moved.y } : g;
+      }),
+    },
     actions,
   };
 }

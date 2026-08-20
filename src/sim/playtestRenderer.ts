@@ -92,6 +92,10 @@ const COLOUR_PLAZA: Rgb = [176, 144, 86];
 const COLOUR_STREET: Rgb = [47, 40, 34];
 /** A real building carrying no role slot — 16 of the shipped config's 62. */
 const COLOUR_PLAIN: Rgb = [74, 64, 56];
+/** A grifter — reuses Ember's own ink tone (otherwise only used for UI text), deliberately
+ *  distinct from every other map hue: not on the heat ramp (they aren't a role, so "scarcity"
+ *  doesn't apply to them), not the Wall's pale gold, not the plaza's ochre. */
+const COLOUR_GRIFTER: Rgb = [217, 201, 176];
 
 /**
  * AUTO-RANGING, and why it is on by default.
@@ -130,7 +134,11 @@ function lerpRgb(a: Rgb, b: Rgb, t: number): Rgb {
 }
 
 function scaleRgb(c: Rgb, factor: number): Rgb {
-  return [Math.round(c[0] * factor), Math.round(c[1] * factor), Math.round(c[2] * factor)];
+  // Clamped: every existing caller scales by <=1 (STATE_BRIGHTNESS), which never overflows,
+  // but a >1 factor (the multi-grifter brightness boost) can genuinely push a channel past
+  // 255 — found live, `rgb(282,261,229)`, an invalid ANSI truecolor sequence.
+  const c8 = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  return [c8(c[0] * factor), c8(c[1] * factor), c8(c[2] * factor)];
 }
 
 export function fg(c: Rgb): string {
@@ -219,6 +227,15 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
   const plazaAt = new Set(world.shard.districts.map((d) => `${d.plazaPlot.x},${d.plazaPlot.y}`));
   const hubKey = `${world.shard.hubPlot.x},${world.shard.hubPlot.y}`;
 
+  // 2026-08-19: the first population ever rendered on this map that isn't a role slot.
+  // Deliberately drawn on top of open ground only (plaza/street), never over a building or the
+  // hub — those are fixed points a person can stand AT, not be indistinguishable from.
+  const grifterCountAt = new Map<string, number>();
+  for (const g of world.grifters) {
+    const key = `${g.x},${g.y}`;
+    grifterCountAt.set(key, (grifterCountAt.get(key) ?? 0) + 1);
+  }
+
   const pad = ' '.repeat(CELL_WIDTH - 1);
   const lines: string[] = [];
 
@@ -243,6 +260,9 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
       } else if (buildingId) {
         glyph = '.'; // a real building with no role slot attached to it
         colour = COLOUR_PLAIN;
+      } else if (grifterCountAt.has(key)) {
+        glyph = 'o';
+        colour = grifterCountAt.get(key)! > 1 ? scaleRgb(COLOUR_GRIFTER, 1.3) : COLOUR_GRIFTER;
       } else if (plazaAt.has(key)) {
         glyph = '+';
         colour = COLOUR_PLAZA;
@@ -492,7 +512,7 @@ export function collectEvents(world: World): string[] {
 
 // ---- Frame -------------------------------------------------------------------------------
 
-const LEGEND = 'M B C J D X = roles   # Wall   + plaza   UPPER held  lower vacant  dim backstopped';
+const LEGEND = 'M B C J D X = roles   # Wall   + plaza   o grifter   UPPER held  lower vacant  dim backstopped';
 const KEYS = '[space] day  [n] x10  [hjkl/arrows] look  [i] cursor  [d] drivers  [q] quit';
 
 /**
