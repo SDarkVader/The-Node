@@ -70,6 +70,21 @@ const ROLE_COLOUR := {
 const CELL := 44.0        ## pixels per world unit at zoom 1
 const BUILDING_SIZE := 30.0
 const PERSON_RADIUS := 6.0
+## The Wall is a short segment at 45 degrees, centred on the hub. The angle is the
+## settlement's own: plots are generated as a DIAMOND (a radius-7 Manhattan ball), so its edges
+## run at 45 degrees and the Wall sits parallel to them rather than cutting across the grain.
+## Deliberately short — it is a monument in the plaza, not a partition across the map.
+const WALL_SPAN_CELLS := 4.5
+const WALL_ANGLE := PI * 0.25
+const WALL_THICKNESS := 9.0
+const WALL_GLOW_CELLS := 4.2
+const WALL_GLOW_ALPHA := 0.62
+## Floating role glyph carried by a PERSON — the one that has to be readable across the plaza.
+const ICON_SIZE := 21.0
+## The same glyph as a station's shopfront sign: smaller and quieter, because a building's role
+## never changes and should not compete with the people moving in front of it.
+const STATION_ICON_SIZE := 13.0
+const STATION_ICON_ALPHA := 0.55
 
 var socket := WebSocketPeer.new()
 var was_connected := false
@@ -265,26 +280,7 @@ func _draw() -> void:
 
 	# The Wall. Always bright, always intact, regardless of how the shard is doing — this is
 	# the doctrine's clearest single case.
-	var hub_px := _world_to_px(hub.x, hub.y)
-	var wall := Vector2(BUILDING_SIZE, BUILDING_SIZE) * 1.5
-	# THE WALL'S EMISSIVE SOUL — specified in the visual framework since 2026-08-12 and never
-	# built until now. Shard-wide mood, gold when the node is healthy, red when it is not.
-	#
-	# [STAND-IN, flagged not hidden]: the spec names `soulTemperature` as its driver, and no
-	# such value exists in the engine — nothing computes it. This uses `economicHealth`, which
-	# is real, shard-wide, and already on the wire. If soulTemperature is ever built, this is
-	# the one line to repoint.
-	#
-	# HUE ONLY. Brightness and structure stay constant no matter how sick the shard is — that
-	# is the doctrine's clearest single case, and a dimming Wall would break it. A node in
-	# crisis gets a red Wall, never a dim or broken one.
-	var soul: float = clampf((0.95 - economic_health) / 0.25, 0.0, 1.0)
-	var soul_col: Color = COLOUR_WALL.lerp(Color8(214, 84, 54), soul)
-	draw_rect(Rect2(hub_px - wall * 0.5, wall), soul_col, true)
-	# Emissive bloom around it, same constant-brightness rule.
-	var glow_r: float = BUILDING_SIZE * 5.0
-	draw_texture_rect(_falloff, Rect2(hub_px - Vector2(glow_r, glow_r) * 0.5, Vector2(glow_r, glow_r)),
-		false, Color(soul_col, 0.30))
+	_draw_wall()
 
 	for person in people:
 		_draw_person(person)
@@ -310,11 +306,17 @@ func _draw_building(b: Dictionary) -> void:
 	var base := Color(HEAT_COOL.r * 0.45, HEAT_COOL.g * 0.45, HEAT_COOL.b * 0.45)
 	draw_rect(rect, Color(base.r * brightness, base.g * brightness, base.b * brightness), true)
 
-	# Role tint as a thin border rather than the fill: heat owns the fill, because heat is the
-	# signal that actually changes. Role is a constant fact and gets the quieter channel.
+	# Role reads as an ICON on the station, not a letter and not only a border tint — the same
+	# glyph the people who hold that role carry, so a Bakery and a Baker are visibly the same
+	# thing. The border stays as a quiet second channel for the same fact.
 	var role = b.get("role")
 	if role != null and ROLE_COLOUR.has(role):
-		draw_rect(rect, ROLE_COLOUR[role], false, 2.0)
+		var rc: Color = ROLE_COLOUR[role]
+		draw_rect(rect, rc, false, 2.0)
+		# Hung in the upper-left of the facade like a shop sign, quiet and small: it states a
+		# permanent fact. People move and change; the sign does not, so it yields to them.
+		_draw_role_icon(pos - Vector2(BUILDING_SIZE, BUILDING_SIZE) * 0.28,
+			role, Color(rc, STATION_ICON_ALPHA), STATION_ICON_SIZE)
 
 
 func _draw_person(p: Dictionary) -> void:
@@ -324,7 +326,110 @@ func _draw_person(p: Dictionary) -> void:
 	# warm tone, with their role's own hue as a ring. Nobody on this map is anonymous-looking
 	# in the sense of being invisible — everyone present is drawn (constraint 6's floor is
 	# about access, and this is its visual counterpart: presence is never taken away).
-	var body: Color = COLOUR_GRIFTER if role == null else COLOUR_AWAY
-	draw_circle(pos, PERSON_RADIUS, body)
-	if role != null and ROLE_COLOUR.has(role):
-		draw_arc(pos, PERSON_RADIUS + 2.0, 0.0, TAU, 12, ROLE_COLOUR[role], 1.5)
+	# A ROLELESS PLAYER IS A PERSON, NOT A GAP. They get a clean pale mark and nothing else —
+	# no glyph, because they hold no role, and deliberately no dark backing plate either. An
+	# earlier version gave everyone the plate and roughly a third of the population (the
+	# grifters) rendered as black blobs with a speck in them: the least powerful people on the
+	# map became the ugliest thing on it. Constraint 6's floor has a visual form, and this is
+	# it — never buried, never made harder to see than anyone else.
+	if role == null or not ROLE_COLOUR.has(role):
+		draw_circle(pos, PERSON_RADIUS, COLOUR_GRIFTER)
+		return
+
+	draw_circle(pos, PERSON_RADIUS * 0.75, COLOUR_AWAY)
+	# The floating role glyph rides above the body — in the world, like a sign carried, not HUD
+	# chrome. A soft plate behind it keeps it readable over a blazing station without becoming
+	# an object in its own right.
+	var at := pos + Vector2(0, -ICON_SIZE * 0.8)
+	draw_circle(at, ICON_SIZE * 0.55, Color(0.05, 0.04, 0.03, 0.5))
+	_draw_role_icon(at, role, ROLE_COLOUR[role], ICON_SIZE)
+
+
+## THE WALL — a golden line through the middle of the town, not a block (2026-08-19).
+##
+## It used to be a pale square, which made the shard's one landmark read as just another
+## building that happened to be brighter. As a short golden bar at 45 degrees it is
+## unmistakably civic — it belongs to nobody, and you cannot mistake it for somewhere a person
+## works. The angle is the settlement's own rather than a choice: plots generate as a DIAMOND
+## (a radius-7 Manhattan ball centred on the hub), so 45 degrees runs with the grain of the
+## town instead of against it.
+##
+## THE EMISSIVE SOUL rides on it (specified in VISUAL_FRAMEWORK_2026-08-12.md, built 2026-08-19):
+## gold when the node is healthy, red when it is not. [STAND-IN, flagged]: the spec names
+## `soulTemperature`, which nothing in the engine computes; this uses `economicHealth`, which is
+## real and already on the wire. One line to repoint if soulTemperature is ever built.
+##
+## HUE ONLY, NEVER BRIGHTNESS. The Wall does not dim, thin, crack or break as the shard
+## declines — that is the doctrine's clearest single case. A node in crisis gets a red Wall.
+func _draw_wall() -> void:
+	var soul: float = clampf((0.95 - economic_health) / 0.25, 0.0, 1.0)
+	var soul_col: Color = COLOUR_WALL.lerp(Color8(214, 84, 54), soul)
+
+	var centre := _world_to_px(hub.x, hub.y)
+	var half_w: float = WALL_SPAN_CELLS * 0.5 * CELL
+
+	# Everything below is drawn in the Wall's own rotated frame, so the radiance spreads
+	# perpendicular to the line rather than along the screen axes.
+	draw_set_transform(centre, WALL_ANGLE, Vector2.ONE)
+
+	# Radiance first, under the line: the falloff texture stretched long and thin, so light
+	# spills off a long edge into the plaza instead of reading as a round lamp. Three passes of
+	# decreasing alpha and increasing spread give a soft gradient without needing a shader.
+	for i in 3:
+		var spread: float = WALL_GLOW_CELLS * CELL * (0.4 + 0.6 * float(i))
+		var w: float = half_w * 2.0 + spread * 0.8
+		var glow: Color = Color(soul_col, WALL_GLOW_ALPHA / float(i + 1))
+		draw_texture_rect(_falloff, Rect2(Vector2(-w * 0.5, -spread * 0.5), Vector2(w, spread)), false, glow)
+
+	# The line: a warm base with a brighter core, so it has depth rather than reading flat.
+	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.5), Vector2(half_w * 2.0, WALL_THICKNESS)), soul_col, true)
+	var core_col: Color = soul_col.lerp(Color(1.0, 0.97, 0.90), 0.55)
+	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.18), Vector2(half_w * 2.0, WALL_THICKNESS * 0.36)), core_col, true)
+
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Role icons, drawn procedurally rather than shipped as art (2026-08-19, user: "give it
+## character"). Six shapes, each readable at ~14px, each meaning the job rather than spelling
+## its initial: a letter is a label, a shape is an identity.
+##
+## This is the "floating diegetic role-glyph" from the visual foundation brief's §4, built —
+## the icon rides above the person rather than being HUD chrome, so what someone is doing is
+## legible from across the plaza without a nameplate.
+func _draw_role_icon(at: Vector2, role, col: Color, size: float = ICON_SIZE) -> void:
+	var r: float = size * 0.5
+	match role:
+		"miller":
+			# Windmill: four sails around a hub.
+			for i in 4:
+				var a: float = TAU * float(i) / 4.0 + PI * 0.25
+				draw_line(at, at + Vector2(cos(a), sin(a)) * r, col, 2.0)
+			draw_circle(at, r * 0.22, col)
+		"baker":
+			# Loaf: a domed top on a flat base.
+			draw_arc(at + Vector2(0, r * 0.35), r * 0.85, PI, TAU, 14, col, 2.0)
+			draw_line(at + Vector2(-r * 0.85, r * 0.35), at + Vector2(r * 0.85, r * 0.35), col, 2.0)
+		"courier":
+			# Parcel: a box with a strap.
+			draw_rect(Rect2(at - Vector2(r, r) * 0.75, Vector2(r, r) * 1.5), col, false, 2.0)
+			draw_line(at + Vector2(0, -r * 0.75), at + Vector2(0, r * 0.75), col, 2.0)
+		"journalist":
+			# Page: a sheet with lines of type.
+			draw_rect(Rect2(at - Vector2(r * 0.7, r * 0.85), Vector2(r * 1.4, r * 1.7)), col, false, 2.0)
+			for i in 2:
+				var ly: float = at.y - r * 0.3 + float(i) * r * 0.55
+				draw_line(Vector2(at.x - r * 0.4, ly), Vector2(at.x + r * 0.4, ly), col, 1.5)
+		"detective":
+			# Magnifier: lens and handle.
+			draw_arc(at + Vector2(-r * 0.2, -r * 0.2), r * 0.6, 0.0, TAU, 16, col, 2.0)
+			draw_line(at + Vector2(r * 0.2, r * 0.2), at + Vector2(r * 0.8, r * 0.8), col, 2.0)
+		"importExport":
+			# Two arrows passing in opposite directions — goods in, goods out.
+			draw_line(at + Vector2(-r * 0.8, -r * 0.35), at + Vector2(r * 0.8, -r * 0.35), col, 2.0)
+			draw_line(at + Vector2(r * 0.35, -r * 0.7), at + Vector2(r * 0.8, -r * 0.35), col, 2.0)
+			draw_line(at + Vector2(r * 0.8, r * 0.35), at + Vector2(-r * 0.8, r * 0.35), col, 2.0)
+			draw_line(at + Vector2(-r * 0.35, r * 0.7), at + Vector2(-r * 0.8, r * 0.35), col, 2.0)
+		_:
+			# Roleless: a plain mark. Present, visible, unlabelled — never invisible, which is
+			# constraint 6's floor expressed visually.
+			draw_circle(at, r * 0.3, col)

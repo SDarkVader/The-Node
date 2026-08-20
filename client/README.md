@@ -10,6 +10,11 @@ not: the window background was Godot's default grey rather than Ember's ground t
 constant was declared and never applied), the town rendered too small to read, and the Wall did
 not stand out from ordinary buildings. All three are fixed.
 
+The six role icons are drawn procedurally in `WorldView.gd` (`_draw_role_icon`) rather than
+shipped as art, so the client stays self-contained with no import step: windmill, loaf, parcel,
+page, magnifier, and two passing arrows. They mean the job rather than spelling its initial — a
+letter is a label, a shape is an identity.
+
 Rendering was then pushed further, each step screenshotted and checked rather than assumed:
 heat moved out of flat per-box tint into an **additive emissive field** (flat boxes read as a
 spreadsheet; overlapping glows read as a town), the ground wash stopped being a hard rectangle,
@@ -69,10 +74,12 @@ that; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LE
 | A dark, unlit box | A genuinely cold station. Contrast comes from cold being dark — that is what makes hot mean something. |
 | Dimmer glow | `BACKSTOPPED` (half) or `VACANT` (28%). Quieter, never broken. |
 | Flat grey-brown squares | Buildings with no role slot — housing only. 16 of 62 in the shipped config. |
-| Warm dots with a coloured ring | Role-holders, ring = their role |
-| Pale cream dots | Grifters (roleless players) |
+| Warm dot under a floating icon | A role-holder |
+| Plain pale dot, no glyph | A roleless player (grifter). No glyph because they hold no role — but the same size and brightness as anyone else. |
 | Soft ground field: **blue → Ember → red** | District tension. Diverging, not a ramp — cold blue when unusually calm, Ember at the normal state, red when tense. |
-| Pale block at centre, gold → red | **The Wall**, carrying the shard's overall health as hue. Never dims — a sick node gets a red Wall, never a dark one. |
+| Short golden bar at 45°, centre | **The Wall** — a monument in the plaza, not a partition. Its angle is the settlement's own: plots generate as a diamond, so 45° runs with the grain. Radiates into the plaza. Gold when healthy, red when not; it never dims, thins or breaks. |
+| Small icon in a station's top-left | That building's **role**, hung like a shop sign — quiet, because a building's role never changes. |
+| Icon floating above a person | That player's **role**, carried with them. Same glyph as their station, so a Bakery and a Baker read as the same thing. |
 
 **Heat** auto-ranges against its observed maximum (~0.5). **Tension** uses a diverging scale
 anchored on its real measured distribution — p05 0.03, median 0.06, p95 0.10, from 5600
