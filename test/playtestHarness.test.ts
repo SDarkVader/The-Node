@@ -257,17 +257,68 @@ describe('playtest drivers — the applier src/sim/drivers/ never had', () => {
     }
   });
 
-  it("role-holders' own move actions are still NOT applied — millers/bakers are untouched by driver output", () => {
-    // A role-holder has no x/y field for a move action to even target (their position is
-    // still definitionally their building's, unchanged this pass), so the honest check is
-    // that applying drivers never mutates world.millers/world.bakers at all.
+  it('applies move for role-holders too (2026-08-19) — a Miller can now walk away from their mill', () => {
+    // The harder half of "position decoupled from occupancy," landed once role slots gained
+    // their own x/y. Their buildingId must NOT change while they wander: the slot is still
+    // theirs, only their feet moved.
     let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
     const rng = mulberry32(3);
-    for (let i = 0; i < 40; i++) {
+    const homeOf = new Map(world.shard.districts.flatMap((d) => d.buildings).map((b) => [b.id, { x: b.x, y: b.y }]));
+    let anyAway = false;
+
+    for (let i = 0; i < 60; i++) {
       const result = applyDriverTick(world, rng);
-      expect(result.world.millers).toBe(world.millers);
-      expect(result.world.bakers).toBe(world.bakers);
+      for (const s of [...result.world.millers, ...result.world.bakers]) {
+        if (s.slot.state !== 'FILLED') continue;
+        const home = homeOf.get(s.buildingId)!;
+        if (s.x !== home.x || s.y !== home.y) anyAway = true;
+      }
+      // Slot ownership is untouched by movement — same buildings, same order.
+      expect(result.world.millers.map((m) => m.buildingId)).toEqual(world.millers.map((m) => m.buildingId));
       world = stepWorld(result.world);
+    }
+    expect(anyAway).toBe(true);
+  });
+
+  it('clamps role-holder movement to the real plot bounds, same as grifters', () => {
+    let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
+    const rng = mulberry32(5);
+    const bounds = shardBounds(world.shard);
+    for (let i = 0; i < 200; i++) {
+      const result = applyDriverTick(world, rng);
+      for (const s of [...result.world.millers, ...result.world.bakers]) {
+        expect(s.x).toBeGreaterThanOrEqual(bounds.minX);
+        expect(s.x).toBeLessThanOrEqual(bounds.maxX);
+        expect(s.y).toBeGreaterThanOrEqual(bounds.minY);
+        expect(s.y).toBeLessThanOrEqual(bounds.maxY);
+      }
+      world = stepWorld(result.world);
+    }
+  });
+
+  it('a role-holder away from their post is rendered as a person, without erasing their building', () => {
+    // The building keeps rendering (the slot is still theirs); the person is drawn separately
+    // wherever they actually are. Both facts have to survive the same frame.
+    let world = stepWorld(createWorld(7, DEFAULT_WORLD_CONFIG));
+    const rng = mulberry32(11);
+    for (let i = 0; i < 60; i++) world = stepWorld(applyDriverTick(world, rng).world);
+
+    const homeOf = new Map(world.shard.districts.flatMap((d) => d.buildings).map((b) => [b.id, { x: b.x, y: b.y }]));
+    const away = [...world.millers, ...world.bakers].filter((s) => {
+      if (s.slot.state !== 'FILLED') return false;
+      const h = homeOf.get(s.buildingId)!;
+      return s.x !== h.x || s.y !== h.y;
+    });
+    expect(away.length).toBeGreaterThan(0);
+
+    const lines = renderMap(world, { color: false, width: 100, eventLog: [] }, computeEconomicHeat(world));
+    const bounds = shardBounds(world.shard);
+    const glyphAt = (x: number, y: number) => lines[y - bounds.minY]?.[(x - bounds.minX) * 2];
+
+    for (const s of away) {
+      const h = homeOf.get(s.buildingId)!;
+      // Their building still shows its own role glyph, occupant present or not.
+      expect(['M', 'B']).toContain(glyphAt(h.x, h.y));
     }
   });
 

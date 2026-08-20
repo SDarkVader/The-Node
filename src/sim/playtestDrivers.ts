@@ -32,11 +32,25 @@ import type { DriverAction, DriverRole, DriverStrategy, DriverVisibleState } fro
  *                    slot, including the reputation gate and the backstop. A driver grabbing
  *                    a slot behind its back would fight the mechanic under test rather than
  *                    exercise it.
- *   - `move`         APPLIED, for grifters only (2026-08-19, once `GrifterSlot.x`/`y` gave
- *                    them somewhere real to move to). Clamped to the shard's real plot bounds.
- *                    Role-holders' `move` is still NOT applied — they remain pinned to their
- *                    building's plot, the harder half of "position decoupled from occupancy"
- *                    this pass deliberately did not take on.
+ *   - `move`         APPLIED, for grifters AND role-holders (2026-08-19, once role slots gained
+ *                    their own `x`/`y` — see `world.ts`'s `SlotPosition` note). Clamped to the
+ *                    shard's real plot bounds.
+ *
+ *                    **This one is not inert, unlike the rest of this file.** `stepWorld`'s
+ *                    `occupantsOf` reads a role-holder's OWN position now, and that set feeds
+ *                    witness counts (sabotage detection), identity resolution and District
+ *                    Weather. A moving population therefore produces genuinely different
+ *                    detection and resolution numbers from a pinned one — not a bug, the whole
+ *                    point, but it means the existing 43.6%/28.9-day sabotage calibration was
+ *                    measured against a pinned layout and does NOT describe a world where
+ *                    people walk around. Re-measuring that belongs with whatever first makes
+ *                    role-holders move in the SHIPPED world; this applier is sim-side only, so
+ *                    nothing shipped changed when it started landing these.
+ *
+ *                    Economically inert either way: every production/wage/market path in
+ *                    `stepWorld` keys off `buildingId`, never position, so a Miller who wanders
+ *                    off still mills. Whether that should stay true is a real open design
+ *                    question, deliberately not answered here.
  *   - `attemptSabotageStep` NOT applied. Blocked on the campaign-persistence finding in
  *                    `docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md` §4 — `patternSabotageAttempt`
  *                    resolves a whole campaign in one call, so there is no in-flight campaign
@@ -77,21 +91,21 @@ interface Participant {
 }
 
 /**
- * Everyone a driver can speak for. Role-holders sit at their own building's plot; grifters
- * have no coordinates anywhere in this engine, so they stand at their housing district's
- * plaza — an honest stand-in (the plaza is where a roleless player would plausibly be), and
- * flagged as such rather than quietly treated as a real position.
+ * Everyone a driver can speak for. Every participant's `atPlot` is now their OWN position —
+ * role-holders read `x`/`y` off their slot (2026-08-19) rather than being looked up at their
+ * building, grifters off their `GrifterSlot`. No stand-ins left anywhere in this function.
+ *
+ * `atBuildingId` still means "which slot this participant holds," not "where they are
+ * standing" — the two genuinely came apart with this change, and the driver-visible state
+ * keeps both because a driver plausibly knows its own workplace as well as its own feet.
  */
 export function participantsOf(world: World): Participant[] {
-  const buildingById = new Map(world.shard.districts.flatMap((d) => d.buildings).map((b) => [b.id, b]));
   const out: Participant[] = [];
 
-  const addRole = (slots: readonly { buildingId: string; slot: { state: string } }[], role: DriverRole) => {
+  const addRole = (slots: readonly { buildingId: string; slot: { state: string }; x: number; y: number }[], role: DriverRole) => {
     for (const s of slots) {
       if (s.slot.state !== 'FILLED') continue;
-      const b = buildingById.get(s.buildingId);
-      if (!b) continue;
-      out.push({ playerId: s.buildingId, role, atBuildingId: s.buildingId, atPlot: { x: b.x, y: b.y }, slotIsVacant: false });
+      out.push({ playerId: s.buildingId, role, atBuildingId: s.buildingId, atPlot: { x: s.x, y: s.y }, slotIsVacant: false });
     }
   };
   addRole(world.millers, 'miller');
@@ -186,11 +200,14 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
   const actions: DriverTickResult['actions'] = [];
   const posts: WallPost[] = [];
   const bounds = shardPlotBounds(world.shard);
-  // 2026-08-19: grifters can now really move — the second action, alongside postToWall, that
-  // has somewhere to land. Role-holders' own `move` actions are still dropped: they remain
-  // pinned to their building, the harder half of "position decoupled from occupancy" this
-  // pass deliberately did not take on (see docs/HANDOVER.md).
+  const clamp = (x: number, y: number) => ({
+    x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
+    y: Math.max(bounds.minY, Math.min(bounds.maxY, y)),
+  });
+  // 2026-08-19: everyone can now really move. Grifters keyed by grifter id, role-holders by
+  // their slot's buildingId (which is what `participantsOf` uses as their playerId).
   const grifterMoves = new Map<string, { x: number; y: number }>();
+  const roleMoves = new Map<string, { x: number; y: number }>();
 
   for (const p of participantsOf(world)) {
     const strategy: DriverStrategy = assignDriverStrategy(world.seed, stablePlayerIndex(p.playerId));
@@ -199,13 +216,22 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
 
     if (action.type === 'postToWall') {
       posts.push({ id: `drv-${world.tick}-${posts.length}`, authorId: p.playerId, state: action.state, day: world.tick });
-    } else if (action.type === 'move' && p.role === 'gossip') {
-      grifterMoves.set(p.playerId, {
-        x: Math.max(bounds.minX, Math.min(bounds.maxX, action.toX)),
-        y: Math.max(bounds.minY, Math.min(bounds.maxY, action.toY)),
-      });
+    } else if (action.type === 'move') {
+      const to = clamp(action.toX, action.toY);
+      if (p.role === 'gossip') grifterMoves.set(p.playerId, to);
+      else roleMoves.set(p.playerId, to);
     }
   }
+
+  // Only FILLED slots ever produced a participant, so an entry here can never resurrect a
+  // position on an empty slot — a VACANT/BACKSTOPPED slot has nobody to move.
+  const moveRoleSlots = <T extends { buildingId: string; x: number; y: number }>(slots: T[]): T[] =>
+    roleMoves.size === 0
+      ? slots
+      : slots.map((s) => {
+          const moved = roleMoves.get(s.buildingId);
+          return moved ? { ...s, x: moved.x, y: moved.y } : s;
+        });
 
   // Only role-holders have a position in the proximity graph `stepWorld` propagates rumours
   // through, so a grifter's post is queued and consumed but reaches nobody. Kept rather than
@@ -219,6 +245,10 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
         const moved = grifterMoves.get(g.id);
         return moved ? { ...g, x: moved.x, y: moved.y } : g;
       }),
+      // Only miller/baker have a DriverRole at all (see the header's last note), so the four
+      // support roles are passed through untouched rather than mapped for nothing.
+      millers: moveRoleSlots(world.millers),
+      bakers: moveRoleSlots(world.bakers),
     },
     actions,
   };

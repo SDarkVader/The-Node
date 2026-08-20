@@ -96,6 +96,11 @@ const COLOUR_PLAIN: Rgb = [74, 64, 56];
  *  distinct from every other map hue: not on the heat ramp (they aren't a role, so "scarcity"
  *  doesn't apply to them), not the Wall's pale gold, not the plaza's ochre. */
 const COLOUR_GRIFTER: Rgb = [217, 201, 176];
+/** A role-holder standing somewhere other than their own building (2026-08-19). Warmer and
+ *  brighter than a grifter so a person WITH a role reads as the more legible figure, but
+ *  deliberately off the heat ramp: their station's heat is still being drawn at their
+ *  building, and drawing it twice would double-count the one signal that has to stay honest. */
+const COLOUR_AWAY: Rgb = [232, 168, 92];
 
 /**
  * AUTO-RANGING, and why it is on by default.
@@ -221,8 +226,12 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
     }
   }
   const buildingAt = new Map<string, string>();
+  const buildingPlotOf = new Map<string, { x: number; y: number }>();
   for (const d of world.shard.districts) {
-    for (const b of d.buildings) buildingAt.set(`${b.x},${b.y}`, b.id);
+    for (const b of d.buildings) {
+      buildingAt.set(`${b.x},${b.y}`, b.id);
+      buildingPlotOf.set(b.id, { x: b.x, y: b.y });
+    }
   }
   const plazaAt = new Set(world.shard.districts.map((d) => `${d.plazaPlot.x},${d.plazaPlot.y}`));
   const hubKey = `${world.shard.hubPlot.x},${world.shard.hubPlot.y}`;
@@ -235,6 +244,37 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
     const key = `${g.x},${g.y}`;
     grifterCountAt.set(key, (grifterCountAt.get(key) ?? 0) + 1);
   }
+
+  // 2026-08-19: a role-holder AWAY FROM their building — only possible since position was
+  // decoupled from occupancy. Their building keeps rendering as their building (the slot is
+  // still theirs whether or not they are standing in it); this draws the person themselves,
+  // in their role's own glyph, wherever they actually are. Same open-ground-only discipline
+  // as grifters: a person is never drawn over a building or the hub.
+  //
+  // REAL, ACCEPTED LIMITATION, observed in actual output rather than reasoned about: a person
+  // standing ON another building's cell is therefore not drawn at all — the structure wins.
+  // Measured at seed 7, day 60: 1 of 9 away-from-post role-holders was invisible this way.
+  // Kept deliberately, because the alternative (a person overdrawing a building) would make
+  // the settlement's fixed structure flicker, and structure is the thing this map is read for
+  // first. A real client with sub-cell placement doesn't have this problem; a character grid
+  // does. Worth remembering before treating the map as a headcount — it is not one.
+  const roleHolderAt = new Map<string, RoleGlyph>();
+  const addAway = (slots: readonly { buildingId: string; slot: { state: SlotState }; x: number; y: number }[], glyph: RoleGlyph) => {
+    for (const s of slots) {
+      if (s.slot.state !== 'FILLED') continue;
+      const b = buildings.get(s.buildingId);
+      const home = buildingPlotOf.get(s.buildingId);
+      if (!b || !home) continue;
+      if (s.x === home.x && s.y === home.y) continue; // at their post — the building already shows them
+      roleHolderAt.set(`${s.x},${s.y}`, glyph);
+    }
+  };
+  addAway(world.millers, 'M');
+  addAway(world.bakers, 'B');
+  addAway(world.couriers, 'C');
+  addAway(world.journalists, 'J');
+  addAway(world.detectives, 'D');
+  addAway(world.importExporters, 'X');
 
   const pad = ' '.repeat(CELL_WIDTH - 1);
   const lines: string[] = [];
@@ -260,6 +300,12 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
       } else if (buildingId) {
         glyph = '.'; // a real building with no role slot attached to it
         colour = COLOUR_PLAIN;
+      } else if (roleHolderAt.has(key)) {
+        // A role-holder out walking. Drawn in the role's own glyph so you can tell WHO is
+        // out and about, but in the away-from-post colour rather than a heat ramp — their
+        // heat belongs to their station, which is still rendering it back at the building.
+        glyph = roleHolderAt.get(key)!;
+        colour = COLOUR_AWAY;
       } else if (grifterCountAt.has(key)) {
         glyph = 'o';
         colour = grifterCountAt.get(key)! > 1 ? scaleRgb(COLOUR_GRIFTER, 1.3) : COLOUR_GRIFTER;
