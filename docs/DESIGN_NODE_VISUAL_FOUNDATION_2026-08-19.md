@@ -192,6 +192,27 @@ where "read the world, don't compute it" earns its keep.
 
 ---
 
+## 5b. The target render [REFERENCE, 2026-08-19]
+
+A generated reference image was shared to set direction, explicitly not as a build target for
+the current client. What it establishes, and what already holds in the shipped 2D client:
+
+| In the reference | Status |
+|---|---|
+| **The Wall as a golden monolith standing on a circular plaza**, casting light onto the ground around it | **Built** (2D): circular gold substrate, one cell, constant gold, with radiance carrying sentiment |
+| **Floating role icons above buildings and people** | **Built**: six procedural glyphs, on stations as a quiet corner sign and above people as a carried glyph |
+| **Emissive coloured light per region, blending between areas** | **Built**: additive glow layer, heat-driven, overlapping glows sum into regions |
+| **Smoke / haze plumes over a district under pressure** | **Not built.** §3's "atmosphere as an honest channel" note is the design; no particle layer exists |
+| **Isometric 3D, dense multi-storey architecture, streets with depth** | **Not built** — the current client is 2D top-down. Every building is 3 floors in data (§2), so the vertical dimension is real in the model and simply unrendered |
+| **Distinct district-scale colour identity (amber / cyan / magenta zones)** | **Not built.** Today colour is spent on heat and tension; per-district identity hue would be a new channel and needs checking against §3's "don't collapse two kinds of wrongness into one gradient" |
+
+The honest read: the *signal architecture* in the reference is already what the engine produces
+and the client draws. What is missing is dimensionality (isometric, height, streets) and two
+additional channels (atmospheric particles, district identity hue). Neither is blocked by the
+simulation — both are rendering work on data that already exists.
+
+---
+
 ## 6. Six standing constraints — bind any visual or UI design against these
 
 Not stylistic preferences — checked, load-bearing rules from earlier work. Any visual or UI
