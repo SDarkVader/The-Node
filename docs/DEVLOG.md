@@ -6,6 +6,58 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Re-checking the patch report's downstream claims, and finding one I'd caused
+
+User asked directly whether the placement bug was patched, whether the report's downstream
+effects are real, and whether its logic holds. Re-checking properly found a regression I had
+introduced and not noticed.
+
+**The one that mattered.** Centring the district makes `plazaPlot === hubPlot` — confirmed in
+**20 of 20 seeds**. The report identified this trap for *courier pay* and solved it with
+station-level routing. It did not notice the same collision hits **grifter placement**: the
+housing pass positioned every grifter at their district's plaza, so the entire roleless
+population (~40 people, roughly a third of everyone) ended up on the single hub cell. The
+renderer draws the hub before it draws people, so **all of them went invisible at once** — in
+the terminal renderer and in the brand-new Godot client alike.
+
+Worth being precise about blame: the pile-up predates the centring (every grifter always shared
+the plaza cell — 1 distinct position). Centring converted a cosmetic wart into a disappearance.
+
+Fixed by placing grifters on real plots via a deterministic hash of their own stable id into
+the district's plot list, hub cell excluded. Consumes nothing from `world.rng`, so no downstream
+trajectory shifts. Measured after: **0 on the hub, 28-35 distinct positions per seed**.
+Sabotage unchanged (42.9% / 29.0 days / min health 0.7913) — expected, since grifters are
+excluded from witness counts, which this incidentally re-confirms.
+
+Four tests asserted `position === plazaPlot` — they encoded the broken behaviour. Rewritten to
+assert the property that actually matters.
+
+**Other downstream claims, checked:**
+
+- **Building colliding with the Wall**: does not happen. 0 buildings on the hub cell across 20
+  seeds (the plaza lands there, buildings do not).
+- **`flourRatio` coherence** — the real hard filter (`<= 1.0`, with a documented three-strikes
+  history). Measured post-patch at the shipped single-district config, 8 seeds x 1200 days after
+  a 300-day burn-in: **0.468-0.503, mean 0.486. Passes comfortably.**
+- **Gini**: 0.6658 mean at 800 days (range 0.607-0.722).
+- **A correction to my own earlier claim**: I said the report's Gini 0.629 / flourRatio 0.616
+  "appear nowhere in this repo". They do — `BLUEPRINT.md`'s pop=100 role-split derivation, which
+  is where the shipped `M9 B9 C7 J7 D8 IE6` split came from. I was wrong to dismiss them. They
+  are still not the right comparison, but for a different and more specific reason: they were
+  measured at **6 districts**, and the shipped shard has one.
+- **The report's §5.3 GDScript note** ("wrap the incoming `dist` value inside `int()`") refers to
+  a field that does not exist in the wire protocol. There is no `dist` on the wire; route
+  distance is computed server-side and never transmitted. Harmless, but not actionable.
+
+**Verdict on the logic**: the core architecture holds and was the right call — station-level
+routing is what makes centring safe, and it is only possible because role slots gained `x`/`y`.
+The arithmetic and the code signatures did not survive contact, and the report's model of "what
+else reads `plazaPlot`" was incomplete.
+
+693 tests, typecheck clean.
+
+---
+
 ## 2026-08-19 — A Godot client that renders the real settlement (unverified visually)
 
 The last item in THE DIRECTION. `client/scripts/WorldView.gd` consumes `hello` + `tick` and
