@@ -71,7 +71,7 @@ const ROLE_COLOUR := {
 ## street level against domestic storeys above), but the town is lower and people are larger
 ## than a photograph would have them.
 const FLOOR_HEIGHT := 0.30
-const BUILDING_FOOTPRINT := 0.70
+const BUILDING_FOOTPRINT := 0.56
 ## Small on purpose. Visibility comes from the rim light and the floating glyph, not from
 ## bulk — an earlier pass made people large enough to read and they promptly buried the town.
 const PERSON_HEIGHT := 0.42
@@ -81,7 +81,7 @@ const ICON_WORLD_SIZE := 0.62
 const ICON_TEX_PX := 40
 ## How many of the hottest stations get a real OmniLight3D. Every station is emissive, but real
 ## lights are the expensive part, so only the ones actually carrying signal get one.
-const MAX_STATION_LIGHTS := 14
+const MAX_STATION_LIGHTS := 22
 
 ## BUILDING VARIETY — and the line between signal and texture (2026-08-19).
 ##
@@ -128,6 +128,14 @@ var mean_tension := 0.0
 var _ground_mm: MultiMeshInstance3D
 var _plot_is_plaza: Array[bool] = []
 var _plot_shade: Array[float] = []
+var _plot_pos: Array[Vector2] = []
+var _plot_local: Array[Color] = []
+var _plot_local_w: Array[float] = []
+var _occupied: Dictionary = {}
+var _building_at: Dictionary = {}
+var _building_by_id: Dictionary = {}
+var _route_mm: MultiMeshInstance3D
+var _logged_routes := false
 var _building_mm: MultiMeshInstance3D
 var _people_mm: MultiMeshInstance3D
 var _people_ghost: MultiMeshInstance3D
@@ -145,6 +153,7 @@ var _env: Environment
 func _ready() -> void:
 	_shot_path = OS.get_environment("NODE_SHOT")
 	_build_environment()
+	_build_vignette()
 	var err := socket.connect_to_url("%s/" % SERVER_HOST)
 	if err != OK:
 		hud.text = "Failed to start connection (error %d)" % err
@@ -191,6 +200,21 @@ func _build_environment() -> void:
 	we.environment = _env
 	add_child(we)
 
+	# THE TOWN SITS ON SOMETHING. Without this the settlement reads as a slab floating in a
+	# void — the plots simply stop and there is nothing beyond them. A large, very dark ground
+	# plane extending well past the built area gives the place an outside: land the town was
+	# built on, unlit and empty, which is also what is actually out there.
+	var outside := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(140.0, 140.0)
+	outside.mesh = pm
+	outside.position = Vector3(hub.x, -0.14, hub.y)
+	var omat := StandardMaterial3D.new()
+	omat.albedo_color = Color8(22, 19, 17)
+	omat.roughness = 1.0
+	outside.material_override = omat
+	add_child(outside)
+
 	# Low, raking key light. Deliberately dim: this is a town at dusk lit mostly by its own
 	# windows, so the sun's job is to keep silhouettes readable, not to light the scene.
 	var sun := DirectionalLight3D.new()
@@ -198,6 +222,33 @@ func _build_environment() -> void:
 	sun.light_energy = 0.62
 	sun.light_color = Color8(150, 150, 180)
 	add_child(sun)
+
+
+## Vignette. Darkens the frame toward its edges so the eye settles on the settlement and the
+## surrounding land falls away into night, rather than the whole image reading as one flat
+## field with a town dropped in the middle of it.
+func _build_vignette() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 0
+	var rect := ColorRect.new()
+	rect.anchor_right = 1.0
+	rect.anchor_bottom = 1.0
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = SCREEN_UV - vec2(0.5);
+	float d = length(uv * vec2(1.0, 0.86));
+	float v = smoothstep(0.30, 0.80, d);
+	COLOR = vec4(0.016, 0.013, 0.011, v * 0.94);
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	rect.material = mat
+	layer.add_child(rect)
+	add_child(layer)
 
 
 func _process(_delta: float) -> void:
@@ -314,6 +365,7 @@ func _build_static_geometry() -> void:
 	_build_ground()
 	_build_buildings()
 	_build_wall()
+	_build_routes()
 	_build_people_pool()
 
 
@@ -323,6 +375,9 @@ func _build_static_geometry() -> void:
 func _build_ground() -> void:
 	_plot_is_plaza.clear()
 	_plot_shade.clear()
+	_plot_pos.clear()
+	_plot_local.clear()
+	_plot_local_w.clear()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
@@ -336,6 +391,9 @@ func _build_ground() -> void:
 		mm.set_instance_transform(i, Transform3D(Basis(), Vector3(float(p["x"]), -0.06, float(p["y"]))))
 		_plot_is_plaza.append(is_plaza)
 		_plot_shade.append(_hash01("%d,%d" % [int(p["x"]), int(p["y"])], 7))
+		_plot_pos.append(Vector2(float(p["x"]), float(p["y"])))
+		_plot_local.append(Color.BLACK)
+		_plot_local_w.append(0.0)
 		mm.set_instance_color(i, COLOUR_STREET)
 	_ground_mm = MultiMeshInstance3D.new()
 	_ground_mm.multimesh = mm
@@ -376,14 +434,18 @@ func _build_buildings() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	# Unit cube: per-instance SCALE is what gives each building its own dimensions, so one mesh
+	# still serves the whole settlement in a single draw call.
 	var bm := BoxMesh.new()
-	bm.size = Vector3(BUILDING_FOOTPRINT, FLOOR_HEIGHT * 3.0, BUILDING_FOOTPRINT)
+	bm.size = Vector3.ONE
 	mm.mesh = bm
 	mm.instance_count = buildings.size()
 	for i in buildings.size():
 		var b = buildings[i]
-		mm.set_instance_transform(i, Transform3D(Basis(),
-			Vector3(float(b["x"]), FLOOR_HEIGHT * 1.5, float(b["y"]))))
+		# Position lookups, built here because this is the one place every building is walked.
+		_building_at["%d,%d" % [int(round(float(b["x"]))), int(round(float(b["y"])))]] = b["id"]
+		_building_by_id[b["id"]] = b
+		mm.set_instance_transform(i, _building_transform(b))
 		mm.set_instance_color(i, Color(COLOUR_PLAIN, 0.0))
 	_building_mm = MultiMeshInstance3D.new()
 	_building_mm.multimesh = mm
@@ -412,7 +474,7 @@ func _build_buildings() -> void:
 	sh.code = """
 shader_type spatial;
 render_mode cull_back, diffuse_burley;
-uniform float emit_gain = 2.8;
+uniform float emit_gain = 3.6;
 uniform vec3 ground_tint = vec3(1.05, 0.72, 0.42);
 uniform vec3 upper_tint = vec3(0.44, 0.56, 0.80);
 uniform float floor_height = 0.30;
@@ -432,13 +494,13 @@ void fragment() {
 	// ends are the anchors; the mixing between them is what the eye should land on, and it is
 	// also the honest picture: a building is not economic downstairs and domestic upstairs
 	// with a line ruled between, the one bleeds into the other.
-	float up = smoothstep(0.25, 2.55, floors);
+	float up = smoothstep(0.65, 2.9, floors);
 	ALBEDO = COLOR.rgb * mix(ground_tint, upper_tint, up);
 	ROUGHNESS = 0.85;
 
 	// Heat is emitted at street level and fades upward — economic activity lights its own
 	// doorway and the cobbles in front of it, never the bedrooms above.
-	float heat_falloff = 1.0 - smoothstep(0.1, 1.9, floors);
+	float heat_falloff = 1.0 - smoothstep(0.35, 2.3, floors);
 	vec3 emit = COLOR.rgb * COLOR.a * emit_gain * heat_falloff;
 
 	// The mixing band gets its own lift: a soft peak where warm and cool actually meet, tinted
@@ -493,6 +555,10 @@ func _building_transform(b: Dictionary) -> Transform3D:
 	return Transform3D(basis, Vector3(float(b["x"]), height * 0.5, float(b["y"])))
 
 
+func _roof_height(b: Dictionary) -> float:
+	return _building_transform(b).origin.y * 2.0 + 0.34
+
+
 func _build_wall() -> void:
 	_wall_root = Node3D.new()
 	_wall_root.position = Vector3(hub.x, 0.0, hub.y)
@@ -516,7 +582,9 @@ func _build_wall() -> void:
 	_wall_slab = MeshInstance3D.new()
 	_wall_slab.mesh = slab
 	_wall_slab.position = Vector3(0, 0.95, 0)
-	_wall_slab.rotation_degrees = Vector3(0, 45.0, 0)
+	# Turned to sit square with the isometric view rather than to the world grid — from the
+	# camera's angle the slab now presents its face instead of an edge.
+	_wall_slab.rotation_degrees = Vector3(0, 90.0, 0)
 	var smat := StandardMaterial3D.new()
 	smat.albedo_color = COLOUR_WALL
 	smat.emission_enabled = true
@@ -530,6 +598,77 @@ func _build_wall() -> void:
 	_wall_light.omni_range = 7.5
 	_wall_light.light_energy = 3.2
 	_wall_root.add_child(_wall_light)
+
+
+## COURIER ROUTES — real economic geometry, not decoration.
+##
+## `courierPay.ts` pays a Courier for the Manhattan distance from their own station to the
+## shard hub, so this line IS the thing being paid for: the corridor they walk every day and
+## earn from. Drawn as a flat ribbon on the stones rather than a floating line, because it is
+## a route through the town, not a link on a diagram.
+##
+## Gated on OCCUPANCY: a route exists because somebody runs it. An unstaffed Courier post has
+## no line, which is the same rule the station glow follows — activity requires someone doing
+## it.
+func _build_routes() -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	var bm := BoxMesh.new()
+	bm.size = Vector3(1.0, 0.02, 0.30)
+	mm.mesh = bm
+	mm.instance_count = 0
+	_route_mm = MultiMeshInstance3D.new()
+	_route_mm.multimesh = mm
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, cull_disabled, depth_draw_never;
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	ALPHA = COLOR.a;
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	_route_mm.material_override = mat
+	add_child(_route_mm)
+
+
+func _update_routes() -> void:
+	var routes: Array = []
+	for b in buildings:
+		if b.get("role") != "courier":
+			continue
+		if not _occupied.has(b["id"]):
+			continue
+		routes.append(b)
+
+	var mm := _route_mm.multimesh
+	mm.instance_count = routes.size()
+	if not _logged_routes:
+		_logged_routes = true
+		var courier_posts := 0
+		for b in buildings:
+			if b.get("role") == "courier":
+				courier_posts += 1
+		print("[NODE] courier routes: %d of %d posts staffed" % [routes.size(), courier_posts])
+	var hub3 := Vector3(hub.x, 0.09, hub.y)
+	var col: Color = ROLE_COLOUR["courier"]
+	for i in routes.size():
+		var b = routes[i]
+		var from := Vector3(float(b["x"]), 0.09, float(b["y"]))
+		var to := hub3
+		var mid := (from + to) * 0.5
+		var d := to - from
+		var len := d.length()
+		if len < 0.001:
+			mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(0.01, 1, 1)), mid))
+			continue
+		var yaw := atan2(d.z, d.x)
+		var basis := Basis(Vector3.UP, -yaw).scaled(Vector3(len, 1.0, 1.0))
+		mm.set_instance_transform(i, Transform3D(basis, mid))
+		mm.set_instance_color(i, Color(col.lightened(0.25), 1.0))
 
 
 func _build_people_pool() -> void:
@@ -602,9 +741,25 @@ func _update_dynamic() -> void:
 	if _shot_path != "" and _frames == 3:
 		call_deferred("_capture")
 
-	# Emotional weather sets the ambient light the whole town sits in — the 3D equivalent of
-	# the 2D ground wash, and a better one: it tints everything, including the undersides and
-	# shadowed faces, rather than being a layer behind the scene.
+	# ---- OCCUPANCY, FIRST ------------------------------------------------------------------
+	# A role-holder standing at their own station is INSIDE it, working — not hovering on the
+	# step outside. So they are not drawn as a figure in the street: their presence is what
+	# makes the building glow, and their glyph hangs above the roof like the sign over a door.
+	# Only people actually out in the open get a body.
+	#
+	# Computed FIRST, before anything reads it. It was originally worked out further down,
+	# after the station glow and the courier routes had already used it — so routes saw an
+	# empty map and drew nothing at all, and the glow ran a tick behind. Occupancy is the first
+	# thing established each tick, because nearly everything else is a consequence of it.
+	_occupied.clear()
+	var street_people: Array = []
+	for pp in people:
+		var key := "%d,%d" % [int(round(float(pp["x"]))), int(round(float(pp["y"])))]
+		if pp.get("role") != null and _building_at.has(key):
+			_occupied[_building_at[key]] = pp
+		else:
+			street_people.append(pp)
+
 	# Emotional weather rides on AMBIENT LIGHT only — it tints every surface in the town,
 	# including shadowed faces, which is the 3D equivalent of the 2D ground wash and a truer
 	# one. It deliberately does NOT tint the background: the first version did, and since glow
@@ -626,6 +781,13 @@ func _update_dynamic() -> void:
 			continue
 		var heat: float = clampf(float(st["heat"]) / HEAT_OBSERVED_MAX, 0.0, 1.0)
 		var brightness: float = float(STATE_BRIGHTNESS.get(st["state"], 1.0))
+		# Activity requires somebody doing it. An occupied station carries a floor of warmth
+		# even on a quiet day — someone is in there with the lights on — while an unoccupied
+		# one cannot glow no matter what its heat value says.
+		if _occupied.has(b["id"]):
+			heat = maxf(heat, 0.46)
+		else:
+			heat *= 0.16
 		# Albedo stays a real, lit surface at every heat level — the building is always there.
 		# Alpha carries heat, and drives emission alone.
 		var col: Color = COLOUR_PLAIN.lerp(HEAT_HOT, heat * 0.75)
@@ -639,26 +801,24 @@ func _update_dynamic() -> void:
 		if k < ranked.size() and ranked[k]["heat"] > 0.08:
 			l.position = ranked[k]["pos"]
 			l.light_color = HEAT_COOL.lerp(HEAT_HOT, ranked[k]["heat"])
-			l.light_energy = 1.2 + 3.4 * ranked[k]["heat"]
+			l.light_energy = 1.6 + 4.2 * ranked[k]["heat"]
 		else:
 			l.light_energy = 0.0
+
+	_update_routes()
 
 	# The Wall: substrate constant, radiance carries sentiment.
 	var soul := _soul_colour(economic_health)
 	_wall_light.light_color = soul
 	_wall_light.light_energy = 3.2
 
-	# People.
+	# People out in the open.
 	var pmm := _people_mm.multimesh
-	pmm.instance_count = people.size()
-	for i in people.size():
-		var p = people[i]
+	pmm.instance_count = street_people.size()
+	for i in street_people.size():
+		var p = street_people[i]
 		var role = p.get("role")
-		# Offset toward the camera so a role-holder stands at their door rather than inside the
-		# building mesh. In the flat view people simply drew on top; in 3D, standing at your
-		# station means being occluded by it, and 60 of 63 people vanished. A person at their
-		# post belongs on the step outside it, which is also just truer to a town.
-		var off := Vector3(0.52, 0.0, 0.52) if (role != null and ROLE_COLOUR.has(role)) else Vector3.ZERO
+		var off := Vector3.ZERO
 		pmm.set_instance_transform(i, Transform3D(Basis(),
 			Vector3(float(p["x"]), PERSON_HEIGHT * 0.5 + 0.06, float(p["y"])) + off))
 		# Role-specific colour, the same six hues the 2D view and the station signs use. A
@@ -668,7 +828,62 @@ func _update_dynamic() -> void:
 		var pc: Color = ROLE_COLOUR[role] if (role != null and ROLE_COLOUR.has(role)) else COLOUR_GRIFTER
 		pmm.set_instance_color(i, pc)
 		_place_icon(i, Vector3(float(p["x"]), 0.0, float(p["y"])) + off, role, pc)
-	_hide_icons_from(people.size())
+
+	# A working occupant's glyph rides above their ROOF — the sign over the door, telling you
+	# who is in there without drawing a body you could not see anyway.
+	var n := street_people.size()
+	for bid in _occupied:
+		var occ = _occupied[bid]
+		var b = _building_by_id.get(bid)
+		if b == null:
+			continue
+		var rc: Color = ROLE_COLOUR.get(occ.get("role"), COLOUR_GRIFTER)
+		_place_icon(n, Vector3(float(b["x"]), _roof_height(b), float(b["y"])), occ.get("role"), rc)
+		n += 1
+	_hide_icons_from(n)
+
+
+## Gathers each station's contribution onto the plots near it. Falls off with distance, so a
+## busy Bakery warms its own street and not the whole quarter.
+const LOCAL_REACH := 2.3
+const BACKSTOP_TONE := Color8(150, 152, 156)
+
+func _accumulate_local_weather() -> void:
+	for i in _plot_local.size():
+		_plot_local[i] = Color.BLACK
+		_plot_local_w[i] = 0.0
+
+	for b in buildings:
+		var st = stations.get(b["id"])
+		if st == null:
+			continue
+		var state := str(st["state"])
+		var tone: Color
+		var strength: float
+		if state == "BACKSTOPPED":
+			tone = BACKSTOP_TONE
+			strength = 0.42
+		elif state == "VACANT" or not _occupied.has(b["id"]):
+			tone = TENSION_COLD
+			strength = 0.38
+		else:
+			var heat: float = clampf(float(st["heat"]) / HEAT_OBSERVED_MAX, 0.0, 1.0)
+			tone = HEAT_HOT
+			strength = 0.34 + 0.5 * heat
+
+		var bp := Vector2(float(b["x"]), float(b["y"]))
+		for i in _plot_pos.size():
+			var d: float = bp.distance_to(_plot_pos[i])
+			if d > LOCAL_REACH:
+				continue
+			var f: float = (1.0 - d / LOCAL_REACH)
+			f = f * f * strength
+			var prev_w: float = _plot_local_w[i]
+			var nw: float = prev_w + f
+			if nw <= 0.0:
+				continue
+			_plot_local[i] = _plot_local[i].lerp(tone, f / nw)
+			_plot_local_w[i] = nw
 
 
 func _unhandled_input(event: InputEvent) -> void:
