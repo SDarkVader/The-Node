@@ -6,6 +6,46 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — The Wall becomes a monument, and roles become icons
+
+User: *"work on the wall, make it a golden line horizontally in the centre... and let it radiate
+naturally into the plaza. make those in the plaza visible with role icons instead of just B for
+baker. give it character"* — then, seeing the first attempt: *"at 45 degrees, and not across the
+entire map lol"*, and *"including other players, replace the roles with icons"*.
+
+**The Wall.** Was a pale square, which made the shard's only landmark read as another building
+that happened to be brighter. Now a short golden bar at 45 degrees, centred on the hub,
+radiating into the plaza. The angle turned out not to be a choice at all: plots generate as a
+**diamond** (a radius-7 Manhattan ball around the hub), so 45 degrees runs with the grain of the
+settlement rather than cutting across it — the first horizontal attempt bisected the whole map
+and looked like a partition, which is exactly what a civic monument is not. Radiance is the
+shared falloff texture stretched long and thin inside the Wall's own rotated frame, so light
+spills perpendicular off a long edge rather than reading as a round lamp. Still hue-only for
+shard health — it never dims, thins or breaks.
+
+**Roles are icons now, everywhere.** Six glyphs drawn procedurally in GDScript rather than
+shipped as art, so the client stays self-contained with no import step: windmill, loaf, parcel,
+page, magnifier, two passing arrows. They mean the job rather than spelling its initial — a
+letter is a label, a shape is an identity. A station wears its glyph small and quiet in the
+upper-left like a shop sign (a building's role never changes, so it yields to the people moving
+in front of it); a player carries the same glyph floating above them. That is the visual
+foundation brief's §4 "floating diegetic role-glyph" actually built, and it means a Bakery and a
+Baker read as the same thing.
+
+**One iteration worth recording, because it was a real mistake with a real principle behind
+it.** The first version gave every person a dark backing plate behind their glyph, to keep it
+readable over a blazing station. Grifters have no glyph — so roughly a third of the population
+rendered as black blobs with a speck in them. The least powerful people on the map had become
+the ugliest thing on it, which is precisely the failure mode constraint 6 exists to prevent,
+arriving through the back door as a rendering decision rather than a mechanic. A roleless player
+now gets a clean pale mark at the same size and brightness as anyone else. Worth stating plainly
+for future visual work: **constraint 6's floor has a visual form** — never buried, never harder
+to see than anyone else — and it is as easy to breach with a draw call as with a rule.
+
+Verified by screenshot at each step under Godot 4.3. 693 tests, typecheck clean.
+
+---
+
 ## 2026-08-19 — Godot installed, client verified, then pushed on what looking at it revealed
 
 User: *"let's test it's gonna run through godot before it fails by assumption."* Right call.
