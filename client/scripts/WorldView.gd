@@ -74,11 +74,31 @@ const PERSON_RADIUS := 6.0
 ## settlement's own: plots are generated as a DIAMOND (a radius-7 Manhattan ball), so its edges
 ## run at 45 degrees and the Wall sits parallel to them rather than cutting across the grain.
 ## Deliberately short — it is a monument in the plaza, not a partition across the map.
-const WALL_SPAN_CELLS := 4.5
-const WALL_ANGLE := PI * 0.25
-const WALL_THICKNESS := 9.0
-const WALL_GLOW_CELLS := 4.2
-const WALL_GLOW_ALPHA := 0.62
+## The Wall occupies ONE CELL — its own. The bar spans 3/4 of that cell, centred, so it keeps
+## clear space either side rather than touching the neighbouring ground.
+const WALL_SPAN_CELLS := 0.75
+## Rotated 90 degrees off the diamond's grain (was PI*0.25). It now runs across the diagonal
+## the settlement's plots follow, so the monument reads as set INTO the town rather than
+## aligned with it.
+const WALL_ANGLE := PI * 0.75
+## The circular substrate the bar stands on, as a fraction of a cell.
+const WALL_BASE_RADIUS_CELLS := 0.40
+
+## SENTIMENT ANCHORS — measured, not guessed (6392 samples, 8 seeds x 800 days after burn-in).
+## Real `economicHealth` runs min 0.804 / p05 0.857 / median 0.909 / p95 0.948 / max 0.987.
+## The first mapping ramped to full red below 0.70, a range the shard never actually enters, so
+## the Wall sat permanently gold and its sentiment channel said nothing — the same mistake the
+## tension ramp made against its own 0.25 ceiling. Anchored on the real band, the Wall now
+## genuinely swings across its range in ordinary play.
+const HEALTH_WELL := 0.948
+const HEALTH_MEDIAN := 0.909
+const HEALTH_ILL := 0.857
+const SOUL_WELL := Color8(255, 214, 138)
+const SOUL_MEDIAN := Color8(232, 150, 74)
+const SOUL_ILL := Color8(206, 58, 40)
+const WALL_THICKNESS := 7.0
+const WALL_GLOW_CELLS := 4.6
+const WALL_GLOW_ALPHA := 0.78
 ## Floating role glyph carried by a PERSON — the one that has to be readable across the plaza.
 const ICON_SIZE := 21.0
 ## The same glyph as a station's shopfront sign: smaller and quieter, because a building's role
@@ -347,45 +367,68 @@ func _draw_person(p: Dictionary) -> void:
 
 ## THE WALL — a golden line through the middle of the town, not a block (2026-08-19).
 ##
-## It used to be a pale square, which made the shard's one landmark read as just another
-## building that happened to be brighter. As a short golden bar at 45 degrees it is
-## unmistakably civic — it belongs to nobody, and you cannot mistake it for somewhere a person
-## works. The angle is the settlement's own rather than a choice: plots generate as a DIAMOND
-## (a radius-7 Manhattan ball centred on the hub), so 45 degrees runs with the grain of the
-## town instead of against it.
+## SUBSTRATE IS HOPE; RADIANCE IS SENTIMENT. The two are deliberately separated (2026-08-19,
+## user direction). A circular gold base and its bar occupy the hub's own single cell and never
+## change colour — that is what the node is FOR, and it is structural. The heat map radiating
+## off it carries how the node is doing RIGHT NOW: gold when well, red when not. A shard in
+## crisis therefore shows a red glow around an unchanged gold monument, rather than a monument
+## that has itself gone red. Hope does not degrade with the weather.
 ##
-## THE EMISSIVE SOUL rides on it (specified in VISUAL_FRAMEWORK_2026-08-12.md, built 2026-08-19):
-## gold when the node is healthy, red when it is not. [STAND-IN, flagged]: the spec names
+## [STAND-IN, flagged]: the sentiment spec (VISUAL_FRAMEWORK_2026-08-12.md) names
 ## `soulTemperature`, which nothing in the engine computes; this uses `economicHealth`, which is
 ## real and already on the wire. One line to repoint if soulTemperature is ever built.
 ##
-## HUE ONLY, NEVER BRIGHTNESS. The Wall does not dim, thin, crack or break as the shard
-## declines — that is the doctrine's clearest single case. A node in crisis gets a red Wall.
+## ONE CELL OF VOLUME. The physical monument stays inside the cell it occupies, at 3/4 of a
+## cell wide so it keeps clear space either side. Only its LIGHT crosses into the plaza —
+## radiance is not volume.
+##
+## NEVER DIMS. The Wall does not darken, thin, crack or break as the shard declines. That is
+## the doctrine's clearest single case, and the substrate/radiance split makes it structural
+## rather than a rule to remember.
+## Diverging gold <- amber -> red across the health band the shard really occupies. Same shape
+## and the same reasoning as `_tension_colour`: spend the visual range where the data lives.
+func _soul_colour(health: float) -> Color:
+	if health >= HEALTH_MEDIAN:
+		var t := clampf((health - HEALTH_MEDIAN) / (HEALTH_WELL - HEALTH_MEDIAN), 0.0, 1.0)
+		return SOUL_MEDIAN.lerp(SOUL_WELL, t)
+	var t2 := clampf((HEALTH_MEDIAN - health) / (HEALTH_MEDIAN - HEALTH_ILL), 0.0, 1.0)
+	return SOUL_MEDIAN.lerp(SOUL_ILL, t2)
+
+
 func _draw_wall() -> void:
-	var soul: float = clampf((0.95 - economic_health) / 0.25, 0.0, 1.0)
-	var soul_col: Color = COLOUR_WALL.lerp(Color8(214, 84, 54), soul)
-
 	var centre := _world_to_px(hub.x, hub.y)
-	var half_w: float = WALL_SPAN_CELLS * 0.5 * CELL
+	var soul_col: Color = _soul_colour(economic_health)
 
-	# Everything below is drawn in the Wall's own rotated frame, so the radiance spreads
-	# perpendicular to the line rather than along the screen axes.
+	# ---- Radiance: the sentiment ------------------------------------------------------
+	# The heat map around the Wall is what carries the node's mood — gold when it is well,
+	# red when it is not. Drawn FIRST and beneath, so the substrate sits inside its own light
+	# rather than being tinted by it. Radiance is light, not volume: it is the one part of the
+	# Wall allowed past its own cell, spilling into the plaza around it.
 	draw_set_transform(centre, WALL_ANGLE, Vector2.ONE)
-
-	# Radiance first, under the line: the falloff texture stretched long and thin, so light
-	# spills off a long edge into the plaza instead of reading as a round lamp. Three passes of
-	# decreasing alpha and increasing spread give a soft gradient without needing a shader.
+	var half_w: float = WALL_SPAN_CELLS * 0.5 * CELL
 	for i in 3:
 		var spread: float = WALL_GLOW_CELLS * CELL * (0.4 + 0.6 * float(i))
-		var w: float = half_w * 2.0 + spread * 0.8
-		var glow: Color = Color(soul_col, WALL_GLOW_ALPHA / float(i + 1))
-		draw_texture_rect(_falloff, Rect2(Vector2(-w * 0.5, -spread * 0.5), Vector2(w, spread)), false, glow)
+		var w: float = half_w * 2.0 + spread * 0.9
+		draw_texture_rect(_falloff, Rect2(Vector2(-w * 0.5, -spread * 0.5), Vector2(w, spread)),
+			false, Color(soul_col, WALL_GLOW_ALPHA / float(i + 1)))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	# The line: a warm base with a brighter core, so it has depth rather than reading flat.
-	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.5), Vector2(half_w * 2.0, WALL_THICKNESS)), soul_col, true)
-	var core_col: Color = soul_col.lerp(Color(1.0, 0.97, 0.90), 0.55)
-	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.18), Vector2(half_w * 2.0, WALL_THICKNESS * 0.36)), core_col, true)
+	# ---- Substrate: the hope -----------------------------------------------------------
+	# CONSTANT GOLD, never tinted by health. This is the split that matters: the base is what
+	# the node is FOR and does not change with how it is doing, while the light coming off it
+	# is how it is doing right now. A shard in crisis has a red glow around an unchanged gold
+	# monument — the hope is structural, the sentiment is weather.
+	var base_r: float = WALL_BASE_RADIUS_CELLS * CELL
+	draw_circle(centre, base_r, Color(COLOUR_WALL, 0.22))
+	draw_circle(centre, base_r * 0.72, COLOUR_WALL)
 
+	# The bar itself, standing on the substrate, also constant gold.
+	draw_set_transform(centre, WALL_ANGLE, Vector2.ONE)
+	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.5), Vector2(half_w * 2.0, WALL_THICKNESS)),
+		COLOUR_WALL, true)
+	var core_col: Color = COLOUR_WALL.lerp(Color(1.0, 0.98, 0.92), 0.6)
+	draw_rect(Rect2(Vector2(-half_w, -WALL_THICKNESS * 0.18), Vector2(half_w * 2.0, WALL_THICKNESS * 0.36)),
+		core_col, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

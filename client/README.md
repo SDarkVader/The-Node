@@ -77,7 +77,8 @@ that; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LE
 | Warm dot under a floating icon | A role-holder |
 | Plain pale dot, no glyph | A roleless player (grifter). No glyph because they hold no role — but the same size and brightness as anyone else. |
 | Soft ground field: **blue → Ember → red** | District tension. Diverging, not a ramp — cold blue when unusually calm, Ember at the normal state, red when tense. |
-| Short golden bar at 45°, centre | **The Wall** — a monument in the plaza, not a partition. Its angle is the settlement's own: plots generate as a diamond, so 45° runs with the grain. Radiates into the plaza. Gold when healthy, red when not; it never dims, thins or breaks. |
+| Gold disc + bar, one cell, centre | **The Wall.** Circular substrate with a bar across it, occupying only its own cell at 3/4 of a cell wide. The gold **never changes** — that is the hope, and it is structural. |
+| The halo around it, gold → amber → red | **The Wall's sentiment.** The radiance, not the monument, carries how the node is doing. A shard in crisis shows a red glow around an unchanged gold Wall. Anchored on measured health: p05 0.857 / median 0.909 / p95 0.948. |
 | Small icon in a station's top-left | That building's **role**, hung like a shop sign — quiet, because a building's role never changes. |
 | Icon floating above a person | That player's **role**, carried with them. Same glyph as their station, so a Bakery and a Baker read as the same thing. |
 
