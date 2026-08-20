@@ -6,6 +6,40 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Consolidated visual-foundation brief, for taking outside the repo
+
+User asked for one document representing NODE's current state as a foundation for external
+visual design work ("I'll take it to CO design where I can work on elements and specific
+details. Just need the current brief to set the visual foundation"). Wrote
+`docs/DESIGN_NODE_VISUAL_FOUNDATION_2026-08-19.md`: what NODE is, real settlement geometry
+(with the open Wall/hub-placement bug flagged so visual work isn't built on a coordinate
+about to move), the full shipped data-to-visual mapping table plus the realized Ember
+palette and its dynamic-range caveat, an honest audit of role verb differentiation (only
+Miller and Baker have one today), the still-unbuilt heat/memory/consequence synthesis from
+this session's design conversation, and the six standing constraints as binding on any
+visual work. Every claim tagged [SHIPPED]/[PROPOSED]/[OPEN] so the doc stays honest once it
+leaves the repo and the code can't correct a wrong assumption anymore.
+
+User then shared four reference images (a courier with a floating package glyph at a gated
+wall; two figures with floating gear/book glyphs outside a bakery; two "Gemini notebook"
+mockup panels — "The Grinding Windmill" and "The Closed Alleyway" — captioned with smoke/haze
+tied to `economicHealth()`/`tensionCount`, and a stealth scene captioned "total absence of
+copper"). Asked to confirm understanding before folding anything in. Two real additions,
+both consistent with the doc's existing doctrine rather than contradicting it: (1) floating
+diegetic role-glyphs as the concrete mechanism for surfacing a player's *current real verb*
+(package only while a Courier is mid-transit, not a permanent per-role badge); (2) copper
+specifically as the signature of the *legal, witnessed* state, with its total absence (not
+dimming — a hard switch to desaturated blue-black) marking the illicit/covert state, kept as
+its own channel separate from the existing tension/heat economic-strain ramp. Also generalized
+"colour is the only honest variable" to atmosphere (smoke/haze) as another channel bound to a
+real variable, not scene-dressing. Folded both into §3 and §4 of the brief.
+
+Not yet done: handing the file to the user (next step), then resuming the role-by-role
+design pass (Journalist and Import/Export not yet covered) or the Godot dependency chain
+(role-holder position decoupling, deliberately deferred).
+
+---
+
 ## 2026-08-19 — Grifters move and render: the playtest harness now shows the missing third
 
 Stage 2 of the "position decoupled from occupancy" work. `playtestDrivers.ts` now applies
