@@ -78,10 +78,31 @@ serialization detail:
 Verified standalone on a real port, not only under vitest: 62 buildings, 87 plots, hub (0,0),
 **95 people per tick** — role-holders and grifters both. 688 tests, typecheck clean.
 
-**NEXT: Godot.** Everything it was waiting on now exists — people have positions, grifters are
-real, and the server streams a live world in a format built for a client. `client/` still holds
-the Phase 3 scaffold that speaks the old MVP protocol; it needs to consume `hello` + `tick`
-instead. That is the last item in THE DIRECTION.
+**THE DIRECTION IS COMPLETE — the Godot client renders the real settlement** (`2d448e0`).
+`client/scripts/WorldView.gd` + `scenes/WorldView.tscn` (now the main scene) consume `hello` +
+`tick`: plots, stations coloured by real economic heat, people, the Wall, tension as a
+background wash, drag-to-pan and wheel-zoom. Ember palette copied from `playtestRenderer.ts`,
+not reinvented. **Setup instructions for PC are in `client/README.md`** — Godot 4.3+ standard
+build (not Mono), `npm run server`, import `client/project.godot`, F5.
+
+**READ THIS BEFORE TRUSTING IT: Godot is not installed in the dev environment, so the client
+has never been visually verified.** The protocol contract is checked automatically
+(`test/clientProtocolConformance.test.ts`, itself mutation-tested), so it will not fail on a
+typo'd field name — but whether the town is *legible* is genuinely unknown. Expect to tune
+`CELL`, `BUILDING_SIZE`, and especially the per-role palette, which is a **first proposal chosen
+in the client**, not derived from anything in the engine. No per-role hue exists in code.
+
+**Immediate next candidates**, in rough order of payoff:
+1. **Look at it and tune it** — the one thing no test here can do.
+2. **Move role-holders in the SHIPPED world.** They currently sit at their stations unless the
+   sim-side driver applier moves them, so the client mostly shows a static town. This needs the
+   witness-count re-measurement (see the movement note above) — though the geometry change
+   suggests that coupling is weaker than feared.
+3. **A player avatar.** "I need to be inside the place" is still not literally true — you watch
+   the town, you are not in it.
+4. **Wire `identityResolved`.** Built and tested, no sender; needs per-connection observer state
+   and a real answer to "which player is this connection" (`player.ts` still defers it). Until
+   then every body stays a silhouette.
 
 **Known gaps, deliberately left**: `identityResolvedMessages` is built and tested but nothing
 calls it — wiring it needs per-connection observer state and a real answer to "which player is

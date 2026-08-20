@@ -6,6 +6,51 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — A Godot client that renders the real settlement (unverified visually)
+
+The last item in THE DIRECTION. `client/scripts/WorldView.gd` consumes `hello` + `tick` and
+draws the town: plots, stations coloured by heat, people, the Wall, district tension as a
+background wash. Drag to pan, wheel to zoom.
+
+**The palette is copied, not reinvented.** Every colour is the shipped Ember value from
+`playtestRenderer.ts`, and the conformance test asserts they match — two renderers of the same
+world disagreeing about what "hot" looks like is a bug waiting to happen, not a style choice.
+Same auto-ranging too (heat 0.5, tension 0.25), for the same reason: measured tension sits at
+0.06-0.08, so a literal 0-1 mapping renders the town permanently flat.
+
+Obeys the doctrine directly: BACKSTOPPED renders at half brightness, VACANT at 28%, neither
+ever damaged; the Wall is full brightness regardless of shard state.
+
+**The honest limitation, stated first rather than buried: Godot is not installed here, so this
+has never been looked at.** Whether the town is legible is unknown until it is opened on a PC.
+`CELL`, `BUILDING_SIZE` and the role palette will likely need tuning by eye. Per-role hues are
+a **first proposal chosen in the client**, flagged as such in the file — no per-role hue exists
+anywhere in the engine (the terminal renderer distinguishes roles by glyph and spends its colour
+budget on heat).
+
+**What that limitation changed about how it was built.** Since I could not run it, I built the
+check that catches the failure mode I *cannot* see by reading: `clientProtocolConformance.test.ts`
+parses the GDScript for every key it indexes into a message with, and fails if any of them is
+not a key the protocol really emits — plus the reverse (it must read the fields without which
+nothing draws), and that it branches on exactly the slot states and roles the server can send.
+A GDScript typo like `economic_health` for `economicHealth` fails silently at runtime as a zero;
+this makes it fail loudly in CI instead.
+
+**And the check was mutation-tested rather than trusted.** Renaming `economicHealth` to
+`economic_health` in the client makes it fail; restoring it passes. Same discipline applied to
+the protocol's own leak test earlier (injecting a `wealth` field fails it). A negative assertion
+that cannot fail is worse than no assertion, because it reads as coverage.
+
+`client/README.md` rewritten for PC setup — Godot 4.3+ standard build (not Mono), `npm run
+server`, import `client/project.godot`, F5 — with an on-screen legend, troubleshooting, and the
+known gaps: no player avatar, people mostly sit still (shipped `stepWorld` does not move
+role-holders; only the sim-side driver applier does), and every body stays a silhouette because
+`identityResolved` has no sender yet.
+
+5 new tests, 693 total, typecheck clean.
+
+---
+
 ## 2026-08-19 — The server streams a real world, and the wire is a privacy boundary
 
 Chain item 4. The WebSocket server had broadcast the §8 MVP scenario — two Bakers and a price

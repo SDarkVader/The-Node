@@ -318,6 +318,25 @@ NODE's server is TypeScript/Node, authoritative over a thin Godot 4 client
 that talks to it over WebSocket — decided 2026-08-06, see
 [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for why.
 
+**You can now look at the actual town** (2026-08-19). `npm run server` runs
+the real world; the Godot client in [`client/`](client/README.md) connects and
+renders it — the settlement's real geometry, stations lit by real economic
+heat, the whole population including the roleless, district tension as
+ambient colour. Setup is in [`client/README.md`](client/README.md). Two
+honest caveats: the client has not yet been visually verified (it was written
+in an environment without Godot, so its protocol contract is machine-checked
+but its *look* is not), and people mostly stand still, because the shipped
+world does not move role-holders yet. `npm run playtest` gives the same world
+in a terminal, with synthetic drivers making everyone move.
+
+Three long-standing things were fixed the same day: role-holders finally have
+a **position independent of the building they work in** (before this, a person
+*was* their workplace's plot, so movement was not merely unimplemented but
+unrepresentable), **the Wall now sits in the middle of the town** rather than
+on its western rim, and **couriers are paid properly** — they had been earning
+~40% of every other support role in each run since the shard dropped to one
+district, because a distance-indexed wage with only one plaza indexes nothing.
+
 **What's actually built and tested right now:** the Miller/Baker market
 chain (Cournot upstream, Bertrand downstream), the vacancy/backstop system
 recalibrated to hit the brief's own target numbers, Miller conscription, the
