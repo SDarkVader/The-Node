@@ -61,31 +61,31 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "courierValues": [
     {
       "state": "FILLED",
-      "wealth": 18.7375,
+      "wealth": 28.380000000000013,
     },
     {
       "state": "FILLED",
-      "wealth": 19.0375,
+      "wealth": 40.72000000000002,
     },
     {
       "state": "FILLED",
-      "wealth": 18.437500000000004,
+      "wealth": 22.060000000000006,
     },
     {
       "state": "FILLED",
-      "wealth": 1.7149999999999999,
+      "wealth": 3.4496,
     },
     {
       "state": "FILLED",
-      "wealth": 18.4375,
+      "wealth": 40.12000000000003,
     },
     {
       "state": "FILLED",
-      "wealth": 19.637500000000006,
+      "wealth": 29.280000000000015,
     },
     {
       "state": "FILLED",
-      "wealth": 19.637500000000003,
+      "wealth": 41.32000000000002,
     },
   ],
   "detectiveValues": [
@@ -127,7 +127,7 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   "flourPrice": 0.05,
   "grifterCount": 37,
   "grifterMaxDaysWaiting": 40,
-  "grifterTotalWealth": 224.46295534786606,
+  "grifterTotalWealth": 225.15679534786605,
   "importExportValues": [
     {
       "state": "FILLED",
@@ -242,7 +242,7 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
   ],
   "population": 80,
   "tick": 25,
-  "wealthGini": 0.4107026931233544,
-  "wealthTop10Share": 0.24067588805004583,
+  "wealthGini": 0.426584251751696,
+  "wealthTop10Share": 0.24793737500830412,
 }
 `;

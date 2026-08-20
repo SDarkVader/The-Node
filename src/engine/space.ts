@@ -401,9 +401,27 @@ function placeDistrictCenters(config: ShardLayoutConfig, rand: () => number): Di
   const centers: DistrictCenter[] = [];
   const coreGap = config.coreDistrictRadius * 2 + 4;
 
+  // THE WESTERN-EDGE WALL FIX (2026-08-19). This ring placement is correct for SEVERAL core
+  // districts arranged around a shared hub, and was never updated when the shard dropped to
+  // one district (2026-08-13). With `coreDistrictCount: 1` the loop below still displaces that
+  // lone district ~9 units off origin, which put the hub — The Wall — on the settlement's
+  // western rim with all ~62 buildings east of it. Measured before fixing, across 8 seeds:
+  // hub 6.5-10.5 units off the district's true centre, zero buildings west of it.
+  //
+  // The single-district case is therefore special-cased to sit ON the hub. The two `rand()`
+  // draws are still consumed rather than skipped, so every downstream consumer of this stream
+  // (texture angles, plot dropout, everything in pass 1 and after) sees the identical sequence
+  // it saw before — the district TRANSLATES onto the origin rather than regenerating into a
+  // different shape, which keeps this diff readable and its effects attributable.
+  const singleCoreDistrict = config.coreDistrictCount === 1 && config.peripheryDistrictCount === 0;
+
   for (let i = 0; i < config.coreDistrictCount; i++) {
     const angle = (i / Math.max(1, config.coreDistrictCount)) * Math.PI * 2 + (rand() - 0.5) * 0.6;
     const r = coreGap * 0.5 + (rand() - 0.5) * 4;
+    if (singleCoreDistrict) {
+      centers.push({ x: 0, y: 0, classification: 'core' });
+      continue;
+    }
     centers.push({ x: Math.round(Math.cos(angle) * r), y: Math.round(Math.sin(angle) * r), classification: 'core' });
   }
 

@@ -1540,7 +1540,7 @@ export function stepWorld(world: World): World {
           ...c,
           wealth:
             c.wealth +
-            courierDailyPay(courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? ''), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)),
+            courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)),
           ...stepSlotStock(c),
           daysInRole: c.daysInRole + 1,
         }
@@ -1576,7 +1576,7 @@ export function stepWorld(world: World): World {
   });
   couriers.forEach((c) => {
     if (c.slot.state === 'BACKSTOPPED') {
-      const dist = courierRouteDistance(world.shard, buildingDistrictId.get(c.buildingId) ?? '');
+      const dist = courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot);
       shiftCoverOpportunities.push({ role: 'courier', payout: courierDailyPay(dist, DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) });
     }
   });

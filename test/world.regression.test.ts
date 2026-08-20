@@ -662,7 +662,7 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         // Courier pay is distance-indexed (2026-08-11 addendum item 6), not the flat
         // support wage — see engine/courierPay.ts's header. District friction is 1 on a
         // freshly created world, so this is the exact expected total, not a tolerance.
-        const routeDistance = courierRouteDistance(world.shard, districtIdForBuilding(world, c.buildingId));
+        const routeDistance = courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot);
         const expectedPay = courierDailyPay(routeDistance, DAILY_ACTIVITY_MULTIPLIER, 1);
         const expectedTotal = before.c[i]! + expectedPay + COMPLETION_REWARD.courier;
         expect(c.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
@@ -702,7 +702,7 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
           // friction can only ever reduce it, never exceed the base rate — see
           // districtConsolidation.ts) plus COMPLETION_REWARD.courier, and strictly positive,
           // not some larger carried-forward balance from a previous occupant.
-          const routeDistance = courierRouteDistance(world.shard, districtIdForBuilding(world, world.couriers[idx]!.buildingId));
+          const routeDistance = courierRouteDistance({ x: world.couriers[idx]!.x, y: world.couriers[idx]!.y }, world.shard.hubPlot);
           const maxPay = courierDailyPay(routeDistance, DAILY_ACTIVITY_MULTIPLIER, 1);
           expect(world.couriers[idx]!.wealth).toBeGreaterThan(0);
           expect(world.couriers[idx]!.wealth).toBeLessThanOrEqual(maxPay + COMPLETION_REWARD.courier + 1e-9);
