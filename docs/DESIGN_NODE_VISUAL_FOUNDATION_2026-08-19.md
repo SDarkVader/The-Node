@@ -53,14 +53,16 @@ hierarchy by role — a Mill and a Courier post are the same shape from outside.
 height ever becomes real, it needs a real code change first (`floors` is uniformly 3 today);
 don't invent height variety the simulation doesn't have.
 
-**[OPEN BUG — do not model the Wall as centred yet.]** Measured across 8 seeds: the hub
-(the Wall's location) sits 6.5–10.5 units off the district's actual geometric centre, and
-**zero of the ~62 buildings lie west of it** — every building is east. The plaza, not the hub,
-sits near the true centre. This is a real, uncorrected bug in district-center placement math
-(written for several districts ringing a hub, never updated for the single-district case). If
-you build a visual layout assuming the Wall is central, it will need revisiting once this is
-fixed engine-side — flagging now so the visual foundation isn't built on a coordinate that's
-about to move.
+**[FIXED 2026-08-19 — the Wall IS central now. Model it that way.]** This section previously
+carried an open bug: the hub sat 6.5–10.5 units off the district's true centre with **zero** of
+the ~62 buildings west of it. Root cause was district-centre placement written for several
+districts ringing a hub and never updated for the single-district case. Fixed, and measured
+after: **hub offset from the district's true centre 0.14–0.61 units, 43.1% of buildings west of
+it.** Real bounds are now −7..6 on both axes with the hub at (0,0).
+
+Note for layout: plots generate as a **diamond** (a radius-7 Manhattan ball around the hub), not
+a square — so the settlement's own grain runs at 45°, and its silhouette is a rotated square
+with a ragged edge. The plaza now coincides with the hub cell.
 
 ---
 
@@ -74,7 +76,7 @@ later work — treat it as the base layer everything else sits on.
 |---|---|---|
 | Role type | 6 roles: Miller, Baker, Courier, Journalist, Detective, Import/Export | Distinct hue per role, 6 clearly separable colours |
 | District Weather (local mood) | per-district `tension` | Cool → warm amber/red, moving independently per district |
-| Wall's Emissive Soul (global mood) | shard-wide `soulTemperature` — **spec only, not yet built** | Gold → red glow on the Wall structure |
+| Wall's Emissive Soul (global mood) | **BUILT 2026-08-19**, driven by `economicHealth` as a flagged stand-in — `soulTemperature` still does not exist in the engine | Gold → amber → red in the RADIANCE around the Wall. The monument itself stays constant gold: **substrate is hope, radiance is sentiment.** A shard in crisis shows a red glow around an unchanged gold Wall |
 | Economic Heat (station-level) | per-building `heat` | Glow intensity at that station — a Miller/Baker reads their own value; support roles read district friction |
 | Economic Heat (district/"Market") | per-district heat mean | Foot-traffic density in the plaza |
 | Identity resolution | real encounter count, per-observer | Silhouette + role icon (unknown) → deterministic procedural face once resolved |
@@ -88,18 +90,32 @@ called **Ember**, chosen from four explored directions. Warm, low, lamplit — t
 reads as a town at dusk, scarcity glows rather than alarms.
 ```
 ground #0d0a08   panel #100c09
-tension: calm #14100c -> tense #43170f   (background wash)
-heat: cool #4a6b7a -> hot #ffab3e         (foreground glow)
+heat: cool #4a6b7a -> hot #ffab3e         (emissive field, additive)
 the Wall #efdcae   plaza #b09056   street #2f2822
+grifter #d9c9b0   role-holder away from post #e8a85c
+
+emotional weather — DIVERGING, not a ramp (revised 2026-08-19):
+  cold #142642  <-  ember #281e14  ->  hot #681c12
+  anchored on measured tension: p05 0.03 / median 0.06 / p95 0.10
+
+the Wall's sentiment — the RADIANCE, never the monument itself:
+  ill #ce3a28  <-  median #e8964a  ->  well #ffd68a
+  anchored on measured economicHealth: p05 0.857 / median 0.909 / p95 0.948
 ```
-**A real, honest limitation of the current data, worth carrying into visual work**: both signals
-have far less dynamic range than their 0–1 scale suggests — real measured tension sits around
-0.06–0.08 most of the time, heat tops out near 0.5 and reads **exactly zero** for all four
-support roles whenever the district is healthy (their heat derives from trade friction, which
-mostly isn't present). A literal 0–1 mapping renders the whole town flat. The shipped renderer
-auto-ranges against observed maxima rather than theoretical ones — worth the same discipline in
-any other visual build, or the ambient mood will read as permanently calm no matter what's
-happening.
+**A real, honest limitation of the current data, and the discipline it forces.** Every signal
+here has far less dynamic range than its 0–1 scale suggests: measured tension sits at 0.03–0.10,
+`economicHealth` at 0.80–0.99, and heat tops out near 0.5 while reading **exactly zero** for all
+four support roles whenever the district is healthy (their heat derives from trade friction,
+which mostly isn't present). A literal 0–1 mapping renders the whole town permanently flat and
+calm.
+
+**This mistake has now been made and corrected three separate times** — the tension ramp against
+a 0.25 ceiling, the Wall's sentiment against a 0.70 floor, and heat before auto-ranging. Each
+time the symptom was identical: a channel that technically worked and communicated nothing. The
+rule to carry into any other visual build: **measure the real distribution first and anchor on
+its percentiles**, not on the theoretical range. Where a signal has a meaningful neutral state,
+prefer a diverging scale around the real median over a one-directional ramp — otherwise "normal"
+has no colour of its own and simply reads as absence.
 
 **Refinement worth carrying forward** [PROPOSED, sharpening the existing doctrine rather than
 adding a new one — reference mockups reviewed 2026-08-19]: copper is not just "the warm end of
