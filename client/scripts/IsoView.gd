@@ -32,9 +32,12 @@ const COLOUR_PLAIN := Color8(112, 99, 88)
 const COLOUR_GRIFTER := Color8(217, 201, 176)
 const COLOUR_AWAY := Color8(232, 168, 92)
 
-const TENSION_COLD := Color8(20, 38, 66)
-const TENSION_EMBER := Color8(40, 30, 20)
-const TENSION_HOT := Color8(104, 28, 18)
+## The 2D values are tuned as a dark BACKGROUND wash. Here the same scale is painted onto real
+## lit surfaces — the streets — so it needs the brightness and saturation a surface needs. Same
+## anchors, same three stops, same meaning; a lit version of the same idea.
+const TENSION_COLD := Color8(46, 96, 158)
+const TENSION_EMBER := Color8(96, 74, 52)
+const TENSION_HOT := Color8(168, 52, 34)
 const TENSION_COLD_AT := 0.03
 const TENSION_MEDIAN := 0.06
 const TENSION_HOT_AT := 0.10
@@ -60,10 +63,22 @@ const ROLE_COLOUR := {
 
 ## One world cell is one 3D unit. Buildings are 3 floors in the data, so FLOOR_HEIGHT * 3 is
 ## their real height rather than an invented one.
-const FLOOR_HEIGHT := 0.42
-const BUILDING_FOOTPRINT := 0.72
-const PERSON_HEIGHT := 0.5
-const PERSON_RADIUS := 0.15
+## SCALE IS SET FOR LEGIBILITY OF PEOPLE, NOT ARCHITECTURAL REALISM — a deliberate choice,
+## stated rather than smuggled. At true relative scale a person is a speck beside a
+## three-storey building, and across 62 of them the population simply disappears. People are
+## what this game is about, so they are drawn nearer to chess-piece scale: buildings still read
+## as three real floors (the floor count is honest, and the height still layers economic
+## street level against domestic storeys above), but the town is lower and people are larger
+## than a photograph would have them.
+const FLOOR_HEIGHT := 0.30
+const BUILDING_FOOTPRINT := 0.70
+## Small on purpose. Visibility comes from the rim light and the floating glyph, not from
+## bulk — an earlier pass made people large enough to read and they promptly buried the town.
+const PERSON_HEIGHT := 0.42
+const PERSON_RADIUS := 0.115
+## Floating role glyph, billboarded above each person.
+const ICON_WORLD_SIZE := 0.62
+const ICON_TEX_PX := 40
 ## How many of the hottest stations get a real OmniLight3D. Every station is emissive, but real
 ## lights are the expensive part, so only the ones actually carrying signal get one.
 const MAX_STATION_LIGHTS := 14
@@ -94,6 +109,8 @@ const JITTER_FOOTPRINT := 0.16
 var socket := WebSocketPeer.new()
 var logged := false
 var _frames := 0
+var _cam_yaw := PI * 0.25
+var _cam_span := 18.0
 var _shot_path := ""
 
 var have_geometry := false
@@ -109,8 +126,11 @@ var economic_health := 1.0
 var mean_tension := 0.0
 
 var _ground_mm: MultiMeshInstance3D
+var _plot_is_plaza: Array[bool] = []
+var _plot_shade: Array[float] = []
 var _building_mm: MultiMeshInstance3D
 var _people_mm: MultiMeshInstance3D
+var _people_ghost: MultiMeshInstance3D
 var _station_lights: Array[OmniLight3D] = []
 var _wall_root: Node3D
 var _wall_slab: MeshInstance3D
@@ -147,6 +167,26 @@ func _build_environment() -> void:
 	_env.glow_bloom = 0.15
 	_env.glow_strength = 0.9
 	_env.glow_hdr_threshold = 1.05
+
+	# FOG — what actually does the blending (2026-08-19, user direction: "variance and
+	# blending"). The reference art blends warm and cool through haze rather than butting two
+	# flat colours against each other: a lit bakery bleeds amber into a street that is
+	# otherwise cold and blue-grey, and the two mix in the air between them.
+	#
+	# Depth fog gives that for free and honestly — it is a property of the air, not of any
+	# object, so it cannot be mistaken for a signal about a building. It also does real work
+	# for the doctrine: distant and unlit parts of the town settle into cool blue rather than
+	# into black, so "nothing is happening here" reads as somewhere cold and quiet instead of
+	# as an absence of rendering.
+	_env.fog_enabled = true
+	_env.fog_light_color = Color8(58, 84, 122)
+	_env.fog_light_energy = 0.42
+	# Deliberately low. At 0.055 the fog stopped being air and became a blanket: the whole town
+	# flattened to one blue-grey, the Wall lost its gold entirely, and depth disappeared. Fog
+	# should bleed between warm and cool, never coat them.
+	_env.fog_density = 0.011
+	_env.fog_aerial_perspective = 0.12
+	_env.fog_sky_affect = 0.0
 	var we := WorldEnvironment.new()
 	we.environment = _env
 	add_child(we)
@@ -210,6 +250,14 @@ func _handle_tick(msg: Dictionary) -> void:
 			mean_tension += float(t["tension"])
 		mean_tension /= tensions.size()
 
+	# Review override. Real tension only spans p05 0.03 to p95 0.10, so a single live sample
+	# tells you almost nothing about whether the palette works across its range — the first
+	# time the blue end was checked, the shard happened to sit above the median and the whole
+	# scale looked warm. `NODE_FORCE_TENSION=0.02` renders a genuinely calm node on demand.
+	# Never read by anything but a human reviewing colour.
+	var forced := OS.get_environment("NODE_FORCE_TENSION")
+	if forced != "":
+		mean_tension = float(forced)
 	_update_dynamic()
 	hud.text = "Day %d    health %.3f    tension %.3f    %d people" % [
 		day, economic_health, mean_tension, people.size()
@@ -244,14 +292,21 @@ func _soul_colour(health: float) -> Color:
 ## perspective scene — distances stay comparable across the map, which matters when the thing
 ## being read is where activity is clustered.
 func _frame_camera() -> void:
-	var span := 16.0
 	if bounds.has("minX"):
-		span = maxf(float(bounds["maxX"]) - float(bounds["minX"]),
+		_cam_span = maxf(float(bounds["maxX"]) - float(bounds["minX"]),
 			float(bounds["maxY"]) - float(bounds["minY"])) + 5.0
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = span
-	var d := span
-	camera.position = Vector3(hub.x + d, d * 0.82, hub.y + d)
+	_place_camera()
+
+
+## Orbiting matters for more than comfort: a fixed viewpoint means a fixed set of people hidden
+## behind a fixed set of roofs. Being able to turn the town is the direct answer to "whoever is
+## standing there cannot be seen from here".
+func _place_camera() -> void:
+	camera.size = _cam_span
+	var d := _cam_span
+	var eye := Vector3(cos(_cam_yaw) * d, d * 0.82, sin(_cam_yaw) * d)
+	camera.position = Vector3(hub.x, 0.0, hub.y) + eye
 	camera.look_at(Vector3(hub.x, 0.0, hub.y), Vector3.UP)
 
 
@@ -266,6 +321,8 @@ func _build_static_geometry() -> void:
 ## single draw call — it is also the surface the Wall's light and every station's light
 ## actually falls on, which is most of what sells the space as a place.
 func _build_ground() -> void:
+	_plot_is_plaza.clear()
+	_plot_shade.clear()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
@@ -277,12 +334,37 @@ func _build_ground() -> void:
 		var p = plots[i]
 		var is_plaza: bool = str(p.get("kind", "")) == "plaza"
 		mm.set_instance_transform(i, Transform3D(Basis(), Vector3(float(p["x"]), -0.06, float(p["y"]))))
-		mm.set_instance_color(i, COLOUR_PLAZA if is_plaza else COLOUR_STREET)
+		_plot_is_plaza.append(is_plaza)
+		_plot_shade.append(_hash01("%d,%d" % [int(p["x"]), int(p["y"])], 7))
+		mm.set_instance_color(i, COLOUR_STREET)
 	_ground_mm = MultiMeshInstance3D.new()
 	_ground_mm.multimesh = mm
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.95
+	# THE STREETS ARE WHERE THE WEATHER FLOWS (2026-08-19, user direction).
+	#
+	# Heat and weather now have separate physical carriers, which is a better separation than
+	# the first version had. Buildings RADIATE — that is economic heat, amber, local, coming
+	# off a station. The ground CARRIES — that is emotional weather, blue when the node is at
+	# peace and red when it is not, spread across every street in the settlement.
+	#
+	# The two meet on the stones: amber light pools on blue ground around a busy station, and
+	# the mix reads as intensity rather than as one colour winning. Previously weather rode on
+	# ambient light alone and was simply swamped — the whole town was heat and nothing else,
+	# and the blue end of the scale never appeared at all.
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley;
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 0.92;
+	// A low self-lit floor so the weather is legible on unlit stones too — without it the
+	// streets away from any station fall to black and the mood disappears exactly where
+	// there is nothing else to look at.
+	EMISSION = COLOR.rgb * 0.30;
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
 	_ground_mm.material_override = mat
 	add_child(_ground_mm)
 
@@ -310,27 +392,69 @@ func _build_buildings() -> void:
 	# per-instance vertex colour. Every building therefore emitted full white and the whole town
 	# blew out. Emission has to follow the instance colour for heat to mean anything, which
 	# needs a shader.
+	# HEIGHT IS AN ATMOSPHERIC LAYER, NOT JUST A DIMENSION (2026-08-19, user direction).
+	#
+	# This is not a stylistic choice — it is the building's real data model rendered. `space.ts`
+	# states it outright: **ground floor = role function, floors above = housing.** So the
+	# vertical axis already carries meaning and the flat view simply could not show it.
+	#
+	#   STREET LEVEL  economic. The station, the oven, the trade. Amber, hot, and the only part
+	#                 of a building that glows — heat is an economic signal, so it belongs where
+	#                 the economy happens and nowhere else.
+	#   ABOVE         domestic. Housing, private life, nobody's business. Cool and quiet.
+	#                 Deliberately mostly DARK: housing capacity is 372 against a population of
+	#                 ~65, so most upper floors genuinely are empty, and the visual brief
+	#                 already says to model them that way rather than lighting every window.
+	#
+	# The two are separated by the air between them — warm below, cool above — which is what
+	# gives the town a horizon at roof height instead of reading as uniform blocks.
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
 render_mode cull_back, diffuse_burley;
-uniform float emit_gain = 2.6;
+uniform float emit_gain = 2.8;
+uniform vec3 ground_tint = vec3(1.05, 0.72, 0.42);
+uniform vec3 upper_tint = vec3(0.44, 0.56, 0.80);
+uniform float floor_height = 0.30;
+varying float world_h;
+
+void vertex() {
+	world_h = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+}
+
 void fragment() {
-	ALBEDO = COLOR.rgb;
+	// Height in "floors". Passed in rather than hardcoded so it cannot drift from
+	// FLOOR_HEIGHT on the GDScript side.
+	float floors = world_h / floor_height;
+
+	// THE BLEND IS THE MOST VISIBLE LAYER. The transition is deliberately wide — it spans
+	// most of a facade rather than being a seam between a warm half and a cool half. The two
+	// ends are the anchors; the mixing between them is what the eye should land on, and it is
+	// also the honest picture: a building is not economic downstairs and domestic upstairs
+	// with a line ruled between, the one bleeds into the other.
+	float up = smoothstep(0.25, 2.55, floors);
+	ALBEDO = COLOR.rgb * mix(ground_tint, upper_tint, up);
 	ROUGHNESS = 0.85;
-	// Emission is the instance colour scaled by its own luminance, so a DARK (cold) station
-	// emits nothing while a bright (hot) one emits hard. This is what makes the bottom of the
-	// range read as genuinely cold rather than merely less bright.
-	// Heat rides in the instance ALPHA channel, kept separate from albedo on purpose. Deriving
-	// emission from albedo luminance (the previous version) forced a cold station to be BLACK
-	// in order to be dark, which quietly broke the doctrine: structure is supposed to stay
-	// constant and legible at every heat level, with only colour carrying the signal. Now a
-	// cold station keeps its full architecture in plain stone and simply does not glow.
-	EMISSION = COLOR.rgb * COLOR.a * emit_gain;
+
+	// Heat is emitted at street level and fades upward — economic activity lights its own
+	// doorway and the cobbles in front of it, never the bedrooms above.
+	float heat_falloff = 1.0 - smoothstep(0.1, 1.9, floors);
+	vec3 emit = COLOR.rgb * COLOR.a * emit_gain * heat_falloff;
+
+	// The mixing band gets its own lift: a soft peak where warm and cool actually meet, tinted
+	// to the mix rather than to either end. This is what makes the blend read as a layer of
+	// its own instead of as the gap between two other layers.
+	float band = 1.0 - abs(up - 0.5) * 2.0;
+	band = max(band, 0.0);
+	vec3 band_col = mix(ground_tint, upper_tint, 0.5);
+	emit += band_col * band * band * (0.16 + 0.55 * COLOR.a);
+
+	EMISSION = emit;
 }
 """
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
+	mat.set_shader_parameter("floor_height", FLOOR_HEIGHT)
 	_building_mm.material_override = mat
 	add_child(_building_mm)
 
@@ -419,20 +543,56 @@ func _build_people_pool() -> void:
 	mm.instance_count = 0
 	_people_mm = MultiMeshInstance3D.new()
 	_people_mm.multimesh = mm
+	# PEOPLE ARE DARK SILHOUETTES WITH A ROLE-COLOURED EDGE (2026-08-19, user direction).
+	#
+	# Glowing capsules read as lamps, not persons, and at 60 of them they buried the
+	# architecture entirely. The reference art has it right: a figure is a dark shape, and what
+	# identifies it is the light around it. So the body is near-black and the RIM carries the
+	# role's colour — a silhouette that tells you what someone does without telling you who
+	# they are, which is exactly the Silhouette Shield expressed as a material.
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
 render_mode cull_back;
 void fragment() {
-	ALBEDO = COLOR.rgb;
-	ROUGHNESS = 0.6;
-	EMISSION = COLOR.rgb * 0.9;
+	ALBEDO = vec3(0.035, 0.032, 0.030);
+	ROUGHNESS = 0.55;
+	float rim = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 1.8);
+	EMISSION = COLOR.rgb * (0.25 + rim * 2.6);
 }
 """
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
 	_people_mm.material_override = mat
 	add_child(_people_mm)
+
+	# NOBODY IS EVER INVISIBLE (2026-08-19, user: "if you're in the middle you're basically
+	# invisible").
+	#
+	# A fixed isometric camera hides anything standing behind a building, so in a settlement
+	# this dense a person in the middle of town simply vanished. That is not merely awkward —
+	# it is constraint 6's failure mode arriving through a depth test instead of a rule. Being
+	# in the centre of the place you live must not erase you.
+	#
+	# A second pass draws every person again with the depth test off, dimmed, so an occluded
+	# person reads as a faint presence through the roofs rather than as nothing at all. An
+	# unoccluded person is unaffected: the solid pass is drawn over the top of their own ghost.
+	var ghost := MultiMeshInstance3D.new()
+	ghost.multimesh = mm
+	var gsh := Shader.new()
+	gsh.code = """
+shader_type spatial;
+render_mode unshaded, depth_test_disabled, depth_draw_never, blend_add, cull_back;
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	ALPHA = 0.16;
+}
+"""
+	var gmat := ShaderMaterial.new()
+	gmat.shader = gsh
+	ghost.material_override = gmat
+	add_child(ghost)
+	_people_ghost = ghost
 
 
 func _update_dynamic() -> void:
@@ -498,20 +658,37 @@ func _update_dynamic() -> void:
 		# building mesh. In the flat view people simply drew on top; in 3D, standing at your
 		# station means being occluded by it, and 60 of 63 people vanished. A person at their
 		# post belongs on the step outside it, which is also just truer to a town.
-		var off := Vector3(0.46, 0.0, 0.46) if (role != null and ROLE_COLOUR.has(role)) else Vector3.ZERO
+		var off := Vector3(0.52, 0.0, 0.52) if (role != null and ROLE_COLOUR.has(role)) else Vector3.ZERO
 		pmm.set_instance_transform(i, Transform3D(Basis(),
 			Vector3(float(p["x"]), PERSON_HEIGHT * 0.5 + 0.06, float(p["y"])) + off))
-		# A roleless player is drawn exactly as visible as anyone else — constraint 6's floor
-		# has a visual form, and it is as easy to breach with a draw call as with a rule.
-		pmm.set_instance_color(i, COLOUR_GRIFTER if (role == null or not ROLE_COLOUR.has(role)) else COLOUR_AWAY)
+		# Role-specific colour, the same six hues the 2D view and the station signs use. A
+		# roleless player gets Ember's own ink tone — a colour of their own, not an absence of
+		# one, and at the same brightness as everyone else. Constraint 6's floor has a visual
+		# form and it is as easy to breach with a draw call as with a rule.
+		var pc: Color = ROLE_COLOUR[role] if (role != null and ROLE_COLOUR.has(role)) else COLOUR_GRIFTER
+		pmm.set_instance_color(i, pc)
+		_place_icon(i, Vector3(float(p["x"]), 0.0, float(p["y"])) + off, role, pc)
+	_hide_icons_from(people.size())
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			camera.size = maxf(4.0, camera.size / 1.1)
+			_cam_span = maxf(4.0, _cam_span / 1.1)
+			_place_camera()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			camera.size = minf(60.0, camera.size * 1.1)
+			_cam_span = minf(60.0, _cam_span * 1.1)
+			_place_camera()
+	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
+		_cam_yaw += event.relative.x * 0.006
+		_place_camera()
+	elif event is InputEventKey and event.pressed:
+		if event.keycode == KEY_Q:
+			_cam_yaw -= PI * 0.25
+			_place_camera()
+		elif event.keycode == KEY_E:
+			_cam_yaw += PI * 0.25
+			_place_camera()
 
 
 ## Offscreen capture, opt-in via `NODE_SHOT=/path/to.png`. Permanent rather than a throwaway
@@ -523,3 +700,114 @@ func _capture() -> void:
 	var err := get_viewport().get_texture().get_image().save_png(_shot_path)
 	print("[NODE] capture %s -> %s" % ["ok" if err == OK else "FAILED", _shot_path])
 	get_tree().quit()
+
+
+# ---------------------------------------------------------------------------------------
+# ROLE ICONS — the same six glyphs the 2D view and the station signs use, rasterised once
+# into small textures and billboarded above each person.
+#
+# Drawn in code rather than shipped as art, for the same reason the 2D ones were: the client
+# stays self-contained with no import step and nothing to lose. A letter is a label; a shape
+# is an identity, and the shape a person carries should match the sign over the door they
+# work behind.
+# ---------------------------------------------------------------------------------------
+
+var _icon_tex: Dictionary = {}
+var _icon_pool: Array[Sprite3D] = []
+
+
+func _px(img: Image, x: int, y: int, c: Color) -> void:
+	if x >= 0 and y >= 0 and x < ICON_TEX_PX and y < ICON_TEX_PX:
+		img.set_pixel(x, y, c)
+
+
+func _px_line(img: Image, a: Vector2, b: Vector2, c: Color, w: float = 1.6) -> void:
+	var steps := int(maxf(absf(b.x - a.x), absf(b.y - a.y)) * 2.0) + 2
+	for i in steps + 1:
+		var p := a.lerp(b, float(i) / float(steps))
+		var r := int(ceil(w * 0.5))
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				if Vector2(dx, dy).length() <= w * 0.5:
+					_px(img, int(p.x) + dx, int(p.y) + dy, c)
+
+
+func _px_ring(img: Image, centre: Vector2, radius: float, c: Color, w: float = 1.6) -> void:
+	var steps := int(radius * 12.0) + 8
+	for i in steps:
+		var a := TAU * float(i) / float(steps)
+		_px_line(img, centre + Vector2(cos(a), sin(a)) * radius,
+			centre + Vector2(cos(a), sin(a)) * radius, c, w)
+
+
+func _icon_texture(role) -> ImageTexture:
+	var key := str(role)
+	if _icon_tex.has(key):
+		return _icon_tex[key]
+	var img := Image.create(ICON_TEX_PX, ICON_TEX_PX, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var c := Color(1, 1, 1, 1)
+	var m := float(ICON_TEX_PX) * 0.5
+	var r := float(ICON_TEX_PX) * 0.34
+	match role:
+		"miller":  # windmill sails
+			for i in 4:
+				var a: float = TAU * float(i) / 4.0 + PI * 0.25
+				_px_line(img, Vector2(m, m), Vector2(m, m) + Vector2(cos(a), sin(a)) * r, c, 2.4)
+			_px_ring(img, Vector2(m, m), r * 0.2, c, 2.2)
+		"baker":  # a domed loaf
+			for i in 22:
+				var a: float = PI + PI * float(i) / 21.0
+				_px_line(img, Vector2(m, m + r * 0.34) + Vector2(cos(a), sin(a)) * r * 0.82,
+					Vector2(m, m + r * 0.34) + Vector2(cos(a), sin(a)) * r * 0.82, c, 2.4)
+			_px_line(img, Vector2(m - r * 0.82, m + r * 0.34), Vector2(m + r * 0.82, m + r * 0.34), c, 2.4)
+		"courier":  # a parcel with a strap
+			_px_line(img, Vector2(m - r * .7, m - r * .7), Vector2(m + r * .7, m - r * .7), c, 2.2)
+			_px_line(img, Vector2(m + r * .7, m - r * .7), Vector2(m + r * .7, m + r * .7), c, 2.2)
+			_px_line(img, Vector2(m + r * .7, m + r * .7), Vector2(m - r * .7, m + r * .7), c, 2.2)
+			_px_line(img, Vector2(m - r * .7, m + r * .7), Vector2(m - r * .7, m - r * .7), c, 2.2)
+			_px_line(img, Vector2(m, m - r * .7), Vector2(m, m + r * .7), c, 2.2)
+		"journalist":  # a page with lines of type
+			_px_line(img, Vector2(m - r * .6, m - r * .8), Vector2(m + r * .6, m - r * .8), c, 2.2)
+			_px_line(img, Vector2(m + r * .6, m - r * .8), Vector2(m + r * .6, m + r * .8), c, 2.2)
+			_px_line(img, Vector2(m + r * .6, m + r * .8), Vector2(m - r * .6, m + r * .8), c, 2.2)
+			_px_line(img, Vector2(m - r * .6, m + r * .8), Vector2(m - r * .6, m - r * .8), c, 2.2)
+			for k in 2:
+				var ly: float = m - r * 0.25 + float(k) * r * 0.5
+				_px_line(img, Vector2(m - r * .3, ly), Vector2(m + r * .3, ly), c, 1.8)
+		"detective":  # a magnifier
+			_px_ring(img, Vector2(m - r * .18, m - r * .18), r * 0.55, c, 2.4)
+			_px_line(img, Vector2(m + r * .2, m + r * .2), Vector2(m + r * .78, m + r * .78), c, 2.6)
+		"importExport":  # two arrows passing
+			_px_line(img, Vector2(m - r * .75, m - r * .3), Vector2(m + r * .75, m - r * .3), c, 2.2)
+			_px_line(img, Vector2(m + r * .3, m - r * .68), Vector2(m + r * .75, m - r * .3), c, 2.2)
+			_px_line(img, Vector2(m + r * .75, m + r * .3), Vector2(m - r * .75, m + r * .3), c, 2.2)
+			_px_line(img, Vector2(m - r * .3, m + r * .68), Vector2(m - r * .75, m + r * .3), c, 2.2)
+		_:  # roleless: a plain mark, present and unlabelled
+			_px_ring(img, Vector2(m, m), r * 0.3, c, 2.6)
+	var tex := ImageTexture.create_from_image(img)
+	_icon_tex[key] = tex
+	return tex
+
+
+## Pooled so no node is created or freed per tick.
+func _place_icon(index: int, ground: Vector3, role, tint: Color) -> void:
+	while _icon_pool.size() <= index:
+		var sp := Sprite3D.new()
+		sp.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		sp.shaded = false
+		sp.no_depth_test = true
+		sp.render_priority = 4
+		sp.pixel_size = ICON_WORLD_SIZE / float(ICON_TEX_PX)
+		add_child(sp)
+		_icon_pool.append(sp)
+	var s3 := _icon_pool[index]
+	s3.visible = true
+	s3.texture = _icon_texture(role)
+	s3.modulate = tint
+	s3.position = ground + Vector3(0.0, PERSON_HEIGHT + 0.42, 0.0)
+
+
+func _hide_icons_from(n: int) -> void:
+	for i in range(n, _icon_pool.size()):
+		_icon_pool[i].visible = false
