@@ -16,7 +16,16 @@ config/name="NODE"
 run/main_scene="res://scenes/WorldView.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=800
+
 [rendering]
 
+; Ember's ground tone (13,10,8). Without this the area outside the settlement renders in
+; Godot's default grey, which breaks the palette everywhere the town does not reach —
+; found by actually screenshotting a headless run, not by reading the code.
+environment/defaults/default_clear_color=Color(0.051, 0.039, 0.031, 1)
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

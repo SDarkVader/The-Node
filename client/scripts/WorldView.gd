@@ -58,12 +58,13 @@ const ROLE_COLOUR := {
 	"importExport": Color8(148, 168, 108),
 }
 
-const CELL := 26.0        ## pixels per world unit at zoom 1
-const BUILDING_SIZE := 18.0
-const PERSON_RADIUS := 4.0
+const CELL := 44.0        ## pixels per world unit at zoom 1
+const BUILDING_SIZE := 30.0
+const PERSON_RADIUS := 6.0
 
 var socket := WebSocketPeer.new()
 var was_connected := false
+var logged_first_tick := false
 
 var have_geometry := false
 var plots: Array = []
@@ -126,6 +127,12 @@ func _handle_hello(msg: Dictionary) -> void:
 	bounds = msg.get("bounds", {})
 	have_geometry = true
 	_centre_camera()
+	# Printed rather than only drawn, so `--headless` is a real smoke test: it proves the
+	# socket connected, the JSON parsed, and geometry landed, none of which a silent window
+	# would tell you. See client/README.md's "Verify without opening a window".
+	print("[NODE] geometry: %d buildings, %d plots, hub (%d,%d)" % [
+		buildings.size(), plots.size(), int(hub.x), int(hub.y)
+	])
 
 
 ## The Wall is the settlement's real centre as of 2026-08-19 (it used to sit on the western
@@ -156,6 +163,11 @@ func _handle_tick(msg: Dictionary) -> void:
 	hud.text = "Day %d    health %.3f    tension %.3f    %d people" % [
 		day, economic_health, mean_tension, people.size()
 	]
+	if not logged_first_tick:
+		logged_first_tick = true
+		print("[NODE] first tick: day %d, %d people, %d stations, health %.3f" % [
+			day, people.size(), stations.size(), economic_health
+		])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -201,8 +213,11 @@ func _draw() -> void:
 	# The Wall. Always bright, always intact, regardless of how the shard is doing — this is
 	# the doctrine's clearest single case.
 	var hub_px := _world_to_px(hub.x, hub.y)
-	draw_rect(Rect2(hub_px - Vector2(BUILDING_SIZE, BUILDING_SIZE) * 0.6,
-		Vector2(BUILDING_SIZE, BUILDING_SIZE) * 1.2), COLOUR_WALL, true)
+	var wall := Vector2(BUILDING_SIZE, BUILDING_SIZE) * 1.5
+	draw_rect(Rect2(hub_px - wall * 0.5, wall), COLOUR_WALL, true)
+	# A soft halo so the Wall reads as the settlement's landmark rather than a pale building.
+	# Brightness is constant — it does NOT track shard health, per the doctrine.
+	draw_arc(hub_px, BUILDING_SIZE * 1.25, 0.0, TAU, 32, Color(COLOUR_WALL, 0.35), 3.0)
 
 	for person in people:
 		_draw_person(person)

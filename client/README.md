@@ -3,11 +3,15 @@
 Renders the live settlement from the running simulation. Two processes: the Node server holds
 the world and ticks it, Godot connects over a WebSocket and draws what it is told.
 
-**Status, stated plainly**: this client was written in an environment with no Godot installed,
-so it has never been visually verified. The wire protocol is checked automatically
-(`test/clientProtocolConformance.test.ts` fails if the client reads a field the server does not
-send, and that check is itself mutation-tested), but whether the town *looks* right is unknown
-until someone opens it. Expect to adjust `CELL`, `BUILDING_SIZE` and the role palette by eye.
+**Status**: verified running against a real server on Godot 4.3 — connects, parses geometry
+and ticks, and `_draw` executes with the full settlement under a real OpenGL renderer, no script
+errors. It was also screenshotted and looked at, which caught three things reading the code did
+not: the window background was Godot's default grey rather than Ember's ground tone (the `GROUND`
+constant was declared and never applied), the town rendered too small to read, and the Wall did
+not stand out from ordinary buildings. All three are fixed.
+
+Still unverified by anyone but me: whether it *feels* right to move around in, and the per-role
+palette, which is a first proposal rather than a derived decision.
 
 ## What you need
 
@@ -63,6 +67,24 @@ that; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LE
 Both mood signals **auto-range** against observed maxima (heat ~0.5, tension ~0.25) rather than
 a literal 0–1 scale. Real measured tension sits around 0.06–0.08, so a naive mapping renders the
 whole town permanently flat and calm. Same discipline as the terminal renderer.
+
+## Verify without opening a window
+
+The client prints two diagnostic lines on connect, so a headless run is a real smoke test —
+it proves the socket connected, the JSON parsed, and geometry landed:
+
+```
+godot --headless --path client --quit-after 300
+```
+Expect:
+```
+[NODE] geometry: 62 buildings, 91 plots, hub (0,0)
+[NODE] first tick: day 12, 67 people, 46 stations, health 0.98
+```
+`--quit-after` matters: without it, killing the process can discard buffered output and make a
+working client look silent. Headless does not call `_draw`, so this checks the wiring, not the
+rendering. To exercise drawing without a monitor, run it under a virtual display instead
+(`xvfb-run -a godot --path client --quit-after 300`).
 
 ## If it does not work
 
