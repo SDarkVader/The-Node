@@ -45,6 +45,15 @@ describe('helloMessage — static geometry', () => {
     for (const b of hello.buildings) expect(b.role).toBe(roles.get(b.id) ?? null);
   });
 
+  it('carries the landmark flag — real generated geometry that nothing used to read', () => {
+    const w = createWorld(1);
+    const hello = helloMessage(w);
+    const landmarks = hello.buildings.filter((b) => b.isLandmark);
+    // LANDMARKS_PER_DISTRICT is 3, one district shipped.
+    expect(landmarks.length).toBe(3);
+    expect(hello.buildings.every((b) => typeof b.isLandmark === 'boolean')).toBe(true);
+  });
+
   it('is stable across ticks — geometry is not re-sent because it does not change', () => {
     const w0 = createWorld(4);
     const w1 = stepN(4, 50);
