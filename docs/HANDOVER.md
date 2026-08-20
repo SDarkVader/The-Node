@@ -92,6 +92,25 @@ typo'd field name — but whether the town is *legible* is genuinely unknown. Ex
 `CELL`, `BUILDING_SIZE`, and especially the per-role palette, which is a **first proposal chosen
 in the client**, not derived from anything in the engine. No per-role hue exists in code.
 
+**GODOT IS INSTALLED IN THE DEV ENVIRONMENT AND ITS LIMITS ARE MEASURED** — see
+`docs/RENDER_CAPABILITY_2026-08-19.md` before planning any visual work. Short version, all
+probed rather than assumed: isometric 3D, directional and omni lights, emissive materials,
+**glow/bloom**, custom shaders, GPU and CPU particles, and MultiMesh at full population scale
+(62 buildings + 65 people) all work and can be screenshotted. Forward+/Vulkan does NOT
+initialise here (no `VK_KHR_surface` under xvfb) — irrelevant on a real PC, but it means
+Forward+-only effects cannot be verified in this environment. Performance is **64.8 ms/frame,
+~15 fps** under software rendering, which is a statement about a CPU pretending to be a GPU and
+not about NODE: **still frames are reliable, motion and feel are not.** That is the honest
+boundary of what can be validated here rather than on the PC.
+
+Practical: run `--rendering-method gl_compatibility`, use `xvfb-run -a` for anything that must
+call `_draw`, and always pass `--quit-after N` or buffered output is discarded on kill and a
+working scene looks silent.
+
+**Nothing in the isometric target is blocked by the simulation.** Every signal it displays is
+already computed and already on the wire; the gap is rendering work, and most of it can be built
+and checked here.
+
 **Immediate next candidates**, in rough order of payoff:
 1. **Look at it and tune it** — the one thing no test here can do.
 2. **Move role-holders in the SHIPPED world.** They currently sit at their stations unless the
