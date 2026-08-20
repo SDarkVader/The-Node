@@ -351,7 +351,31 @@ export interface RoleEconomicSlot {
    *  rejected `V_i` shield — see `multiRoleConscription.ts`'s `occupantTenure`/
    *  `ESTABLISHED_TENURE_DAYS` doc comments and docs/DEVLOG.md's matching entry. */
   daysInRole: number;
+  /** Where this slot's occupant actually IS (2026-08-19) — see `SlotPosition` below. */
+  x: number;
+  y: number;
 }
+
+/**
+ * Position decoupled from occupancy (2026-08-19) — item 2 of HANDOVER's "THE DIRECTION",
+ * the blocker everything else in the Godot chain stacks behind.
+ *
+ * Until now a role-holder WAS their building's plot: those were the same fact, so movement
+ * was not merely unimplemented, it was unrepresentable. `x`/`y` make where-someone-is a
+ * separate fact from which-slot-they-hold, exactly as `GrifterSlot.x`/`y` already did for
+ * the roleless pool (2026-08-19, the same work one step earlier).
+ *
+ * **Initialized to the occupant's own building plot, and nothing moves them yet.** That is
+ * deliberate and load-bearing: witness counts (sabotage detection), identity resolution and
+ * District Weather are all calibrated against the current all-at-their-building layout, so
+ * this step changes the REPRESENTATION only and is provably behaviour-identical. Whatever
+ * eventually moves a role-holder has to be measured against those three, per the standing
+ * "simulate before trusting" constraint — it is not a free change.
+ *
+ * Reset convention matches `wealth`/`daysInRole`: a new occupant starts AT their workplace
+ * (a fresh arrival hasn't wandered off yet), frozen while VACANT/BACKSTOPPED — an empty
+ * slot has nobody to have a position.
+ */
 
 /** Courier/Journalist/Detective/ImportExport — same slot/wealth reset convention as
  *  RoleEconomicSlot, minus `value`/`experience` since none of the four have a competitive
@@ -364,6 +388,9 @@ export interface SupportRoleSlot {
   daysSinceRestock: number;
   /** Same meaning and reset convention as `RoleEconomicSlot.daysInRole` above. */
   daysInRole: number;
+  /** Same meaning and reset convention as `RoleEconomicSlot.x`/`y` above. */
+  x: number;
+  y: number;
 }
 
 /** A roleless community player ("grifter" — user's own term). Individually tracked, unlike
@@ -745,6 +772,8 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     wealth: 0,
     ...emptySlotStock(),
     daysInRole: ESTABLISHED_TENURE_DAYS, // same "start maxed, established shard" convention
+    x: b.x,
+    y: b.y,
   }));
   const bakers: RoleEconomicSlot[] = assigned.baker.map((b) => ({
     slot: { state: 'FILLED', vacantSince: null },
@@ -754,11 +783,13 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     wealth: 0,
     ...emptySlotStock(),
     daysInRole: ESTABLISHED_TENURE_DAYS,
+    x: b.x,
+    y: b.y,
   }));
-  const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS }));
-  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS }));
-  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS }));
-  const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS }));
+  const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
+  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
+  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
+  const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
   const flourPriceValue = computeFlourPrice(supply);
@@ -885,6 +916,7 @@ function stepCompetitiveLayer(
   competitor: (values: number[]) => number[],
   freshDraw: () => number,
   experienceFloorByBuildingId?: ReadonlyMap<string, number>,
+  buildingPositionById?: ReadonlyMap<string, { x: number; y: number }>,
 ): RoleEconomicSlot[] {
   const filledIndices = slots.map((s, i) => (s.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
   const filledValues = filledIndices.map((i) => slots[i]!.value);
@@ -898,7 +930,20 @@ function stepCompetitiveLayer(
       // stage, once flourPrice is known. `experience` defaults to 0 (the common case — a
       // green grifter) unless a real experience floor was earned via role-specific Shift
       // Cover practice — see `engine/experienceFloor.ts`.
-      return { ...s, value: freshDraw(), experience: experienceFloorByBuildingId?.get(s.buildingId) ?? 0, wealth: 0, ...emptySlotStock(), daysInRole: 0 };
+      // Position resets alongside wealth: a new occupant starts AT their workplace, having
+      // just arrived. Falls back to the slot's existing position when no building map was
+      // supplied — which is the same value, since nothing moves a role-holder yet.
+      const arrival = buildingPositionById?.get(s.buildingId);
+      return {
+        ...s,
+        value: freshDraw(),
+        experience: experienceFloorByBuildingId?.get(s.buildingId) ?? 0,
+        wealth: 0,
+        ...emptySlotStock(),
+        daysInRole: 0,
+        x: arrival?.x ?? s.x,
+        y: arrival?.y ?? s.y,
+      };
     }
     const filledPos = filledIndices.indexOf(i);
     if (filledPos >= 0) {
@@ -981,13 +1026,20 @@ export function stepWorld(world: World): World {
   // no synthetic drivers exist yet (Phase C) to actually move anyone. Recomputes each
   // building's occupant position (its own plot, static) and feeds district population.
   const allBuildingsById = new Map(world.shard.districts.flatMap((d) => d.buildings).map((b) => [b.id, b]));
-  const occupantsOf = (slots: { slot: RoleSlot; buildingId: string }[]): PlayerPosition[] =>
+  // Reads the occupant's OWN position (2026-08-19), not their building's plot. Identical
+  // output today — every role-holder is initialized to their building and nothing moves
+  // them yet — but the source of truth is now the person, not the address, which is the
+  // whole point of decoupling position from occupancy.
+  const occupantsOf = (slots: { slot: RoleSlot; buildingId: string; x: number; y: number }[]): PlayerPosition[] =>
     slots
       .filter((s) => s.slot.state === 'FILLED')
-      .map((s) => {
-        const b = allBuildingsById.get(s.buildingId)!;
-        return { playerId: s.buildingId, x: b.x, y: b.y };
-      });
+      .map((s) => ({ playerId: s.buildingId, x: s.x, y: s.y }));
+
+  /** Where a new occupant of `buildingId` starts: at their workplace, having just arrived. */
+  const arriveAt = (buildingId: string): { x: number; y: number } => {
+    const b = allBuildingsById.get(buildingId);
+    return b ? { x: b.x, y: b.y } : { x: world.shard.hubPlot.x, y: world.shard.hubPlot.y };
+  };
 
   // ---- Stage 1b: district health (2026-08-11) ----------------------------------------
   // Underpopulation-triggered, irreversible per district — see districtConsolidation.ts's
@@ -1148,19 +1200,19 @@ export function stepWorld(world: World): World {
   bakers = bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
   couriers = couriers.map((c, i) => {
     const slot = byRole.get('courier')![i]!;
-    return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : { ...c, slot };
+    return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(c.buildingId) } : { ...c, slot };
   });
   journalists = journalists.map((j, i) => {
     const slot = byRole.get('journalist')![i]!;
-    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : { ...j, slot };
+    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(j.buildingId) } : { ...j, slot };
   });
   detectives = detectives.map((d, i) => {
     const slot = byRole.get('detective')![i]!;
-    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : { ...d, slot };
+    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : { ...d, slot };
   });
   importExporters = importExporters.map((x, i) => {
     const slot = byRole.get('importExport')![i]!;
-    return importExportJustFilled.has(x.buildingId) ? { ...x, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : { ...x, slot };
+    return importExportJustFilled.has(x.buildingId) ? { ...x, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(x.buildingId) } : { ...x, slot };
   });
 
   // Grifter pool bookkeeping: age everyone still waiting by one day, then apply today's
@@ -1291,17 +1343,17 @@ export function stepWorld(world: World): World {
       placedGrifterIds.add(grifter.id);
       const fill = { state: 'FILLED' as const, vacantSince: null };
       if (target.role === 'miller') {
-        millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : m));
+        millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(m.buildingId) } : m));
       } else if (target.role === 'baker') {
-        bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : b));
+        bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(b.buildingId) } : b));
       } else if (target.role === 'courier') {
-        couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : c));
+        couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(c.buildingId) } : c));
       } else if (target.role === 'journalist') {
-        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : j));
+        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(j.buildingId) } : j));
       } else if (target.role === 'detective') {
-        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : d));
+        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : d));
       } else {
-        importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0 } : x));
+        importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(x.buildingId) } : x));
       }
     }
     if (placedGrifterIds.size > 0) grifters = grifters.filter((g) => !placedGrifterIds.has(g.id));
@@ -1315,6 +1367,7 @@ export function stepWorld(world: World): World {
     (values) => stepMillers(values, noise),
     () => 0.3 + rng() * 0.2,
     millerExperienceFloor,
+    allBuildingsById,
   );
 
   // BACKSTOPPED millers participate mechanically, not competitively — this is the
@@ -1344,6 +1397,7 @@ export function stepWorld(world: World): World {
     (values) => stepBakers(values, flourPriceValue, config.gamma, noise),
     () => 0.5 + rng() * 0.2,
     bakerExperienceFloor,
+    allBuildingsById,
   );
 
   // Wealth accrual (2026-08-10, user-requested; demand model + downtime window revised

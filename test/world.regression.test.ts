@@ -119,6 +119,8 @@ describe('computeMillerSupply — a BACKSTOPPED Miller actually participates in 
       personalResourceStock: 0,
       daysSinceRestock: 0,
       daysInRole: 0,
+      x: 0,
+      y: 0,
     };
   }
 
