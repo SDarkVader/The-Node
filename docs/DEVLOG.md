@@ -6,6 +6,42 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — User-authored addition: anisotropic texture field + landmark buildings
+
+User: *"I've been working behind your back again, iterating etc."* Supplied a full
+`space.ts` and a patch against the repo's own base. Diffed against the live file before
+touching anything: clean, matches the patch exactly, touches nothing outside what it
+describes — and does not touch `placeDistrictCenters`, so it is orthogonal to the still-open
+Wall/hub-placement bug (which has no code fix yet, only the investigation from 2026-08-18/19).
+
+**What it adds**: `textureField(x, y, angleA, angleB)` — two low-frequency sine waves at
+independently-seeded orientations, breaking the radial symmetry `edgeFactor`'s dropout alone
+produces (a district built from distance-to-plaza alone reads identically in every compass
+direction). `angleA`/`angleB` are drawn once per shard from the same `rand()` stream, so each
+shard gets its own fixed "grain," deterministic per seed. Feeds two real, separate effects:
+the existing outer-ring dropout band now modulates by texture instead of a flat 0.3 (dense
+side ~0.1, sparse side ~0.5 — same one-`rand()`-per-candidate cost, so it changes WHERE the
+raggedness lands, not the determinism properties anything else relies on); and
+`LANDMARKS_PER_DISTRICT` (3) buildings get flagged `isLandmark`, chosen by strongest texture
+MAGNITUDE (peak or trough) rather than simple order, so landmarks land in both the densest and
+most open pockets rather than clustering. Post-hoc flag only — doesn't consume `rand()`,
+doesn't touch building selection.
+
+**Checked, not assumed, before saving**: two texture-angle `rand()` draws happen
+unconditionally at shard generation, which is exactly the class of change that broke 6 tests
+when the Oracle's stage was wired into `stepWorld` — same-shape risk, worth verifying rather
+than trusting the patch's own reasoning. It turned out NOT to bite: `generateShardLayout`
+seeds its own private `mulberry32(seed)` instance internally, entirely separate from
+`world.ts`'s own `rng` closure that `stepWorld`'s golden-snapshot test depends on. **All 647
+tests passed unchanged, typecheck clean** — genuinely additive, not just apparently so.
+
+Verified live: seed 1 and seed 7 both produce exactly 3 landmarks per district, at different
+real coordinates, building count still 62 either way. `isLandmark` is read by nothing yet —
+own header says so — a real hook for the terminal/browser renderers or eventually Godot, not
+wired to any of them this pass.
+
+---
+
 ## 2026-08-19 — The Wall is outside the town, and pulling that thread found a live pay bug
 
 User, after looking at the published viewer: *"the wall is on the western edge, rather than the

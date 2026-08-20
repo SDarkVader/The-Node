@@ -75,6 +75,12 @@ export interface Building {
    *  today (`HOUSING_FLOORS_PER_BUILDING`) — real per-building variation is future work,
    *  not needed for the first housing-capacity pass. */
   floors: number;
+  /** True for a small, deterministic subset of buildings chosen at generation as local
+   *  peaks of the district's anisotropic texture field (see `textureField()` below) —
+   *  purely a rendering/landmark hint, read by nothing in this module and by no other
+   *  gameplay mechanic. Optional and defaulted false so every existing caller/test that
+   *  constructs a `Building` literal without this field keeps compiling unchanged. */
+  isLandmark?: boolean;
 }
 
 /** [ILLUSTRATIVE] — not yet measured against a real run; named and factored out so it's
@@ -267,6 +273,33 @@ export function districtPlotDensity(district: District): number {
 
 // ---- Shard generation -----------------------------------------------------------------
 
+// ---- Anisotropic texture field --------------------------------------------------------
+
+/**
+ * A deterministic, direction-dependent density field over (x, y) — NOT a function of
+ * distance-from-plaza (that's `edgeFactor`, already handled by `generateDistrictPlots`'s
+ * ragged-edge dropout). Two low-frequency sine waves at independently-seeded orientations,
+ * summed and normalised to [-1, 1]. Purpose: `edgeFactor` alone is radially symmetric — a
+ * district generated from it reads the same in every compass direction, which is the
+ * "featureless" quality this field exists to break. `angleA`/`angleB` are drawn once per
+ * shard (`generateShardLayout`, same `rand()` stream as everything else) so every shard
+ * gets its own fixed "grain" direction — deterministic given the same seed, never the same
+ * shape twice across different seeds. Pure function of its inputs; no state, no side
+ * effects, matches every other function in this module.
+ */
+export function textureField(x: number, y: number, angleA: number, angleB: number): number {
+  const a = Math.sin(x * Math.cos(angleA) + y * Math.sin(angleA) * 0.31);
+  const b = Math.sin(x * Math.cos(angleB) * 0.17 + y * Math.sin(angleB));
+  return (a + b) / 2;
+}
+
+/** [ILLUSTRATIVE] — how many of a district's building plots get flagged `isLandmark`.
+ *  Small and fixed rather than proportional to building count: landmarks are meant to read
+ *  as rare, not as a percentage-of-density effect. */
+export const LANDMARKS_PER_DISTRICT = 3;
+
+// ---- Shard generation -----------------------------------------------------------------
+
 export interface ShardLayoutConfig {
   /** Target player population for this shard — 50-80 per the brief. Informational at this
    *  phase; Phase A lays out static geography only, it doesn't place players. */
@@ -397,6 +430,8 @@ function generateDistrictPlots(
   radius: number,
   spacing: number,
   buildingCount: number,
+  angleA: number,
+  angleB: number,
   rand: () => number,
 ): { plots: Plot[]; buildings: Building[]; plazaPlot: { x: number; y: number } } {
   // Grid is aligned to (0,0) — iterate every integer offset and keep only those on the
@@ -411,7 +446,17 @@ function generateDistrictPlots(
       const d = Math.abs(dx) + Math.abs(dy);
       if (d > radius) continue;
       const edgeFactor = d / radius;
-      if (edgeFactor > 0.7 && rand() < 0.3) continue; // ragged edge, not a clean boundary
+      if (edgeFactor > 0.7) {
+        // Same outer-ring dropout band as before, now modulated by the anisotropic
+        // texture field instead of a flat 0.3 — the sparse side of the field (texture
+        // < 0) drops more, the dense side (texture > 0) drops less. Still exactly one
+        // rand() call per candidate in this band, same as the original flat version, so
+        // this changes WHERE the raggedness lands, not the determinism/call-count
+        // properties anything else in this module relies on.
+        const texture = textureField(center.x + dx, center.y + dy, angleA, angleB);
+        const dropoutChance = 0.3 - texture * 0.2; // ~0.1 (dense side) .. ~0.5 (sparse side)
+        if (rand() < dropoutChance) continue;
+      }
       candidates.push({ x: center.x + dx, y: center.y + dy });
     }
   }
@@ -439,6 +484,21 @@ function generateDistrictPlots(
       roleSlotRef: null,
       floors: HOUSING_FLOORS_PER_BUILDING,
     });
+  }
+
+  // Landmarks: the LANDMARKS_PER_DISTRICT buildings with the strongest texture-field
+  // MAGNITUDE (peak or trough, either direction counts) — not simply the first N or the
+  // largest — so landmarks spread across both the district's densest and its most open
+  // pockets rather than clustering in whichever sub-region happens to be busiest. Purely
+  // a post-hoc flag on already-chosen buildings; doesn't consume rand() and doesn't change
+  // which plots became buildings above, so building COUNT and the existing rand()-driven
+  // selection are both untouched by this step.
+  const landmarkOrder = [...buildings].sort(
+    (b1, b2) =>
+      Math.abs(textureField(b2.x, b2.y, angleA, angleB)) - Math.abs(textureField(b1.x, b1.y, angleA, angleB)),
+  );
+  for (const b of landmarkOrder.slice(0, LANDMARKS_PER_DISTRICT)) {
+    b.isLandmark = true;
   }
 
   return { plots, buildings, plazaPlot };
@@ -520,6 +580,14 @@ export function generateShardLayout(seed: number, config: ShardLayoutConfig = DE
   const centers = placeDistrictCenters(config, rand);
   const hub = { x: 0, y: 0 };
 
+  // Texture field orientation — drawn once per shard, unconditionally (same two rand()
+  // calls happen every time regardless of district/config shape), so every shard gets its
+  // own fixed "grain" direction and the existing same-seed-same-output determinism test
+  // still holds byte-for-byte. Drawn AFTER placeDistrictCenters so district-center jitter
+  // is completely unaffected by this addition — nothing upstream of this line changes.
+  const textureAngleA = rand() * Math.PI * 2;
+  const textureAngleB = rand() * Math.PI * 2;
+
   // Pass 1: each district's own plots (plaza/street/building) — generated in center order,
   // nothing here depends on any other district yet.
   const districtData = centers.map((center, i) => {
@@ -528,7 +596,16 @@ export function generateShardLayout(seed: number, config: ShardLayoutConfig = DE
     const spacing = center.classification === 'core' ? config.coreSpacing : config.peripherySpacing;
     const buildingCount =
       center.classification === 'core' ? config.buildingsPerCoreDistrict : config.buildingsPerPeripheryDistrict;
-    const { plots, buildings, plazaPlot } = generateDistrictPlots(id, center, radius, spacing, buildingCount, rand);
+    const { plots, buildings, plazaPlot } = generateDistrictPlots(
+      id,
+      center,
+      radius,
+      spacing,
+      buildingCount,
+      textureAngleA,
+      textureAngleB,
+      rand,
+    );
     return { id, classification: center.classification, radius, plazaPlot, plots, buildings };
   });
 
@@ -593,3 +670,6 @@ export function generateShardLayout(seed: number, config: ShardLayoutConfig = DE
 
   return { id: `shard-${seed}`, seed, districts, hubPlot: hub };
 }
+
+
+
