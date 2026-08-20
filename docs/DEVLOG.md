@@ -6,6 +6,56 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — The server streams a real world, and the wire is a privacy boundary
+
+Chain item 4. The WebSocket server had broadcast the §8 MVP scenario — two Bakers and a price
+spread — since Phase 3. That proved the socket worked and nothing else. `startWorldServer` now
+streams the real `stepWorld` kernel. The legacy path is kept behind `NODE_LEGACY_MVP=1` rather
+than deleted, because the existing Godot scaffold and its tests still speak it and breaking
+them to make a point would cost more than the file it saves.
+
+**The actual work was deciding what a client may know**, which is why `worldProtocol.ts` is a
+separate pure module rather than a `JSON.stringify(world)` inside the socket handler. Three
+categories, each argued in the file's own header:
+
+- **Public** — geometry, which building carries which role and its slot state, per-building
+  heat, per-district tension, and that a body is standing at a position. All things a person
+  in the node perceives directly; this is the "read the world, don't compute it" doctrine.
+- **Withheld** — wealth, personal stock, experience, completion stats, `wealthGini`, anything
+  diary-shaped, and in-flight sabotage campaigns. The playtest inspector shows most of these
+  freely, but that is explicitly a designer's x-ray and is not a precedent for a client.
+  Streaming live campaigns in particular would hand every client the answer to the one thing
+  detection is supposed to be a game about.
+- **Pseudonymous** — the interesting one. Identity resolution is per-observer
+  (`engine/identity.ts`), so real ids may not be broadcast; but a client cannot interpolate a
+  body between ticks without something stable to track it by. Resolved with a per-connection
+  `handle`, derived from a **server-generated** secret (never client-supplied — two cooperating
+  clients could otherwise agree on one and correlate their views). Two connections therefore
+  see completely disjoint handles for the same person. Resolving a handle to an actual identity
+  is a separate `identityResolved` message, sent only for subjects that observer really knows.
+
+**Why now rather than after Godot exists**: retrofitting pseudonymity once a client depends on
+real ids means changing the wire format under a dependent. That is the expensive version.
+
+**The leak test was mutation-checked rather than trusted.** A negative assertion that cannot
+fail is worthless, so I deliberately injected a `wealth` field into the people payload and
+confirmed the test fails, then removed it and confirmed it passes. It has teeth.
+
+**Verified standalone, not only under vitest** — booted the server on a real port and connected
+a real client: 62 buildings, 87 plots, hub at (0,0), **95 people per tick**, 46 stations, health
+declining naturally day to day. Role-holders AND grifters, so the roughly one third of the
+population that has never been on any map is now on this one.
+
+18 new tests (14 pure transforms, 4 over an actual socket covering handshake order, timer
+advance, cross-client handle disjointness, and no-leak on a real wire). 688 total, typecheck
+clean.
+
+Still not done: no client consumes this yet (Godot is next), `identityResolvedMessages` is
+built and tested but nothing calls it — wiring it needs per-connection observer state and a
+real answer to "which player is this connection", which `player.ts` still flags as deferred.
+
+---
+
 ## 2026-08-19 — The Wall is in the middle of the town, and couriers get paid properly
 
 Both bugs HANDOVER had been carrying as "deliberately not fixed — fix them together or not at
