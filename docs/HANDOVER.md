@@ -325,7 +325,7 @@ economic claim against the real engine (didn't hold), then — per the user's ex
 decision — extended `jointGridSearch.ts` to re-derive a role/district config at
 `targetPopulation=100` properly, and adopted the result: `DEFAULT_WORLD_CONFIG` is now
 `M9 B9 C7 J7 D8 IE6` (S=46), `targetPopulation=100` (was M5/B5/C5/J5/D5/IE3=28, pop=65). Full
-trail in `docs/BLUEPRINT.md`'s "2026-08-13 addendum received" and "Adopted (2026-08-13)"
+trail in `docs/BLUEPRINT_HISTORY.md`'s "2026-08-13 addendum received" and "Adopted (2026-08-13)"
 entries; a real side-finding (the core-vs-periphery identity-resolution gap disappeared at the
 new building-count scaling) is flagged there too. Concept art was then folded into
 `docs/VISUAL_FRAMEWORK_2026-08-12.md` as real source material (user's explicit instruction —
@@ -357,7 +357,7 @@ headcount, health, AND equality — not a tradeoff). `DEFAULT_SHARD_CONFIG` is n
 addendum's three-wedge art for free (one district now IS one settlement) and closes
 `VISUAL_FRAMEWORK_2026-08-12.md` §8. Full numbers and the real, undeleted cost (the
 core/periphery Silhouette-Shield resolution-speed distinction no longer applies to the shipped
-default) are in `docs/BLUEPRINT.md`'s 2026-08-13 "District-topology question RESOLVED" entry.
+default) are in `docs/BLUEPRINT_HISTORY.md`'s 2026-08-13 "District-topology question RESOLVED" entry.
 442 tests passing (437 + 5 new), typecheck clean.
 
 Also captured this session but **not yet designed or built**: a tongue-in-cheek
@@ -396,7 +396,7 @@ grifters), not just role-holders. Verified against a real run: shipped config, 3
 housing capacity 372 vs. real population 67, all 22 grifters housed. 9 new tests, 451 total,
 typecheck clean. Deliberately scoped down from the full design — no per-building/per-floor
 assignment yet (district-level only), no consolidation-displacement grace period for housing.
-Full detail in `docs/BLUEPRINT.md`'s "Housing capacity + grifter residency" entry.
+Full detail in `docs/BLUEPRINT_HISTORY.md`'s "Housing capacity + grifter residency" entry.
 
 Then folded the real shipped numbers into `docs/VISUAL_FRAMEWORK_2026-08-12.md` §9 (floors,
 capacity, the "every building is mixed-use, same footprint regardless of role" rule) per the
@@ -445,7 +445,7 @@ observed topped out at 7. Lowered to 6, verified reachable, locked in with a reg
   economic quantities only, never standing/reputation (constraint 6).
 
 Both cross-reference, not duplicate, the housing/reputation/diary work already written up.
-No code in either — full detail in `docs/BLUEPRINT.md`'s matching entry.
+No code in either — full detail in `docs/BLUEPRINT_HISTORY.md`'s matching entry.
 
 **Then: "let's restructure the reputation gate before coding, then begin."** Done, and live.
 `sim/multiRoleConscription.ts`'s `RoleGroupState` gained an optional
@@ -564,7 +564,7 @@ session, tracked as tasks #66-69:**
 - **#66 done**: `src/engine/diary.ts` — SUBJECT/OBSERVATION/READING/CONTEXT built exactly to
   the already-locked addendum spec, `distortDiaryEntry` wired into `privateStore.ts`'s distort
   hook (its first real consumer). 13 new tests, 490 total, typecheck clean. Full detail in
-  `docs/BLUEPRINT.md`'s matching entry.
+  `docs/BLUEPRINT_HISTORY.md`'s matching entry.
 - **#67 done**: `src/comms/proximityConversation.ts` — INTENT/TONE/REFERENT/CONTEXT, presence
   gating, distance-driven degradation reusing `space.ts`'s `proximityCloseness()` +
   `decay.ts`'s `applyDistortion`. 14 new tests, 504 total, typecheck clean.
@@ -866,7 +866,7 @@ own wiring is now DONE, see the entry directly above; renumbered):**
 
 The rest of this file below was last fully rewritten 2026-08-12 and is accurate except where
 the above supersedes it (role/population numbers in "Shipped configuration" below need the
-single-district update — see `docs/BLUEPRINT.md`'s 2026-08-13 entries for the real numbers;
+single-district update — see `docs/BLUEPRINT_HISTORY.md`'s 2026-08-13 entries for the real numbers;
 narrative elsewhere referring to "65" as the target, or to 6 scattered districts, is now
 historical).
 
@@ -943,7 +943,7 @@ Phases D-F are not started.
    arbitrary flat number) rather than a literal cross-role wealth debit from Miller/Baker —
    measured that a literal debit would remove roughly a third of their COMBINED daily income,
    which is a new kind of mechanic outside this item's scope, not a fee line. See below and
-   `docs/BLUEPRINT.md`'s "Item 6" entry for the full reasoning and what's left open.
+   `docs/BLUEPRINT_HISTORY.md`'s "Item 6" entry for the full reasoning and what's left open.
 9. **Item 7 — Shift Cover**, closing the brief's long-open §2.6 (`engine/shiftCover.ts`).
    Reshaped around this engine's real `BACKSTOPPED` state rather than the brief's original
    player-session concept: any grifter can be probabilistically "noticed" covering a
@@ -954,7 +954,7 @@ Phases D-F are not started.
    constructible player action to simulate (churn is a stochastic hazard, not a player
    choice, anywhere in this engine) — proved the underlying economics exactly instead
    (0.4x wage forfeits 60% of it, every single day, for any alternation pattern). See
-   `docs/BLUEPRINT.md`'s "Item 7" entry for the full reasoning.
+   `docs/BLUEPRINT_HISTORY.md`'s "Item 7" entry for the full reasoning.
 10. **Item 8 — economic throttle windows**, the addendum's last item. Verified against the
     EXISTING `DAILY_ACTIVITY_MULTIPLIER` downtime mechanic (built 2026-08-11 for a different
     stated reason) point by point rather than assumed to need new code — every requirement
@@ -974,7 +974,7 @@ Phases D-F are not started.
     exclusion. Built a synthetic Wall-posting driver to make the measurement possible at all
     (`pendingWallPosts` has no driver anywhere in the shipped kernel) — flagged as
     measurement-only, same discipline `src/sim/drivers/` already uses for its own synthetic
-    policies. See `docs/BLUEPRINT.md`'s "Identity resolution core-vs-periphery sweep" entry.
+    policies. See `docs/BLUEPRINT_HISTORY.md`'s "Identity resolution core-vs-periphery sweep" entry.
 12. **Item 8's report-back verification, strengthened** (`test/throttleWindowImpact.test.ts`,
     `npm run throttle-window-report`) — proved EXACTLY, not just checked against the shipped
     constant's value, that the throttle windows can never distort market-clearing dynamics:
@@ -985,7 +985,7 @@ Phases D-F are not started.
     with same-slot single-day deltas), and flagged a real nuance rather than hiding it
     (Miller/Baker/Courier/Journalist's completion bonus, item 4, is NOT activity-scaled, so
     their combined income isn't a clean sample — grifters' is, and it landed at exactly the
-    proven 30% cut in all 3 seeds). See `docs/BLUEPRINT.md`'s "Item 8 report-back
+    proven 30% cut in all 3 seeds). See `docs/BLUEPRINT_HISTORY.md`'s "Item 8 report-back
     verification" entry.
 
 ### 2026-08-11 addendum work, briefly (full reasoning in BLUEPRINT.md)
@@ -1059,7 +1059,7 @@ hard filter. `M9 B9 C7 J7 D8 IE6` won on the same judgement the original pop=65 
 balance over extremes (near-top health, tied-lowest gini among strong performers, a
 comfortable flourRatio margin, shard count staying steady rather than inflating).
 `DEFAULT_SHARD_CONFIG`'s building counts were raised to match exactly what that winning
-layout validated. See `docs/BLUEPRINT.md`'s "Adopted (2026-08-13)" entry for the full trail,
+layout validated. See `docs/BLUEPRINT_HISTORY.md`'s "Adopted (2026-08-13)" entry for the full trail,
 including a real side-finding caught while adopting it: raising building count without also
 re-deriving `coreSpacing`/`peripherySpacing` closed the core-vs-periphery identity-resolution
 gap that used to exist at the old default — flagged, not silently absorbed.

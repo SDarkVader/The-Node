@@ -35,7 +35,11 @@ at the very end — if the session is interrupted, the docs should still be curr
    repeated. One entry per session at minimum; more if the session covers distinct pieces
    of work worth separating.
 3. **Keep `docs/BLUEPRINT.md` in sync with what's actually implemented**, not what's
-   aspirational. If you build something that deviates from the brief, or resolve one of the
+   aspirational. **`BLUEPRINT.md` is a MAP, not a narrative** — constants, state shape, data
+   flow, invariants, current values. It answers "what is it?" and nothing else. The reasoning
+   and the reversals belong in `docs/BLUEPRINT_HISTORY.md` (the decision record) or the devlog;
+   if you find yourself writing a date or the word "then" in the blueprint, it is going in the
+   wrong file. If you build something that deviates from the brief, or resolve one of the
    brief's open questions (§7), record the decision and the reasoning there. If a mechanic
    doesn't hold up once built, say so in the blueprint and the devlog both — per the brief's
    own instructions, don't silently work around a rule that breaks.

@@ -1040,7 +1040,7 @@ performance is also required — expected, not a regression). `economicHealth` m
 
 User: *"tackle the level-2 reputation gate."* This was HANDOVER's #1 open item as of the
 refresh two entries below, and picks up a thread left explicitly open 2026-08-13
-(`docs/BLUEPRINT.md`'s "Investigating the level-2 rarity" entry): the user had already been
+(`docs/BLUEPRINT_HISTORY.md`'s "Investigating the level-2 rarity" entry): the user had already been
 shown real threshold-sensitivity numbers (lowering the level-2 threshold 6→5 or 6→4 would raise
 reachability 1.75x-3.7x) and explicitly asked for "a different mechanism instead" — no specifics
 supplied at the time, so it sat unresolved.
@@ -1831,7 +1831,7 @@ conscription/backstop instead. Economic health stayed healthy (0.909–0.922) re
 the backstop absorbs it as it always has — but this is a stronger effect than "harder to get
 into," flagged as worth a closer look, not smoothed over.
 
-4 new tests, 470 total, typecheck clean. Full trail in `docs/BLUEPRINT.md`'s "reputation
+4 new tests, 470 total, typecheck clean. Full trail in `docs/BLUEPRINT_HISTORY.md`'s "reputation
 gate" entries.
 
 ---
@@ -1873,7 +1873,7 @@ bonus, resource top-up, a small wealth bonus checked against existing Gini findi
 explicitly never standing or reputation, which constraint 6 rules out structurally.
 
 **Design only, both documents. No code, no new tests this entry** — matches the design-before-
-code discipline used all session. Full detail in `docs/BLUEPRINT.md`'s matching entry.
+code discipline used all session. Full detail in `docs/BLUEPRINT_HISTORY.md`'s matching entry.
 
 ---
 
@@ -1913,7 +1913,7 @@ unreachable again.
 (needs fill-selection restructured to pick individual grifters — separate, larger work); any
 notion of reputation surviving a grifter's transition into a role and back (blocked on the
 same missing persistent-identity concept, not fixable in this pass's scope). Full trail in
-`docs/BLUEPRINT.md`'s "Reputation levels" entry.
+`docs/BLUEPRINT_HISTORY.md`'s "Reputation levels" entry.
 
 ---
 
@@ -2057,7 +2057,7 @@ mechanical gate, not a narrative one, and it composes directly with what's alrea
 than requiring anything new to model intent (constraint 3): more participants required to
 create the item means more real people whose presence/resource-spend is itself a witnessable
 event, which is exactly the shape `identity.ts`'s real-encounter-count witnessing and the
-pattern-based sabotage re-spec (`docs/BLUEPRINT.md`'s "Open deviations") already use for
+pattern-based sabotage re-spec (`docs/BLUEPRINT_HISTORY.md`'s "Open deviations") already use for
 detection — a crime that structurally can't stay solo-and-silent, by construction, not by the
 engine tracking anyone's motive. User's own follow-up confirms the intent reads correctly:
 *"so going solo requires help"* — there is no lone-wolf path through this at all; recruiting
@@ -3546,7 +3546,7 @@ structurally different market.
 
 **But found a real, different problem instead: a large role-based earnings gap.** Bakers
 earn 4-8x more than Millers on average, consistently across seeds (within-role Gini
-breakdown in `docs/BLUEPRINT.md`'s "Wealth inequality" entry). Traced to the mechanism:
+breakdown in `docs/BLUEPRINT_HISTORY.md`'s "Wealth inequality" entry). Traced to the mechanism:
 Miller income is quantity times a flourPrice that sits near its own floor most of the
 time; Baker income is a *margin* over that same near-floor price, which stays
 comparatively large regardless. A meaningful share of this gap is plausibly an artifact
@@ -3660,7 +3660,7 @@ constant, not inventing a second one), VACANT contribute nothing. Tested directl
 including that an all-BACKSTOPPED miller layer still produces a real flour price.
 
 **Two genuine contradictions found by composing all three models for the first time —
-documented in `docs/BLUEPRINT.md`'s "Phase B" entry, not papered over:**
+documented in `docs/BLUEPRINT_HISTORY.md`'s "Phase B" entry, not papered over:**
 
 1. `stepMillers`/`stepBakers` require >= 2 array entries; vacancy.ts permits 0 or 1
    FILLED slots as an ordinary outcome, especially at small role counts. Resolved: fewer
@@ -4117,7 +4117,7 @@ live this time instead of just reasoned about. Removed the debug prints once con
 `git diff` showed nothing left behind before committing.
 
 **Result:** the client is genuinely verified now, not just "written correctly by hand
-and hoped." `docs/BLUEPRINT.md`'s "Client/server scaffold" section rewritten to say so
+and hoped." `docs/BLUEPRINT_HISTORY.md`'s "Client/server scaffold" section rewritten to say so
 plainly, including the narrower remaining gap (GUI editor experience, not covered by a
 headless run). `docs/HANDOVER.md`'s longest-standing open item is closed.
 
