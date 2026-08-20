@@ -48,8 +48,26 @@ who wanders off still mills. Whether that should stay true is genuinely unresolv
 another building's cell isn't drawn (structure wins the cell — 1 of 9 away role-holders at
 seed 7 day 60). The map is not a headcount. Documented in `playtestRenderer.ts`.
 
-666 tests, typecheck clean, pushed to `main`. **Next in the chain: the server streaming a real
-`World`** — the Phase 3 WebSocket scaffold still broadcasts the old MVP scenario. Then Godot.
+**Then both long-standing open bugs were fixed** — the misplaced Wall and the Courier pay bug
+behind it (`5276919`). Full account in the CLOSED section further down this file; short version:
+the Wall now sits in the middle of the town (hub offset 0.14-0.61, was 6.5-10.5; 43.1% of
+buildings west of it, was 0%), and couriers earn parity with their peers (ratio 1.028, was
+~0.40-0.45) via station-level routing — which only became possible because of the `x`/`y` work
+above. Sabotage re-measured and barely moved (42.9%, was 43.6%).
+
+**Also fixed, found on the way**: vitest had no `testTimeout`, so its 5s default applied to a
+suite full of multi-second simulations — a real intermittent-failure source. Now 60s.
+
+670 tests, typecheck clean, pushed to `main`.
+
+**IMMEDIATE NEXT TASK, half-done and committed by accident**: `src/server/worldProtocol.ts`
+(swept into `5276919`). It is the wire format for streaming a real `World` — chain item 4 — and
+is complete and typecheck-clean, but has **no tests and is not wired into `ws.ts`**, which still
+broadcasts the old two-Baker MVP scenario. Its design decisions are documented in its own header
+and are the load-bearing part: an explicit public/withheld/pseudonymous split (geometry and
+ambient mood public; wealth, Gini, diary and in-flight sabotage campaigns withheld; people
+identified only by a per-connection `handle` so the Silhouette Shield survives the wire, with
+resolution as a separate earned message). Finish that, then Godot.
 
 ## Current state (as of 2026-08-19, docs)
 
@@ -700,36 +718,49 @@ phone. Explicitly a stopgap and labelled as one: no avatar, nothing moves, grift
 
 **647 tests, typecheck clean, all pushed to `main`.**
 
-## OPEN BUG, found 2026-08-19 — read before touching geometry or Courier pay
+## CLOSED 2026-08-19 — the misplaced Wall and the Courier pay bug (both fixed, `5276919`)
 
-User spotted it in the viewer: **the Wall is not in the centre of the town, it is outside it.**
-Measured across 8 seeds: zero of ~62 buildings lie west of the hub, all of them east; the hub is
-6.5-10.5 units off the district's geometric centre, while the plaza sits almost exactly on it.
+Kept as a record rather than deleted, because the shape of this pair is instructive and the
+numbers below are the ones any future geometry work should compare against.
 
-Cause: `placeDistrictCenters` (`space.ts`) rings core districts ~9 units around origin — right
-for several districts around a central hub, meaningless for the ONE district shipped since
-2026-08-13. `space.ts` still documents the hub as "true center, equidistant from all districts",
-which has been false since that decision.
+**What was wrong.** `placeDistrictCenters` rings core districts ~9 units around origin — right
+for several districts around a shared hub, meaningless for the ONE district shipped since
+2026-08-13. So the hub (The Wall) sat on the settlement's western rim: measured across 8 seeds,
+6.5-10.5 units off the district's true centre, with ZERO of ~62 buildings west of it. Pulling
+that thread found a live pay bug: `courierRouteDistance` was plaza-to-hub, so with one district
+every courier had an identical route, and `COURIER_FEE_PER_DISTANCE_UNIT = 0.075` had been
+calibrated against ~20-unit routes in the old 6-district layout. **Couriers earned 0.42-0.47/day
+against their peers' 1.05 — ~40% — in every run since 2026-08-13**, unseen because no test
+compared two roles' wages.
 
-**Pulling the thread found a live pay bug.** `courierRouteDistance` is plaza→hub distance, so
-with one district every courier has an identical route and an identical wage — item 6's
-"distance-indexed, not a flat number" indexes nothing. Worse,
-`COURIER_FEE_PER_DISTANCE_UNIT = 0.075` was calibrated against ~20-unit routes in the old
-6-district layout; routes are now 8-9 units, so **couriers earn 0.420-0.472/day against the
-1.050 the other three support roles get** — ~40-45% of their peers, in every run since
-2026-08-13. No test asserts cross-role wage parity, which is why it went unseen.
+**Why they could only be fixed together.** Centring the district makes `plazaPlot === hubPlot`,
+so plaza-based route distance becomes exactly 0 and couriers earn *nothing*. The misplaced Wall
+was the only reason courier pay was nonzero at all.
 
-**The obvious fix is a trap**: centring the district on origin makes `plazaPlot === hubPlot`, so
-route distance becomes 0 and couriers earn *nothing*. The misplaced Wall is the only reason
-courier pay is nonzero. Fix them together or not at all.
+**How they were fixed.** Route distance moved to the courier's OWN station — possible only
+because role slots gained `x`/`y` the same day. The single-district case now centres on the hub,
+consuming the same `rand()` draws rather than skipping them, so the district **translates**
+rather than regenerating.
 
-Options (none chosen): measure each courier's own BUILDING to the Wall (varies per courier,
-unlike the plaza); or restore a flat Courier wage and retire item 6 as superseded by the
-single-district decision; or reopen district count.
+**Numbers, after.** Hub offset 0.14-0.61 (was 6.5-10.5). Buildings west of hub 43.1% (was 0%).
+Courier/peer income ratio **1.028** (was ~0.40-0.45), with real spread 0.46-1.97 across
+stations. `COURIER_FEE_PER_DISTANCE_UNIT = 0.344`, calibrated against the **courier-station**
+mean distance of 4.357 — NOT the lattice mean (4.829) or all-building mean (4.724), which differ
+because `assignRoleBuildings` does not scatter roles uniformly and would underpay by 8-12%.
 
-**Deliberately not fixed** — geometry changes move witness counts, which feed sabotage detection,
-identity resolution and District Weather, all calibrated against the current layout. Needs a
-session with real re-measurement, same discipline as the sabotage restructure.
+**A constraint-2 trap that survived the obvious fix**: 1 of 496 generated buildings lands
+exactly on centre once centred, which would be permanent zero income with no escape. No courier
+drew it in the sample — which is exactly what would have let it ship invisibly. Hence
+`COURIER_MIN_ROUTE_DISTANCE = 1`.
+
+**The re-measurement this section used to demand, done.** Sabotage after the geometry change:
+**42.9% success (was 43.6%), mean 29.0 days (was 28.9), min `economicHealth` 0.7913 (was
+0.7652)**. The feared coupling is real but weak — witness counts depend on distances BETWEEN
+buildings, which translation preserves exactly; only texture-driven plot dropout (absolute
+coordinates) shifted. `economicHealth` 0.9152 / Gini 0.6896 at 600 days, 8 seeds.
+
+**Still open, unchanged by this**: the literal "commissioner-funded" cross-role wealth debit
+(`courierPay.ts`'s header) was never built and still isn't.
 
 ## THE DIRECTION, set by the user 2026-08-19
 

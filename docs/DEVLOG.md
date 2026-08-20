@@ -6,6 +6,76 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — The Wall is in the middle of the town, and couriers get paid properly
+
+Both bugs HANDOVER had been carrying as "deliberately not fixed — fix them together or not at
+all" are fixed, together. User supplied a patch report (their own iteration) proposing exactly
+the right architecture; three of its numbers did not survive checking, which is the only reason
+this entry is interesting.
+
+**What was right in it, and genuinely load-bearing**: station-level courier routing, which is
+what makes centring the district *safe*. The trap was real — with one district, centring makes
+`plazaPlot === hubPlot`, so plaza-based route distance becomes exactly 0 and every courier
+earns nothing. Routing from the courier's OWN station sidesteps it entirely. That only became
+possible earlier the same day, when role slots gained `x`/`y`; the report noticed that and
+built on it correctly.
+
+**What did not survive checking** (measured before adopting, per the standing rule):
+
+1. **Mean distance 4.956 is the wrong population.** That is the lattice-plot mean. Measured
+   directly: all plots 4.829, all buildings 4.724, but **real courier stations 4.357** —
+   `assignRoleBuildings` does not scatter roles uniformly, so the three differ. Calibrating on
+   the report's figure would have underpaid couriers by ~12%. Fee set to **0.344** against the
+   courier-station mean: 4.357 × 0.344 × 0.70 = 1.049/day.
+2. **A station can still land exactly on the hub → zero pay, forever.** 1 of 496 generated
+   buildings across 8 seeds sits exactly on centre once centred. No courier drew it in that
+   sample — which is precisely what makes it dangerous, since it would have shipped as an
+   invisible edge case rather than an obvious breakage. That is a permanent zero-state with no
+   action available to escape it, which **constraint 2** forbids outright. Added
+   `COURIER_MIN_ROUTE_DISTANCE = 1`: a courier at the Wall still walks a route and still works
+   a day. A floor, not an exclusion; nothing above it is affected.
+3. **`placeDistrictCenters` takes `(config, rand)` and is not exported.** The patch's signature
+   would not have compiled. Its early-return would also have skipped two `rand()` draws,
+   shifting the whole downstream stream; the real fix consumes them, so the district
+   **translates** onto the origin rather than regenerating into a different shape.
+4. Its claimed "previously validated bounds" of Gini 0.629 / flourRatio 0.616 appear nowhere in
+   this repo — the real flourRatio lineage is 0.74–0.86. Ignored as noise, per the user's own
+   standing instruction about this material.
+
+**Measured results.** Wall: hub offset from the district's true centre was 6.5–10.5 units,
+now **0.14–0.61**; buildings west of the hub was **0%**, now **43.1%**. Courier pay:
+courier/peer income ratio was ~0.40–0.45 in every run since 2026-08-13, now **1.028**, with
+real spread **0.46–1.97** across stations — parity on the mean AND genuine variance, which is
+the whole point of a distance-indexed wage.
+
+**The re-measurement HANDOVER demanded, and a mildly surprising result.** Geometry changes
+were flagged as dangerous because witness counts feed sabotage detection, identity resolution
+and District Weather. Re-ran `npm run sabotage-campaign-sim`: **42.9% success (was 43.6%),
+mean duration 29.0 days (was 28.9), min `economicHealth` 0.7913 (was 0.7652 — slightly
+better)**. The coupling was real but weak, and the mechanism is clear in hindsight: witness
+counts depend on distances BETWEEN buildings, which a pure translation preserves exactly. Only
+texture-driven plot dropout (which reads absolute coordinates) shifted, which is why the
+numbers moved a little rather than not at all. `economicHealth` 0.9152 / Gini 0.6896 at 600
+days across 8 seeds. The fear was reasonable; the measurement says the layout was safe to move.
+
+**A latent suite-wide flake found on the way, and fixed rather than shrugged at.**
+`experienceFloorImpact` failed once in a full-suite run, then passed in isolation. It was not a
+statistical failure — measured directly, its 3-seed mean is **0.094% against a 5% bar**, nowhere
+near failing. It ran 5349ms against **vitest's default 5000ms timeout**, which had never been
+configured despite this suite being full of multi-second deterministic simulations. Several
+tests legitimately take 3–9s. `testTimeout` now 60s: costs nothing when healthy, only ever
+removes a false failure.
+
+Golden snapshot regenerated (its own documented policy for a deliberate, reviewed change).
+670 tests, typecheck clean.
+
+**Committed alongside by accident**: `src/server/worldProtocol.ts`, in-progress work on the
+next chain item, swept into the geometry commit. It is complete and typecheck-clean but has no
+tests and is not wired to `ws.ts` yet — finishing it is the immediate next task, not a
+loose end being left.
+
+---
+
 ## 2026-08-19 — Position decoupled from occupancy: role-holders can finally be somewhere
 
 User: *"You can start the code process now."* Took HANDOVER's "THE DIRECTION" item 2 — the
