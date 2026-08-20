@@ -11,7 +11,9 @@ config_version=5
 [application]
 
 config/name="NODE"
-run/main_scene="res://scenes/Main.tscn"
+; The real settlement view (2026-08-19). scenes/Main.tscn is the older MVP-scenario
+; scaffold and still works against `NODE_LEGACY_MVP=1 npm run server`.
+run/main_scene="res://scenes/WorldView.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [rendering]
