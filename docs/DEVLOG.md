@@ -6,6 +6,71 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Position decoupled from occupancy: role-holders can finally be somewhere
+
+User: *"You can start the code process now."* Took HANDOVER's "THE DIRECTION" item 2 — the
+blocker everything else in the Godot chain stacks behind — in two staged commits.
+
+**Stage 1 (`f2eda67`), representation only.** Until now a role-holder WAS their building's
+plot: the same fact, so movement wasn't merely unimplemented, it was *unrepresentable*.
+`RoleEconomicSlot`/`SupportRoleSlot` now carry `x`/`y`, matching what `GrifterSlot` gained
+earlier the same day. Every construction site sets them from the occupant's own building;
+refills reset position alongside `wealth` (a new occupant starts AT their workplace, having
+just arrived), frozen while VACANT/BACKSTOPPED. `occupantsOf` now reads the occupant's own
+position instead of looking up their building — identical output, but the source of truth is
+the person, not the address.
+
+**All 659 pre-existing tests passed unchanged, golden-value snapshot included.** That's the
+proof the swap was inert, and it was the point of splitting the work here rather than doing
+both halves at once — witness counts (sabotage detection), identity resolution and District
+Weather all consume that position set, and all three are calibrated against the current
+all-at-their-building layout.
+
+One test needed a real fix, not a loosened assertion: `world.regression.test.ts`'s
+hand-built `makeMiller` fixture needed the two new required fields.
+
+**Stage 2 (`40d7c31`), the harder half — people actually move.** `playtestDrivers` applies
+`move` for role-holders as well as grifters (clamped to real plot bounds); the renderer draws
+a role-holder away from their post in their own role glyph, in a new `COLOUR_AWAY` deliberately
+OFF the heat ramp — their station's heat is still being drawn back at their building, and
+drawing it twice would double-count the one signal that has to stay honest.
+
+**This half is NOT inert, and the code says so where someone will actually read it.** Because
+`occupantsOf` reads real positions now, a moving population produces genuinely different
+detection and resolution numbers from a pinned one. **The existing 43.6%/28.9-day sabotage
+calibration was measured against a pinned layout and does not describe a world where people
+walk around.** Re-measuring belongs with whatever first makes role-holders move in the
+SHIPPED world; `playtestDrivers` is sim-side only (behind `drivers.importGuard`), so nothing
+shipped changed when this started landing. Also noted as a real open design question rather
+than silently decided: movement is economically inert, because every production/wage/market
+path in `stepWorld` keys off `buildingId`, never position — a Miller who wanders off still
+mills.
+
+**Verified on a real run before claiming it worked** (seed 7, 60 driven days): 9 of 16 filled
+Miller/Baker slots end up away from their building, 16 distinct positions. One sample looked
+like a teleport — (7,-1) to (12,-6) — so I checked the drivers' actual emission rather than
+assuming: they emit ±1 steps at p=0.2/day, so that was 60 days of accumulated drift. No bug.
+
+**A real limitation found by looking at rendered output, not by reasoning:** a person standing
+on ANOTHER building's cell isn't drawn at all — the structure wins the cell. 1 of 9 away
+role-holders in that sample. Kept deliberately (a person overdrawing buildings would make the
+settlement's fixed structure flicker, and structure is what the map is read for first) and
+documented in the renderer, with the honest warning that the map is therefore not a headcount.
+
+**One stale test replaced rather than deleted**: `"role-holders' own move actions are still NOT
+applied"` asserted exactly what this change reverses. Rewritten as a real check that a
+role-holder can walk away *while their `buildingId` stays put* — the slot is still theirs, only
+their feet moved.
+
+666 tests total (659 + 7 new across `test/world.rolePosition.test.ts` and the harness suite),
+typecheck clean, both commits pushed to `main`.
+
+Still not done, deliberately: nothing moves role-holders in the SHIPPED world (only the sim-side
+driver applier does), and the re-measurement that would require. Next in the chain is the server
+streaming a real `World` — the Phase 3 WebSocket scaffold still broadcasts the old MVP scenario.
+
+---
+
 ## 2026-08-19 — Consolidated visual-foundation brief, for taking outside the repo
 
 User asked for one document representing NODE's current state as a foundation for external

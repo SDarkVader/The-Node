@@ -16,7 +16,42 @@ personal memory is mortal, civic memory is immortal; let outcomes be real, don't
 them; reputation may only ever grant, never remove) that apply to everything built from
 here on.
 
-## Current state (as of 2026-08-19, latest)
+## Current state (as of 2026-08-19, latest — CODE)
+
+**"THE DIRECTION" item 2 is DONE: position is decoupled from occupancy.** The blocker
+everything else in the Godot chain stacked behind. Two staged commits, `f2eda67` then
+`40d7c31`:
+
+1. **Representation** — `RoleEconomicSlot`/`SupportRoleSlot` carry `x`/`y`, initialized to
+   the occupant's own building, reset on refill alongside `wealth` (a new occupant starts AT
+   their workplace), frozen while VACANT/BACKSTOPPED. `occupantsOf` reads the person, not the
+   address. **All 659 pre-existing tests passed unchanged, golden snapshot included** — that
+   equality was the whole point of splitting the work here.
+2. **Movement** — `playtestDrivers` applies `move` for role-holders too, clamped to real plot
+   bounds; the renderer draws them in their role glyph at their real position, in a new
+   `COLOUR_AWAY` off the heat ramp (their station's heat is still drawn at their building;
+   drawing it twice would double-count it).
+
+**READ THIS BEFORE TRUSTING ANY SABOTAGE NUMBER**: `occupantsOf` feeds witness counts, and
+witness counts feed sabotage detection, identity resolution and District Weather. **The
+43.6% / 28.9-day sabotage calibration was measured against a PINNED layout and does not
+describe a world where people walk around.** Nothing shipped changed yet — only the sim-side
+driver applier moves anyone, and it is behind `drivers.importGuard` — but the re-measurement
+is owed to whatever first makes role-holders move in the shipped world. Do not quote the old
+numbers past that point.
+
+**A real open design question, flagged not decided**: movement is economically inert. Every
+production/wage/market path in `stepWorld` keys off `buildingId`, never position, so a Miller
+who wanders off still mills. Whether that should stay true is genuinely unresolved.
+
+**Accepted rendering limitation, found by looking at real output**: a person standing on
+another building's cell isn't drawn (structure wins the cell — 1 of 9 away role-holders at
+seed 7 day 60). The map is not a headcount. Documented in `playtestRenderer.ts`.
+
+666 tests, typecheck clean, pushed to `main`. **Next in the chain: the server streaming a real
+`World`** — the Phase 3 WebSocket scaffold still broadcasts the old MVP scenario. Then Godot.
+
+## Current state (as of 2026-08-19, docs)
 
 **Session ended on a documentation task, not code — read this before anything else.**
 User asked for one consolidated document to take into an external visual design tool
