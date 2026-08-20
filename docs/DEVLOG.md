@@ -6,6 +6,49 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — Grifters get real position: the first case of position not tied to a role slot
+
+User: *"let's get going then.. we have to build it."* Starting the Godot dependency chain
+HANDOVER laid out — item 2 ("position decoupled from occupancy") is the blocker, but it splits
+into a lower-risk half (grifters, who have never counted as witnesses to anything) and a
+higher-risk half (role-holders, whose position IS their building, entangled with the sabotage/
+identity/District-Weather calibration stack just re-verified yesterday). Doing the low-risk half
+first, deliberately — not a detour, the same primitive role-holder movement will need.
+
+`GrifterSlot` gains `x: number; y: number` — always real, never `undefined`, unlike `districtId`
+which genuinely has no answer until housing resolves. Defaults to `Shard.hubPlot` at creation
+(all 5 construction sites), corrected to the housing district's plaza in the SAME lazy-fill
+pass that already assigns `districtId` — both resolve together, every tick, no case where one
+exists without the other.
+
+**Deliberately not fed into witness counts.** Grifters have always been out of the proximity
+graph (`world.ts`'s own header). Giving them a coordinate for rendering is not the same decision
+as making them count toward sabotage/rumour witnesses — that stays a real, separate call, and a
+dedicated test locks in that this change produces byte-identical `economicHealth`/`wealthGini`
+to a run without it, at the same seed.
+
+**A real interaction found while testing, not assumed away.** The first version of the
+consolidation-eviction test asserted a displaced grifter keeps their old building's position —
+failed. Traced it: that grifter is given their former building as an interim value, but (like
+every other creation site) carries no `districtId` yet, so the SAME tick's housing-assignment
+pass immediately re-houses AND repositions them regardless. The interim value is real (a better
+default than the hub if housing assignment ever finds nowhere to place someone) but not
+observable from outside the tick. Fixed the test to check what's actually true — correctly
+housed and positioned at the END of the tick — rather than loosening or deleting the assertion.
+
+Also needed a targeted-construction test for consolidation itself: measured directly that it
+does not occur once across 8 seeds x 400 days of ordinary churn at the shipped single-district
+config (conscription/backstop keep filled-fraction too high, too consistently), so the test
+primes a district one day from its own MERGED transition directly rather than waiting for an
+organic occurrence — same discipline other rare-deep-state tests in this repo already use.
+
+7 new tests, 654 total, typecheck clean. **Not yet done**: rendering grifters on the map (Phase
+A/B and the browser viewer both still only draw role-holder buildings), and giving anyone —
+driver or eventual player — a way to actually move one. Both are the natural next steps, staged
+separately so each lands verified rather than as one large, harder-to-check change.
+
+---
+
 ## 2026-08-19 — User-authored addition: anisotropic texture field + landmark buildings
 
 User: *"I've been working behind your back again, iterating etc."* Supplied a full

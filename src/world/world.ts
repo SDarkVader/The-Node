@@ -391,6 +391,24 @@ export interface GrifterSlot {
    *  grifters get placed. See `space.ts`'s `chooseHousingDistrict` and
    *  `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §1.3. */
   districtId?: DistrictId;
+  /**
+   * Real, independent world position (2026-08-19 — the first case in this engine of a
+   * position that is NOT the same fact as a role slot; every role-holder's position is still
+   * derived from their building, this is the actual primitive movement needs). Always a real
+   * number, never `undefined` — unlike `districtId`, which genuinely has no answer until
+   * housing resolves, a grifter needs SOMEWHERE to stand from the moment they exist. Defaults
+   * to `Shard.hubPlot` at creation (same "not yet placed" convention `districtId` already
+   * uses, just with a real coordinate instead of a missing one) and is corrected to their
+   * housing district's plaza in the SAME lazy-fill pass that assigns `districtId`, so both
+   * resolve together, by the end of the same tick, every time.
+   *
+   * Deliberately NOT fed into `buildProximityGraph`/witness counts here — grifters have
+   * always been out of scope for spatial mechanics (see this file's header note), and
+   * bringing them into witness-counted proximity is a real, separate calibration decision,
+   * not a side effect of giving them a coordinate to render.
+   */
+  x: number;
+  y: number;
   /** Accumulated reputation progress-ticks — undefined/0 for a freshly-created grifter, never
    *  set directly at construction (avoids touching every one of the 6+ places a `GrifterSlot`
    *  literal gets built; reads as `?? 0` everywhere, same convention `districtId` established).
@@ -752,6 +770,8 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     id: `grifter-${i}`,
     wealth: 0,
     daysAsGrifter: 0,
+    x: shard.hubPlot.x,
+    y: shard.hubPlot.y,
   }));
 
   const districtHealth: Record<string, DistrictHealth> = {};
@@ -842,7 +862,7 @@ export function receiveMigrants(world: World, count: number): World {
   let grifters = world.grifters;
   let nextGrifterId = world.nextGrifterId;
   for (let i = 0; i < count; i++) {
-    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
     nextGrifterId += 1;
   }
   return { ...world, grifters, nextGrifterId, population: world.population + count };
@@ -1023,9 +1043,23 @@ export function stepWorld(world: World): World {
     const evictWithDeadline = <T extends { slot: RoleSlot; buildingId: string }>(arr: T[]): T[] =>
       arr.map((s) => {
         if (s.slot.state === 'FILLED' && isInMergedDistrict(s.buildingId)) {
+          // A same-tick INTERIM value, same as every other grifter's hub default — this
+          // grifter has no `districtId` either, so the housing-assignment pass at the end of
+          // this same tick will immediately re-house and reposition them regardless. Set from
+          // their own building anyway rather than the hub: it is the more honest value for the
+          // (rare) case housing assignment finds nowhere to place them, and for anything that
+          // might read mid-tick state before that pass runs.
+          const evictedFrom = allBuildingsById.get(s.buildingId);
           grifters = [
             ...grifters,
-            { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, consolidationDeadline: day + CONSOLIDATION_GRACE_DAYS },
+            {
+              id: `grifter-${nextGrifterId}`,
+              wealth: 0,
+              daysAsGrifter: 0,
+              consolidationDeadline: day + CONSOLIDATION_GRACE_DAYS,
+              x: evictedFrom?.x ?? world.shard.hubPlot.x,
+              y: evictedFrom?.y ?? world.shard.hubPlot.y,
+            },
           ];
           nextGrifterId += 1;
           return { ...s, slot: { state: 'VACANT' as const, vacantSince: day } };
@@ -1144,7 +1178,7 @@ export function stepWorld(world: World): World {
   const bakerFloorQueue: number[] = [];
   for (const event of conscriptionResult.events) {
     if (event.type === 'churn') {
-      grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+      grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
       nextGrifterId += 1;
     } else if (event.type === 'genuineFill') {
       // Reputation-gated (2026-08-13): pick a real eligible grifter (level >= this role's
@@ -1745,7 +1779,7 @@ export function stepWorld(world: World): World {
         (e) => e.buildingId === outcome.campaign.targetBuildingId,
       );
       if (target) {
-        grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+        grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
         nextGrifterId += 1;
         const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
         if (target.role === 'miller') millers = millers.map((m, i) => (i === target.index ? { ...m, slot: evict } : m));
@@ -1807,7 +1841,7 @@ export function stepWorld(world: World): World {
   if (rng() < config.arrivalPDaily) {
     population += 1;
     lastNewArrivals = 1;
-    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0 }];
+    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
     nextGrifterId += 1;
   }
 
@@ -2052,12 +2086,18 @@ export function stepWorld(world: World): World {
   for (const g of grifters) {
     if (g.districtId) districtPopulationById[g.districtId] = (districtPopulationById[g.districtId] ?? 0) + 1;
   }
+  const districtById = new Map(shardWithWeather.districts.map((d) => [d.id, d]));
   grifters = grifters.map((g) => {
     if (g.districtId) return g;
     const districtId = chooseHousingDistrict(world.shard, districtPopulationById);
     if (!districtId) return g; // empty shard — nothing to assign to, shouldn't happen in practice
     districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
-    return { ...g, districtId };
+    // Position resolves in the SAME pass as districtId, same tick, every time — a grifter is
+    // never housed without also having a real place to stand. The plaza is a district's
+    // natural first stop, same convention `space.ts`'s `placeArrival` already uses for a new
+    // role-holder arrival.
+    const plaza = districtById.get(districtId)?.plazaPlot;
+    return plaza ? { ...g, districtId, x: plaza.x, y: plaza.y } : { ...g, districtId };
   });
 
   const shardWithPopulation: Shard = {
