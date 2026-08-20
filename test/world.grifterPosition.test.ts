@@ -15,6 +15,20 @@ function stepN(world: World, n: number): World {
   return w;
 }
 
+/**
+ * A housed grifter must stand on a REAL plot of their own district, and never on the hub
+ * cell (2026-08-19). These used to assert `position === plazaPlot`, which is exactly the
+ * behaviour that broke: centring the district made plazaPlot === hubPlot in every seed, so
+ * the whole roleless population stacked onto the Wall and went invisible (the renderer draws
+ * the hub before it draws people). The property that actually matters is the one below.
+ */
+function expectStandingOnRealGround(world: World, g: { x: number; y: number; districtId?: string }) {
+  const district = world.shard.districts.find((d) => d.id === g.districtId)!;
+  const onHub = g.x === world.shard.hubPlot.x && g.y === world.shard.hubPlot.y;
+  expect(onHub).toBe(false);
+  expect(district.plots.some((p) => p.x === g.x && p.y === g.y)).toBe(true);
+}
+
 describe('grifter position — real, always-defined, decoupled from any role slot', () => {
   it('a freshly created world places every grifter at the hub — a real coordinate, not undefined', () => {
     const world = createWorld(1, DEFAULT_WORLD_CONFIG);
@@ -30,10 +44,11 @@ describe('grifter position — real, always-defined, decoupled from any role slo
     expect(world.grifters.length).toBeGreaterThan(0);
     for (const g of world.grifters) {
       expect(g.districtId).toBeDefined();
-      const district = world.shard.districts.find((d) => d.id === g.districtId)!;
-      expect(g.x).toBe(district.plazaPlot.x);
-      expect(g.y).toBe(district.plazaPlot.y);
+      expectStandingOnRealGround(world, g);
     }
+    // ...and they are spread across the district, not stacked on one cell.
+    const distinct = new Set(world.grifters.map((g) => `${g.x},${g.y}`));
+    expect(distinct.size).toBeGreaterThan(1);
   });
 
   it('districtId and position resolve TOGETHER, in the same pass — never one without the other', () => {
@@ -43,14 +58,7 @@ describe('grifter position — real, always-defined, decoupled from any role slo
     for (let i = 0; i < 100; i++) {
       world = stepWorld(world);
       for (const g of world.grifters) {
-        const atHubDefault = g.x === world.shard.hubPlot.x && g.y === world.shard.hubPlot.y;
-        if (g.districtId) {
-          const district = world.shard.districts.find((d) => d.id === g.districtId)!;
-          const atOwnPlaza = g.x === district.plazaPlot.x && g.y === district.plazaPlot.y;
-          // A housed grifter is either at their own plaza, or — a real, legitimate case —
-          // their plaza happens to coincide with the hub default at this shard's geometry.
-          expect(atOwnPlaza || atHubDefault).toBe(true);
-        }
+        if (g.districtId) expectStandingOnRealGround(world, g);
       }
     }
   });
@@ -64,9 +72,7 @@ describe('grifter position — real, always-defined, decoupled from any role slo
       world = stepWorld(world);
       for (const g of world.grifters) {
         if (g.districtId) {
-          const district = world.shard.districts.find((d) => d.id === g.districtId)!;
-          expect(g.x).toBe(district.plazaPlot.x);
-          expect(g.y).toBe(district.plazaPlot.y);
+          expectStandingOnRealGround(world, g);
           sawFreshlyHoused = true;
         }
       }
@@ -106,9 +112,7 @@ describe('grifter position — real, always-defined, decoupled from any role slo
 
     for (const g of evicted) {
       expect(g.districtId).toBeDefined();
-      const district = stepped.shard.districts.find((d) => d.id === g.districtId)!;
-      expect(g.x).toBe(district.plazaPlot.x);
-      expect(g.y).toBe(district.plazaPlot.y);
+      expectStandingOnRealGround(stepped, g);
     }
   });
 

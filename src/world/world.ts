@@ -2147,11 +2147,30 @@ export function stepWorld(world: World): World {
     if (!districtId) return g; // empty shard — nothing to assign to, shouldn't happen in practice
     districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
     // Position resolves in the SAME pass as districtId, same tick, every time — a grifter is
-    // never housed without also having a real place to stand. The plaza is a district's
-    // natural first stop, same convention `space.ts`'s `placeArrival` already uses for a new
-    // role-holder arrival.
-    const plaza = districtById.get(districtId)?.plazaPlot;
-    return plaza ? { ...g, districtId, x: plaza.x, y: plaza.y } : { ...g, districtId };
+    // never housed without also having a real place to stand.
+    //
+    // SPREAD ACROSS REAL PLOTS, not stacked on the plaza (2026-08-19). This used to place
+    // every grifter on `plazaPlot`, which put the shard's entire roleless population — ~40
+    // people, about a third of everyone — on one cell. Centring the district (the Wall fix)
+    // then made `plazaPlot === hubPlot` in all 20 seeds checked, so that single cell became
+    // the Wall itself, and the renderer draws the hub BEFORE people: every grifter went
+    // invisible at once. The pile-up was a pre-existing wart; centring turned it into a
+    // disappearance.
+    //
+    // Placement is a deterministic hash of the grifter's own stable id into the district's
+    // plot list, NOT an rng draw: it consumes nothing from `world.rng`, so adding it does not
+    // shift any downstream tick's trajectory. The hub cell is excluded — a person stands in
+    // the plaza beside the Wall, never inside it.
+    const district = districtById.get(districtId);
+    if (!district) return { ...g, districtId };
+    const standable = district.plots.filter(
+      (p) => !(p.x === shardWithWeather.hubPlot.x && p.y === shardWithWeather.hubPlot.y),
+    );
+    if (standable.length === 0) return { ...g, districtId };
+    let hash = 0;
+    for (let i = 0; i < g.id.length; i++) hash = (Math.imul(hash, 31) + g.id.charCodeAt(i)) >>> 0;
+    const spot = standable[hash % standable.length]!;
+    return { ...g, districtId, x: spot.x, y: spot.y };
   });
 
   const shardWithPopulation: Shard = {
