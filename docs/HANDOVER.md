@@ -16,6 +16,49 @@ personal memory is mortal, civic memory is immortal; let outcomes be real, don't
 them; reputation may only ever grant, never remove) that apply to everything built from
 here on.
 
+## Current state (as of 2026-08-19, latest — INBOUND PIPE)
+
+**The server can now receive from a client. Until this session it could only send.** User's own
+framing for why: *"so I can pull and record output simulation data for the build game + run
+simulation for data model."* This is a control/recording channel, not a player-action channel —
+scoped narrowly and deliberately.
+
+**What's real**: `src/server/ws.ts` gained `parseClientMessage` (total, defensive — bad JSON, a
+non-object, a missing/wrong-typed `type` or `action` all return `null`, never throw) and
+`attachActionReceiver`, shared by BOTH server paths (`startServer` legacy scenario AND
+`startWorldServer` live world) so untrusted input is handled identically on either. A
+`ClientActionMessage` carries `{ type: 'action', action: string, payload: unknown }` —
+deliberately generic. **`action`/`payload` are not interpreted anywhere.** No vocabulary was
+invented; that is explicitly the next owner's call, not this session's.
+
+- **Legacy path**: `stepScenario` gained an optional `pendingActions` parameter, drained once
+  per tick, echoed back uninterpreted on `DayResult.receivedActions` (present only when
+  non-empty). Omitting it is **byte-identical** to before — proven by capturing 200 recorded
+  scenario days both before and after this change and diffing (md5 `5b8ed60d...`, identical),
+  not by inspection.
+- **Live world path** (the one the Godot client actually speaks): `startWorldServer` gained an
+  `onActions(actions, tick)` observer hook. Called once per tick with whatever arrived since the
+  last one, omitted entirely when nothing did. `stepWorld` itself reads none of it — the hook is
+  how a recorder captures input alongside the real `World` output, without this module or the
+  kernel ever deciding what an action means.
+- Both queues cap at `MAX_PENDING_ACTIONS = 256` — a flooding client is dropped-and-logged, not
+  buffered without bound.
+
+**Verified real, not just typechecked**: `test/ws.inbound.test.ts`, 9 tests, a real
+`WebSocketServer` and a real `ws` client — connects, sends `{type:'action',...}`, and the server
+reports it back via `onActions`. Covers: happy path, tick correlation, drain-once (not
+re-reported), malformed frames dropped without killing the connection, the flood cap, and that
+the legacy path accepts input too. **Mutation-checked**: pulling `attachActionReceiver` out
+failed 5 of 9; restoring it passed all 9 — the suite has teeth, not just green ticks.
+
+703 tests total, typecheck clean.
+
+**Explicitly not done, on purpose — this is the whole point of scoping it this way**: no action
+vocabulary. Nothing like `'post_to_wall'` or `'move'` or `'trade'` exists anywhere in this
+change, and none should be added without a session that works the scenario mechanics out by
+hand first. **Action semantics are the next open item, and they are the user's design call, not
+an engineering default to reach for.**
+
 ## Current state (as of 2026-08-19, latest — CODE)
 
 **"THE DIRECTION" item 2 is DONE: position is decoupled from occupancy.** The blocker
@@ -112,14 +155,17 @@ already computed and already on the wire; the gap is rendering work, and most of
 and checked here.
 
 **Immediate next candidates**, in rough order of payoff:
-1. **Look at it and tune it** — the one thing no test here can do.
-2. **Move role-holders in the SHIPPED world.** They currently sit at their stations unless the
+1. **Design the action vocabulary.** The inbound pipe is real and tested (above); nothing reads
+   `action`/`payload` yet. This is a design session — work the scenario mechanics out by hand
+   first — not a "just add a switch statement" job.
+2. **Look at it and tune it** — the one thing no test here can do.
+3. **Move role-holders in the SHIPPED world.** They currently sit at their stations unless the
    sim-side driver applier moves them, so the client mostly shows a static town. This needs the
    witness-count re-measurement (see the movement note above) — though the geometry change
    suggests that coupling is weaker than feared.
-3. **A player avatar.** "I need to be inside the place" is still not literally true — you watch
+4. **A player avatar.** "I need to be inside the place" is still not literally true — you watch
    the town, you are not in it.
-4. **Wire `identityResolved`.** Built and tested, no sender; needs per-connection observer state
+5. **Wire `identityResolved`.** Built and tested, no sender; needs per-connection observer state
    and a real answer to "which player is this connection" (`player.ts` still defers it). Until
    then every body stays a silhouette.
 

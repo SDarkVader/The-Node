@@ -48,9 +48,39 @@ export interface DayResult {
   spread: number;
   wallPost?: WallPost;
   rumours: RumourEvent[];
+  /** Actions this tick received, echoed back uninterpreted so a recorder can log input
+   *  alongside output. Absent when none arrived, which keeps the recorded shape identical to
+   *  before for every existing run. */
+  receivedActions?: readonly PendingClientAction[];
 }
 
-export function stepScenario(state: ScenarioState): { state: ScenarioState; result: DayResult } {
+/**
+ * Client actions received for a tick, passed in but NOT interpreted (2026-08-19).
+ *
+ * The inbound socket pipe now exists (`src/server/ws.ts`), so a connected client can send
+ * something. What any of it MEANS is deliberately undesigned: the action vocabulary is a
+ * separate piece of work, to be settled by hand against the scenario mechanics rather than
+ * invented here by whoever happened to be wiring the transport.
+ *
+ * This parameter is the seam that keeps that decision open. Actions arrive, are carried into
+ * the tick, and are reported back out untouched on `DayResult.receivedActions` so a recorder
+ * can capture what was sent alongside what the simulation did. Nothing reads `action` or
+ * `payload`; nothing branches on them; no action changes a single number.
+ *
+ * **Omitting it is byte-identical to the previous behaviour**, verified by diffing 200
+ * recorded days before and after this change, not by inspection.
+ */
+export interface PendingClientAction {
+  action: string;
+  payload: unknown;
+  /** Which connection it arrived on. Opaque here — the scenario does not resolve identity. */
+  connectionId?: string;
+}
+
+export function stepScenario(
+  state: ScenarioState,
+  pendingActions: readonly PendingClientAction[] = [],
+): { state: ScenarioState; result: DayResult } {
   const day = state.day + 1;
   const nextP = stepBakers(state.bakerP, HARDCODED_FLOUR_PRICE, GAMMA, () =>
     gaussian(state.rng, NOISE_SIGMA),
@@ -67,5 +97,9 @@ export function stepScenario(state: ScenarioState): { state: ScenarioState; resu
   }
 
   const nextState: ScenarioState = { ...state, day, bakerP: nextP };
-  return { state: nextState, result: { day, bakerP: nextP, spread: gap, wallPost, rumours } };
+  // `receivedActions` is only attached when something actually arrived, so a run with no
+  // client input serialises exactly as it always did — the property is absent, not empty.
+  const result: DayResult = { day, bakerP: nextP, spread: gap, wallPost, rumours };
+  if (pendingActions.length > 0) result.receivedActions = pendingActions;
+  return { state: nextState, result };
 }

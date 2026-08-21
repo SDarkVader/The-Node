@@ -6,6 +6,62 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-19 — The server can receive: a real inbound pipe, no action vocabulary
+
+User's own framing for the ask: *"so I can pull and record output simulation data for the build
+game + run simulation for data model."* A recording/control channel, not player actions —
+narrowly scoped and explicitly stopped there.
+
+**Confirmed the real gap first, didn't take it on faith**: `src/server/ws.ts` had exactly one
+inbound handler, `socket.on('close', ...)`. Nothing read a client. Two server paths exist
+(`startServer` legacy MVP scenario, `startWorldServer` live world — the one the Godot client
+actually speaks), and only the latter matters for "pull data out of a live world," so the pipe
+had to land on both rather than just the one the original brief named.
+
+**Built**: `parseClientMessage` — total, defensive, returns `null` for anything malformed rather
+than throwing (bad JSON, non-object, missing/wrongly-typed `type`/`action`). `payload` is
+deliberately unvalidated — nothing here knows what a valid payload looks like yet.
+`attachActionReceiver` is shared by both server paths so untrusted input can't drift between
+them. `ClientActionMessage = { type: 'action', action: string, payload: unknown }` — generic on
+purpose. **Nothing anywhere reads `action` or branches on `payload`.** `stepScenario` gained an
+optional `pendingActions` param, echoed back uninterpreted on `DayResult.receivedActions`;
+`startWorldServer` gained an `onActions(actions, tick)` observer hook that `stepWorld` itself
+never touches. Both queues cap at `MAX_PENDING_ACTIONS = 256` — a flooding client is dropped and
+logged, not buffered without bound.
+
+**Byte-identical, proven not asserted**: captured 200 legacy scenario days + 150 live-world wire
+ticks to JSON before touching anything (md5 `5b8ed60d...`), made the change, re-ran the exact
+same capture, diffed. Identical md5, same 1,052,156 bytes. Omitting the new parameter changes
+nothing.
+
+**`test/ws.inbound.test.ts`, 9 tests, real socket** — a genuine `WebSocketServer` and a genuine
+`ws` client, not mocked. Covers the happy path, tick correlation, drain-once (an action is
+reported once, not on every subsequent tick), malformed frames dropped without killing the
+connection, the flood cap, and that the legacy path accepts input too. **Mutation-checked**:
+pulled `attachActionReceiver` out, 5 of 9 failed; put it back, all 9 passed. The suite has real
+teeth, not just green output.
+
+**Deliberately, explicitly not done**: no action vocabulary. Not `'move'`, not `'trade'`, not
+`'post_to_wall'` — nothing. That's not an oversight to circle back on, it's the actual scope: the
+vocabulary needs to be worked out by hand against the scenario mechanics in a session of its own,
+and whoever wires the transport is the wrong person to invent it. HANDOVER's "what's next" now
+says this plainly and puts it first.
+
+**A real flake found while verifying, not hidden**: `ws.inbound.test.ts`'s simplest test (single
+message round-trip) failed once under the full 62-file parallel suite, after passing instantly
+in isolation. Root cause matches a class already documented once before in this repo
+(`vitest.config.ts`'s own testTimeout note): dozens of test files run concurrently, several
+spinning multi-thousand-day `World` simulations, and the socket round-trip's own hardcoded 8s
+`waitUntil` budget occasionally starves under that contention — nothing wrong with the pipe
+itself. Raised to 20s (comfortably under the suite's global 60s `testTimeout`). Three consecutive
+clean full-suite runs after the fix; the mutation-test result (5/9 fail with the receiver
+removed, 9/9 pass restored) already showed the logic itself was correct before this was even an
+issue.
+
+703 tests total (694 + 9), typecheck clean, `main`.
+
+---
+
 ## 2026-08-19 — The Wall becomes a monument, and roles become icons
 
 User: *"work on the wall, make it a golden line horizontally in the centre... and let it radiate

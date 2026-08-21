@@ -195,6 +195,13 @@ a **privacy boundary** and not a serialization detail.
 | `tick` | per simulated day | day, economicHealth, districtTension[], stations[] (buildingId, state, heat), people[] (handle, x, y, role) |
 | `identityResolved` | when an observer resolves a subject | handle, playerId, procedural face. **Built and tested; nothing sends it yet** |
 
+**Inbound** (2026-08-19): `{ type: 'action', action: string, payload: unknown }`. Parsed
+defensively (`parseClientMessage`, total — malformed frames return `null`, never throw), shared
+by both server paths so a legacy-scenario connection and a live-world connection are handled
+identically. **`action`/`payload` are carried, never interpreted** — the vocabulary is
+undesigned by intent. `startWorldServer`'s `onActions(actions, tick)` reports what arrived each
+tick for recording; `stepWorld` reads none of it. Queue caps at `MAX_PENDING_ACTIONS = 256`.
+
 **Public**: geometry, role-per-building, slot state, per-building heat, per-district tension, and
 that a body is at a position.
 
@@ -255,7 +262,7 @@ Checked by tests, and load-bearing:
 ## 8. Commands
 
 ```
-npm test                     694 tests
+npm test                     703 tests
 npm run typecheck
 npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for the old scenario)
 npm run playtest              terminal renderer, synthetic drivers
@@ -268,6 +275,8 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
 
 ## 9. Known gaps
 
+- **No action vocabulary.** The inbound pipe is real (§5); nothing reads `action`/`payload` yet.
+  Deliberately undesigned — a later, separate design session, not an engineering default.
 - **No player entity.** `player.ts` is a session-scoped id; "a player" is still a `buildingId`.
 - **Nothing moves role-holders in the shipped world** — only the sim-side driver applier does.
   Whatever changes that owes a witness-count re-measurement.
