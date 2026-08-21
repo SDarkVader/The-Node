@@ -6,6 +6,25 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-21 — README refactor: lean, mysterious, current
+
+User frustration: *"keep my main readme up to date, not lagging. drives me nuts."* The README
+had grown to 600+ lines of game mechanics exposition (detailed role descriptions, sabotage
+rules, "how the city talks," exit tickets, multi-page technical breakdown), defeating the
+intentional mystery and falling behind actual code changes. Rewrite was a straight cut-90%-
+keep-20% pass: removed all game mechanics explanation, replaced with a brief status section,
+simple commands, and doc pointers.
+
+**Result**: 47 lines instead of 595, mystery intact (new reader learns tension exists, not how
+it works), current with the latest work (inbound pipe 2026-08-19, 703 tests, visual status via
+Godot, occupancy system, courier routes, glyph rendering, local weather). Status section
+explicitly lists what's live and wired, what's visual, what's next (action vocabulary design).
+
+**Also updated** HANDOVER.md's top to note the README is now simplified and current, and this
+entry to DEVLOG.
+
+---
+
 ## 2026-08-19 — The server can receive: a real inbound pipe, no action vocabulary
 
 User's own framing for the ask: *"so I can pull and record output simulation data for the build

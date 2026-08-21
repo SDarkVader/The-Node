@@ -3,6 +3,10 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-21**: `README.md` is now simplified and current. Stripped game mechanics exposition
+(cut 90% of the original text), kept mystery intact, added a Status section, and pointed readers
+to the docs for deeper detail.
+
 ## What NODE is
 
 A persistent multiplayer social-economic game, ~50-80 players per shard, no combat —
