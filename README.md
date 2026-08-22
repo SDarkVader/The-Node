@@ -23,7 +23,7 @@ proximity conversation, rumour decay, district weather, identity resolution,
 role-holder occupancy, the Oracle, universal housing with reputation gating,
 and a real multi-shard registry. The economy tracks wealth (Gini coefficient
 plateaus around 0.5, stays stable), Courier pay indexes actual distance, and
-role completion is uniformly tested across all six roles. 703 tests cover all
+role completion is uniformly tested across all six roles. 714 tests cover all
 of it.
 
 **Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry.
@@ -46,7 +46,7 @@ world), then wire it into the simulation.
 
 ```bash
 npm install
-npm test                # 703 tests
+npm test                # 714 tests
 
 npm run server          # Real world over WebSocket
 npm run playtest        # Terminal render with synthetic drivers
@@ -67,4 +67,4 @@ including failures. [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pd
 — the original design intent (§0 is load-bearing).
 
 **Repo layout**: `src/engine/` (pure mechanics), `src/world/` (the kernel),
-`src/server/` (WebSocket), `client/` (Godot), `test/` (703 tests).
+`src/server/` (WebSocket), `client/` (Godot), `test/` (714 tests).

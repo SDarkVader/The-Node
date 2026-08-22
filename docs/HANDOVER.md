@@ -3,6 +3,18 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-22**: Per-agent driver dispositions built and measured (`src/sim/drivers/
+heterogeneity.ts`) — see `docs/DEVLOG.md`'s top entry for the full account. Short version: every
+"honest"/"opportunist"/"saboteur" agent used to share one literal set of constants; now each
+samples its own fixed disposition once at creation, deterministically from `(seed, playerIndex)`,
+opt-in via `applyDriverTick(world, rng, { heterogeneous: true })` — default unchanged. Measured
+effect on Gini is real but modest (+24% day-to-day movement over the last 500 of a 3000-day run,
+5 seeds). Honestly does NOT explain the near-static Gini the user observed in a separate,
+externally-run 5-role-plus-grifter simulation (the Ember Blueprint deck's proposed roster) —
+this repo's own drivers were never that flat to begin with. Next candidates, explicitly
+sequenced and not yet started: the Journalist/Detective→Investigator merge, and a sibling-shard
+sky visualization reading real `shardRegistry` state (not an invented orbital-physics system).
+
 **2026-08-21**: `README.md` is now simplified and current. Stripped game mechanics exposition
 (cut 90% of the original text), kept mystery intact, added a Status section, and pointed readers
 to the docs for deeper detail.

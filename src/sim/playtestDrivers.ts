@@ -1,7 +1,7 @@
 import type { World } from '../world/world.js';
 import type { WallPost } from '../comms/grammar.js';
 import { distance } from '../engine/space.js';
-import { DRIVERS, assignDriverStrategy } from './drivers/index.js';
+import { DRIVERS, assignDriverStrategy, driverForPlayer } from './drivers/index.js';
 import type { DriverAction, DriverRole, DriverStrategy, DriverVisibleState } from './drivers/types.js';
 
 /**
@@ -195,7 +195,23 @@ function shardPlotBounds(shard: World['shard']): { minX: number; maxX: number; m
   return { minX, maxX, minY, maxY };
 }
 
-export function applyDriverTick(world: World, rng: () => number): DriverTickResult {
+export interface ApplyDriverTickOptions {
+  /**
+   * 2026-08-22: when true, each agent gets its own sampled-once disposition within its
+   * strategy (`drivers/heterogeneity.ts`) instead of every agent of a type sharing one literal
+   * set of constants. Defaults to false so every EXISTING caller (`playtestCli.ts`,
+   * `webExportCli.ts`, and every test in this file's own regression suite) sees zero behaviour
+   * change unless it explicitly opts in — this is a measured, isolated variable, not a silent
+   * default flip. See `docs/DEVLOG.md`'s 2026-08-22 entry for the measurement this enabled.
+   */
+  heterogeneous?: boolean;
+}
+
+export function applyDriverTick(
+  world: World,
+  rng: () => number,
+  options: ApplyDriverTickOptions = {},
+): DriverTickResult {
   const radius = world.config.witnessRadius;
   const actions: DriverTickResult['actions'] = [];
   const posts: WallPost[] = [];
@@ -211,7 +227,10 @@ export function applyDriverTick(world: World, rng: () => number): DriverTickResu
 
   for (const p of participantsOf(world)) {
     const strategy: DriverStrategy = assignDriverStrategy(world.seed, stablePlayerIndex(p.playerId));
-    const action = DRIVERS[strategy](visibleStateFor(world, p, radius), rng);
+    const driver = options.heterogeneous
+      ? driverForPlayer(world.seed, stablePlayerIndex(p.playerId), strategy)
+      : DRIVERS[strategy];
+    const action = driver(visibleStateFor(world, p, radius), rng);
     actions.push({ playerId: p.playerId, strategy, action });
 
     if (action.type === 'postToWall') {

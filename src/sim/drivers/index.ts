@@ -6,9 +6,20 @@ import { saboteurDriver } from './saboteur.js';
 
 export * from './types.js';
 export { idleDriver } from './idle.js';
-export { honestDriver } from './honest.js';
-export { opportunistDriver } from './opportunist.js';
-export { saboteurDriver } from './saboteur.js';
+export { honestDriver, createHonestDriver, DEFAULT_HONEST_PARAMS, type HonestParams } from './honest.js';
+export {
+  opportunistDriver,
+  createOpportunistDriver,
+  DEFAULT_OPPORTUNIST_PARAMS,
+  type OpportunistParams,
+} from './opportunist.js';
+export { saboteurDriver, createSaboteurDriver, DEFAULT_SABOTEUR_PARAMS, type SaboteurParams } from './saboteur.js';
+export {
+  assignHonestParams,
+  assignOpportunistParams,
+  assignSaboteurParams,
+  driverForPlayer,
+} from './heterogeneity.js';
 
 export const DRIVER_STRATEGIES: readonly DriverStrategy[] = ['honest', 'opportunist', 'saboteur', 'idle'];
 

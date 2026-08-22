@@ -6,6 +6,73 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-22 — Per-agent driver dispositions, and an honest measurement of what they actually changed
+
+User's own diagnosis, from watching a long external run: a flat Gini coefficient over ~2 decades
+of simulated days, and "100% compliance" — real transactions happening, no real behavioural
+variance. Framed correctly as "we're assuming humans are predictable; they are not," not as a
+request to hand-tune a number.
+
+**Root cause, found by reading the actual driver code, not guessed**: `src/sim/drivers/{honest,
+opportunist,saboteur}.ts` each exported ONE shared function with hardcoded literal thresholds
+(`rng() < 0.3`, `LOW_WITNESS_THRESHOLD = 3`, etc.), applied identically to every agent assigned
+that strategy. 500 "honest" agents were 500 copies of one coin, forever, with no per-agent
+variation and no arc over time. Flat aggregate statistics over a long run are the expected
+behaviour of many identical coins being flipped, not a sign the economy itself is inert.
+
+**A real constraint almost violated in the first draft of this fix**: the initial plan (agents
+that get "bolder after undetected sabotage successes," evolving mood) is exactly the "learning"
+and "personality" `drivers/types.ts`'s own header comment rules out for this directory — the same
+principle as `CLAUDE.md` constraint 3 (minimize what's modelable; an agent with an internal arc
+is a deception surface). Caught before writing any code, by rereading the file being edited.
+Corrected to the version actually built: each agent gets its own FIXED, sampled-once disposition
+within its strategy (an occupySlotChance of 0.18 instead of every honest agent sharing 0.3),
+derived once from `(seed, playerIndex)` via the same pure-hash technique `assignDriverStrategy`
+already uses for strategy assignment — population variation, not an evolving mind.
+
+**Built**: `src/sim/drivers/heterogeneity.ts` (`assignHonestParams`/`assignOpportunistParams`/
+`assignSaboteurParams`/`driverForPlayer`), each driver file refactored into a `create*Driver(params)`
+factory with the original literal constants kept as the default (so `honestDriver`/
+`opportunistDriver`/`saboteurDriver` stay byte-identical exports — zero behaviour change for
+every existing caller). Every sampled range is centred on the ORIGINAL constant it replaces —
+deliberately mean-preserving, so this is an isolated spread variable, not a re-tune in disguise.
+`applyDriverTick` gained an opt-in `{ heterogeneous: boolean }` option, defaulting to `false` —
+today's shared-driver behaviour is unchanged unless a caller explicitly asks for the new path.
+11 new tests (`test/drivers.heterogeneity.test.ts`): determinism, range bounds, population spread,
+mean preservation, and that `applyDriverTick`'s default path is untouched. 714 tests total,
+typecheck clean (one pre-existing WebSocket flake under full-suite CPU contention, unrelated —
+confirmed by re-running in isolation, passes).
+
+**Measured, not assumed** (`npm run driver-heterogeneity-sweep`, 5 seeds x 3000 days each, both
+conditions): heterogeneity produced a real but modest increase — within-run day-to-day Gini
+movement (last 500 days) rose from stddev 0.026 to 0.032 (+24%), day-to-day range from 0.126 to
+0.146 (+16%). Real, directionally consistent, not dramatic.
+
+**The honest part of this entry**: this repo's OWN driver-applied playtest pipeline was never
+anywhere near as flat as the external run the user described — homogeneous Gini here already
+sits in a 0.66-0.71 band with real day-to-day movement, nothing like the external CSV's near-static
+0.49-0.54 band over 1000 days. That means the flatness the user originally observed almost
+certainly came from a different mechanism/roster (the externally-simulated 5-role-plus-grifter
+system from the Ember Blueprint deck, not this codebase's shipped 6-role drivers) — this fix is
+real and measured, but it should not be oversold as "the" explanation for that specific
+observation. Flagged rather than quietly implied.
+
+**Also a real, honest scope limit**: `DriverRole` is still `'miller' | 'baker' | 'gossip'` (a
+Phase C leftover) — heterogeneity only touches the two competitive roles and the grifter pool.
+The four support roles (Courier, Journalist, Detective, Import/Export) remain entirely undriven
+regardless of this change, which caps how much a population-wide Gini number can move from this
+fix alone. Only 5 seeds run so far — cross-seed spread numbers are noisy at that count and
+inconsistent in sign across checkpoints; the within-run number is the more trustworthy one here.
+
+**Deliberately not touched this session**: the Journalist/Detective merge and the sibling-shard
+sky visualization, both discussed and scoped but agreed to sequence after this piece. Also not
+touched: `attemptSabotageStep` is still not applied anywhere in `playtestDrivers.ts` (a
+pre-existing, separately-documented gap) — so sabotage "detection rate" specifically could not be
+measured through this pipeline at all; only Gini/wealth-distribution effects were measurable with
+what exists today.
+
+---
+
 ## 2026-08-21 — README refactor: lean, mysterious, current
 
 User frustration: *"keep my main readme up to date, not lagging. drives me nuts."* The README

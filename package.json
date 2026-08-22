@@ -36,6 +36,7 @@
     "identity-resolution-report": "tsx src/sim/identityResolutionReport.ts",
     "throttle-window-report": "tsx src/sim/throttleWindowReport.ts",
     "population-capacity-sweep": "tsx src/sim/populationCapacitySweep.ts",
+    "driver-heterogeneity-sweep": "tsx src/sim/driverHeterogeneitySweep.ts",
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts"
   },
