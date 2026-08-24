@@ -45,7 +45,15 @@ function waitForOpen(ws: WebSocket): Promise<void> {
 // actually broken — reproduced once, gone on immediate retry, confirmed by running in isolation
 // (passes instantly) vs. the full suite (flaked once in several runs). Raised rather than
 // ignored, same lesson `vitest.config.ts`'s own testTimeout note already recorded once.
-function waitUntil(check: () => boolean, timeoutMs = 20000, intervalMs = 10): Promise<void> {
+//
+// NOT the cause of the 2026-08-24 flake-up (correcting the record rather than leaving a wrong
+// diagnosis in place): that was a REAL bug in `ws.ts` — `pendingActions = []` in the tick
+// interval rebound the queue instead of emptying it in place, orphaning any connection whose
+// closure had captured an earlier array reference. The sibling-shard sky's extra per-tick World
+// just made the race window wide enough to hit it often. Fixed at the source (`ws.ts`, both
+// server paths, `splice` in place); this timeout stays at 30000 as real defensive margin for
+// genuine full-suite contention, not as the fix for that bug.
+function waitUntil(check: () => boolean, timeoutMs = 30000, intervalMs = 10): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const poll = () => {

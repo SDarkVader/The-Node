@@ -38,8 +38,10 @@ import {
 } from '../mvp/scenario.js';
 import type { RumourEvent } from '../comms/rumourMill.js';
 import type { PlayerId } from '../engine/player.js';
-import { createWorld, stepWorld } from '../world/world.js';
-import { helloMessage, tickMessage } from './worldProtocol.js';
+import { createWorld, DEFAULT_WORLD_CONFIG, type World, type WorldConfig } from '../world/world.js';
+import { helloMessage, tickMessage, skyMessage } from './worldProtocol.js';
+import { createShardRegistry } from '../engine/shardRegistry.js';
+import { stepMultiShard, MIGRATION_FAILURE_RATE, type MultiShardState } from '../sim/multiShardHarness.js';
 
 export interface TickMessage {
   type: 'tick';
@@ -202,9 +204,10 @@ export function startServer(options: ServerOptions = {}): Promise<ServerHandle> 
 
   const interval = setInterval(() => {
     // Drain before stepping: everything that arrived during the previous tick belongs to this
-    // one, and the queue must be empty again before the next batch lands.
-    const drained = pendingActions;
-    pendingActions = [];
+    // one, and the queue must be empty again before the next batch lands. `splice` empties
+    // `pendingActions` IN PLACE rather than rebinding it to a new array — see this function's
+    // sibling `startWorldServer` for why that distinction is load-bearing, not stylistic.
+    const drained = pendingActions.splice(0, pendingActions.length);
     const stepped = stepScenario(scenarioState, drained);
     scenarioState = stepped.state;
     const message = toTickMessage(stepped.result);
@@ -251,6 +254,46 @@ export interface WorldServerOptions extends ServerOptions {
   onActions?: (actions: readonly PendingClientAction[], tick: number) => void;
 }
 
+/** The shard id a connecting client actually plays in and sees rendered as the town. Always 0:
+ *  `createShardRegistry` always assigns the initial two shards ids 0 and 1, so this is real and
+ *  stable, not arbitrary per-run. Every OTHER shard in the registry is a sibling — a dot in this
+ *  connection's sky, never the town itself. Multiple simultaneous home shards (routing different
+ *  connections to different shards) is out of scope here — every connection to one server process
+ *  watches the same home shard, a real, named simplification, not a silent one. */
+const HOME_SHARD_ID = 0;
+
+/**
+ * Builds the live server's multi-shard state (2026-08-24). The home shard's `World` is passed in
+ * already-created rather than built here, specifically so `startWorldServer({ seed })` keeps
+ * producing EXACTLY the same home-shard world it always has — `createWorld(seed, config)`,
+ * unchanged. Sibling shards are real, independently-running `World`s too (not a lighter stand-in
+ * — a shard's population/health in the sky must be genuinely simulated, not guessed), seeded via
+ * the same `seed * 1000 + shardId + 1` convention `multiShardHarness.ts`'s own
+ * `createMultiShardState` already uses for every shard it creates — reused, not reinvented, so
+ * the two ARE consistent conventions even though the harness doesn't drive this live path.
+ */
+function createLiveMultiShardState(seed: number, config: WorldConfig, homeWorld: World): MultiShardState {
+  const registry = createShardRegistry(config.targetPopulation);
+  const worlds = new Map<number, World>();
+  for (const shard of registry.shards) {
+    worlds.set(shard.id, shard.id === HOME_SHARD_ID ? homeWorld : createWorld(seed * 1000 + shard.id + 1, config));
+  }
+  return {
+    registry,
+    worlds,
+    day: 0,
+    // A separate rng from any World's own internal one — used only for migration routing
+    // (which sibling a departing player lands in), so it must not perturb the home world's own
+    // tick-to-tick determinism. Derived from `seed` so a given seed still reproduces one run.
+    rng: mulberry32((seed + 104_729) >>> 0),
+    seed,
+    config,
+    totalFailedMigrations: 0,
+    migrationFailureRate: MIGRATION_FAILURE_RATE,
+    useLegacyFlatFailureRate: false,
+  };
+}
+
 /**
  * Streams a real `World`. Each connection gets its own pseudonymity secret, so the handles one
  * client sees for a body cannot be matched against another client's — see `worldProtocol.ts`'s
@@ -260,13 +303,24 @@ export interface WorldServerOptions extends ServerOptions {
  * The secret is per-CONNECTION, not per-player, and is generated here rather than derived from
  * anything the client sends: a client-supplied value would let two cooperating clients agree on
  * one and correlate their views, which is exactly the thing being prevented.
+ *
+ * SIBLING SHARDS ARE REAL, LIVE `World`S TOO (2026-08-24), not a decorative stand-in. The home
+ * shard is stepped exactly as before — `stepMultiShard` steps every shard in its map with the
+ * same `stepWorld` call this file used to make directly (see `createLiveMultiShardState`'s
+ * header for why that keeps a given `seed` byte-identical). Migration between shards, shard
+ * wake-up, and new-shard opening are the same tested primitives `sim/multiShardHarness.ts`
+ * already uses for offline sweeps — reused wholesale, not duplicated, for exactly the constraint
+ * this file's own `CLAUDE.md` keeps repeating: don't invent a second version of state that
+ * already has one.
  */
 export function startWorldServer(options: WorldServerOptions = {}): Promise<ServerHandle> {
   const tickIntervalMs = options.tickIntervalMs ?? 2500;
   const daysPerTick = options.daysPerTick ?? 1;
   const seed = options.seed ?? (Date.now() & 0xffffffff);
+  const config = DEFAULT_WORLD_CONFIG;
 
-  let world = createWorld(seed);
+  let multiShard = createLiveMultiShardState(seed, config, createWorld(seed, config));
+  let world = multiShard.worlds.get(HOME_SHARD_ID)!;
   const secrets = new WeakMap<WebSocket, string>();
   let nextSecret = 0;
   // Inbound actions received since the last tick. `stepWorld` does NOT read them — the action
@@ -283,25 +337,42 @@ export function startWorldServer(options: WorldServerOptions = {}): Promise<Serv
     attachActionReceiver(socket, secret, pendingActions);
     // Geometry first and once — it does not change tick to tick, and it is the largest payload
     // in the protocol. A client that joins mid-run still gets a complete picture: hello, then
-    // the next tick fills in everyone's position.
+    // the next tick fills in everyone's position, then the sky.
     socket.send(JSON.stringify(helloMessage(world)));
     socket.send(JSON.stringify(tickMessage(world, secret)));
+    socket.send(JSON.stringify(skyMessage(multiShard.registry, multiShard.worlds, HOME_SHARD_ID)));
   });
 
   const interval = setInterval(() => {
     // Drain before stepping, same contract as the legacy path: whatever arrived during the
     // previous tick belongs to this one, and the queue is empty again before the next batch.
-    const drained = pendingActions;
-    pendingActions = [];
-    for (let i = 0; i < daysPerTick; i++) world = stepWorld(world);
+    //
+    // MUST empty `pendingActions` IN PLACE (`splice`), never rebind it (`pendingActions = []`,
+    // the bug this replaced, 2026-08-24). `attachActionReceiver` closes over whatever array
+    // `pendingActions` happens to BE at connection time and pushes onto that specific object
+    // forever — it never re-reads the outer variable. Rebinding the outer variable to a fresh
+    // array on every tick therefore orphans that closure the moment even ONE tick elapses
+    // between a connection and its first inbound message: the message gets pushed onto the
+    // abandoned old array, which nothing ever drains again, and `onActions` silently never
+    // fires for it. Real, not theoretical — this exact bug pre-dated the sibling-shard sky, but
+    // adding a second `World` to step per tick slowed this loop enough to make the race land
+    // far more often, which is how it was actually found: `test/ws.inbound.test.ts`'s first
+    // inbound test started failing intermittently, reproduced standalone outside vitest
+    // (Date.now()-timed, not guessed), and traced to this exact line. Fixed here AND in the
+    // legacy `startServer` above, which shares the identical pattern and was equally exposed.
+    const drained = pendingActions.splice(0, pendingActions.length);
+    for (let i = 0; i < daysPerTick; i++) multiShard = stepMultiShard(multiShard);
+    world = multiShard.worlds.get(HOME_SHARD_ID)!;
     // Reported, never interpreted. This is the seam a recorder hooks: it sees the world AND
     // what was sent at it, without this file deciding that any action means anything.
     if (drained.length > 0) options.onActions?.(drained, world.tick);
+    const sky = skyMessage(multiShard.registry, multiShard.worlds, HOME_SHARD_ID);
     for (const client of wss.clients) {
       if (client.readyState !== client.OPEN) continue;
       const secret = secrets.get(client);
       if (!secret) continue; // pre-handshake; it will get a full pair on connection
       client.send(JSON.stringify(tickMessage(world, secret)));
+      client.send(JSON.stringify(sky));
     }
   }, tickIntervalMs);
 

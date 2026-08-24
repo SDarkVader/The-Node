@@ -26,14 +26,19 @@ is right and this file is stale — fix it.
   └──────────────────────────────────────────────────────────────┘
              ▲ read by                        ▲ read by
   ┌────────────────────────┐      ┌───────────────────────────────┐
-  │ src/sim/   harnesses,  │      │ src/server/  worldProtocol.ts │
-  │ CLIs, playtest render  │      │              ws.ts            │
+  │ src/sim/   harnesses,  │◄─────┤ src/server/  worldProtocol.ts │
+  │ CLIs, playtest render  │ live │              ws.ts            │
   │ NEVER imported by      │      └───────────────────────────────┘
   │ engine or world        │                    ▲ WebSocket
   └────────────────────────┘      ┌───────────────────────────────┐
                                   │ client/  Godot 4.3 (GDScript) │
                                   └───────────────────────────────┘
 ```
+
+`ws.ts` also imports `src/sim/multiShardHarness.ts` (`stepMultiShard`) — the ONE case where a
+`sim/` module is a live production dependency, not offline-only. It composes the real
+`engine/shardRegistry.ts` ledger with real `World` instances for the sibling-shard sky (§5);
+`src/engine`/`src/world` still never import `sim/`, unchanged.
 
 **Dependency rule, enforced by tests**: `src/engine/`, `src/world/` and `src/server/` must never
 import from `src/sim/drivers/` (`test/drivers.importGuard.test.ts`) or `src/infra/`
@@ -192,9 +197,21 @@ a **privacy boundary** and not a serialization detail.
 
 | Message | When | Carries |
 |---|---|---|
-| `hello` | once per connection | seed, hub, bounds, districts, buildings (id, x, y, role, isLandmark), plots |
+| `hello` | once per connection | seed, hub, bounds, districts, buildings (id, x, y, role, isLandmark), plots, targetPopulationPerShard |
 | `tick` | per simulated day | day, economicHealth, districtTension[], stations[] (buildingId, state, heat), people[] (handle, x, y, role) |
+| `sky` | on connect + per simulated day | homeShardId, siblings[] (id, state, population, health\|null) — every OTHER shard in the live `ShardRegistry`, never the connecting client's own |
 | `identityResolved` | when an observer resolves a subject | handle, playerId, procedural face. **Built and tested; nothing sends it yet** |
+
+**Sibling-shard sky (2026-08-24)**: `startWorldServer` runs a real `MultiShardState`
+(`sim/multiShardHarness.ts`), not just one `World` — the connecting client's own shard is always
+`HOME_SHARD_ID = 0` (a real, named simplification: one server process, one home shard for every
+connection — no per-connection shard routing yet). Every OTHER shard in `engine/shardRegistry.ts`'s
+ledger — starting with exactly 1 sibling (`INITIAL_SHARD_COUNT = 2`) and growing as
+`canOpenNewShard` permits — runs its own independently-simulated `World` too, seeded
+`seed * 1000 + shardId + 1` (the same convention `createMultiShardState` already used for
+offline sweeps). `health` is `null` only for a DORMANT shard with no arrival yet, honestly, never
+a guessed placeholder. `skyMessage()` (`worldProtocol.ts`) is the pure, privacy-checked builder;
+`population`/`state`/`economicHealth` are the same trust level already public for the home shard.
 
 **Inbound** (2026-08-19): `{ type: 'action', action: string, payload: unknown }`. Parsed
 defensively (`parseClientMessage`, total — malformed frames return `null`, never throw), shared
@@ -219,9 +236,16 @@ never go on the wire.
 
 | Scene | Script | Purpose |
 |---|---|---|
-| `IsoView.tscn` *(main)* | `IsoView.gd`, `GlowLayer.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, courier routes |
-| `WorldView.tscn` | `WorldView.gd` | 2D top-down. Same protocol, same palette |
+| `IsoView.tscn` *(real `run/main_scene`, verified against `project.godot`)* | `IsoView.gd`, `SkyLayer.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, courier routes, sibling-shard sky |
+| `WorldView.tscn` | `WorldView.gd`, `GlowLayer.gd`, `SkyLayer.gd` | 2D top-down. Same protocol, same palette, sibling-shard sky |
 | `Main.tscn` | `Main.gd` | Legacy MVP-scenario scaffold (`NODE_LEGACY_MVP=1`) |
+
+`SkyLayer.gd` is shared, unmodified, between both real scenes — each hosts it on its own
+`Sky` `CanvasLayer` / `SkyDraw` `Node2D` child, and it duck-types against `siblings`,
+`target_population_per_shard`, `have_geometry`, `_soul_colour()`, `SOUL_MEDIAN`, `TENSION_COLD`,
+all of which both `IsoView.gd` and `WorldView.gd` already expose. Sibling positions are fixed,
+hashed once from each shard's stable `id` — never orbital, never time-based motion; only the
+size (population fraction) and colour (health / DORMANT) change tick to tick.
 
 **Signal → visual mapping** (identical rules across the terminal renderer, 2D and 3D clients):
 
@@ -263,7 +287,7 @@ Checked by tests, and load-bearing:
 ## 8. Commands
 
 ```
-npm test                     703 tests
+npm test                     722 tests
 npm run typecheck
 npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for the old scenario)
 npm run playtest              terminal renderer, synthetic drivers
@@ -290,3 +314,10 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
 - **Arson** built and calibrated, not wired into `stepWorld`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
+- **One home shard per server process.** Every connection to one `startWorldServer` watches the
+  SAME `HOME_SHARD_ID = 0` — real, named, not silent. Per-connection shard routing (a client
+  choosing or being assigned a different home shard) does not exist.
+- **`IsoView.gd`'s pre-existing hello/tick handling has never had a full wire-conformance audit.**
+  `test/clientProtocolConformance.test.ts` scanned only `WorldView.gd` until 2026-08-24, even
+  though `IsoView.tscn` is the real `run/main_scene` — closed for the fields this session's sky
+  work touches, not audited end to end.

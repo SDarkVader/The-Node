@@ -53,16 +53,32 @@ NODE_LEGACY_MVP=1 npm run server    # the old two-Baker scenario, for scenes/Mai
 Open Godot → **Import** → select `client/project.godot` → **Import & Edit** → press **F5**
 (or the ▶ play button).
 
-The main scene is already set to `scenes/WorldView.tscn`. If Godot asks you to pick one, choose
-that; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LEGACY_MVP=1`.
+The main scene is `scenes/IsoView.tscn` — isometric 3D, real building height, real lighting
+(checked against `project.godot`'s own `run/main_scene`, 2026-08-24, since this doc previously
+said `WorldView.tscn` and had drifted stale after `IsoView.tscn` became main). `scenes/WorldView.tscn`
+(2D top-down, same protocol and palette) is still shipped and works, just not what F5 opens by
+default; `scenes/Main.tscn` is the older MVP-scenario scaffold and expects `NODE_LEGACY_MVP=1`.
+
+**Sibling-shard sky (2026-08-24)**: both `IsoView.tscn` and `WorldView.tscn` now draw a fixed
+strip of dots near the top of the screen — every OTHER shard in the live `ShardRegistry`, sized
+by population and coloured by real economic health (dim cold-blue = DORMANT, not yet awake).
+Positions are fixed and hashed from each shard's own stable id, never orbital or time-based.
 
 ## Controls
+
+**Below documents `WorldView.tscn` (the 2D view)** — still accurate for that scene. `IsoView.tscn`
+(the current main scene) differs: **left-drag** orbits the camera around the town (not a pan),
+**Q**/**E** step the orbit by 45°, **mouse wheel** zooms by narrowing/widening the camera's
+orthographic span (4–60 world units). A full `IsoView.tscn`-accurate rewrite of this section and
+the mapping table below it is an open item (`docs/BLUEPRINT.md` §9), not attempted here — the
+underlying signal→visual doctrine is identical across both scenes, only the camera and dimension
+differ.
 
 - **Left-drag** — pan
 - **Mouse wheel** — zoom (clamped 0.25×–4×)
 - Top-left readout — day, economic health, mean tension, live population
 
-## What you are looking at
+## What you are looking at (`WorldView.tscn`)
 
 | On screen | What it is |
 |---|---|

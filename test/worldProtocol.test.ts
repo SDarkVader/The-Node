@@ -9,10 +9,12 @@ import { createWorld, stepWorld } from '../src/world/world.js';
 import {
   helloMessage,
   tickMessage,
+  skyMessage,
   personHandle,
   identityResolvedMessages,
   roleByBuildingId,
 } from '../src/server/worldProtocol.js';
+import { createShardRegistry, openNewShard, setShardPopulation } from '../src/engine/shardRegistry.js';
 
 function stepN(seed: number, n: number) {
   let w = createWorld(seed);
@@ -58,6 +60,54 @@ describe('helloMessage — static geometry', () => {
     const w0 = createWorld(4);
     const w1 = stepN(4, 50);
     expect(JSON.stringify(helloMessage(w1))).toBe(JSON.stringify(helloMessage(w0)));
+  });
+
+  it('carries the real target population per shard — a static WorldConfig fact, not invented', () => {
+    const w = createWorld(1);
+    expect(helloMessage(w).targetPopulationPerShard).toBe(w.config.targetPopulation);
+  });
+});
+
+describe('skyMessage — the sibling-shard sky', () => {
+  it('excludes the home shard — the town being rendered is not a dot in its own sky', () => {
+    const registry = createShardRegistry(65);
+    const worlds = new Map([[0, createWorld(1)], [1, createWorld(2)]]);
+    const sky = skyMessage(registry, worlds, 0);
+    expect(sky.homeShardId).toBe(0);
+    expect(sky.siblings.every((s) => s.id !== 0)).toBe(true);
+    expect(sky.siblings.map((s) => s.id)).toEqual([1]);
+  });
+
+  it('reports real registry state, not derived or guessed values', () => {
+    let registry = createShardRegistry(65);
+    registry = setShardPopulation(registry, 1, 42);
+    const world1 = stepN(9, 30);
+    const worlds = new Map([[1, world1]]);
+    const sky = skyMessage(registry, worlds, 0);
+    const sibling = sky.siblings.find((s) => s.id === 1)!;
+    expect(sibling.population).toBe(42);
+    expect(sibling.state).toBe('ACTIVE');
+    expect(sibling.health).toBe(world1.economicHealth);
+  });
+
+  it('reports health as null for a shard with no running World yet — an honest "not awake", never a guess', () => {
+    let registry = createShardRegistry(65);
+    registry = openNewShard(registry, 10); // shard 2, DORMANT, no World instantiated
+    const worlds = new Map([[0, createWorld(1)], [1, createWorld(2)]]); // shard 2 absent, for real
+    const sky = skyMessage(registry, worlds, 0);
+    const dormant = sky.siblings.find((s) => s.id === 2)!;
+    expect(dormant.state).toBe('DORMANT');
+    expect(dormant.population).toBe(0);
+    expect(dormant.health).toBeNull();
+  });
+
+  it('never leaks per-player state — same discipline as tickMessage', () => {
+    const registry = createShardRegistry(65);
+    const worlds = new Map([[0, createWorld(1)], [1, stepN(3, 60)]]);
+    const wire = JSON.stringify(skyMessage(registry, worlds, 0)).toLowerCase();
+    for (const key of ['wealth', 'gini', 'experience', 'diary', 'campaign', 'saboteur']) {
+      expect(wire).not.toContain(key);
+    }
   });
 });
 

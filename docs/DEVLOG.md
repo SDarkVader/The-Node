@@ -6,6 +6,128 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-24 — Sibling-shard sky, wired end to end (real `shardRegistry` state, not invented physics)
+
+The second of the two candidates HANDOVER's 2026-08-22 entry named as "explicitly sequenced,
+not yet started": *"a sibling-shard sky visualization reading real `shardRegistry` state (not an
+invented orbital-physics system)."*
+
+**Starting fact, checked before building anything**: `engine/shardRegistry.ts` and
+`sim/multiShardHarness.ts` already existed (2026-08-11) and were fully tested, but were an
+OFFLINE-ONLY sim harness — `startWorldServer` (the live, real ws server) had never run more than
+one `World`. There was no real multi-shard state anywhere near the wire. So "reading real
+shardRegistry state" required actually wiring live multi-shard simulation into the server, not
+just drawing a sky client-side against invented numbers.
+
+**Wired into `ws.ts`**: `startWorldServer` now runs a real `MultiShardState`
+(`stepMultiShard`, reused wholesale from `multiShardHarness.ts`, not duplicated) instead of a
+bare `World`. The connecting client's own shard is always `HOME_SHARD_ID = 0` — a real, named
+simplification (one server process, one home shard for every connection; per-connection shard
+routing does not exist) — and it is seeded EXACTLY as before (`createWorld(seed, config)`), so a
+given `seed` still produces a byte-identical home-shard trajectory; verified by tracing through
+`stepMultiShard`'s per-shard loop (`stepWorld(worlds.get(shardId))`, unchanged for shard 0) rather
+than assumed. Sibling shards are REAL, independently-simulated `World`s too — not a lighter
+stand-in — seeded `seed * 1000 + shardId + 1`, the same convention `createMultiShardState`
+already used for offline sweeps, reused rather than invented fresh.
+
+**New wire message**: `sky` (`worldProtocol.ts`'s `skyMessage()`, pure and tested), sent on
+connect and after every tick. Carries every shard in the registry EXCEPT home — `id`, `state`
+(ACTIVE/DORMANT), `population`, `health` (the real shard's `economicHealth`, or `null` when no
+`World` exists yet for a freshly-opened DORMANT shard — an honest "not awake," never a guessed
+number). `hello` gained one static field, `targetPopulationPerShard` (`WorldConfig.targetPopulation`,
+already on `World.config` — no new plumbing needed), so a client can read a sibling's population
+as thin or thriving rather than an unscaled count.
+
+**Verified real, three ways, not just unit-tested**: (1) the pure `skyMessage()` function against
+constructed registries/worlds, including the DORMANT/null-health case exercised deliberately, not
+assumed; (2) a real `WebSocketServer` + real `ws` client integration test confirming a genuine
+sibling shard (id 1, ACTIVE, real population, real evolving health) streams from day one; (3) a
+standalone smoke script (`npm run server`-equivalent, ad hoc, not committed) actually run against
+a live `startWorldServer` instance — watched `sky` messages for real, with `economicHealth`
+visibly drifting tick to tick (1.0 → 0.98696...), proof it's a genuinely running simulation, not a
+static placeholder.
+
+**Client**: `client/scripts/SkyLayer.gd` (new) — deterministic, hashed-from-`id` fixed screen
+positions, explicitly NOT orbital or time-based (the literal constraint named in the brief).
+Radius encodes population/targetPopulation; colour reuses each host scene's OWN `_soul_colour()`
+(the same sentiment mapping the Wall already uses) for ACTIVE, and `TENSION_COLD` for DORMANT —
+both reused meanings, nothing invented. Drawn on its own `CanvasLayer` (screen space, does not
+pan/zoom with the town) at `layer = 1`, same layer as the HUD, ordered before it in the tree so
+HUD text stays legible if they ever overlap.
+
+**A real discrepancy caught before shipping, not after**: `docs/HANDOVER.md` and
+`client/README.md` both still described `WorldView.tscn` as "the main scene." Checked
+`client/project.godot`'s actual `run/main_scene` rather than trusting either doc — it is
+`IsoView.tscn`, and has been since `94bbed0` ("Isometric 3D view"), which repointed it without
+either doc being updated. Building the sky feature only in `WorldView.gd` would have shipped
+something invisible in the client anyone actually runs. Fixed by wiring the SAME `SkyLayer.gd`
+into `IsoView.tscn` too, reusing it verbatim rather than writing a second version — `IsoView.gd`
+already exposes the exact shape `SkyLayer.gd` duck-types against (`have_geometry`,
+`_soul_colour()`, `SOUL_MEDIAN`, `TENSION_COLD`), since the two clients already share doctrine,
+just tuned for background-wash vs. lit-surface use. `HANDOVER.md`'s stale claim is corrected
+below; `client/README.md` still needs the same fix (not done this session — flagged, not silent).
+
+**A second, related gap found and partially closed**: `test/clientProtocolConformance.test.ts`
+had ONLY EVER scanned `WorldView.gd` for wire-key conformance — meaning `IsoView.gd`, the actual
+shipped main scene, had never been checked against the protocol at all, for anything, since the
+test was written 2026-08-19. Closed for what this session touches (the new `sky` message and
+`targetPopulationPerShard`) by scanning `IsoView.gd` too and adding a dedicated assertion for the
+new fields; a full audit of `IsoView.gd`'s PRE-EXISTING hello/tick key usage was NOT attempted —
+scope creep beyond this task — and is recorded as an open gap in `BLUEPRINT.md` §9 rather than
+silently left implicit. One genuine false positive surfaced immediately by doing this properly:
+`IsoView.gd`'s own internal `ranked` bookkeeping dict (station-light sort order) uses bracket
+key access (`ranked[k]["pos"]`) that looks identical to a wire-key read to the test's regex —
+allowlisted explicitly with a comment, not silently widened.
+
+**A real, pre-existing bug found and fixed along the way — not a flake, checked rather than
+assumed.** `test/ws.inbound.test.ts`'s first inbound test started failing intermittently once the
+sky work landed — initially misdiagnosed (in this file's first draft) as the SAME "full-suite CPU
+contention" flake class an earlier session had already documented and fixed once by raising a
+timeout. That diagnosis was wrong, and was caught by not stopping at "raise the timeout again":
+reproduced STANDALONE, outside vitest entirely, with a `Date.now()`-timed script hitting a real
+`startWorldServer` — 2 of 5 runs never received the action at all, not slowly, not eventually,
+just never; the failure was bimodal (fires in under 100ms, or never fires within the whole
+timeout), which is the signature of a lost message, not contention-driven slowness. Root cause,
+found by reading `ws.ts` again with that shape in mind: `attachActionReceiver`'s inbound handler
+closes over whatever array `pendingActions` IS at connection time and pushes onto that specific
+object forever; the tick interval's `pendingActions = []` REBINDS the outer variable to a fresh
+array every tick rather than emptying the existing one. Any connection whose first message
+arrives after even one tick has elapsed since it connected pushes onto an orphaned array nothing
+will ever drain again — a real, silent inbound-message loss. **This bug pre-dates the
+sibling-shard sky and affects `startServer` too** (identical pattern, identical exposure); this
+session's own change just slowed `startWorldServer`'s tick loop (now stepping a second `World`)
+enough to widen the race window and make it fire often instead of almost never. Fixed at the
+source in BOTH server paths — `pendingActions.splice(0, pendingActions.length)`, which empties
+the array IN PLACE and keeps its object identity stable for the server's whole lifetime, so no
+connection's closure can ever be pointed at a since-abandoned array. Verified by re-running the
+standalone repro 15/15 clean (was failing ~40% of runs before the fix) and three consecutive full
+`npm test` runs, 722/722 each time.
+
+**One more small, real thing found on the way**: `worldProtocol.ts`'s `personHandle` had a literal
+NUL byte (`\x00`) as its hash-input separator instead of the space the surrounding code visually
+suggested — pre-existing (confirmed against `HEAD`, not introduced this session), harmless to the
+hash's actual properties (no test asserts an exact handle string, only determinism/uniqueness,
+both unaffected), but it made the whole file register as binary to `git diff`, silently hiding
+every other real change in this file from a plain diff view. Fixed (byte-level, not through the
+normal edit path — a text edit can't target an invisible NUL) to a plain space; `git diff -a`
+confirms a normal, clean text diff either way, and the corruption predates this session.
+
+**Tests**: 8 new (`worldProtocol.test.ts` ×4 pure `skyMessage` cases, `wsWorldServer.test.ts` ×1
+live integration, `clientProtocolConformance.test.ts` ×2 new + 1 widened). 722 tests total (was
+714), typecheck clean.
+
+**Not done, on purpose**: no Godot binary exists in THIS session's execution environment (unlike
+the 2026-08-19 session that produced `docs/RENDER_CAPABILITY_2026-08-19.md` from a different,
+Godot-equipped environment) — so the sky was NOT visually screenshotted or looked at. Verified as
+far as static analysis and real wire traffic can go (protocol conformance, live integration test,
+manual smoke script), and the GDScript was re-read carefully against Godot 4's known API surface,
+but "does it read legibly against the town" is genuinely unknown and owed on a machine with
+Godot, same honest boundary `RENDER_CAPABILITY_2026-08-19.md` already draws between still frames
+and motion — this is a step further back, before even a still frame. `client/README.md`'s
+main-scene claim also still needs fixing.
+
+---
+
 ## 2026-08-22 — Journalist + Detective merged into Investigator
 
 User directive, following the driver-heterogeneity work: merge Journalist and Detective into

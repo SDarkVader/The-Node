@@ -3,6 +3,62 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-24**: The sibling-shard sky is built and wired end to end — the second of the two
+candidates the 2026-08-22 entry below named as sequenced-not-started. `startWorldServer` now runs
+a REAL `MultiShardState` (`sim/multiShardHarness.ts`'s `stepMultiShard`, reused, not duplicated),
+not just one `World` — the connecting client's shard is always `HOME_SHARD_ID = 0`, seeded exactly
+as before (a given `seed` still produces a byte-identical home-shard trajectory), and every
+sibling shard in the real `engine/shardRegistry.ts` ledger runs its own genuinely-simulated
+`World` too. New `sky` wire message (`worldProtocol.ts`'s `skyMessage()`): every OTHER shard's id,
+state (ACTIVE/DORMANT), population, and health (`null` only when a DORMANT shard genuinely has no
+`World` yet — never a guessed number). `hello` gained `targetPopulationPerShard` so a client can
+read a sibling's population as thin or thriving. New `client/scripts/SkyLayer.gd`, shared
+unmodified by BOTH real Godot scenes: fixed, hash-derived-from-id screen positions — explicitly
+NOT orbital or time-based, per how this was scoped — sized by population fraction, coloured by
+real health (reusing each host's own `_soul_colour()`, the same mapping the Wall already uses) or
+a cold dim tone for DORMANT.
+
+**A real, checkable discrepancy caught before building on top of it, not after**: this file and
+`client/README.md` both claimed `WorldView.tscn` was "the main scene." Checked `project.godot`'s
+actual `run/main_scene` rather than trusting either doc — it has been `IsoView.tscn` since commit
+`94bbed0`, and neither doc was updated when that changed. Both are fixed now (this entry;
+`client/README.md`'s setup section). Had this not been caught, the sky feature would have shipped
+invisibly — built only into the 2D scene nobody's F5 actually opens. Wiring the same `SkyLayer.gd`
+into `IsoView.tscn` was possible without writing a second version because `IsoView.gd` already
+exposes the same shape (`have_geometry`, `_soul_colour()`, `SOUL_MEDIAN`, `TENSION_COLD`) the 2D
+scene does — the two clients already share doctrine, this just made the reuse literal.
+
+**A second gap found the same way**: `test/clientProtocolConformance.test.ts` — the test that
+exists specifically to catch a GDScript key typo against the real wire protocol — had ONLY EVER
+scanned `WorldView.gd`, meaning `IsoView.gd` (the real main scene) had never been checked at all
+since the test was written 2026-08-19. Closed for what this session touches (the new `sky`
+message, `targetPopulationPerShard`); a full audit of `IsoView.gd`'s pre-existing hello/tick key
+usage was NOT attempted — real, open gap, recorded in `docs/BLUEPRINT.md` §9, not silently implied
+closed.
+
+**A real, pre-existing inbound-message bug found and fixed, not a flake — the misdiagnosis
+corrected before it was written down as fact.** `test/ws.inbound.test.ts` started failing
+intermittently once the sky's extra per-tick `World` slowed `startWorldServer`'s loop. First
+instinct was "known CPU-contention flake, raise the timeout" (an earlier session's own fix for a
+different test); that was wrong, caught by reproducing standalone outside vitest rather than
+trusting the pattern-match. Real cause: `ws.ts`'s tick interval did `pendingActions = []`
+(REBINDING the queue) instead of emptying it in place, so any connection whose first message
+landed after even one tick had elapsed pushed onto an abandoned array nothing would ever drain —
+a silent inbound-message loss, present in BOTH server paths since before this session, just rare
+enough at the old tick cost to go unnoticed. Fixed with `pendingActions.splice(0, length)` in
+both `startServer` and `startWorldServer`; verified 15/15 clean on a standalone repro that failed
+~40% of the time before the fix, plus three consecutive full `npm test` runs at 722/722.
+
+**Not done, flagged rather than assumed fine**: no Godot binary exists in THIS session's
+execution environment, so the sky was never screenshotted or looked at — verified as far as a
+real `WebSocketServer`+`ws` client integration test, a pure-function test suite, and a manual
+smoke script watching real `economicHealth` drift tick to tick can go, but whether it reads
+legibly on screen is genuinely unknown and owed on a machine with Godot. `client/README.md`'s
+"Controls"/"What you are looking at" sections still describe `WorldView.tscn` specifically
+(flagged as such in that file now) rather than the real main scene's isometric camera and
+3D mapping — a pre-existing gap, widened slightly by this session's own finding, not fixed in
+full. 722 tests total (was 714), typecheck clean. Full account: `docs/DEVLOG.md`'s top entry.
+
 **2026-08-22 (later)**: Journalist and Detective merged into Investigator (user directive).
 `World.investigators` replaces the two separate arrays; `WorldConfig.rInvestigator` (default
 15, sum-preserving) replaces `rJournalist`/`rDetective`. Investigator inherits Detective's

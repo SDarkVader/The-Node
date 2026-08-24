@@ -9,7 +9,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
 import { startWorldServer } from '../src/server/ws.js';
-import type { WorldMessage, WorldTickMessage, WorldHelloMessage } from '../src/server/worldProtocol.js';
+import type { WorldMessage, WorldTickMessage, WorldHelloMessage, SkyMessage } from '../src/server/worldProtocol.js';
 
 const openHandles: { close: () => void }[] = [];
 afterEach(() => {
@@ -100,6 +100,34 @@ describe('startWorldServer — streaming a real World', () => {
     expect(tickB.people.length).toBe(tickA.people.length);
     // ...under completely disjoint handles.
     expect(shared.length).toBe(0);
+  });
+
+  it('sends a real sibling-shard sky on connect, and it evolves on its own timer', async () => {
+    const handle = await startWorldServer({ tickIntervalMs: 150, seed: 20 });
+    openHandles.push(handle);
+
+    const { messages, socket } = await collectUntil(
+      `ws://127.0.0.1:${handle.port}`,
+      (m) => m.filter((x) => x.type === 'sky').length >= 3,
+    );
+    socket.close();
+
+    const skies = messages.filter((m): m is SkyMessage => m.type === 'sky');
+    // The registry always starts with exactly 2 shards (shardRegistry.ts's INITIAL_SHARD_COUNT);
+    // shard 0 is home, so there is exactly one sibling from day one — real, not invented.
+    expect(skies[0]!.homeShardId).toBe(0);
+    expect(skies[0]!.siblings.length).toBe(1);
+    expect(skies[0]!.siblings[0]!.id).toBe(1);
+    expect(skies[0]!.siblings[0]!.state).toBe('ACTIVE');
+    // A real, independently-simulated World is running for that sibling from the start, so its
+    // health is a real number immediately — not null, not a placeholder.
+    expect(typeof skies[0]!.siblings[0]!.health).toBe('number');
+    expect(skies[0]!.siblings[0]!.population).toBeGreaterThan(0);
+
+    // And the hello message names the real, static per-shard population target the client needs
+    // to read a sibling's population as thin or thriving.
+    const hello = messages.find((m): m is WorldHelloMessage => m.type === 'hello')!;
+    expect(hello.targetPopulationPerShard).toBeGreaterThan(0);
   });
 
   it('never puts private state on a real socket, not just in a unit test', async () => {

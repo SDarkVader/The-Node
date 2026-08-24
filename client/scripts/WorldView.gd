@@ -122,9 +122,17 @@ var day := 0
 var economic_health := 1.0
 var mean_tension := 0.0
 
+## Sibling-shard sky (2026-08-24). `siblings` is the raw array of {id, state, population, health}
+## dicts straight off the `sky` message — read directly by SkyLayer.gd, same convention
+## GlowLayer.gd already uses for `stations`/`buildings` (the parent stores the parsed wire data,
+## sibling layers read it, nothing is duplicated into a second shape).
+var siblings: Array = []
+var target_population_per_shard := 1.0
+
 @onready var hud: Label = $HUD/Readout
 @onready var camera: Camera2D = $Camera2D
 @onready var glow: Node2D = $Glow
+@onready var sky: Node2D = $Sky/SkyDraw
 
 
 func _ready() -> void:
@@ -162,9 +170,13 @@ func _handle_message(raw: String) -> void:
 			_handle_hello(parsed)
 		"tick":
 			_handle_tick(parsed)
+		"sky":
+			_handle_sky(parsed)
 	queue_redraw()
 	if glow != null:
 		glow.queue_redraw()
+	if sky != null:
+		sky.queue_redraw()
 
 
 func _handle_hello(msg: Dictionary) -> void:
@@ -173,6 +185,7 @@ func _handle_hello(msg: Dictionary) -> void:
 	var h: Dictionary = msg.get("hub", {"x": 0, "y": 0})
 	hub = Vector2(float(h["x"]), float(h["y"]))
 	bounds = msg.get("bounds", {})
+	target_population_per_shard = float(msg.get("targetPopulationPerShard", 1))
 	have_geometry = true
 	_centre_camera()
 	# Printed rather than only drawn, so `--headless` is a real smoke test: it proves the
@@ -216,6 +229,13 @@ func _handle_tick(msg: Dictionary) -> void:
 		print("[NODE] first tick: day %d, %d people, %d stations, health %.3f" % [
 			day, people.size(), stations.size(), economic_health
 		])
+
+
+## Sibling-shard sky (2026-08-24). Stores the raw sibling array off `src/server/worldProtocol.ts`'s
+## `sky` message exactly as it arrives — SkyLayer.gd reads it directly, the same
+## parent-stores/child-reads convention GlowLayer.gd already uses for `stations`/`buildings`.
+func _handle_sky(msg: Dictionary) -> void:
+	siblings = msg.get("siblings", [])
 
 
 func _unhandled_input(event: InputEvent) -> void:

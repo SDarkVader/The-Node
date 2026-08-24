@@ -124,6 +124,13 @@ var day := 0
 var economic_health := 1.0
 var mean_tension := 0.0
 
+## Sibling-shard sky (2026-08-24). Read directly by SkyLayer.gd (`$Sky/SkyDraw` in
+## IsoView.tscn) — the SAME script the 2D `WorldView.gd` uses, since this file already exposes
+## the same shape it duck-types against: `have_geometry`, `_soul_colour()`, `SOUL_MEDIAN`,
+## `TENSION_COLD`. One drawing script, two hosts, no logic duplicated.
+var siblings: Array = []
+var target_population_per_shard := 1.0
+
 var _ground_mm: MultiMeshInstance3D
 var _plot_is_plaza: Array[bool] = []
 var _plot_shade: Array[float] = []
@@ -147,6 +154,7 @@ var _env: Environment
 
 @onready var camera: Camera3D = $Camera3D
 @onready var hud: Label = $HUD/Readout
+@onready var sky: Node2D = $Sky/SkyDraw
 
 
 func _ready() -> void:
@@ -269,6 +277,8 @@ func _handle_message(raw: String) -> void:
 			_handle_hello(parsed)
 		"tick":
 			_handle_tick(parsed)
+		"sky":
+			_handle_sky(parsed)
 
 
 func _handle_hello(msg: Dictionary) -> void:
@@ -277,12 +287,20 @@ func _handle_hello(msg: Dictionary) -> void:
 	var h: Dictionary = msg.get("hub", {"x": 0, "y": 0})
 	hub = Vector2(float(h["x"]), float(h["y"]))
 	bounds = msg.get("bounds", {})
+	target_population_per_shard = float(msg.get("targetPopulationPerShard", 1))
 	have_geometry = true
 	_build_static_geometry()
 	_frame_camera()
 	print("[NODE] geometry: %d buildings, %d plots, hub (%d,%d)" % [
 		buildings.size(), plots.size(), int(hub.x), int(hub.y)
 	])
+
+
+## Sibling-shard sky (2026-08-24) — see the `siblings` var's own comment.
+func _handle_sky(msg: Dictionary) -> void:
+	siblings = msg.get("siblings", [])
+	if sky != null:
+		sky.queue_redraw()
 
 
 func _handle_tick(msg: Dictionary) -> void:
