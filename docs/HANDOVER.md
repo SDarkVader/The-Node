@@ -49,15 +49,26 @@ enough at the old tick cost to go unnoticed. Fixed with `pendingActions.splice(0
 both `startServer` and `startWorldServer`; verified 15/15 clean on a standalone repro that failed
 ~40% of the time before the fix, plus three consecutive full `npm test` runs at 722/722.
 
-**Not done, flagged rather than assumed fine**: no Godot binary exists in THIS session's
-execution environment, so the sky was never screenshotted or looked at — verified as far as a
-real `WebSocketServer`+`ws` client integration test, a pure-function test suite, and a manual
-smoke script watching real `economicHealth` drift tick to tick can go, but whether it reads
-legibly on screen is genuinely unknown and owed on a machine with Godot. `client/README.md`'s
-"Controls"/"What you are looking at" sections still describe `WorldView.tscn` specifically
-(flagged as such in that file now) rather than the real main scene's isometric camera and
-3D mapping — a pre-existing gap, widened slightly by this session's own finding, not fixed in
-full. 722 tests total (was 714), typecheck clean. Full account: `docs/DEVLOG.md`'s top entry.
+**Corrected mid-session, and then actually verified — say this plainly since it contradicts what
+this entry said a few hours earlier: Godot IS installable here.** "No Godot binary exists in this
+environment" was an unchecked assumption, called out by the user, then checked and found false —
+downloaded `Godot_v4.3-stable_linux.x86_64` directly, ran it for real under
+`xvfb-run -a --rendering-method gl_compatibility` against a live `npm run server`, and got real
+screenshots via `IsoView.gd`'s existing `NODE_SHOT` hook (added the same hook to `WorldView.gd`
+too, since it had none — kept, not throwaway). **This caught a real bug no static check could
+have**: `SkyLayer.gd`'s `parent` was typed `Node2D`, but `IsoView`'s scene root is `Node3D` — a
+script error on every frame under the actual main scene, silently dropping the sky's draw call
+there. Fixed by leaving `parent` untyped, same duck-typing the rest of the script already uses.
+Re-ran and confirmed clean: both `IsoView.tscn` (real main scene) and `WorldView.tscn` render the
+sky legibly, a small halo'd dot clear of the HUD and the town, sized by population and coloured
+by real health — and the SAME shard id lands at the SAME screen position in both scenes'
+screenshots, confirming "fixed, hashed from id" empirically. Screenshots sent to the user.
+`client/README.md`'s "Controls"/"What you are looking at" sections still describe `WorldView.tscn`
+specifically (flagged as such in that file) rather than the real main scene's isometric camera —
+a real, separate, pre-existing gap, not touched this session; note this file's own earlier
+"unlike the 2026-08-19 session" framing was also wrong and should not be trusted as precedent
+next time either — check, don't infer, whether Godot is available before assuming it isn't.
+722 tests total (was 714), typecheck clean. Full account: `docs/DEVLOG.md`'s top entry.
 
 **2026-08-22 (later)**: Journalist and Detective merged into Investigator (user directive).
 `World.investigators` replaces the two separate arrays; `WorldConfig.rInvestigator` (default

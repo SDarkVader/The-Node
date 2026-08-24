@@ -116,15 +116,38 @@ confirms a normal, clean text diff either way, and the corruption predates this 
 live integration, `clientProtocolConformance.test.ts` ×2 new + 1 widened). 722 tests total (was
 714), typecheck clean.
 
-**Not done, on purpose**: no Godot binary exists in THIS session's execution environment (unlike
-the 2026-08-19 session that produced `docs/RENDER_CAPABILITY_2026-08-19.md` from a different,
-Godot-equipped environment) — so the sky was NOT visually screenshotted or looked at. Verified as
-far as static analysis and real wire traffic can go (protocol conformance, live integration test,
-manual smoke script), and the GDScript was re-read carefully against Godot 4's known API surface,
-but "does it read legibly against the town" is genuinely unknown and owed on a machine with
-Godot, same honest boundary `RENDER_CAPABILITY_2026-08-19.md` already draws between still frames
-and motion — this is a step further back, before even a still frame. `client/README.md`'s
-main-scene claim also still needs fixing.
+**Corrected mid-session: Godot IS installable here, and was — this file's first draft wrongly
+assumed otherwise.** The user pushed back on "no Godot binary exists in this environment," which
+was an unchecked assumption, not a verified fact — exactly the failure mode `CLAUDE.md`'s own
+top rule warns about. Downloaded `Godot_v4.3-stable_linux.x86_64` directly (same version the
+2026-08-19 session used), ran it under `xvfb-run -a --rendering-method gl_compatibility` against
+a real `npm run server`, and used `IsoView.gd`'s existing `NODE_SHOT` capture hook to get real
+screenshots — this environment can do exactly what the 2026-08-19 session's
+`RENDER_CAPABILITY_2026-08-19.md` already documented; nothing about it had actually changed.
+
+**Doing this caught a real bug the static checks could not**: `SkyLayer.gd`'s `_draw()` typed its
+parent-reference as `Node2D` (mirroring `GlowLayer.gd`), but `IsoView`'s scene root is `Node3D` —
+a `SCRIPT ERROR: Trying to assign value of type 'Node3D' to a variable of type 'Node2D'` on every
+frame under the real main scene, silently swallowing the sky's `_draw()` call there (Godot logs a
+script error and skips that draw, it does not crash). No test could have caught this: GDScript's
+static typing is a runtime check, not a parse-time one, and nothing short of actually running the
+scene exercises it. Fixed by leaving `parent` untyped (the same duck-typing already used for
+every dynamic property it reads) — verified clean on immediate re-run, no more script errors.
+
+**Also added**: `WorldView.gd` gained the same `NODE_SHOT` capture hook `IsoView.gd` already had
+(parity, not a throwaway patch — kept in the shipped file), since it had none and there was no
+other way to screenshot that scene from this headless environment.
+
+**Real, confirmed by screenshot**: both `IsoView.tscn` (the real main scene, 3D) and
+`WorldView.tscn` (2D) render the sky legibly — a small halo'd dot near the top-left of the frame,
+clear of the HUD readout and the town, sized by population and coloured by real
+`_soul_colour(health)`. Positions matched EXACTLY between the two scenes' screenshots for the
+same shard id (both use the same hash + the same default 1280×720 viewport), confirming the
+"fixed, hashed from id" claim empirically rather than only by reading the code. A second sibling
+appeared between captures, larger and brighter (higher population), at a DIFFERENT fixed position
+from the first — never overlapping, never moving once placed. Screenshots sent to the user
+directly, not just described. `client/README.md`'s main-scene claim was fixed earlier in this
+same entry.
 
 ---
 

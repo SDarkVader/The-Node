@@ -110,6 +110,11 @@ var was_connected := false
 var logged_first_tick := false
 var _falloff: ImageTexture
 
+## Offscreen capture, opt-in via `NODE_SHOT=/path/to.png` — the same mechanism `IsoView.gd`
+## already has, added here for parity so this scene can be reviewed the same way (2026-08-24).
+var _shot_path := ""
+var _frames := 0
+
 var have_geometry := false
 var plots: Array = []
 var buildings: Array = []
@@ -136,6 +141,7 @@ var target_population_per_shard := 1.0
 
 
 func _ready() -> void:
+	_shot_path = OS.get_environment("NODE_SHOT")
 	# Godot's WebSocketPeer requires an explicit path before any query string — a bare
 	# "host:port" is rejected as invalid. Kept from the original scaffold, where a real Godot
 	# run (not a throwaway JS client) was what caught it.
@@ -159,6 +165,19 @@ func _process(_delta: float) -> void:
 	elif state == WebSocketPeer.STATE_CLOSED:
 		was_connected = false
 		hud.text = "Disconnected (code %d) — is `npm run server` running?" % socket.get_close_code()
+
+	if have_geometry and _shot_path != "":
+		_frames += 1
+		if _frames == 3:
+			call_deferred("_capture")
+
+
+## See `IsoView.gd`'s own `_capture()` — identical pattern, kept in sync deliberately.
+func _capture() -> void:
+	await RenderingServer.frame_post_draw
+	var err := get_viewport().get_texture().get_image().save_png(_shot_path)
+	print("[NODE] capture %s -> %s" % ["ok" if err == OK else "FAILED", _shot_path])
+	get_tree().quit()
 
 
 func _handle_message(raw: String) -> void:

@@ -49,9 +49,16 @@ func _hash01(n: int) -> float:
 
 
 func _draw() -> void:
-	# Two CanvasLayer levels up to the world-state owner (Sky/SkyDraw -> Sky -> WorldView) — see
-	# GlowLayer.gd for the same untyped-parent-access pattern this mirrors.
-	var parent: Node2D = get_parent().get_parent()
+	# Two CanvasLayer levels up to the world-state owner (Sky/SkyDraw -> Sky -> the host scene
+	# root). DELIBERATELY UNTYPED, unlike GlowLayer.gd's `parent: Node2D` — this script is
+	# shared by BOTH real scenes (see this file's header), and one host root is `Node2D`
+	# (WorldView) while the other is `Node3D` (IsoView). A `Node2D`-typed variable made this
+	# error at runtime the moment it ran under IsoView — found by actually running Godot and
+	# looking at the log, not by reading the code (2026-08-24). Untyped access still works for
+	# both, the same as every dynamic property/method read below (`.siblings`,
+	# `.have_geometry`, `._soul_colour()`) already relies on duck-typing rather than a shared
+	# base class.
+	var parent = get_parent().get_parent()
 	if parent == null or not parent.have_geometry:
 		return
 
