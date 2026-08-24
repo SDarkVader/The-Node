@@ -64,19 +64,32 @@ strip of dots near the top of the screen — every OTHER shard in the live `Shar
 by population and coloured by real economic health (dim cold-blue = DORMANT, not yet awake).
 Positions are fixed and hashed from each shard's own stable id, never orbital or time-based.
 
-## Controls
+## Controls — `IsoView.tscn` (the main scene)
 
-**Below documents `WorldView.tscn` (the 2D view)** — still accurate for that scene. `IsoView.tscn`
-(the current main scene) differs: **left-drag** orbits the camera around the town (not a pan),
-**Q**/**E** step the orbit by 45°, **mouse wheel** zooms by narrowing/widening the camera's
-orthographic span (4–60 world units). A full `IsoView.tscn`-accurate rewrite of this section and
-the mapping table below it is an open item (`docs/BLUEPRINT.md` §9), not attempted here — the
-underlying signal→visual doctrine is identical across both scenes, only the camera and dimension
-differ.
+A fly/orbit camera (2026-08-24), not a fixed spin:
+
+- **WASD** — fly the pivot across the ground, camera-relative (W is "forward along wherever
+  you're currently looking," not world-north). Speed scales with zoom.
+- **Left-drag** — orbit the pivot: horizontal = yaw, vertical = pitch (clamped short of
+  straight-down/up). Pitch is real now — it used to be a fixed elevation ratio.
+- **Right-drag** — pan the pivot, same effect as WASD for anyone who'd rather drag.
+- **Mouse wheel** — zoom (narrows/widens the camera's orthographic span, 4–60 world units).
+- **Q / E** — quick 45° yaw snap, unchanged.
+- Top-left readout — day, economic health, mean tension, live population.
+
+Orthogonal projection throughout — panning and orbiting do not turn this into a perspective
+walkthrough; the town stays a diagram of itself at any pivot or angle.
+
+## Controls — `WorldView.tscn` (2D top-down, also shipped, not the default scene)
 
 - **Left-drag** — pan
 - **Mouse wheel** — zoom (clamped 0.25×–4×)
 - Top-left readout — day, economic health, mean tension, live population
+
+The mapping table below documents `WorldView.tscn` specifically (flat squares, ground wash,
+etc.); `IsoView.tscn` shares the same signal→visual doctrine but renders it in 3D — real height,
+lighting, and a courier-route/sibling-sky rendering of its own. A full `IsoView.tscn`-accurate
+version of the table below is still an open item (`docs/BLUEPRINT.md` §9).
 
 ## What you are looking at (`WorldView.tscn`)
 
@@ -97,6 +110,7 @@ differ.
 | The halo around it, gold → amber → red | **The Wall's sentiment.** The radiance, not the monument, carries how the node is doing. A shard in crisis shows a red glow around an unchanged gold Wall. Anchored on measured health: p05 0.857 / median 0.909 / p95 0.948. |
 | Small icon in a station's top-left | That building's **role**, hung like a shop sign — quiet, because a building's role never changes. |
 | Icon floating above a person | That player's **role**, carried with them. Same glyph as their station, so a Bakery and a Baker read as the same thing. |
+| Neon-blue line, bending along streets | A **courier route** (2026-08-24) — a real shortest path from a staffed Courier station to the Wall over the actual street/plaza grid, strongly street-preferring but not forbidden from crossing a building block when a station is genuinely walled in on all sides (`CourierRoutes.gd`). Gated on FILLED, same as station glow. |
 
 **Heat** auto-ranges against its observed maximum (~0.5). **Tension** uses a diverging scale
 anchored on its real measured distribution — p05 0.03, median 0.06, p95 0.10, from 5600

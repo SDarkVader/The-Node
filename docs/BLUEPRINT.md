@@ -236,16 +236,29 @@ never go on the wire.
 
 | Scene | Script | Purpose |
 |---|---|---|
-| `IsoView.tscn` *(real `run/main_scene`, verified against `project.godot`)* | `IsoView.gd`, `SkyLayer.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, courier routes, sibling-shard sky |
-| `WorldView.tscn` | `WorldView.gd`, `GlowLayer.gd`, `SkyLayer.gd` | 2D top-down. Same protocol, same palette, sibling-shard sky |
+| `IsoView.tscn` *(real `run/main_scene`, verified against `project.godot`)* | `IsoView.gd`, `SkyLayer.gd`, `CourierRoutes.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, real courier routes, sibling-shard sky |
+| `WorldView.tscn` | `WorldView.gd`, `GlowLayer.gd`, `SkyLayer.gd`, `CourierRoutes.gd` | 2D top-down. Same protocol, same palette, real courier routes, sibling-shard sky |
 | `Main.tscn` | `Main.gd` | Legacy MVP-scenario scaffold (`NODE_LEGACY_MVP=1`) |
 
-`SkyLayer.gd` is shared, unmodified, between both real scenes — each hosts it on its own
-`Sky` `CanvasLayer` / `SkyDraw` `Node2D` child, and it duck-types against `siblings`,
-`target_population_per_shard`, `have_geometry`, `_soul_colour()`, `SOUL_MEDIAN`, `TENSION_COLD`,
-all of which both `IsoView.gd` and `WorldView.gd` already expose. Sibling positions are fixed,
-hashed once from each shard's stable `id` — never orbital, never time-based motion; only the
-size (population fraction) and colour (health / DORMANT) change tick to tick.
+`SkyLayer.gd` and `CourierRoutes.gd` are shared, unmodified, between both real scenes — neither
+uses `class_name` (a global class registration the Godot EDITOR writes into `project.godot`;
+this project is driven headless, so that reference never resolves — a real, previously-found
+constraint, `WorldView.gd`'s own header). Callers `preload()` them instead.
+
+- `SkyLayer.gd`: each scene hosts it on its own `Sky` `CanvasLayer` / `SkyDraw` `Node2D` child,
+  duck-typed against `siblings`, `target_population_per_shard`, `have_geometry`, `_soul_colour()`,
+  `SOUL_MEDIAN`, `TENSION_COLD`, all of which both `IsoView.gd` and `WorldView.gd` already
+  expose. Sibling positions are fixed, hashed once from each shard's stable `id` — never
+  orbital, never time-based motion; only size (population fraction) and colour (health /
+  DORMANT) change tick to tick.
+- `CourierRoutes.gd` (2026-08-24): a real per-courier path from station to hub, weighted
+  Dijkstra over the actual `street`/`plaza` plots in `hello`'s `plots` (real street cost 1,
+  off-street cost 6 — discouraged, never forbidden; see the script's own header for why a hard
+  "never touch a building" block is unsatisfiable at the shipped building density, ~71% of one
+  real district's plots). Cached per building id (the walkable grid and a building's position
+  never change after `hello`, so nothing needs recomputing). Rendered as a distinct saturated
+  blue (`Color8(56, 176, 255)`), deliberately not the courier role's own teal, so a route can't
+  be mistaken for station/person tinting.
 
 **Signal → visual mapping** (identical rules across the terminal renderer, 2D and 3D clients):
 
@@ -257,11 +270,19 @@ size (population fraction) and colour (health / DORMANT) change tick to tick.
 | Shard sentiment | The **radiance** around the Wall. Its gold substrate never changes — substrate is hope, radiance is sentiment |
 | Role | A procedural glyph: on the station as a corner sign, above a person as a carried mark |
 | Slot state | Brightness: FILLED 1.0, BACKSTOPPED 0.5, VACANT 0.28. Quieter, never broken |
-| Courier route | A ribbon from a staffed post to the Wall — the exact distance `courierPay.ts` pays for |
+| Courier route | A real weighted-shortest-path line from a staffed post to the Wall, over the actual street/plaza grid — not a straight ribbon (`CourierRoutes.gd`) |
 | Occupancy | A role-holder at their station is *inside* it; their presence is what makes it glow |
 
 **Doctrine**: structural beauty stays constant; colour is the only honest variable. Nothing dims,
 cracks or distresses to signal decline.
+
+**`IsoView.gd` camera (2026-08-24)**: a fly/orbit rig, not a fixed spin. `_cam_pivot` (ground
+point, world x/z) is orbited by yaw/pitch and can itself MOVE — WASD (continuous, camera-relative,
+speed scales with zoom) or a right-drag (same math, discrete). Left-drag orbits yaw (horizontal)
+and pitch (vertical, clamped `[0.12, 1.45]` rad). Wheel zooms (`_cam_span`, unchanged mechanism).
+Q/E still snap-yaw 45°. Orthogonal projection throughout — panning/orbiting never becomes a
+perspective walkthrough. Default framing is byte-identical to the pre-2026-08-24 fixed camera
+(`_cam_pitch` defaults to `atan(0.82)`, the old baked-in elevation ratio).
 
 ---
 

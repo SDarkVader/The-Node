@@ -23,6 +23,7 @@ extends Node2D
 ## tension uses a diverging scale anchored on its measured percentiles (see below).
 
 const SERVER_HOST := "ws://127.0.0.1:8080"
+const CourierRoutes = preload("res://scripts/CourierRoutes.gd")
 
 # --- Ember palette, copied from src/sim/playtestRenderer.ts -------------------------------
 const GROUND := Color8(13, 10, 8)
@@ -45,6 +46,11 @@ const COLOUR_STREET := Color8(47, 40, 34)
 const COLOUR_PLAIN := Color8(74, 64, 56)
 const COLOUR_GRIFTER := Color8(217, 201, 176)
 const COLOUR_AWAY := Color8(232, 168, 92)
+## Courier routes (2026-08-24) — same colour and same "own hue, not the role teal" reasoning as
+## IsoView.gd's `ROUTE_COLOUR`; see that file's header for the full account (a real BFS path over
+## the wire's actual walkable plots, not a guessed shape, and its own distinct neon blue so it
+## never reads as another patch of station glow).
+const ROUTE_COLOUR := Color8(56, 176, 255)
 
 const HEAT_OBSERVED_MAX := 0.5
 
@@ -134,6 +140,13 @@ var mean_tension := 0.0
 var siblings: Array = []
 var target_population_per_shard := 1.0
 
+## Real courier routing, shared with IsoView.gd via `CourierRoutes.gd` — see that file's own
+## header. `_walkable` is "x,y" -> true for real street/plaza plots, built once from `hello`;
+## `_route_cache` is buildingId -> Array[Vector2i], the real BFS path, computed once per station
+## and reused forever (neither the walkable grid nor a building's position ever changes).
+var _walkable := {}
+var _route_cache := {}
+
 @onready var hud: Label = $HUD/Readout
 @onready var camera: Camera2D = $Camera2D
 @onready var glow: Node2D = $Glow
@@ -205,6 +218,8 @@ func _handle_hello(msg: Dictionary) -> void:
 	hub = Vector2(float(h["x"]), float(h["y"]))
 	bounds = msg.get("bounds", {})
 	target_population_per_shard = float(msg.get("targetPopulationPerShard", 1))
+	_walkable = CourierRoutes.build_walkable_grid(plots)
+	_route_cache.clear()
 	have_geometry = true
 	_centre_camera()
 	# Printed rather than only drawn, so `--headless` is a real smoke test: it proves the
@@ -336,12 +351,49 @@ func _draw() -> void:
 	for b in buildings:
 		_draw_building(b)
 
+	_draw_routes()
+
 	# The Wall. Always bright, always intact, regardless of how the shard is doing — this is
 	# the doctrine's clearest single case.
 	_draw_wall()
 
 	for person in people:
 		_draw_person(person)
+
+
+## Real per-courier path, cached — one BFS the first time a station is seen FILLED, reused every
+## frame after. See `CourierRoutes.gd`'s header for why this is a real breadth-first search over
+## the wire's actual walkable plots rather than a drawn guess.
+func _route_for(building_id, start_cell: Vector2i, hub_cell: Vector2i) -> Array:
+	if _route_cache.has(building_id):
+		return _route_cache[building_id]
+	var path: Array = CourierRoutes.find_route(_walkable, start_cell, hub_cell, bounds)
+	if path.is_empty():
+		push_warning("[NODE] no walkable route found for courier station %s" % [building_id])
+	_route_cache[building_id] = path
+	return path
+
+
+## Courier routes (2026-08-24, user: "we should be able to view courier routes in this
+## perspective also" — this scene had none). Gated on FILLED, the same rule the station glow
+## already follows: a route exists because somebody is actually running it.
+func _draw_routes() -> void:
+	var hub_cell := Vector2i(int(round(hub.x)), int(round(hub.y)))
+	for b in buildings:
+		if b.get("role") != "courier":
+			continue
+		var station = stations.get(b["id"])
+		if station == null or station["state"] != "FILLED":
+			continue
+		var start_cell := Vector2i(int(round(float(b["x"]))), int(round(float(b["y"]))))
+		var path: Array = _route_for(b["id"], start_cell, hub_cell)
+		for j in path.size() - 1:
+			var a := _world_to_px(float(path[j].x), float(path[j].y))
+			var c := _world_to_px(float(path[j + 1].x), float(path[j + 1].y))
+			# Soft wide halo underneath a bright, narrow core — the cheapest approximation of the
+			# 3D scene's additive glow this 2D canvas can do without its own bloom pass.
+			draw_line(a, c, Color(ROUTE_COLOUR, 0.30), CELL * 0.32)
+			draw_line(a, c, Color(ROUTE_COLOUR, 0.9), CELL * 0.09)
 
 
 func _draw_building(b: Dictionary) -> void:

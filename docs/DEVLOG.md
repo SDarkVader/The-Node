@@ -6,6 +6,77 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-24 (later) — Real camera navigation, and real (not guessed) courier routing
+
+Same session, after the sibling-shard sky shipped and was visually verified. Two separate user
+asks, both answered by actually looking at the running client rather than guessing from code.
+
+**Camera** (user: "I need better movement so I can view it from different perspectives" — the
+isometric view only spun in place around a fixed hub-centred pivot). `IsoView.gd`'s camera is now
+a fly/orbit rig: `_cam_pivot` (the ground point orbited and looked at) starts at the hub but
+MOVES — continuous WASD, camera-relative and zoom-scaled, or a right-drag doing the same thing
+discretely. Left-drag orbits both yaw (horizontal, as before) AND pitch (vertical, newly real —
+previously baked into a fixed `d * 0.82` eye offset ratio, now a genuine clamped angle
+`[0.12, 1.45]` rad). Wheel zoom and Q/E 45°-snap are unchanged. Orthogonal projection kept
+throughout, deliberately — panning and orbiting must not turn the isometric diagram into a
+perspective walkthrough, which the file's own `_frame_camera` comment already argues against.
+Default framing is byte-identical to the old fixed camera (`_cam_pitch` defaults to
+`atan(0.82)`, reproducing the exact old eye ratio) — nobody's first connection looks different.
+Verified for real, not just read: temporarily forced `_cam_pivot`/`_cam_yaw`/`_cam_pitch`/
+`_cam_span` to distinct values behind a throwaway `NODE_CAM_TEST` env-var branch, screenshotted a
+visibly different, sensible frame (lower pitch, different yaw, off-centre pivot, tighter zoom),
+then reverted the branch — confirmed via `git status`/`grep` that no test-only code shipped.
+
+**Courier routing — two guesses tried and replaced in the same session, real data used only at
+the end.** First attempt (this file's earlier entry today): a single diagonal box from station to
+hub — user: "courier routing looks very strange... large white ribbon... I'd prefer a glowing
+line between tiles and following an actual route." Fixed the colour (was the courier role teal
+LIGHTENED 25%, which under additive blending washed to near-white — dropped the lightening,
+used the real hue). Second attempt: a synthetic 2-segment axis-aligned L (Manhattan-shape,
+matching what `courierPay.ts` actually pays for) — better, but user pushed further: "make it neon
+blue" (done — a new colour, `Color8(56, 176, 255)`, NOT the courier role teal, since teal still
+sat too close to the warm ember palette) and "courier can't obviously go through the plaza...
+pull up the routing logic please and we can map out courier paths." That last one was the right
+call: reading `space.ts` properly (not assumed) surfaced that the server ALREADY generates one
+real L-shaped street corridor per district, from plaza to hub (`corridorPlots`) — but it doesn't
+solve per-courier routing on its own, for two real reasons found by reading the generation code,
+not guessed: (1) it is anchored on the district PLAZA, while `courierPay.ts` pays STATION-level
+distance (2026-08-19 addendum — every courier used to share one plaza, which paid nobody
+anything real); (2) `generateShardLayout`'s "first claim wins" pass order means the corridor
+SKIPS any cell a building already claimed rather than routing around it, so the straight spine
+can have real single-cell gaps.
+
+Built `client/scripts/CourierRoutes.gd`, shared by both real scenes (`preload()`d, deliberately
+NOT `class_name` — this project is driven headless, and a `class_name` reference never resolves
+without the editor having opened once, the same lesson `WorldView.gd`'s own header already
+recorded once for exactly this reason): a real pathfinder over the real `plots` the wire already
+sends. **First version was a hard block — walkable cells only, `street`/`plaza`, everything else
+forbidden — and it FAILED for 6 of 7 couriers**, caught by actually running it (`push_warning`
+firing for most stations), not assumed correct. Root cause, measured rather than guessed: one
+real district's plots are 62 `building` / 24 `street` / 1 `plaza` — ~71% building coverage dense
+enough that several stations sit completely walled in by other buildings on all 4 orthogonal
+sides, with no real street cell to step onto at all. Fixed by making the search a weighted
+Dijkstra instead of a hard-blocked BFS: real street/plaza costs 1, anywhere else costs 6 —
+strongly discouraged, never forbidden, bounded to the settlement's own real footprint (`hello`'s
+`bounds`, plus a margin) so the search can't wander into unbounded empty space chasing a cheaper
+detour that will never come. Cached per building id (recomputed once, ever, since neither the
+walkable grid nor a building's position changes after `hello`). Re-verified after the fix:
+7 of 7 posts routed, zero warnings, screenshotted in both scenes — the 2D top-down view in
+particular makes the real staircase-step, street-following shape unmistakable.
+
+Wired into `WorldView.gd` too (user: "we should be able to view courier routes in this
+perspective also" — that scene had none at all before this). Same `CourierRoutes.gd`, same
+colour, drawn as a soft-wide-halo-plus-bright-core pair of `draw_line` calls (the cheapest
+approximation of the 3D scene's real additive glow this 2D canvas can do without its own bloom
+pass).
+
+No TypeScript changed this entry — purely client-side GDScript. 722 tests still pass (unaffected);
+verified correctness the only way available for this layer: actually running Godot headless
+against a real live server and reading both the console output and the rendered PNGs, several
+iterations, not stopping at the first thing that compiled.
+
+---
+
 ## 2026-08-24 — Sibling-shard sky, wired end to end (real `shardRegistry` state, not invented physics)
 
 The second of the two candidates HANDOVER's 2026-08-22 entry named as "explicitly sequenced,

@@ -27,16 +27,19 @@ plateaus around 0.5, stays stable), Courier pay indexes actual distance, and
 role completion is uniformly tested across all five roles (Journalist and Detective merged
 into Investigator, 2026-08-22). 722 tests cover all of it.
 
-**Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry.
-Role-holders occupy their buildings (not drawn on street), marked by glyphs
-above roofs. Streets carry district tension as color (blue–Ember–red). Stations
-glow with economic heat (radius and intensity encode occupancy state). Courier
-routes show as ribbons from stations to the hub. A fixed sibling-shard sky
-(2026-08-24) shows every other shard in the real registry as a dot sized by
-population and colored by real economic health — positions are hashed from
-each shard's stable id, never orbital or time-based. Watch it run with `npm
-run playtest` (terminal, synthetic drivers) or connect the Godot client to
-`npm run server`.
+**Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry,
+a free fly/orbit camera (WASD to move, drag to orbit yaw and pitch, wheel to
+zoom — 2026-08-24). Role-holders occupy their buildings (not drawn on
+street), marked by glyphs above roofs. Streets carry district tension as
+color (blue–Ember–red). Stations glow with economic heat (radius and
+intensity encode occupancy state). Courier routes are a real shortest path
+over the actual street/plaza grid (weighted, strongly street-preferring —
+2026-08-24), not a straight line, rendered in a distinct neon blue. A fixed
+sibling-shard sky (2026-08-24) shows every other shard in the real registry
+as a dot sized by population and colored by real economic health — positions
+are hashed from each shard's stable id, never orbital or time-based. Watch
+it run with `npm run playtest` (terminal, synthetic drivers) or connect the
+Godot client to `npm run server`.
 
 **Inbound pipe (2026-08-19)**: WebSocket now receives client actions. Parser
 is defensive—malformed frames drop without killing the connection. Action

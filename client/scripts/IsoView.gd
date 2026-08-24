@@ -21,6 +21,7 @@ extends Node3D
 ##   - every scale is anchored on measured percentiles, never on a theoretical 0..1 range
 
 const SERVER_HOST := "ws://127.0.0.1:8080"
+const CourierRoutes = preload("res://scripts/CourierRoutes.gd")
 
 # --- Ember palette, same values as playtestRenderer.ts / WorldView.gd -----------------------
 const HEAT_COOL := Color8(74, 107, 122)
@@ -108,7 +109,31 @@ const JITTER_FOOTPRINT := 0.16
 var socket := WebSocketPeer.new()
 var logged := false
 var _frames := 0
+
+## Camera: a fly/orbit rig, not a fixed spin around the hub (2026-08-24, user: "I need better
+## movement so I can view it from different perspectives"). `_cam_pivot` is the ground point the
+## camera looks at and orbits — it starts at the hub but MOVES, via WASD or a right-drag, so the
+## whole rig can be flown anywhere over the settlement rather than only spinning in place around
+## one fixed centre. Yaw and pitch (left-drag) orbit around wherever the pivot currently is;
+## zoom (wheel) is unchanged. Orthogonal projection is kept throughout — panning and orbiting
+## do not turn this into a perspective walkthrough, which would undercut the isometric
+## diagram-reading `_frame_camera`'s own comment already explains.
 var _cam_yaw := PI * 0.25
+## Elevation angle, radians. Default reproduces the ORIGINAL fixed camera exactly
+## (atan(0.82) — the old eye = (cos*d, 0.82*d, sin*d) parametrization), so a fresh connection
+## opens on the same framing as before; pitch is now adjustable rather than fixed.
+var _cam_pitch := atan(0.82)
+const PITCH_MIN := 0.12   ## near street level (~7°) — clamped short of fully flat/underground
+const PITCH_MAX := 1.45   ## near top-down (~83°) — clamped short of true top-down (gimbal)
+const ORBIT_SENSITIVITY := 0.006   ## matches the original drag-to-yaw rate
+## [FIRST PASS, tunable — not measured against real play, only sanity-checked headless] World
+## units per second of pan speed PER UNIT of `_cam_span`, so panning feels roughly constant on
+## screen at any zoom level rather than crawling when zoomed out or overshooting when zoomed in.
+const PAN_SPEED := 0.55
+## Drag-to-pan world units per pixel per unit of `_cam_span` — same zoom-relative reasoning.
+const DRAG_PAN_SCALE := 0.0016
+var _cam_pivot := Vector2.ZERO
+
 var _cam_span := 18.0
 var _shot_path := ""
 
@@ -142,6 +167,14 @@ var _building_at: Dictionary = {}
 var _building_by_id: Dictionary = {}
 var _route_mm: MultiMeshInstance3D
 var _logged_routes := false
+## "x,y" -> true for every real walkable (street/plaza) plot — built once from `hello`'s real
+## `plots`, fed to `CourierRoutes.find_route`. See `CourierRoutes.gd`'s own header for why this
+## replaced a straight/L-shaped guess.
+var _walkable := {}
+## buildingId -> Array[Vector2i], the real BFS path from that courier's station to the hub.
+## Computed once per building and cached forever — the walkable grid never changes after
+## `hello`, and neither does a building's position, so there is nothing to invalidate.
+var _route_cache := {}
 var _building_mm: MultiMeshInstance3D
 var _people_mm: MultiMeshInstance3D
 var _people_ghost: MultiMeshInstance3D
@@ -258,7 +291,7 @@ void fragment() {
 	add_child(layer)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	socket.poll()
 	var state := socket.get_ready_state()
 	if state == WebSocketPeer.STATE_OPEN:
@@ -266,6 +299,41 @@ func _process(_delta: float) -> void:
 			_handle_message(socket.get_packet().get_string_from_utf8())
 	elif state == WebSocketPeer.STATE_CLOSED:
 		hud.text = "Disconnected (code %d) — is `npm run server` running?" % socket.get_close_code()
+	if have_geometry:
+		_handle_keyboard_pan(delta)
+
+
+## WASD flies the pivot across the ground plane, camera-relative (W = the direction the camera
+## is currently looking along the ground, not world-north) — polled continuously rather than
+## driven off discrete key-press events, so movement is smooth and frame-rate independent.
+func _handle_keyboard_pan(delta: float) -> void:
+	var move := Vector2.ZERO
+	if Input.is_key_pressed(KEY_W):
+		move.y += 1.0
+	if Input.is_key_pressed(KEY_S):
+		move.y -= 1.0
+	if Input.is_key_pressed(KEY_D):
+		move.x += 1.0
+	if Input.is_key_pressed(KEY_A):
+		move.x -= 1.0
+	if move == Vector2.ZERO:
+		return
+	var forward := Vector2(cos(_cam_yaw), sin(_cam_yaw))
+	var right := Vector2(-sin(_cam_yaw), cos(_cam_yaw))
+	var speed := _cam_span * PAN_SPEED
+	_cam_pivot += (forward * move.y + right * move.x) * speed * delta
+	_clamp_pivot()
+	_place_camera()
+
+
+## Keeps the pivot from wandering into the void past the real settlement footprint — bounded to
+## `bounds` (from `hello`) plus a margin, a real measured extent rather than a guessed radius.
+func _clamp_pivot() -> void:
+	if not bounds.has("minX"):
+		return
+	var margin := 6.0
+	_cam_pivot.x = clampf(_cam_pivot.x, float(bounds["minX"]) - margin, float(bounds["maxX"]) + margin)
+	_cam_pivot.y = clampf(_cam_pivot.y, float(bounds["minY"]) - margin, float(bounds["maxY"]) + margin)
 
 
 func _handle_message(raw: String) -> void:
@@ -363,22 +431,30 @@ func _frame_camera() -> void:
 	if bounds.has("minX"):
 		_cam_span = maxf(float(bounds["maxX"]) - float(bounds["minX"]),
 			float(bounds["maxY"]) - float(bounds["minY"])) + 5.0
+	_cam_pivot = hub
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	_place_camera()
 
 
 ## Orbiting matters for more than comfort: a fixed viewpoint means a fixed set of people hidden
 ## behind a fixed set of roofs. Being able to turn the town is the direct answer to "whoever is
-## standing there cannot be seen from here".
+## standing there cannot be seen from here" — and being able to MOVE the pivot (WASD, or a
+## right-drag) means it is not always the same fixed set of roofs either: pitch and yaw orbit
+## whatever `_cam_pivot` currently is, not always the hub. Spherical (yaw, pitch) around the
+## pivot, not the old cylindrical (fixed elevation ratio) parametrization — pitch is now real,
+## not baked into the eye offset.
 func _place_camera() -> void:
 	camera.size = _cam_span
 	var d := _cam_span
-	var eye := Vector3(cos(_cam_yaw) * d, d * 0.82, sin(_cam_yaw) * d)
-	camera.position = Vector3(hub.x, 0.0, hub.y) + eye
-	camera.look_at(Vector3(hub.x, 0.0, hub.y), Vector3.UP)
+	var eye := Vector3(cos(_cam_yaw) * cos(_cam_pitch), sin(_cam_pitch), sin(_cam_yaw) * cos(_cam_pitch)) * d
+	var pivot3 := Vector3(_cam_pivot.x, 0.0, _cam_pivot.y)
+	camera.position = pivot3 + eye
+	camera.look_at(pivot3, Vector3.UP)
 
 
 func _build_static_geometry() -> void:
+	_walkable = CourierRoutes.build_walkable_grid(plots)
+	_route_cache.clear()
 	_build_ground()
 	_build_buildings()
 	_build_wall()
@@ -620,19 +696,42 @@ func _build_wall() -> void:
 ## COURIER ROUTES — real economic geometry, not decoration.
 ##
 ## `courierPay.ts` pays a Courier for the Manhattan distance from their own station to the
-## shard hub, so this line IS the thing being paid for: the corridor they walk every day and
-## earn from. Drawn as a flat ribbon on the stones rather than a floating line, because it is
-## a route through the town, not a link on a diagram.
+## shard hub (`space.ts`'s `distance()` — `|dx| + |dy|`, never Euclidean), so this line IS the
+## thing being paid for: the corridor they walk every day and earn from.
+##
+## A REAL PATH, NOT A GUESSED SHAPE (2026-08-24, user: "courier routing looks very strange...
+## courier can't obviously go through the plaza... pull up the routing logic... map out courier
+## paths"). Two guesses were tried and replaced in the same session, each an invention this one
+## is not: first a single diagonal box (implied a beeline distance the game does not pay for,
+## cut across roofs at an arbitrary angle), then a synthetic 2-segment L (axis-aligned, but its
+## corner could still land on a building or cut across the plaza in a way nothing in the real
+## geometry supports). This version walks `CourierRoutes.gd`'s breadth-first search over the
+## REAL walkable (`street`/`plaza`) plots the server actually generated and sent — see that
+## script's own header for exactly why a straight guess, even an axis-aligned one, is not
+## enough. The route drawn is now an actual sequence of real, adjacent, walkable tiles from the
+## courier's own station to the hub — it can never cross a building, and wherever it does cross
+## the plaza, that is because the real street graph legitimately routes through it.
+##
+## GLOW, NOT WHITE-OUT: the colour is deliberately NOT `ROLE_COLOUR["courier"]` — a first attempt
+## at fixing an over-bright white ribbon used the lightened role teal, which still sat too close
+## to the warm ember palette and read as another patch of station glow. `ROUTE_COLOUR` is its
+## own saturated, cool blue (2026-08-24, user: "make it neon blue") — the one hue nothing else on
+## the ember-warm map uses, so a route can never be mistaken for anything else.
 ##
 ## Gated on OCCUPANCY: a route exists because somebody runs it. An unstaffed Courier post has
 ## no line, which is the same rule the station glow follows — activity requires someone doing
 ## it.
+const ROUTE_WIDTH := 0.11
+const ROUTE_Y := 0.095
+const ROUTE_ALPHA := 0.85
+const ROUTE_COLOUR := Color8(56, 176, 255)
+
 func _build_routes() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
 	var bm := BoxMesh.new()
-	bm.size = Vector3(1.0, 0.02, 0.30)
+	bm.size = Vector3(1.0, 0.02, ROUTE_WIDTH)
 	mm.mesh = bm
 	mm.instance_count = 0
 	_route_mm = MultiMeshInstance3D.new()
@@ -652,6 +751,21 @@ void fragment() {
 	add_child(_route_mm)
 
 
+## Real per-courier path, cached (see `_route_cache`'s own comment) — one BFS the first time a
+## given station is ever seen occupied, reused every tick after. Returns Array[Vector2i].
+func _route_for(building_id, start_cell: Vector2i, hub_cell: Vector2i) -> Array:
+	if _route_cache.has(building_id):
+		return _route_cache[building_id]
+	var path: Array = CourierRoutes.find_route(_walkable, start_cell, hub_cell, bounds)
+	if path.is_empty():
+		# A real, honest gap in the street graph — logged rather than papered over with a fake
+		# straight line. Cached anyway (as empty) so a genuinely disconnected station does not
+		# retry an expensive BFS every single tick.
+		push_warning("[NODE] no walkable route found for courier station %s" % [building_id])
+	_route_cache[building_id] = path
+	return path
+
+
 func _update_routes() -> void:
 	var routes: Array = []
 	for b in buildings:
@@ -661,8 +775,6 @@ func _update_routes() -> void:
 			continue
 		routes.append(b)
 
-	var mm := _route_mm.multimesh
-	mm.instance_count = routes.size()
 	if not _logged_routes:
 		_logged_routes = true
 		var courier_posts := 0
@@ -670,22 +782,40 @@ func _update_routes() -> void:
 			if b.get("role") == "courier":
 				courier_posts += 1
 		print("[NODE] courier routes: %d of %d posts staffed" % [routes.size(), courier_posts])
-	var hub3 := Vector3(hub.x, 0.09, hub.y)
-	var col: Color = ROLE_COLOUR["courier"]
-	for i in routes.size():
-		var b = routes[i]
-		var from := Vector3(float(b["x"]), 0.09, float(b["y"]))
-		var to := hub3
-		var mid := (from + to) * 0.5
-		var d := to - from
-		var len := d.length()
-		if len < 0.001:
-			mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(0.01, 1, 1)), mid))
-			continue
-		var yaw := atan2(d.z, d.x)
-		var basis := Basis(Vector3.UP, -yaw).scaled(Vector3(len, 1.0, 1.0))
-		mm.set_instance_transform(i, Transform3D(basis, mid))
-		mm.set_instance_color(i, Color(col.lightened(0.25), 1.0))
+
+	var hub_cell := Vector2i(int(round(hub.x)), int(round(hub.y)))
+	var segments: Array = []
+	for b in routes:
+		var start_cell := Vector2i(int(round(float(b["x"]))), int(round(float(b["y"]))))
+		var path: Array = _route_for(b["id"], start_cell, hub_cell)
+		for j in path.size() - 1:
+			segments.append([Vector2(path[j].x, path[j].y), Vector2(path[j + 1].x, path[j + 1].y)])
+
+	var mm := _route_mm.multimesh
+	mm.instance_count = segments.size()
+	for i in segments.size():
+		_place_route_segment(i, segments[i][0], segments[i][1], ROUTE_COLOUR)
+
+
+## One axis-aligned route segment — a single BFS step, always exactly one grid cell long now
+## that segments come from `CourierRoutes.find_route`. The near-zero-length branch below is
+## dead for this caller (adjacent grid cells are never that close) but kept as real defensive
+## code, not deleted, in case a degenerate `from == to` case is ever passed in some other way.
+func _place_route_segment(index: int, from: Vector2, to: Vector2, col: Color) -> void:
+	var mm := _route_mm.multimesh
+	var a := Vector3(from.x, ROUTE_Y, from.y)
+	var b := Vector3(to.x, ROUTE_Y, to.y)
+	var mid := (a + b) * 0.5
+	var d := b - a
+	var len := d.length()
+	if len < 0.05:
+		mm.set_instance_transform(index, Transform3D(Basis().scaled(Vector3(0.001, 1, 1)), mid))
+		mm.set_instance_color(index, Color(col, 0.0))
+		return
+	var yaw := atan2(d.z, d.x)
+	var basis := Basis(Vector3.UP, -yaw).scaled(Vector3(len, 1.0, 1.0))
+	mm.set_instance_transform(index, Transform3D(basis, mid))
+	mm.set_instance_color(index, Color(col, ROUTE_ALPHA))
 
 
 func _build_people_pool() -> void:
@@ -911,9 +1041,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_cam_span = minf(60.0, _cam_span * 1.1)
 			_place_camera()
-	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
-		_cam_yaw += event.relative.x * 0.006
-		_place_camera()
+	elif event is InputEventMouseMotion:
+		# Left-drag ORBITS the current pivot: horizontal = yaw, vertical = pitch, clamped short
+		# of straight-down/straight-up so `look_at`'s up-vector never degenerates.
+		if event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			_cam_yaw += event.relative.x * ORBIT_SENSITIVITY
+			_cam_pitch = clampf(_cam_pitch - event.relative.y * ORBIT_SENSITIVITY, PITCH_MIN, PITCH_MAX)
+			_place_camera()
+		# Right-drag PANS the pivot itself — the other half of "move through the space", for
+		# anyone who would rather drag than hold WASD. Camera-relative on the ground plane, same
+		# direction convention as the keyboard pan.
+		elif event.button_mask & MOUSE_BUTTON_MASK_RIGHT:
+			var forward := Vector2(cos(_cam_yaw), sin(_cam_yaw))
+			var right := Vector2(-sin(_cam_yaw), cos(_cam_yaw))
+			var scale := _cam_span * DRAG_PAN_SCALE
+			_cam_pivot -= right * event.relative.x * scale
+			_cam_pivot += forward * event.relative.y * scale
+			_clamp_pivot()
+			_place_camera()
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_Q:
 			_cam_yaw -= PI * 0.25

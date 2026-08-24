@@ -3,6 +3,21 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-24 (later)**: Two follow-on fixes to the isometric client, both found and verified by
+actually running Godot against a live server, not by reading code. (1) **Camera**: `IsoView.gd`
+now flies — WASD/right-drag pans the pivot, left-drag orbits BOTH yaw and a newly-real pitch
+(was baked into a fixed ratio), wheel still zooms; orthogonal projection kept throughout, default
+framing unchanged. (2) **Courier routes**: went through two guessed shapes (a diagonal box, then
+a synthetic L) before landing on the right answer — a real pathfinder. New
+`client/scripts/CourierRoutes.gd`, shared by both scenes, walks the REAL `street`/`plaza` plots
+the wire already sends. A first hard-blocked version FAILED for 6 of 7 couriers once actually run
+— the shipped shard is dense enough (~71% building coverage) that several stations are walled in
+on all 4 sides — fixed with a weighted Dijkstra (real streets cost 1, everything else costs 6,
+never forbidden). Also wired into `WorldView.gd`, which had no route rendering at all before.
+Route colour is now its own neon blue (`Color8(56,176,255)`), not the courier role teal. No
+TypeScript touched; full account in `docs/DEVLOG.md`'s matching entry, including the two earlier,
+replaced attempts and why each was wrong.
+
 **2026-08-24**: The sibling-shard sky is built and wired end to end — the second of the two
 candidates the 2026-08-22 entry below named as sequenced-not-started. `startWorldServer` now runs
 a REAL `MultiShardState` (`sim/multiShardHarness.ts`'s `stepMultiShard`, reused, not duplicated),
