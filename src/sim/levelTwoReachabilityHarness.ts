@@ -30,7 +30,7 @@ import { mulberry32 } from './rng.js';
  * Compared on aggregate steady-state/cumulative statistics instead.
  */
 
-const ROLE_COUNTS: Record<string, number> = { miller: 9, baker: 9, courier: 7, journalist: 7, detective: 8, importExport: 6 };
+const ROLE_COUNTS: Record<string, number> = { miller: 9, baker: 9, courier: 7, investigator: 15, importExport: 6 };
 const TOTAL_ROLE_SLOTS = Object.values(ROLE_COUNTS).reduce((a, b) => a + b, 0);
 const N_POPULATION = 100;
 const CONSCRIPTION_DELAY = 14;

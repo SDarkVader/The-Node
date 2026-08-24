@@ -10,7 +10,7 @@ import { INITIAL_SHARD_COUNT } from '../src/engine/shardRegistry.js';
  * multi-shard-validation), since that's evidence to report, not a pass/fail unit check.
  */
 
-const SMALL_CONFIG: WorldConfig = { ...DEFAULT_WORLD_CONFIG, targetPopulation: 30, rMiller: 2, rBaker: 3, rCourier: 2, rJournalist: 2, rDetective: 1 };
+const SMALL_CONFIG: WorldConfig = { ...DEFAULT_WORLD_CONFIG, targetPopulation: 30, rMiller: 2, rBaker: 3, rCourier: 2, rInvestigator: 3 };
 
 describe('createMultiShardState', () => {
   it('starts with exactly INITIAL_SHARD_COUNT (2) shards, both with a real running World', () => {

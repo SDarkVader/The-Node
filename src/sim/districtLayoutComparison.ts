@@ -109,9 +109,9 @@ function run(shardConfig: ShardLayoutConfig) {
   };
 }
 
-const { rMiller, rBaker, rCourier, rJournalist, rDetective, rImportExport } = DEFAULT_WORLD_CONFIG;
+const { rMiller, rBaker, rCourier, rInvestigator, rImportExport } = DEFAULT_WORLD_CONFIG;
 console.log('District layout head-to-head, at the shipped allocation.');
-console.log(`M${rMiller} B${rBaker} C${rCourier} J${rJournalist} D${rDetective} IE${rImportExport}`);
+console.log(`M${rMiller} B${rBaker} C${rCourier} I${rInvestigator} IE${rImportExport}`);
 console.log(`DAYS=${DAYS} BURN_IN=${BURN_IN} SEEDS=${JSON.stringify(SEEDS)} target=${DEFAULT_WORLD_CONFIG.targetPopulation} (brief band 50-80)\n`);
 
 const results = LAYOUTS.map((l) => ({ ...l, r: run(l.shardConfig) }));

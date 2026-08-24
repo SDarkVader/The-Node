@@ -38,7 +38,7 @@ describe('injectSyntheticPosts', () => {
     const rand = mulberry32(1);
     const next = injectSyntheticPosts(world, rand, 1); // probability 1: everyone eligible posts
     const filledBuildingIds = new Set(
-      [...world.millers, ...world.bakers, ...world.couriers, ...world.journalists, ...world.detectives, ...world.importExporters]
+      [...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters]
         .filter((s) => s.slot.state === 'FILLED')
         .map((s) => s.buildingId),
     );
@@ -64,7 +64,7 @@ describe('injectSyntheticPosts', () => {
 describe('runIdentityResolutionSweep', () => {
   it('every FILLED role-holder at day 0 appears exactly once in the results', () => {
     const world = createWorld(1, DEFAULT_WORLD_CONFIG);
-    const filledCount = [...world.millers, ...world.bakers, ...world.couriers, ...world.journalists, ...world.detectives, ...world.importExporters].filter(
+    const filledCount = [...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters].filter(
       (s) => s.slot.state === 'FILLED',
     ).length;
     const results = runIdentityResolutionSweep(1, 30);

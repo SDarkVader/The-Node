@@ -54,8 +54,8 @@ describe('rolesEligibleFor', () => {
     expect(rolesEligibleFor(0)).toEqual([]);
   });
 
-  it('unlocks exactly the four cooperative roles at level 1, per the measured ~97-100% completion cluster (§3.2)', () => {
-    expect(rolesEligibleFor(1)).toEqual(['courier', 'journalist', 'detective', 'importExport']);
+  it('unlocks exactly the three cooperative roles at level 1, per the measured ~97-100% completion cluster (§3.2)', () => {
+    expect(rolesEligibleFor(1)).toEqual(['courier', 'investigator', 'importExport']);
   });
 
   it('level 2 is ADDITIVE on top of level 1, never a replacement (constraint 6)', () => {

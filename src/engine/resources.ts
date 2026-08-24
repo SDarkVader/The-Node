@@ -6,8 +6,9 @@
  *
  * WHY THIS EXISTS. Until now only two roles had any physical quantity attached at all —
  * Miller's Cournot `value` (a quantity) and Baker's Bertrand `value` (a price) — and
- * Courier/Journalist/Detective had nothing but a flat undifferentiated wage. That made
- * three of five roles economically indistinguishable and impossible to observe over time.
+ * Courier/Journalist/Detective (Journalist and Detective since merged into Investigator,
+ * 2026-08-22 — see `world.ts`'s header) had nothing but a flat undifferentiated wage. That
+ * made three of five roles economically indistinguishable and impossible to observe over time.
  * These are real named stocks and flows, tracked per day and cumulatively, so a shard's
  * activity is inspectable rather than implied.
  *
@@ -29,10 +30,14 @@
  * measurable before it is built.
  */
 
-/** Every named resource currently tracked in a shard. */
-export type ResourceName = 'grain' | 'flour' | 'bread' | 'parcels' | 'stories' | 'leads';
+/** Every named resource currently tracked in a shard. `stories` (Journalist's) was retired
+ *  2026-08-22 when Journalist merged into Investigator — `RESOURCE_OWNER`'s 1:1 role<->resource
+ *  bijection (`test/resources.test.ts`) means one merged role can own only one resource, and
+ *  `leads` (the former Detective's) was kept as the one with a real mechanic behind it
+ *  (`investigatedBy` — see `world.ts`). */
+export type ResourceName = 'grain' | 'flour' | 'bread' | 'parcels' | 'leads';
 
-export const RESOURCE_NAMES: readonly ResourceName[] = ['grain', 'flour', 'bread', 'parcels', 'stories', 'leads'];
+export const RESOURCE_NAMES: readonly ResourceName[] = ['grain', 'flour', 'bread', 'parcels', 'leads'];
 
 /** Which role is responsible for producing each resource — one owner each, no ambiguity. */
 export const RESOURCE_OWNER: Readonly<Record<ResourceName, string>> = {
@@ -40,8 +45,7 @@ export const RESOURCE_OWNER: Readonly<Record<ResourceName, string>> = {
   flour: 'miller',
   bread: 'baker',
   parcels: 'courier',
-  stories: 'journalist',
-  leads: 'detective',
+  leads: 'investigator',
 };
 
 /** Tonnes of grain consumed per unit of flour milled. [ILLUSTRATIVE] */
@@ -77,10 +81,8 @@ export const GRAIN_PER_FLOUR = 1.2;
 export const FLOUR_PER_BREAD = 0.20;
 /** Parcels one Courier moves in a full active day. [ILLUSTRATIVE] */
 export const PARCELS_PER_COURIER_DAY = 14;
-/** Stories one Journalist files in a full active day. [ILLUSTRATIVE] */
-export const STORIES_PER_JOURNALIST_DAY = 1.5;
-/** Investigative leads one Detective develops in a full active day. [ILLUSTRATIVE] */
-export const LEADS_PER_DETECTIVE_DAY = 2.5;
+/** Investigative leads one Investigator develops in a full active day. [ILLUSTRATIVE] */
+export const LEADS_PER_INVESTIGATOR_DAY = 2.5;
 
 /** One day's resource flows for a whole shard. All values are per-day, not cumulative. */
 export interface ResourceFlows {
@@ -102,7 +104,6 @@ export interface ResourceFlows {
   flourConsumed: number;
   breadProduced: number;
   parcelsDelivered: number;
-  storiesFiled: number;
   leadsDeveloped: number;
 }
 
@@ -121,7 +122,6 @@ export function emptyFlows(): ResourceFlows {
     flourConsumed: 0,
     breadProduced: 0,
     parcelsDelivered: 0,
-    storiesFiled: 0,
     leadsDeveloped: 0,
   };
 }
@@ -145,8 +145,7 @@ export function stepResourceFlows(
   millerQuantities: readonly number[],
   bakerServedCustomers: readonly number[],
   courierFrictions: readonly number[],
-  journalistFrictions: readonly number[],
-  detectiveFrictions: readonly number[],
+  investigatorFrictions: readonly number[],
   activityMultiplier: number,
   grainDelivered = 0,
   nodulesReceived = 0,
@@ -164,8 +163,7 @@ export function stepResourceFlows(
     breadProduced,
     flourConsumed: breadProduced * FLOUR_PER_BREAD,
     parcelsDelivered: sum(courierFrictions) * PARCELS_PER_COURIER_DAY * activityMultiplier,
-    storiesFiled: sum(journalistFrictions) * STORIES_PER_JOURNALIST_DAY * activityMultiplier,
-    leadsDeveloped: sum(detectiveFrictions) * LEADS_PER_DETECTIVE_DAY * activityMultiplier,
+    leadsDeveloped: sum(investigatorFrictions) * LEADS_PER_INVESTIGATOR_DAY * activityMultiplier,
   };
 }
 
@@ -181,7 +179,6 @@ export function accumulate(ledger: ResourceLedger, today: ResourceFlows): Resour
       flourConsumed: c.flourConsumed + today.flourConsumed,
       breadProduced: c.breadProduced + today.breadProduced,
       parcelsDelivered: c.parcelsDelivered + today.parcelsDelivered,
-      storiesFiled: c.storiesFiled + today.storiesFiled,
       leadsDeveloped: c.leadsDeveloped + today.leadsDeveloped,
     },
   };

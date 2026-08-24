@@ -54,7 +54,7 @@ export interface RenderOptions {
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = { color: true, width: 80, eventLog: [] };
 
-type RoleGlyph = 'M' | 'B' | 'C' | 'J' | 'D' | 'X';
+type RoleGlyph = 'M' | 'B' | 'C' | 'I' | 'X';
 type SlotState = 'FILLED' | 'VACANT' | 'BACKSTOPPED';
 
 interface BuildingRender {
@@ -225,8 +225,7 @@ export function buildingRenderMap(world: World, heat: EconomicHeatField): Map<st
   add(world.millers, 'M');
   add(world.bakers, 'B');
   add(world.couriers, 'C');
-  add(world.journalists, 'J');
-  add(world.detectives, 'D');
+  add(world.investigators, 'I');
   add(world.importExporters, 'X');
   return map;
 }
@@ -306,8 +305,7 @@ export function renderMap(world: World, opts: RenderOptions, heat: EconomicHeatF
   addAway(world.millers, 'M');
   addAway(world.bakers, 'B');
   addAway(world.couriers, 'C');
-  addAway(world.journalists, 'J');
-  addAway(world.detectives, 'D');
+  addAway(world.investigators, 'I');
   addAway(world.importExporters, 'X');
 
   const pad = ' '.repeat(CELL_WIDTH - 1);
@@ -406,8 +404,7 @@ export function renderStatus(world: World, opts: RenderOptions): string[] {
     ['Miller', world.millers],
     ['Baker', world.bakers],
     ['Courier', world.couriers],
-    ['Journalist', world.journalists],
-    ['Detective', world.detectives],
+    ['Investigator', world.investigators],
     ['Import/Ex', world.importExporters],
   ];
   const totalSlots = roles.reduce((sum, [, s]) => sum + s.length, 0);
@@ -448,12 +445,11 @@ const ROLE_NAMES: Record<RoleGlyph, string> = {
   M: 'Miller',
   B: 'Baker',
   C: 'Courier',
-  J: 'Journalist',
-  D: 'Detective',
+  I: 'Investigator',
   X: 'Import/Export',
 };
 
-/** Which of `World`'s six role arrays holds this building, plus the slot itself. Role is only
+/** Which of `World`'s five role arrays holds this building, plus the slot itself. Role is only
  *  ever derivable this way — `space.ts` keeps `Building.roleSlotRef` deliberately opaque. */
 function roleSlotFor(
   world: World,
@@ -463,8 +459,7 @@ function roleSlotFor(
     ['M', 'miller', world.millers],
     ['B', 'baker', world.bakers],
     ['C', 'courier', world.couriers],
-    ['J', 'journalist', world.journalists],
-    ['D', 'detective', world.detectives],
+    ['I', 'investigator', world.investigators],
     ['X', 'importExport', world.importExporters],
   ];
   for (const [glyph, role, slots] of groups) {

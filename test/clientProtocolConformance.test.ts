@@ -101,7 +101,7 @@ describe('Godot client / wire protocol conformance', () => {
     const source = readFileSync(GD_PATH, 'utf8');
     const { hello } = realMessages();
     const roles = new Set(hello.buildings.map((b) => b.role).filter((r): r is NonNullable<typeof r> => r !== null));
-    expect(roles.size).toBe(6);
+    expect(roles.size).toBe(5);
     for (const role of roles) expect(source).toContain(`"${role}"`);
   });
 

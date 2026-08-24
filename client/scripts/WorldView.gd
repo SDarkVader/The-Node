@@ -62,8 +62,7 @@ const ROLE_COLOUR := {
 	"miller": Color8(226, 178, 92),
 	"baker": Color8(214, 122, 74),
 	"courier": Color8(122, 158, 148),
-	"journalist": Color8(168, 154, 196),
-	"detective": Color8(196, 96, 96),
+	"investigator": Color8(196, 96, 96),
 	"importExport": Color8(148, 168, 108),
 }
 
@@ -456,14 +455,9 @@ func _draw_role_icon(at: Vector2, role, col: Color, size: float = ICON_SIZE) -> 
 			# Parcel: a box with a strap.
 			draw_rect(Rect2(at - Vector2(r, r) * 0.75, Vector2(r, r) * 1.5), col, false, 2.0)
 			draw_line(at + Vector2(0, -r * 0.75), at + Vector2(0, r * 0.75), col, 2.0)
-		"journalist":
-			# Page: a sheet with lines of type.
-			draw_rect(Rect2(at - Vector2(r * 0.7, r * 0.85), Vector2(r * 1.4, r * 1.7)), col, false, 2.0)
-			for i in 2:
-				var ly: float = at.y - r * 0.3 + float(i) * r * 0.55
-				draw_line(Vector2(at.x - r * 0.4, ly), Vector2(at.x + r * 0.4, ly), col, 1.5)
-		"detective":
-			# Magnifier: lens and handle.
+		"investigator":
+			# Magnifier: lens and handle. (2026-08-22: merged from Journalist+Detective —
+			# kept Detective's glyph since its mechanic, not Journalist's, survived the merge.)
 			draw_arc(at + Vector2(-r * 0.2, -r * 0.2), r * 0.6, 0.0, TAU, 16, col, 2.0)
 			draw_line(at + Vector2(r * 0.2, r * 0.2), at + Vector2(r * 0.8, r * 0.8), col, 2.0)
 		"importExport":

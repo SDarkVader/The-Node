@@ -24,8 +24,7 @@ describe('personalResourceStock wired into stepWorld', () => {
       ...world.millers,
       ...world.bakers,
       ...world.couriers,
-      ...world.journalists,
-      ...world.detectives,
+      ...world.investigators,
       ...world.importExporters,
     ].filter((s) => s.slot.state === 'FILLED');
     expect(allFilled.some((s) => s.personalResourceStock > 0)).toBe(true);

@@ -178,8 +178,7 @@ describe('integration — weatherHistory is actually wired into stepWorld', () =
       rMiller: 2,
       rBaker: 2,
       rCourier: 2,
-      rJournalist: 2,
-      rDetective: 2,
+      rInvestigator: 4,
       rImportExport: 1,
       pMonthly: 0.98, // heavy churn so slots go VACANT and stay that way
       shardConfig: {

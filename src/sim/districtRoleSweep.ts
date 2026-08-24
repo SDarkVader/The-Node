@@ -23,22 +23,25 @@ const DAYS = 2000;
 const BURN_IN = 400;
 const SEEDS = [1, 2, 3];
 
+// 2026-08-22: Journalist+Detective merged into Investigator (see world.ts's header). This
+// sweep predates the fixes noted in README/BLUEPRINT and already needs re-running against
+// the current kernel — rInvestigator below is simply the old rJournalist+rDetective SUM per
+// candidate, kept mechanical rather than re-deriving these historical splits.
 interface RoleSplit {
   label: string;
   rMiller: number;
   rBaker: number;
   rCourier: number;
-  rJournalist: number;
-  rDetective: number;
+  rInvestigator: number;
 }
 
 const ROLE_SPLITS: RoleSplit[] = [
-  { label: 'current illustrative default (S=24)', rMiller: 3, rBaker: 7, rCourier: 6, rJournalist: 5, rDetective: 3 },
-  { label: 'even split (S=24)', rMiller: 5, rBaker: 5, rCourier: 5, rJournalist: 5, rDetective: 4 },
-  { label: 'Miller/Baker-heavy, closer to the old 2-role ratio (S=24)', rMiller: 6, rBaker: 10, rCourier: 3, rJournalist: 3, rDetective: 2 },
-  { label: 'support-role-heavy (S=24)', rMiller: 2, rBaker: 4, rCourier: 8, rJournalist: 6, rDetective: 4 },
-  { label: 'smaller total, more grifter headroom (S=18)', rMiller: 2, rBaker: 5, rCourier: 5, rJournalist: 4, rDetective: 2 },
-  { label: 'larger total, less grifter headroom (S=30)', rMiller: 4, rBaker: 8, rCourier: 8, rJournalist: 7, rDetective: 3 },
+  { label: 'current illustrative default (S=24)', rMiller: 3, rBaker: 7, rCourier: 6, rInvestigator: 8 },
+  { label: 'even split (S=24)', rMiller: 5, rBaker: 5, rCourier: 5, rInvestigator: 9 },
+  { label: 'Miller/Baker-heavy, closer to the old 2-role ratio (S=24)', rMiller: 6, rBaker: 10, rCourier: 3, rInvestigator: 5 },
+  { label: 'support-role-heavy (S=24)', rMiller: 2, rBaker: 4, rCourier: 8, rInvestigator: 10 },
+  { label: 'smaller total, more grifter headroom (S=18)', rMiller: 2, rBaker: 5, rCourier: 5, rInvestigator: 6 },
+  { label: 'larger total, less grifter headroom (S=30)', rMiller: 4, rBaker: 8, rCourier: 8, rInvestigator: 10 },
 ];
 
 interface DistrictLayout {
@@ -72,8 +75,7 @@ function runCandidate(shardConfig: ShardLayoutConfig, split: RoleSplit) {
     rMiller: split.rMiller,
     rBaker: split.rBaker,
     rCourier: split.rCourier,
-    rJournalist: split.rJournalist,
-    rDetective: split.rDetective,
+    rInvestigator: split.rInvestigator,
   };
 
   const allPops: number[] = [];
@@ -96,7 +98,7 @@ function runCandidate(shardConfig: ShardLayoutConfig, split: RoleSplit) {
     }
     const millerFilled = world.millers.filter((m) => m.slot.state === 'FILLED');
     const bakerFilled = world.bakers.filter((b) => b.slot.state === 'FILLED');
-    const supportFilled = [...world.couriers, ...world.journalists, ...world.detectives].filter((s) => s.slot.state === 'FILLED');
+    const supportFilled = [...world.couriers, ...world.investigators].filter((s) => s.slot.state === 'FILLED');
     finalMillerWealth.push(mean(millerFilled.map((m) => m.wealth)));
     finalBakerWealth.push(mean(bakerFilled.map((b) => b.wealth)));
     finalSupportWealth.push(mean(supportFilled.map((s) => s.wealth)));
@@ -128,8 +130,8 @@ for (const split of ROLE_SPLITS) {
   const r = runCandidate(DEFAULT_WORLD_CONFIG.shardConfig, split);
   console.log(
     `${split.label}\n` +
-      `  M=${split.rMiller} B=${split.rBaker} C=${split.rCourier} J=${split.rJournalist} D=${split.rDetective}` +
-      ` (S=${split.rMiller + split.rBaker + split.rCourier + split.rJournalist + split.rDetective})\n` +
+      `  M=${split.rMiller} B=${split.rBaker} C=${split.rCourier} I=${split.rInvestigator}` +
+      ` (S=${split.rMiller + split.rBaker + split.rCourier + split.rInvestigator})\n` +
       `  meanPop=${r.meanPop.toFixed(1)}  meanHealth=${r.meanHealth.toFixed(3)}  minHealth=${r.minHealth.toFixed(3)}\n` +
       `  meanWealth: miller=${r.meanMillerWealth.toFixed(2)} baker=${r.meanBakerWealth.toFixed(2)} support=${r.meanSupportWealth.toFixed(2)} bakerToMillerRatio=${r.bakerToMillerRatio.toFixed(2)}x\n` +
       `  meanGini(all roles+grifters)=${r.meanGini.toFixed(3)}  grifterMeanDaysWaiting=${r.grifterMeanWait.toFixed(1)}  grifterMaxDaysWaiting=${r.grifterMaxWait}\n`,

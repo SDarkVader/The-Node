@@ -3,6 +3,27 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-22 (later)**: Journalist and Detective merged into Investigator (user directive).
+`World.investigators` replaces the two separate arrays; `WorldConfig.rInvestigator` (default
+15, sum-preserving) replaces `rJournalist`/`rDetective`. Investigator inherits Detective's
+real mechanic (`investigatedBy` → sabotage detection bonus, district-scoped) since Journalist
+had none to lose. `resources.ts` kept `leads` (Detective's), retired `stories`
+(Journalist's) — `RESOURCE_OWNER`'s 1:1 bijection meant the merged role could only keep one.
+Wire protocol and Godot client (`ROLE_COLOUR`, icon glyphs — kept the magnifier) both updated.
+Two real bugs caught by reasoning about the merge's intent, not by the compiler: an untyped
+test config literal that silently left `rInvestigator` at the wrong default (runtime crash,
+not a type error), and `reputation.ts`'s `LEVEL_1_ROLES` which would have left Investigator
+permanently unreachable for voluntary uptake — a real constraint-6 violation caught before it
+shipped, not after. Golden snapshot re-captured deliberately (role-roster changes shift rng
+order — expected, per `BLUEPRINT.md`'s determinism section) and reviewed before accepting.
+714/714 tests, typecheck clean. Full account: `docs/DEVLOG.md`'s top entry.
+
+**Roster is now 5 roles + grifter pool**: Miller, Baker, Courier, Investigator, Import/Export.
+Every doc, config default, and test referencing "six roles" or the old Journalist/Detective
+split needs to be read as historical from this point forward unless it's explicitly about
+`sim/jointGridSearch.ts`'s own archival derivation record (left untouched — historical, not
+live code).
+
 **2026-08-22**: Per-agent driver dispositions built and measured (`src/sim/drivers/
 heterogeneity.ts`) — see `docs/DEVLOG.md`'s top entry for the full account. Short version: every
 "honest"/"opportunist"/"saboteur" agent used to share one literal set of constants; now each

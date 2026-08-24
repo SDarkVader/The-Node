@@ -86,8 +86,7 @@ export function computeEconomicHeat(world: World): EconomicHeatField {
   for (const m of world.millers) field[m.buildingId] = marketRoleHeat(m, 1); // value already in [0.01,1]
   for (const b of world.bakers) field[b.buildingId] = marketRoleHeat(b, BAKER_PRICE_CEILING);
   for (const c of world.couriers) field[c.buildingId] = supportRoleHeat(c, buildingDistrictId, world.districtHealth, world.tick);
-  for (const j of world.journalists) field[j.buildingId] = supportRoleHeat(j, buildingDistrictId, world.districtHealth, world.tick);
-  for (const d of world.detectives) field[d.buildingId] = supportRoleHeat(d, buildingDistrictId, world.districtHealth, world.tick);
+  for (const i of world.investigators) field[i.buildingId] = supportRoleHeat(i, buildingDistrictId, world.districtHealth, world.tick);
   for (const x of world.importExporters) field[x.buildingId] = supportRoleHeat(x, buildingDistrictId, world.districtHealth, world.tick);
 
   return field;

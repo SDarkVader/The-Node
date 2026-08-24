@@ -6,6 +6,91 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-22 — Journalist + Detective merged into Investigator
+
+User directive, following the driver-heterogeneity work: merge Journalist and Detective into
+one role, "Investigator," since the two had converged to functionally identical roles.
+
+**Verified before merging, not assumed**: Journalist and Detective were NOT perfectly
+identical — Detective has one real, live mechanic Journalist never had. `world.ts` sets
+`SabotageCampaign.investigatedBy` to a FILLED Detective's building id when one exists in the
+target's own district, re-evaluated every tick, feeding a real linear detection bonus in
+`patternStepDetectionProbability` (`ecosystem.ts`). Journalist had zero differentiated
+mechanic anywhere — pure `districtFriction >= bar`, same as Courier/Import-Export. So the
+merge design was: Investigator inherits Detective's one real lever; nothing is lost, since
+Journalist never had anything to lose.
+
+**Scope, mapped before editing**: 26 `src/` files, 22 `test/` files, 2 `client/` GDScript
+files referenced Journalist/Detective. Sequenced as: (1) engine/world core, (2) wire protocol,
+(3) Godot client, (4) docs — executed in one pass given how mechanical most of it was, but
+kept the stages distinct while working.
+
+**What changed**: `World.journalists`/`World.detectives` → one `investigators:
+SupportRoleSlot[]`. `WorldConfig.rJournalist`/`rDetective` → `rInvestigator` (defaults to
+15, the SUM of the old 7+8 — deliberately sum-preserving, not re-derived; whether 15 is the
+right count for a 5-role-plus-grifter roster is an open question for
+`districtRoleSweep.ts`-style tooling, same as every other role/district allocation question
+this repo has actually measured rather than assumed). `roleCompletion.ts`'s
+`CompletionRoleType`/`COMPLETION_REWARD`/`TYPICAL_COMPLETION_RATIO` merged the same way.
+`resources.ts`'s named-resource system had a real design fork: `RESOURCE_OWNER` is a strict
+1:1 role<->resource bijection (`test/resources.test.ts` enforces it), so Investigator could
+keep only ONE of Journalist's `stories` or Detective's `leads` — kept `leads`, since it's the
+one with a real mechanic behind it, and retired `stories`/`STORIES_PER_JOURNALIST_DAY`
+entirely. Wire protocol (`worldProtocol.ts`) now emits `role: 'investigator'`. Godot client
+(`IsoView.gd`, `WorldView.gd`) — `ROLE_COLOUR` and the icon-drawing switch merged, kept
+Detective's magnifier glyph over Journalist's page glyph for the same reason (its mechanic
+survived). `shardIdentity.ts`'s 12 shard-flavor tables each had a Journalist/Detective title
+pair merged into one Investigator title, consistently picking the Detective-side name (same
+"the surviving mechanic's name wins" rule used everywhere else in this merge).
+
+**Mechanical rename executed via script, not by hand, given the volume** — `world.ts` alone
+had ~40 touchpoints, most of them a Journalist line paired with a near-identical Detective
+line. Deleted the Journalist-only lines by exact-text match, then cascade-substituted
+`detective→investigator` (case-preserved) across the remainder. Caught by the compiler
+afterward: `stepResourceFlows()`'s signature actually needed its own edit (5 args now, not
+6) since it wasn't just a rename — a friction array disappeared, not just got relabeled.
+
+**Two real bugs the compiler could NOT catch, found by actually running the tests and by
+reasoning about the merge's design intent, not by grepping harder**:
+1. `test/districtWeather.test.ts` had an untyped `const config = {...}` object literal that
+   set `rJournalist: 2, rDetective: 2` — TypeScript's structural typing allows extra
+   properties on a variable (not literal-argument-checked), so the stray unused keys
+   compiled clean while `rInvestigator` silently stayed at the DEFAULT (15) instead of being
+   overridden small. Surfaced as a runtime crash ("22 role slots requested" against an
+   11-building test shard), not a type error. Worth remembering: an untyped config literal
+   is a real blind spot for a rename like this — the type system only catches what it's
+   asked to check.
+2. `reputation.ts`'s `LEVEL_1_ROLES` array still listed `'journalist'`/`'detective'`
+   separately post-merge. Since `minLevelForRole()` falls back to "unreachable" for any
+   roleId not found in either level's set, `minLevelForRole('investigator')` would have
+   returned `MAX_REPUTATION_LEVEL + 1` — Investigator becoming PERMANENTLY gated shut from
+   voluntary uptake, reachable only by conscription/backstop. No test happened to exercise
+   this path, so nothing failed red — this was caught by re-reading the merge's own design
+   intent (a role losing voluntary-access eligibility on a "no mechanics changed" merge is a
+   direct violation of `CLAUDE.md` constraint 6, reputation is additive-only) and checking
+   the source, not by tooling. Fixed: Investigator added to `LEVEL_1_ROLES` in place of the
+   two roles it replaced.
+
+**Golden regression snapshot re-captured deliberately, not silently** —
+`test/world.regression.test.ts`'s `toMatchSnapshot()` genuinely shifted (a role-roster
+change alters the rng-consumption order through vacancy/conscription/market, exactly the
+"real, reviewed change" `BLUEPRINT.md`'s determinism section describes). Reviewed the new
+values before accepting them (health ~0.96, sane wealth ranges, correct grifter counts, no
+NaN) rather than blind `-u`. 49/50 tests in that file were untouched by the rename at all —
+only the snapshot itself needed updating, which is strong independent evidence the merge
+didn't change any *behavior*, only the *shape* of the state it operates on.
+
+**Full suite green**: 714/714 tests, typecheck clean, `npm run world-sim` and
+`districtRoleSweep` smoke-tested end to end with sane output.
+
+**Not done, and deliberately not the next thing either**: `PATTERN_DETECTIVE_BONUS_DEFAULT`/
+`detectiveActive`/`detectiveBonus` were NOT renamed — they live in `ecosystem.ts`'s pure,
+role-agnostic math layer, which never knew role names to begin with (`patternStepDetection
+Probability` takes a boolean, not a role). Renaming them would have implied the math layer
+knows about "Investigator" specifically, which it structurally doesn't and shouldn't.
+
+---
+
 ## 2026-08-22 — Per-agent driver dispositions, and an honest measurement of what they actually changed
 
 User's own diagnosis, from watching a long external run: a flat Gini coefficient over ~2 decades

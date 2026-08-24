@@ -60,13 +60,16 @@ export function reputationLevelForProgress(progress: number): number {
 /**
  * Roles eligible for VOLUNTARY uptake at a given level — level 0 unlocks none (a brand-new
  * grifter can still be conscripted/backstopped into anything, per constraint 2; they just
- * can't be voluntarily placed until they've built some reputation). Level 1 unlocks the four
- * cooperative, high-completion-rate roles (§3.2 — Courier/Journalist/Detective/Import-Export,
- * ~97-100% measured completion). Level 2 adds the two competitive roles (Miller/Baker,
- * ~54-58% measured completion) on top — additive, per constraint 6, never replaces level 1's
- * set.
+ * can't be voluntarily placed until they've built some reputation). Level 1 unlocks the three
+ * cooperative, high-completion-rate roles (§3.2 — Courier/Investigator/Import-Export,
+ * ~97-100% measured completion; Investigator merged from Journalist+Detective 2026-08-22, see
+ * world.ts's header — kept at level 1, since neither predecessor was ever level-2-gated and
+ * silently dropping a merged role out of every level's set would have been a real regression
+ * against constraint 6, reputation is additive-only, never a role becoming LESS reachable).
+ * Level 2 adds the two competitive roles (Miller/Baker, ~54-58% measured completion) on top —
+ * additive, per constraint 6, never replaces level 1's set.
  */
-const LEVEL_1_ROLES = ['courier', 'journalist', 'detective', 'importExport'] as const;
+const LEVEL_1_ROLES = ['courier', 'investigator', 'importExport'] as const;
 const LEVEL_2_ROLES = ['miller', 'baker'] as const;
 
 export function rolesEligibleFor(level: number): readonly string[] {

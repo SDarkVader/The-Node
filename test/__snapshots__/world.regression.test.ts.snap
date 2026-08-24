@@ -88,40 +88,6 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "wealth": 41.32000000000002,
     },
   ],
-  "detectiveValues": [
-    {
-      "state": "BACKSTOPPED",
-      "wealth": 17.849999999999987,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 29.950000000000006,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 31.150000000000006,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 30.250000000000007,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 30.85000000000001,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 30.550000000000008,
-    },
-    {
-      "state": "FILLED",
-      "wealth": 31.15000000000001,
-    },
-    {
-      "state": "BACKSTOPPED",
-      "wealth": 10.469999999999997,
-    },
-  ],
   "economicHealth": 0.9608695652173914,
   "economicHealthWithExperience": 0.9411111111111111,
   "flourPrice": 0.05,
@@ -154,7 +120,7 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
       "wealth": 29.950000000000006,
     },
   ],
-  "journalistValues": [
+  "investigatorValues": [
     {
       "state": "FILLED",
       "wealth": 29.950000000000003,
@@ -182,6 +148,38 @@ exports[`stepWorld — tick order is pinned (golden-value characterization test)
     {
       "state": "FILLED",
       "wealth": 31.75000000000001,
+    },
+    {
+      "state": "BACKSTOPPED",
+      "wealth": 17.849999999999987,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 29.950000000000006,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 31.150000000000006,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 30.250000000000007,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 30.85000000000001,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 30.550000000000008,
+    },
+    {
+      "state": "FILLED",
+      "wealth": 31.15000000000001,
+    },
+    {
+      "state": "BACKSTOPPED",
+      "wealth": 10.469999999999997,
     },
   ],
   "millerValues": [

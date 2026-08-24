@@ -65,7 +65,7 @@ interface SlotView {
 }
 
 function slotViews(w: World): SlotView[] {
-  return [...w.millers, ...w.bakers, ...w.couriers, ...w.journalists, ...w.detectives, ...w.importExporters].map((s) => ({
+  return [...w.millers, ...w.bakers, ...w.couriers, ...w.investigators, ...w.importExporters].map((s) => ({
     buildingId: s.buildingId,
     filled: s.slot.state === 'FILLED',
     daysInRole: s.daysInRole,
@@ -88,16 +88,14 @@ function neutralizeEvictionPreference(world: World): World {
   for (const m of world.millers) completionStats[m.buildingId] = neutralCompletionStats('miller');
   for (const b of world.bakers) completionStats[b.buildingId] = neutralCompletionStats('baker');
   for (const c of world.couriers) completionStats[c.buildingId] = neutralCompletionStats('courier');
-  for (const j of world.journalists) completionStats[j.buildingId] = neutralCompletionStats('journalist');
-  for (const d of world.detectives) completionStats[d.buildingId] = neutralCompletionStats('detective');
+  for (const i of world.investigators) completionStats[i.buildingId] = neutralCompletionStats('investigator');
   for (const x of world.importExporters) completionStats[x.buildingId] = neutralCompletionStats('importExport');
   return {
     ...world,
     millers: world.millers.map((m) => ({ ...m, daysInRole: ESTABLISHED_TENURE_DAYS })),
     bakers: world.bakers.map((b) => ({ ...b, daysInRole: ESTABLISHED_TENURE_DAYS })),
     couriers: world.couriers.map((c) => ({ ...c, daysInRole: ESTABLISHED_TENURE_DAYS })),
-    journalists: world.journalists.map((j) => ({ ...j, daysInRole: ESTABLISHED_TENURE_DAYS })),
-    detectives: world.detectives.map((d) => ({ ...d, daysInRole: ESTABLISHED_TENURE_DAYS })),
+    investigators: world.investigators.map((i) => ({ ...i, daysInRole: ESTABLISHED_TENURE_DAYS })),
     importExporters: world.importExporters.map((x) => ({ ...x, daysInRole: ESTABLISHED_TENURE_DAYS })),
     completionStats,
   };
@@ -153,7 +151,7 @@ function totalFilledCount(w: World): number {
  * gap unit tests against a synthetic fixture can't surface.
  */
 export function realisticEventFrequency(seed: number, days: number): Record<string, number> {
-  const roleCounts: Record<string, number> = { miller: 9, baker: 9, courier: 7, journalist: 7, detective: 8, importExport: 6 };
+  const roleCounts: Record<string, number> = { miller: 9, baker: 9, courier: 7, investigator: 15, importExport: 6 };
   const N = 100;
   const makeParams = (R: number): VacancyParams => ({
     N,

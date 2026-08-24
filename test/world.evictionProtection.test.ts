@@ -51,8 +51,7 @@ describe('conscriptionFromOtherRole eviction preference — real World, establis
       rMiller: 1,
       rBaker: 1,
       rCourier: 2,
-      rJournalist: 1,
-      rDetective: 1,
+      rInvestigator: 2, // 2026-08-22: merged Journalist+Detective — same total slot count (2) as before
       rImportExport: 1,
       targetPopulation: 7, // exactly totalRoleSlots -> zero grifters, forcing every
       // conscription event to be conscriptionFromOtherRole, never conscriptionFromGrifters
@@ -62,14 +61,13 @@ describe('conscriptionFromOtherRole eviction preference — real World, establis
     expect(world.grifters.length).toBe(0);
 
     // One established occupant (courier[0]) against an otherwise entirely green cast of
-    // other-role candidates (baker, courier[1], journalist, detective, importExport).
+    // other-role candidates (baker, courier[1], investigator[0], investigator[1], importExport).
     const established = ESTABLISHED_TENURE_DAYS * 3;
     world = {
       ...world,
       couriers: world.couriers.map((c, i) => (i === 0 ? { ...c, daysInRole: established } : { ...c, daysInRole: 0 })),
       bakers: world.bakers.map((b) => ({ ...b, daysInRole: 0 })),
-      journalists: world.journalists.map((j) => ({ ...j, daysInRole: 0 })),
-      detectives: world.detectives.map((d) => ({ ...d, daysInRole: 0 })),
+      investigators: world.investigators.map((i) => ({ ...i, daysInRole: 0 })),
       importExporters: world.importExporters.map((x) => ({ ...x, daysInRole: 0 })),
       // Force the Miller slot straight into BACKSTOPPED, deep enough in the past that
       // conscription fires on the very first tick regardless of tHard/conscriptionDelay.
@@ -102,8 +100,8 @@ describe('conscriptionFromOtherRole eviction preference — real World, establis
     const greenCandidates = [
       after.bakers[0]!.slot.state,
       after.couriers[1]!.slot.state,
-      after.journalists[0]!.slot.state,
-      after.detectives[0]!.slot.state,
+      after.investigators[0]!.slot.state,
+      after.investigators[1]!.slot.state,
       after.importExporters[0]!.slot.state,
     ];
     const vacatedCount = greenCandidates.filter((s) => s !== 'FILLED').length;
@@ -118,8 +116,7 @@ describe('conscriptionFromOtherRole eviction preference — real World, tenure a
       rMiller: 1,
       rBaker: 1,
       rCourier: 2,
-      rJournalist: 1,
-      rDetective: 1,
+      rInvestigator: 2, // 2026-08-22: merged Journalist+Detective — same total slot count (2) as before
       rImportExport: 1,
       targetPopulation: 7,
       pMonthly: 0,
@@ -147,13 +144,12 @@ describe('conscriptionFromOtherRole eviction preference — real World, tenure a
         // courier[0] — rather than a random pick among several green ones. That isolates
         // the performance check specifically; it is not what this test is measuring.
         [world.bakers[0]!.buildingId]: typicalStatsFor('baker'),
-        [world.journalists[0]!.buildingId]: typicalStatsFor('journalist'),
-        [world.detectives[0]!.buildingId]: typicalStatsFor('detective'),
+        [world.investigators[0]!.buildingId]: typicalStatsFor('investigator'),
+        [world.investigators[1]!.buildingId]: typicalStatsFor('investigator'),
         [world.importExporters[0]!.buildingId]: typicalStatsFor('importExport'),
       },
       bakers: world.bakers.map((b) => ({ ...b, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
-      journalists: world.journalists.map((j) => ({ ...j, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
-      detectives: world.detectives.map((d) => ({ ...d, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
+      investigators: world.investigators.map((i) => ({ ...i, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
       importExporters: world.importExporters.map((x) => ({ ...x, daysInRole: ESTABLISHED_TENURE_DAYS * 3 })),
       millers: world.millers.map((m) => ({ ...m, slot: { state: 'BACKSTOPPED' as const, vacantSince: world.tick - 1_000_000 } })),
     };

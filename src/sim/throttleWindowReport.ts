@@ -48,8 +48,8 @@ function bakerSamples(w: World): SlotSample[] {
 function courierSamples(w: World): SlotSample[] {
   return w.couriers.filter((c) => c.slot.state === 'FILLED').map((c) => ({ id: c.buildingId, wealth: c.wealth }));
 }
-function journalistSamples(w: World): SlotSample[] {
-  return w.journalists.filter((j) => j.slot.state === 'FILLED').map((j) => ({ id: j.buildingId, wealth: j.wealth }));
+function investigatorSamples(w: World): SlotSample[] {
+  return w.investigators.filter((i) => i.slot.state === 'FILLED').map((i) => ({ id: i.buildingId, wealth: i.wealth }));
 }
 function grifterSamples(w: World): SlotSample[] {
   return w.grifters.map((g) => ({ id: g.id, wealth: g.wealth }));
@@ -91,7 +91,7 @@ for (const seed of SEEDS) {
     ['miller', millerSamples, false],
     ['baker', bakerSamples, false],
     ['courier', courierSamples, false],
-    ['journalist', journalistSamples, false],
+    ['investigator', investigatorSamples, false],
     ['grifter', grifterSamples, true],
   ];
   for (const [label, pick, exactlyScaled] of roles) {

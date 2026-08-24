@@ -94,7 +94,7 @@ describe('diary wired into stepWorld', () => {
     const goodAuthor = world.millers[0]!.buildingId;
     const goodSubject = world.bakers[0]!.buildingId;
     const badAuthor = world.couriers[0]!.buildingId;
-    const badSubject = world.journalists[0]!.buildingId; // never resolved for badAuthor
+    const badSubject = world.investigators[0]!.buildingId; // never resolved for badAuthor
     world = { ...world, identityLedger: resolvedLedger(goodAuthor, goodSubject) };
     world = {
       ...world,

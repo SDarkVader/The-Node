@@ -150,8 +150,8 @@ describe('Courier pay wired into the world kernel — real distance variance, no
       after.couriers.forEach((c, i) => {
         if (c.slot.state === 'FILLED') courierGains.push(c.wealth - before.couriers[i]!.wealth);
       });
-      after.journalists.forEach((j, i) => {
-        if (j.slot.state === 'FILLED') peerGains.push(j.wealth - before.journalists[i]!.wealth);
+      after.investigators.forEach((inv, i) => {
+        if (inv.slot.state === 'FILLED') peerGains.push(inv.wealth - before.investigators[i]!.wealth);
       });
     }
     const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;

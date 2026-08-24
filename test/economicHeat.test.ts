@@ -51,8 +51,7 @@ describe('computeEconomicHeat', () => {
       ...world.millers.filter((m) => m.slot.state !== 'FILLED'),
       ...world.bakers.filter((b) => b.slot.state !== 'FILLED'),
       ...world.couriers.filter((c) => c.slot.state !== 'FILLED'),
-      ...world.journalists.filter((j) => j.slot.state !== 'FILLED'),
-      ...world.detectives.filter((d) => d.slot.state !== 'FILLED'),
+      ...world.investigators.filter((i) => i.slot.state !== 'FILLED'),
       ...world.importExporters.filter((x) => x.slot.state !== 'FILLED'),
     ];
     expect(nonFilled.length).toBeGreaterThan(0); // sanity: the run actually produced a non-FILLED slot

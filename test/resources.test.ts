@@ -12,8 +12,7 @@ import {
   GRAIN_PER_FLOUR,
   FLOUR_PER_BREAD,
   PARCELS_PER_COURIER_DAY,
-  STORIES_PER_JOURNALIST_DAY,
-  LEADS_PER_DETECTIVE_DAY,
+  LEADS_PER_INVESTIGATOR_DAY,
 } from '../src/engine/resources.js';
 import { GRAIN_PER_NODULE } from '../src/engine/importExport.js';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
@@ -25,51 +24,50 @@ describe('resources — named per-role variables', () => {
   });
 
   it('flour comes from Miller quantities and grain demand follows it at the stated ratio', () => {
-    const f = stepResourceFlows([0.5, 0.5], [], [], [], [], 1);
+    const f = stepResourceFlows([0.5, 0.5], [], [], [], 1);
     expect(f.flourProduced).toBeCloseTo(1.0, 10);
     expect(f.grainConsumed).toBeCloseTo(1.0 * GRAIN_PER_FLOUR, 10);
   });
 
   it('bread comes from served customers and draws flour at the stated ratio', () => {
-    const f = stepResourceFlows([], [4, 6], [], [], [], 1);
+    const f = stepResourceFlows([], [4, 6], [], [], 1);
     expect(f.breadProduced).toBeCloseTo(10, 10);
     expect(f.flourConsumed).toBeCloseTo(10 * FLOUR_PER_BREAD, 10);
   });
 
   it('support roles produce their own named resource, scaled by friction and activity', () => {
-    const f = stepResourceFlows([], [], [1, 0.5], [1], [1, 1], 0.5);
+    const f = stepResourceFlows([], [], [1, 0.5], [1, 1], 0.5);
     expect(f.parcelsDelivered).toBeCloseTo(1.5 * PARCELS_PER_COURIER_DAY * 0.5, 10);
-    expect(f.storiesFiled).toBeCloseTo(1 * STORIES_PER_JOURNALIST_DAY * 0.5, 10);
-    expect(f.leadsDeveloped).toBeCloseTo(2 * LEADS_PER_DETECTIVE_DAY * 0.5, 10);
+    expect(f.leadsDeveloped).toBeCloseTo(2 * LEADS_PER_INVESTIGATOR_DAY * 0.5, 10);
   });
 
   it('a role with nobody FILLED produces exactly zero of its resource', () => {
-    const f = stepResourceFlows([], [], [], [], [], 1);
+    const f = stepResourceFlows([], [], [], [], 1);
     for (const v of Object.values(f)) expect(v).toBe(0);
   });
 
   it('accumulate sums over days and never loses the running total', () => {
     let ledger = emptyLedger();
-    for (let i = 0; i < 10; i++) ledger = accumulate(ledger, stepResourceFlows([0.5], [2], [1], [1], [1], 1));
+    for (let i = 0; i < 10; i++) ledger = accumulate(ledger, stepResourceFlows([0.5], [2], [1], [1], 1));
     expect(ledger.cumulative.flourProduced).toBeCloseTo(5, 10);
     expect(ledger.cumulative.breadProduced).toBeCloseTo(20, 10);
     expect(ledger.today.flourProduced).toBeCloseTo(0.5, 10);
   });
 
   it('flourBalance reports the real milled-minus-baked gap, signed', () => {
-    expect(flourBalance(stepResourceFlows([1], [1], [], [], [], 1))).toBeCloseTo(1 - FLOUR_PER_BREAD, 10);
+    expect(flourBalance(stepResourceFlows([1], [1], [], [], 1))).toBeCloseTo(1 - FLOUR_PER_BREAD, 10);
   });
 
   it('nodulesReceived flows through stepResourceFlows/accumulate like every other flow', () => {
-    const f = stepResourceFlows([], [], [], [], [], 1, 0, 3.5);
+    const f = stepResourceFlows([], [], [], [], 1, 0, 3.5);
     expect(f.nodulesReceived).toBe(3.5);
     let ledger = emptyLedger();
-    for (let i = 0; i < 4; i++) ledger = accumulate(ledger, stepResourceFlows([], [], [], [], [], 1, 0, 2));
+    for (let i = 0; i < 4; i++) ledger = accumulate(ledger, stepResourceFlows([], [], [], [], 1, 0, 2));
     expect(ledger.cumulative.nodulesReceived).toBeCloseTo(8, 10);
   });
 
   it('grainBalance/nodulesBalance report the supply-side gap, signed', () => {
-    const f = { ...stepResourceFlows([1], [], [], [], [], 1), grainDelivered: 2, nodulesReceived: 2 / GRAIN_PER_NODULE };
+    const f = { ...stepResourceFlows([1], [], [], [], 1), grainDelivered: 2, nodulesReceived: 2 / GRAIN_PER_NODULE };
     expect(grainBalance(f)).toBeCloseTo(2 - GRAIN_PER_FLOUR, 10);
     expect(nodulesBalance(f, GRAIN_PER_NODULE)).toBeCloseTo(0, 10);
   });
@@ -88,7 +86,6 @@ describe('resources — wired into the world kernel and trackable over time', ()
     expect(prev.flourProduced).toBeGreaterThan(0);
     expect(prev.breadProduced).toBeGreaterThan(0);
     expect(prev.parcelsDelivered).toBeGreaterThan(0);
-    expect(prev.storiesFiled).toBeGreaterThan(0);
     expect(prev.leadsDeveloped).toBeGreaterThan(0);
   });
 

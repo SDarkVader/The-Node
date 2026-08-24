@@ -1,8 +1,10 @@
 /**
  * Role completion (2026-08-11, Design Addendum item 4) — a uniform completion/reward layer
- * across all six roles, closing the gap the handover flagged: Courier, Journalist and
+ * across every role, closing the gap the handover flagged: Courier, Journalist and
  * Detective shared one flat `SUPPORT_ROLE_DAILY_WAGE` with nothing distinguishing holding
- * the role well from merely occupying it.
+ * the role well from merely occupying it. (Journalist and Detective merged into Investigator
+ * 2026-08-22 — see `world.ts`'s header — so this is now five roles, not six; the reasoning
+ * below is otherwise unchanged.)
  *
  * STRUCTURE is uniform across every role — one attempt per FILLED day, one career ratio
  * (`completions / attempts`, per the addendum's explicit "career ratio, not per-attempt"
@@ -11,24 +13,26 @@
  *   - Miller (Cournot quantity competition) and Baker (Bertrand price competition) each
  *     have a real, already-computed rival comparison — out-producing or out-pricing the
  *     field is a genuine role-specific condition, not invented for this.
- *   - Courier/Journalist/Detective/Import-Export have NO differentiated market mechanic
- *     anywhere in this project (see `world.ts`'s own header) — their only real per-tick,
+ *   - Courier/Investigator/Import-Export have NO differentiated market mechanic anywhere in
+ *     this project (see `world.ts`'s own header) — their only real per-tick,
  *     role-differentiated signal is trade-route friction against their own district
  *     (`districtConsolidation.ts`), the same primitive `economicHeat.ts` already reuses for
  *     a different purpose. So their task is uniformly "beat your district's friction today,"
  *     differentiated only by which named resource keeps accruing alongside it
  *     (parcels/stories/leads/grain) — exactly the addendum's "different only in content."
+ *     (Investigator ALSO has the real `investigatedBy` sabotage-detection mechanic inherited
+ *     from the former Detective — see `world.ts` — but that isn't wired into completion here.)
  *
  * FLAGGED HONESTLY, not silently narrowed: the addendum's own illustrative example for
  * Detective — "investigating a sabotage pattern that is genuinely running" — describes the
  * UNSHIPPED pattern-based sabotage proposal (`sim/sabotagePattern.proposal.ts`), not the
- * shipped `world.ts` sabotage mechanic, which has no Detective-specific detection term at
- * all (`ecosystem.ts`'s `detectionProbability` depends only on witness count). Building a
- * literal "catch a saboteur" task now would mean either shipping that unshipped proposal
- * (a different, undecided change) or inventing a synthetic Detective-only event the shipped
- * model can't actually verify — both out of scope here. The friction-based task is the
- * honest choice against what is actually built today; revisit if/when the sabotage proposal
- * ships.
+ * shipped `world.ts` sabotage mechanic, which has no Investigator-specific COMPLETION term at
+ * all (`ecosystem.ts`'s `detectionProbability` depends only on witness count; the real
+ * `investigatedBy` bonus lives entirely in the sabotage stage, not here). Building a literal
+ * "catch a saboteur" task now would mean either shipping that unshipped proposal (a different,
+ * undecided change) or inventing a synthetic Investigator-only event the shipped model can't
+ * actually verify — both out of scope here. The friction-based task is the honest choice
+ * against what is actually built today; revisit if/when the sabotage proposal ships.
  *
  * Reward: the same resource every role already earns — wealth (item 4's own words: "wealth
  * stays a scoreboard") — not a second currency, not a role-specific one (which item 5 makes
@@ -78,18 +82,18 @@ export function completionRatio(stats: CompletionStats): number {
   return stats.attempts === 0 ? 0 : stats.completions / stats.attempts;
 }
 
-export type CompletionRoleType = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective' | 'importExport';
+export type CompletionRoleType = 'miller' | 'baker' | 'courier' | 'investigator' | 'importExport';
 
 /**
  * Wealth granted for one completed task, calibrated PER ROLE TYPE against measured
  * completion rates at the shipped config (see header) so expected daily reward converges
- * across all six roles rather than reward-per-completion. [ILLUSTRATIVE — the two-value
+ * across every role rather than reward-per-completion. [ILLUSTRATIVE — the two-value
  * split (competitive vs. friction-bar tasks), not the exact decimals, is the load-bearing
  * part; re-measure and re-derive if either task's completion condition or the shipped role
  * counts change materially.]
  *
  * Miller/Baker (~54-58% measured): 0.5 per completion -> ~0.27-0.29 expected/day.
- * The four friction-bar roles (~97-100% measured): 0.28 per completion -> ~0.27-0.28
+ * The three friction-bar roles (~97-100% measured): 0.28 per completion -> ~0.27-0.28
  * expected/day. Both land in the same ~0.27-0.29 band — see `test/roleCompletion.test.ts`'s
  * hard filter test for the empirical check this rests on, not just the arithmetic above.
  */
@@ -97,8 +101,7 @@ export const COMPLETION_REWARD: Readonly<Record<CompletionRoleType, number>> = {
   miller: 0.5,
   baker: 0.5,
   courier: 0.28,
-  journalist: 0.28,
-  detective: 0.28,
+  investigator: 0.28,
   importExport: 0.28,
 };
 
@@ -129,8 +132,7 @@ export const TYPICAL_COMPLETION_RATIO: Readonly<Record<CompletionRoleType, numbe
   miller: 0.55,
   baker: 0.55,
   courier: 0.97,
-  journalist: 0.97,
-  detective: 0.97,
+  investigator: 0.97,
   importExport: 0.97,
 };
 
@@ -160,7 +162,7 @@ export function bakerTaskCompleted(ownPrice: number, avgRivalPrice: number): boo
   return ownPrice <= avgRivalPrice;
 }
 
-/** Support-role task (Courier/Journalist/Detective/Import-Export): beat today's own
+/** Support-role task (Courier/Investigator/Import-Export): beat today's own
  *  trade-route friction bar — see this file's header for why this, not a per-role synthetic. */
 export function supportTaskCompleted(frictionMultiplier: number, bar: number = SUPPORT_TASK_FRICTION_BAR): boolean {
   return frictionMultiplier >= bar;

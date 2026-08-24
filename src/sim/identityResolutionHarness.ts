@@ -54,7 +54,7 @@ export const SYNTHETIC_POST_PROBABILITY = 0.35;
 export function injectSyntheticPosts(world: World, rand: () => number, postProbability: number = SYNTHETIC_POST_PROBABILITY): World {
   const posts: WallPost[] = [];
   let counter = 0;
-  for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives, world.importExporters]) {
+  for (const arr of [world.millers, world.bakers, world.couriers, world.investigators, world.importExporters]) {
     for (const slot of arr) {
       if (slot.slot.state !== 'FILLED') continue;
       if (rand() >= postProbability) continue;
@@ -94,7 +94,7 @@ export function runIdentityResolutionSweep(
   }
 
   const subjects = new Set<string>();
-  for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives, world.importExporters]) {
+  for (const arr of [world.millers, world.bakers, world.couriers, world.investigators, world.importExporters]) {
     for (const slot of arr) if (slot.slot.state === 'FILLED') subjects.add(slot.buildingId);
   }
 

@@ -56,8 +56,7 @@ const ROLE_COLOUR := {
 	"miller": Color8(226, 178, 92),
 	"baker": Color8(214, 122, 74),
 	"courier": Color8(122, 158, 148),
-	"journalist": Color8(168, 154, 196),
-	"detective": Color8(196, 96, 96),
+	"investigator": Color8(196, 96, 96),
 	"importExport": Color8(148, 168, 108),
 }
 
@@ -982,15 +981,8 @@ func _icon_texture(role) -> ImageTexture:
 			_px_line(img, Vector2(m + r * .7, m + r * .7), Vector2(m - r * .7, m + r * .7), c, 2.2)
 			_px_line(img, Vector2(m - r * .7, m + r * .7), Vector2(m - r * .7, m - r * .7), c, 2.2)
 			_px_line(img, Vector2(m, m - r * .7), Vector2(m, m + r * .7), c, 2.2)
-		"journalist":  # a page with lines of type
-			_px_line(img, Vector2(m - r * .6, m - r * .8), Vector2(m + r * .6, m - r * .8), c, 2.2)
-			_px_line(img, Vector2(m + r * .6, m - r * .8), Vector2(m + r * .6, m + r * .8), c, 2.2)
-			_px_line(img, Vector2(m + r * .6, m + r * .8), Vector2(m - r * .6, m + r * .8), c, 2.2)
-			_px_line(img, Vector2(m - r * .6, m + r * .8), Vector2(m - r * .6, m - r * .8), c, 2.2)
-			for k in 2:
-				var ly: float = m - r * 0.25 + float(k) * r * 0.5
-				_px_line(img, Vector2(m - r * .3, ly), Vector2(m + r * .3, ly), c, 1.8)
-		"detective":  # a magnifier
+		"investigator":  # a magnifier (2026-08-22: merged from Journalist+Detective — kept
+			# Detective's glyph since its mechanic, not Journalist's, survived the merge)
 			_px_ring(img, Vector2(m - r * .18, m - r * .18), r * 0.55, c, 2.4)
 			_px_line(img, Vector2(m + r * .2, m + r * .2), Vector2(m + r * .78, m + r * .78), c, 2.6)
 		"importExport":  # two arrows passing

@@ -26,15 +26,24 @@
  * new seed. Phase D's snapshot contract will need its own explicit projection from `World`
  * to a serializable schema — deliberately not attempted here.
  *
- * ROLE ROSTER (2026-08-11, user-specified, replacing the earlier 2-role-only scope):
+ * ROLE ROSTER (2026-08-11, user-specified, replacing the earlier 2-role-only scope; Journalist
+ * and Detective MERGED into Investigator 2026-08-22, see below).
  * Miller and Baker keep their existing competitive (Cournot/Bertrand) market mechanics,
- * unchanged. Journalist and Detective have no differentiated economic mechanic designed
- * anywhere in this project's lore/brief — each gets a flat `SUPPORT_ROLE_DAILY_WAGE`
- * (`wealth.ts`), explicitly flagged as an undifferentiated placeholder standing in for two
- * genuinely different unbuilt economies, not a claim that reporting and detective work are
- * actually economically identical. Courier is the one support role the addendum DOES
- * differentiate (item 6, 2026-08-11): pay is distance-indexed, not the flat wage — see
- * `engine/courierPay.ts`.
+ * unchanged. Investigator gets a flat `SUPPORT_ROLE_DAILY_WAGE` (`wealth.ts`) like the other
+ * two undifferentiated-economy support roles, PLUS the one real mechanic that survived the
+ * merge: a FILLED Investigator sets `investigatedBy` for sabotage campaigns in its own
+ * district, a genuine detection-bonus lever the former Journalist never had. Courier is the
+ * other support role the addendum differentiates (item 6, 2026-08-11): pay is distance-indexed,
+ * not the flat wage — see `engine/courierPay.ts`.
+ *
+ * INVESTIGATOR MERGE (2026-08-22, user directive): Journalist and Detective had converged to
+ * functionally identical roles for wage/completion purposes — both reduced to
+ * `districtFriction >= bar`, same as Courier and Import/Export, with Journalist carrying no
+ * differentiator of its own. Merged into one `investigators: SupportRoleSlot[]` array,
+ * inheriting Detective's real mechanic (see above) rather than losing it. `rInvestigator`
+ * defaults to the sum of the old `rJournalist`+`rDetective` — sum-preserving, not re-derived;
+ * see `DEFAULT_WORLD_CONFIG`'s own comment. The 6-role roster this file's history describes
+ * below (the joint grid search, `M9 B9 C7 J7 D8 IE6`) is now a 5-role roster; S stays 46.
  *
  * "Grifters" (2026-08-11, user's own term) are roleless community players — individually
  * tracked (`GrifterSlot`, unlike the prior "gossip layer," which was only ever an aggregate
@@ -58,7 +67,7 @@
  * both remain off by default (`wealthTaxRate: 0`, `wealthCap: undefined`) regardless.
  *
  * Comms only propagates `pendingWallPosts` from role-holders with a fixed building position
- * (Miller/Baker/Courier/Journalist/Detective); grifters have no fixed BUILDING position in
+ * (Miller/Baker/Courier/Investigator); grifters have no fixed BUILDING position in
  * this model (same simplification `space.ts`'s own `placeArrival()` already left unused) and
  * are not part of the proximity graph. Grifters DO have a coarse housing DISTRICT now
  * (2026-08-13, `GrifterSlot.districtId` — see below) — that's a housing-capacity concern, not
@@ -188,8 +197,8 @@ import {
   GRIFTER_DAILY_INCOME,
 } from '../engine/wealth.js';
 
-export type RoleType = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective' | 'importExport';
-export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'journalist', 'detective', 'importExport'];
+export type RoleType = 'miller' | 'baker' | 'courier' | 'investigator' | 'importExport';
+export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'investigator', 'importExport'];
 
 export interface WorldConfig {
   shardConfig: ShardLayoutConfig;
@@ -199,10 +208,18 @@ export interface WorldConfig {
    *  engine/courierPay.ts), not the flat SUPPORT_ROLE_DAILY_WAGE the other two support roles
    *  use — 2026-08-11 addendum item 6. [ILLUSTRATIVE] */
   rCourier: number;
-  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
-  rJournalist: number;
-  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, no competitive market mechanic. [ILLUSTRATIVE] */
-  rDetective: number;
+  /** Support role — flat SUPPORT_ROLE_DAILY_WAGE, PLUS the one differentiated support-role
+   *  mechanic that exists: a FILLED Investigator in a district sets `investigatedBy` for any
+   *  sabotage campaign targeting that district, feeding a real linear detection bonus
+   *  (`engine/ecosystem.ts`'s `PATTERN_DETECTIVE_BONUS_DEFAULT` — the constant name itself was
+   *  deliberately NOT renamed; it lives in the role-agnostic math layer, which never knew role
+   *  names to begin with). Merged from the former separate Journalist and Detective roles
+   *  (2026-08-22, user directive — the two had grown functionally identical for
+   *  wage/completion purposes; Journalist carried no differentiated mechanic of its own, so
+   *  nothing was lost merging them, only Detective's real lever survives under the new name).
+   *  [ILLUSTRATIVE — the merged slot COUNT below is a sum-preserving placeholder, not
+   *  re-derived; see the DEFAULT_WORLD_CONFIG comment.] */
+  rInvestigator: number;
   /** Import/Export — receives nodules daily, converts to grain for Millers, and controls
    *  cross-shard movement. See engine/importExport.ts. */
   rImportExport: number;
@@ -297,13 +314,18 @@ export interface WorldConfig {
 // wait increase (26.9 vs ~22 days) — not a floor breach, matching the earlier real-engine
 // verification (`sim/populationCapacitySweep.ts`) that the addendum's grifter-floor-breach
 // concern doesn't reproduce once slot count and population scale together properly.
+// 2026-08-22: Journalist and Detective merged into Investigator (see WorldConfig's own
+// comment on rInvestigator for why). rInvestigator=15 is SUM-PRESERVING (old rJournalist=7 +
+// rDetective=8), a deliberate least-invented choice — NOT a re-derivation. Whether 15 is the
+// right count for a 5-role-plus-grifter roster is an open question for
+// `sim/districtRoleSweep.ts`-style tooling, same as every other role/district allocation
+// question this repo has actually measured rather than assumed. S stays 46 either way.
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   shardConfig: DEFAULT_SHARD_CONFIG,
   rMiller: 9,
   rBaker: 9,
   rCourier: 7,
-  rJournalist: 7,
-  rDetective: 8,
+  rInvestigator: 15,
   rImportExport: 6,
   targetPopulation: 100,
   pMonthly: 0.2,
@@ -377,8 +399,8 @@ export interface RoleEconomicSlot {
  * slot has nobody to have a position.
  */
 
-/** Courier/Journalist/Detective/ImportExport — same slot/wealth reset convention as
- *  RoleEconomicSlot, minus `value`/`experience` since none of the four have a competitive
+/** Courier/Investigator/ImportExport — same slot/wealth reset convention as
+ *  RoleEconomicSlot, minus `value`/`experience` since none of the three have a competitive
  *  market mechanic. */
 export interface SupportRoleSlot {
   slot: RoleSlot;
@@ -532,8 +554,7 @@ export interface World {
   millers: RoleEconomicSlot[];
   bakers: RoleEconomicSlot[];
   couriers: SupportRoleSlot[];
-  journalists: SupportRoleSlot[];
-  detectives: SupportRoleSlot[];
+  investigators: SupportRoleSlot[];
   /** Import/Export role-holders — nodule intake and grain supply. See engine/importExport.ts. */
   importExporters: SupportRoleSlot[];
   grifters: GrifterSlot[];
@@ -629,7 +650,7 @@ export interface World {
    *  them, same convention as `lastDiaryRejections`. */
   lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }>;
   /** Sabotage campaigns currently in flight (2026-08-18 restructure). Real multi-tick state —
-   *  this is what makes a campaign something a Detective, or eventually a player, can act on
+   *  this is what makes a campaign something a Investigator, or eventually a player, can act on
    *  partway through. See `engine/sabotageCampaign.ts`. */
   sabotageCampaigns: SabotageCampaign[];
   /** Monotonic campaign id counter — ids only ever grow, same convention as `nextGrifterId`
@@ -661,7 +682,7 @@ export interface OracleTickStats {
  */
 /** Total role slots across all 5 roles — the shard's full staffing capacity. */
 function totalRoleSlotsFor(config: WorldConfig): number {
-  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective + config.rImportExport;
+  return config.rMiller + config.rBaker + config.rCourier + config.rInvestigator + config.rImportExport;
 }
 
 function vacancyParamsFor(R: number, population: number, pMonthly: number, config: WorldConfig): VacancyParams {
@@ -716,7 +737,7 @@ function assignRoleBuildings(shard: Shard, roleCounts: Record<RoleType, number>)
   // ACROSS roles (not reset per role, so no single district gets first pick every time)
   // avoids that coupling entirely and is simpler to reason about besides.
   const buildingQueues = shard.districts.map((d) => [...d.buildings]);
-  const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], journalist: [], detective: [], importExport: [] };
+  const result: Record<RoleType, Building[]> = { miller: [], baker: [], courier: [], investigator: [], importExport: [] };
 
   let di = 0;
   for (const role of ROLE_TYPES) {
@@ -745,8 +766,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     miller: config.rMiller,
     baker: config.rBaker,
     courier: config.rCourier,
-    journalist: config.rJournalist,
-    detective: config.rDetective,
+    investigator: config.rInvestigator,
     importExport: config.rImportExport,
   };
   const assigned = assignRoleBuildings(shard, roleCounts);
@@ -787,8 +807,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     y: b.y,
   }));
   const couriers: SupportRoleSlot[] = assigned.courier.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
-  const journalists: SupportRoleSlot[] = assigned.journalist.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
-  const detectives: SupportRoleSlot[] = assigned.detective.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
+  const investigators: SupportRoleSlot[] = assigned.investigator.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
   const importExporters: SupportRoleSlot[] = assigned.importExport.map((b) => ({ slot: { state: 'FILLED', vacantSince: null }, buildingId: b.id, wealth: 0, ...emptySlotStock(), daysInRole: ESTABLISHED_TENURE_DAYS, x: b.x, y: b.y }));
 
   const supply = millers.reduce((a, m) => a + m.value, 0);
@@ -817,8 +836,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     millers,
     bakers,
     couriers,
-    journalists,
-    detectives,
+    investigators,
     importExporters,
     grifters,
     nextGrifterId: grifterCount,
@@ -865,14 +883,13 @@ export function createDormantWorld(seed: number, config: WorldConfig): World {
   const w = createWorld(seed, config);
   const vacantizeRole = <T extends { slot: RoleSlot }>(arr: T[]): T[] =>
     arr.map((s) => ({ ...s, slot: { state: 'VACANT' as const, vacantSince: 0 } }));
-  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective;
+  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rInvestigator;
   return {
     ...w,
     millers: vacantizeRole(w.millers),
     bakers: vacantizeRole(w.bakers),
     couriers: vacantizeRole(w.couriers),
-    journalists: vacantizeRole(w.journalists),
-    detectives: vacantizeRole(w.detectives),
+    investigators: vacantizeRole(w.investigators),
     grifters: [],
     nextGrifterId: 0,
     population: 0,
@@ -987,8 +1004,7 @@ interface RoleArrays {
   millers: RoleEconomicSlot[];
   bakers: RoleEconomicSlot[];
   couriers: SupportRoleSlot[];
-  journalists: SupportRoleSlot[];
-  detectives: SupportRoleSlot[];
+  investigators: SupportRoleSlot[];
   importExporters: SupportRoleSlot[];
 }
 
@@ -1004,11 +1020,8 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
   arrays.couriers.forEach((s, i) => {
     if (s.slot.state === 'FILLED') out.push({ role: 'courier', index: i, buildingId: s.buildingId });
   });
-  arrays.journalists.forEach((s, i) => {
-    if (s.slot.state === 'FILLED') out.push({ role: 'journalist', index: i, buildingId: s.buildingId });
-  });
-  arrays.detectives.forEach((s, i) => {
-    if (s.slot.state === 'FILLED') out.push({ role: 'detective', index: i, buildingId: s.buildingId });
+  arrays.investigators.forEach((s, i) => {
+    if (s.slot.state === 'FILLED') out.push({ role: 'investigator', index: i, buildingId: s.buildingId });
   });
   arrays.importExporters.forEach((s, i) => {
     if (s.slot.state === 'FILLED') out.push({ role: 'importExport', index: i, buildingId: s.buildingId });
@@ -1054,8 +1067,7 @@ export function stepWorld(world: World): World {
     ...world.millers,
     ...world.bakers,
     ...world.couriers,
-    ...world.journalists,
-    ...world.detectives,
+    ...world.investigators,
   ];
   const districtHealth: Record<string, DistrictHealth> = {};
   const newlyMergedDistrictIds: string[] = [];
@@ -1078,8 +1090,7 @@ export function stepWorld(world: World): World {
   let millers = world.millers;
   let bakers = world.bakers;
   let couriers = world.couriers;
-  let journalists = world.journalists;
-  let detectives = world.detectives;
+  let investigators = world.investigators;
   let importExporters = world.importExporters;
   let grifters = world.grifters;
   let nextGrifterId = world.nextGrifterId;
@@ -1122,8 +1133,7 @@ export function stepWorld(world: World): World {
     millers = evictWithDeadline(millers);
     bakers = evictWithDeadline(bakers);
     couriers = evictWithDeadline(couriers);
-    journalists = evictWithDeadline(journalists);
-    detectives = evictWithDeadline(detectives);
+    investigators = evictWithDeadline(investigators);
   }
 
   // A MERGED district's slots are NOT permanently excluded from ordinary refilling —
@@ -1175,8 +1185,7 @@ export function stepWorld(world: World): World {
     { roleId: 'miller', slots: millers.map((m) => m.slot), params: vacancyParamsFor(config.rMiller, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('miller'), occupantTenure: millers.map((m) => m.daysInRole), occupantPerformance: millers.map((m) => occupantPerformanceFor(m.buildingId, 'miller')) },
     { roleId: 'baker', slots: bakers.map((b) => b.slot), params: vacancyParamsFor(config.rBaker, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('baker'), occupantTenure: bakers.map((b) => b.daysInRole), occupantPerformance: bakers.map((b) => occupantPerformanceFor(b.buildingId, 'baker')) },
     { roleId: 'courier', slots: couriers.map((c) => c.slot), params: vacancyParamsFor(config.rCourier, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('courier'), occupantTenure: couriers.map((c) => c.daysInRole), occupantPerformance: couriers.map((c) => occupantPerformanceFor(c.buildingId, 'courier')) },
-    { roleId: 'journalist', slots: journalists.map((j) => j.slot), params: vacancyParamsFor(config.rJournalist, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('journalist'), occupantTenure: journalists.map((j) => j.daysInRole), occupantPerformance: journalists.map((j) => occupantPerformanceFor(j.buildingId, 'journalist')) },
-    { roleId: 'detective', slots: detectives.map((d) => d.slot), params: vacancyParamsFor(config.rDetective, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('detective'), occupantTenure: detectives.map((d) => d.daysInRole), occupantPerformance: detectives.map((d) => occupantPerformanceFor(d.buildingId, 'detective')) },
+    { roleId: 'investigator', slots: investigators.map((d) => d.slot), params: vacancyParamsFor(config.rInvestigator, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('investigator'), occupantTenure: investigators.map((d) => d.daysInRole), occupantPerformance: investigators.map((d) => occupantPerformanceFor(d.buildingId, 'investigator')) },
     { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('importExport'), occupantTenure: importExporters.map((x) => x.daysInRole), occupantPerformance: importExporters.map((x) => occupantPerformanceFor(x.buildingId, 'importExport')) },
   ];
   const conscriptionResult = stepMultiRoleConscriptionDay(
@@ -1192,8 +1201,7 @@ export function stepWorld(world: World): World {
   const millerJustFilled = justFilledSet(millers, byRole.get('miller')!);
   const bakerJustFilled = justFilledSet(bakers, byRole.get('baker')!);
   const courierJustFilled = justFilledSet(couriers, byRole.get('courier')!);
-  const journalistJustFilled = justFilledSet(journalists, byRole.get('journalist')!);
-  const detectiveJustFilled = justFilledSet(detectives, byRole.get('detective')!);
+  const investigatorJustFilled = justFilledSet(investigators, byRole.get('investigator')!);
   const importExportJustFilled = justFilledSet(importExporters, byRole.get('importExport')!);
 
   millers = millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
@@ -1202,13 +1210,9 @@ export function stepWorld(world: World): World {
     const slot = byRole.get('courier')![i]!;
     return courierJustFilled.has(c.buildingId) ? { ...c, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(c.buildingId) } : { ...c, slot };
   });
-  journalists = journalists.map((j, i) => {
-    const slot = byRole.get('journalist')![i]!;
-    return journalistJustFilled.has(j.buildingId) ? { ...j, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(j.buildingId) } : { ...j, slot };
-  });
-  detectives = detectives.map((d, i) => {
-    const slot = byRole.get('detective')![i]!;
-    return detectiveJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : { ...d, slot };
+  investigators = investigators.map((d, i) => {
+    const slot = byRole.get('investigator')![i]!;
+    return investigatorJustFilled.has(d.buildingId) ? { ...d, slot, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : { ...d, slot };
   });
   importExporters = importExporters.map((x, i) => {
     const slot = byRole.get('importExport')![i]!;
@@ -1325,11 +1329,8 @@ export function stepWorld(world: World): World {
     couriers.forEach((c, i) => {
       if (c.slot.state === 'VACANT') openSlots.push({ role: 'courier', index: i });
     });
-    journalists.forEach((j, i) => {
-      if (j.slot.state === 'VACANT') openSlots.push({ role: 'journalist', index: i });
-    });
-    detectives.forEach((d, i) => {
-      if (d.slot.state === 'VACANT') openSlots.push({ role: 'detective', index: i });
+    investigators.forEach((d, i) => {
+      if (d.slot.state === 'VACANT') openSlots.push({ role: 'investigator', index: i });
     });
     importExporters.forEach((x, i) => {
       if (x.slot.state === 'VACANT') openSlots.push({ role: 'importExport', index: i });
@@ -1348,10 +1349,8 @@ export function stepWorld(world: World): World {
         bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: fill, value: 0.5 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(b.buildingId) } : b));
       } else if (target.role === 'courier') {
         couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(c.buildingId) } : c));
-      } else if (target.role === 'journalist') {
-        journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(j.buildingId) } : j));
-      } else if (target.role === 'detective') {
-        detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : d));
+      } else if (target.role === 'investigator') {
+        investigators = investigators.map((d, i) => (i === target.index ? { ...d, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(d.buildingId) } : d));
       } else {
         importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: fill, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(x.buildingId) } : x));
       }
@@ -1546,8 +1545,7 @@ export function stepWorld(world: World): World {
         }
       : c,
   );
-  journalists = journalists.map((j) => (j.slot.state === 'FILLED' ? { ...j, wealth: j.wealth + supportDaily * frictionFor(j.buildingId), ...stepSlotStock(j), daysInRole: j.daysInRole + 1 } : j));
-  detectives = detectives.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId), ...stepSlotStock(d), daysInRole: d.daysInRole + 1 } : d));
+  investigators = investigators.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId), ...stepSlotStock(d), daysInRole: d.daysInRole + 1 } : d));
   importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId), ...stepSlotStock(x), daysInRole: x.daysInRole + 1 } : x));
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
 
@@ -1580,11 +1578,8 @@ export function stepWorld(world: World): World {
       shiftCoverOpportunities.push({ role: 'courier', payout: courierDailyPay(dist, DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) });
     }
   });
-  journalists.forEach((j) => {
-    if (j.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'journalist', payout: supportDaily * frictionFor(j.buildingId) });
-  });
-  detectives.forEach((d) => {
-    if (d.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'detective', payout: supportDaily * frictionFor(d.buildingId) });
+  investigators.forEach((d) => {
+    if (d.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'investigator', payout: supportDaily * frictionFor(d.buildingId) });
   });
   importExporters.forEach((x) => {
     if (x.slot.state === 'BACKSTOPPED') shiftCoverOpportunities.push({ role: 'importExport', payout: supportDaily * frictionFor(x.buildingId) });
@@ -1659,8 +1654,7 @@ export function stepWorld(world: World): World {
     millers = millers.map(rollRole);
     bakers = bakers.map(rollRole);
     couriers = couriers.map(rollRole);
-    journalists = journalists.map(rollRole);
-    detectives = detectives.map(rollRole);
+    investigators = investigators.map(rollRole);
     importExporters = importExporters.map(rollRole);
   }
 
@@ -1677,8 +1671,7 @@ export function stepWorld(world: World): World {
       millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.value * grainFactor),
       servedCustomers,
       supportFriction(couriers),
-      supportFriction(journalists),
-      supportFriction(detectives),
+      supportFriction(investigators),
       DAILY_ACTIVITY_MULTIPLIER,
       grainAvailable,
       nodulesReceived,
@@ -1710,8 +1703,7 @@ export function stepWorld(world: World): World {
         return grantIfTaskCompleted(s, completed, reward);
       });
     couriers = supportRoleCompletion(couriers, courierJustFilled, COMPLETION_REWARD.courier);
-    journalists = supportRoleCompletion(journalists, journalistJustFilled, COMPLETION_REWARD.journalist);
-    detectives = supportRoleCompletion(detectives, detectiveJustFilled, COMPLETION_REWARD.detective);
+    investigators = supportRoleCompletion(investigators, investigatorJustFilled, COMPLETION_REWARD.investigator);
     importExporters = supportRoleCompletion(importExporters, importExportJustFilled, COMPLETION_REWARD.importExport);
   }
   const completionStats: Readonly<Record<string, CompletionStats>> = completionStatsWorking;
@@ -1737,7 +1729,7 @@ export function stepWorld(world: World): World {
   // the shipped model, replacing `sabotageAttempt`'s one-shot resolve. See
   // `engine/sabotageCampaign.ts` for why this had to become multi-tick state rather than a
   // swap of one resolver for another: a campaign resolved inside a single call has no "mid",
-  // so nothing — Detective, player, or the node emptying out around it — can intervene partway.
+  // so nothing — Investigator, player, or the node emptying out around it — can intervene partway.
   //
   // `config.acquireDays` and `config.damagePerSuccess` are no longer read here. They still
   // describe the legacy resolver, which `sim/ecosystemHarness.ts` continues to exercise, so
@@ -1748,8 +1740,7 @@ export function stepWorld(world: World): World {
       ...occupantsOf(millers),
       ...occupantsOf(bakers),
       ...occupantsOf(couriers),
-      ...occupantsOf(journalists),
-      ...occupantsOf(detectives),
+      ...occupantsOf(investigators),
     ];
     const witnessesAround = (buildingId: string): number => {
       const b = allBuildingsById.get(buildingId);
@@ -1758,18 +1749,18 @@ export function stepWorld(world: World): World {
     };
 
     // Who, if anyone, is investigating each campaign. Mechanical and re-evaluated every tick:
-    // a FILLED Detective in the target's own district. That is a real, observable fact — not a
+    // a FILLED Investigator in the target's own district. That is a real, observable fact — not a
     // modelled intent (constraint 3) — and it is deliberately a REPLACEABLE ASSIGNMENT RULE:
     // the flashlight, when built, changes who fills `investigatedBy`, nothing downstream of it.
-    const filledDetectiveByDistrict = new Map<string, string>();
-    for (const d of detectives) {
+    const filledInvestigatorByDistrict = new Map<string, string>();
+    for (const d of investigators) {
       if (d.slot.state !== 'FILLED') continue;
       const districtId = buildingDistrictId.get(d.buildingId);
-      if (districtId && !filledDetectiveByDistrict.has(districtId)) filledDetectiveByDistrict.set(districtId, d.buildingId);
+      if (districtId && !filledInvestigatorByDistrict.has(districtId)) filledInvestigatorByDistrict.set(districtId, d.buildingId);
     }
 
     const currentlyFilled = new Set(
-      filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).map((e) => e.buildingId),
+      filledEntries({ millers, bakers, couriers, investigators, importExporters }).map((e) => e.buildingId),
     );
 
     const stillRunning: SabotageCampaign[] = [];
@@ -1794,7 +1785,7 @@ export function stepWorld(world: World): World {
       const targetDistrict = buildingDistrictId.get(existing.targetBuildingId);
       const campaign: SabotageCampaign = {
         ...existing,
-        investigatedBy: (targetDistrict ? filledDetectiveByDistrict.get(targetDistrict) : undefined) ?? null,
+        investigatedBy: (targetDistrict ? filledInvestigatorByDistrict.get(targetDistrict) : undefined) ?? null,
       };
 
       const outcome = stepCampaign(campaign, day, witnessesAround(campaign.targetBuildingId), rng);
@@ -1829,7 +1820,7 @@ export function stepWorld(world: World): World {
       // Succeeded: the target itself is evicted — unlike the legacy resolver, which counted
       // successes and then evicted a RANDOM set of slots that need not have included the slot
       // it rolled witnesses against. A campaign now costs the slot it was actually run against.
-      const target = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).find(
+      const target = filledEntries({ millers, bakers, couriers, investigators, importExporters }).find(
         (e) => e.buildingId === outcome.campaign.targetBuildingId,
       );
       if (target) {
@@ -1839,8 +1830,7 @@ export function stepWorld(world: World): World {
         if (target.role === 'miller') millers = millers.map((m, i) => (i === target.index ? { ...m, slot: evict } : m));
         else if (target.role === 'baker') bakers = bakers.map((b, i) => (i === target.index ? { ...b, slot: evict } : b));
         else if (target.role === 'courier') couriers = couriers.map((c, i) => (i === target.index ? { ...c, slot: evict } : c));
-        else if (target.role === 'journalist') journalists = journalists.map((j, i) => (i === target.index ? { ...j, slot: evict } : j));
-        else if (target.role === 'detective') detectives = detectives.map((d, i) => (i === target.index ? { ...d, slot: evict } : d));
+        else if (target.role === 'investigator') investigators = investigators.map((d, i) => (i === target.index ? { ...d, slot: evict } : d));
         else importExporters = importExporters.map((x, i) => (i === target.index ? { ...x, slot: evict } : x));
       }
       const witnesses = witnessesAround(outcome.campaign.targetBuildingId);
@@ -1868,7 +1858,7 @@ export function stepWorld(world: World): World {
     // `config.saboteurCount` caps how many run at once — that is exactly what "how many
     // saboteurs are active" already meant, so it is reused rather than a new constant added.
     if (day > 0 && stillRunning.length < config.saboteurCount && rng() < 1 / config.sabotageCadenceDays) {
-      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).filter(
+      const filled = filledEntries({ millers, bakers, couriers, investigators, importExporters }).filter(
         (e) => !stillRunning.some((c) => c.targetBuildingId === e.buildingId),
       );
       if (filled.length > 0) {
@@ -1899,7 +1889,7 @@ export function stepWorld(world: World): World {
     nextGrifterId += 1;
   }
 
-  const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).length;
+  const preEmigrationFilledCount = filledEntries({ millers, bakers, couriers, investigators, importExporters }).length;
   // Opportunity-adjusted (2026-08-11): open role-slots damp emigration, so a thinning
   // shard becomes genuinely worth staying in and recovers — the negative feedback the
   // plain roleless-fraction valve never had. See ecosystem.ts's own doc comment.
@@ -1921,15 +1911,14 @@ export function stepWorld(world: World): World {
       const idx = Math.floor(rng() * grifters.length);
       grifters = grifters.filter((_, i) => i !== idx);
     } else {
-      const filled = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters });
+      const filled = filledEntries({ millers, bakers, couriers, investigators, importExporters });
       if (filled.length > 0) {
         const pick = filled[Math.floor(rng() * filled.length)]!;
         const vacate = { state: 'VACANT' as const, vacantSince: day };
         if (pick.role === 'miller') millers = millers.map((m, i) => (i === pick.index ? { ...m, slot: vacate } : m));
         else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? { ...b, slot: vacate } : b));
         else if (pick.role === 'courier') couriers = couriers.map((c, i) => (i === pick.index ? { ...c, slot: vacate } : c));
-        else if (pick.role === 'journalist') journalists = journalists.map((j, i) => (i === pick.index ? { ...j, slot: vacate } : j));
-        else if (pick.role === 'detective') detectives = detectives.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
+        else if (pick.role === 'investigator') investigators = investigators.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
         else importExporters = importExporters.map((x, i) => (i === pick.index ? { ...x, slot: vacate } : x));
       }
     }
@@ -1937,7 +1926,7 @@ export function stepWorld(world: World): World {
   population = Math.max(0, population - actualEmigrants);
 
   const totalRoleSlots = totalRoleSlotsFor(config);
-  const finalFilledCount = filledEntries({ millers, bakers, couriers, journalists, detectives, importExporters }).length;
+  const finalFilledCount = filledEntries({ millers, bakers, couriers, investigators, importExporters }).length;
   const filledExpValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.experience);
   const avgExp = filledExpValues.length > 0 ? filledExpValues.reduce((a, b) => a + b, 0) / filledExpValues.length : 0;
 
@@ -1946,8 +1935,7 @@ export function stepWorld(world: World): World {
     ...millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.wealth),
     ...bakers.filter((b) => b.slot.state === 'FILLED').map((b) => b.wealth),
     ...couriers.filter((c) => c.slot.state === 'FILLED').map((c) => c.wealth),
-    ...journalists.filter((j) => j.slot.state === 'FILLED').map((j) => j.wealth),
-    ...detectives.filter((d) => d.slot.state === 'FILLED').map((d) => d.wealth),
+    ...investigators.filter((d) => d.slot.state === 'FILLED').map((d) => d.wealth),
     ...importExporters.filter((x) => x.slot.state === 'FILLED').map((x) => x.wealth),
     ...grifters.map((g) => g.wealth),
   ];
@@ -1961,8 +1949,7 @@ export function stepWorld(world: World): World {
     ...occupantsOf(millers),
     ...occupantsOf(bakers),
     ...occupantsOf(couriers),
-    ...occupantsOf(journalists),
-    ...occupantsOf(detectives),
+    ...occupantsOf(investigators),
     ...occupantsOf(importExporters),
   ];
   const occupantPositionById = new Map(occupants.map((o) => [o.playerId, { x: o.x, y: o.y }]));
@@ -2116,8 +2103,7 @@ export function stepWorld(world: World): World {
     ...millers,
     ...bakers,
     ...couriers,
-    ...journalists,
-    ...detectives,
+    ...investigators,
     ...importExporters,
   ];
   const districtPopulationById: Record<string, number> = {};
@@ -2188,8 +2174,7 @@ export function stepWorld(world: World): World {
     millers,
     bakers,
     couriers,
-    journalists,
-    detectives,
+    investigators,
     importExporters,
     grifters,
     nextGrifterId,

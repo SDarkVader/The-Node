@@ -131,15 +131,14 @@ describe('hard filter: cross-role completion reward parity (required by the adde
   // header. This test is what would have caught that before it shipped, and what protects
   // COMPLETION_REWARD's calibration from silently drifting the same way FLOUR_PER_BREAD did
   // three times.
-  it('expected daily completion reward is within a tight band across all six roles at the shipped config', () => {
+  it('expected daily completion reward is within a tight band across all five roles at the shipped config', () => {
     const DAYS = 800;
     const SEEDS = [11, 12, 13];
     const totals: Record<string, { attempts: number; completions: number }> = {
       miller: { attempts: 0, completions: 0 },
       baker: { attempts: 0, completions: 0 },
       courier: { attempts: 0, completions: 0 },
-      journalist: { attempts: 0, completions: 0 },
-      detective: { attempts: 0, completions: 0 },
+      investigator: { attempts: 0, completions: 0 },
       importExport: { attempts: 0, completions: 0 },
     };
 
@@ -150,8 +149,7 @@ describe('hard filter: cross-role completion reward parity (required by the adde
         ['miller', world.millers],
         ['baker', world.bakers],
         ['courier', world.couriers],
-        ['journalist', world.journalists],
-        ['detective', world.detectives],
+        ['investigator', world.investigators],
         ['importExport', world.importExporters],
       ];
       for (const [role, slots] of roleGroups) {

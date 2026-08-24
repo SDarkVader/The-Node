@@ -62,7 +62,7 @@ describe('sabotage campaigns wired into stepWorld', () => {
       const next = stepWorld(world);
       for (const e of next.lastSabotageCampaignEvents) {
         if (e.type !== 'succeeded') continue;
-        const slot = [...next.millers, ...next.bakers, ...next.couriers, ...next.journalists, ...next.detectives, ...next.importExporters].find(
+        const slot = [...next.millers, ...next.bakers, ...next.couriers, ...next.investigators, ...next.importExporters].find(
           (s) => s.buildingId === e.targetBuildingId,
         );
         expect(slot).toBeDefined();
@@ -116,7 +116,7 @@ describe('sabotage campaigns wired into stepWorld', () => {
     let world = createWorld(7, { ...DEFAULT_WORLD_CONFIG, saboteurCount: 6, sabotageCadenceDays: 6 });
     for (let i = 0; i < 900; i++) {
       world = stepWorld(world);
-      const filled = [...world.millers, ...world.bakers, ...world.couriers, ...world.journalists, ...world.detectives, ...world.importExporters]
+      const filled = [...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters]
         .filter((s) => s.slot.state === 'FILLED').length;
       expect(world.grifters.length + filled).toBe(world.population);
     }
@@ -157,7 +157,7 @@ describe('sabotage campaigns wired into stepWorld', () => {
     for (let i = 0; i < 1200; i++) {
       world = stepWorld(world);
       const filled = new Set(
-        [...world.millers, ...world.bakers, ...world.couriers, ...world.journalists, ...world.detectives, ...world.importExporters]
+        [...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters]
           .filter((s) => s.slot.state === 'FILLED')
           .map((s) => s.buildingId),
       );

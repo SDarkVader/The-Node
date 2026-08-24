@@ -38,7 +38,7 @@ const streets = geom.plots.filter((p) => !p.buildingId).map((p) => ({ x: p.x, y:
 
 const ROLES: [string, CompletionRoleType, (w:World)=>any[]][] = [
   ['M','miller',w=>w.millers],['B','baker',w=>w.bakers],['C','courier',w=>w.couriers],
-  ['J','journalist',w=>w.journalists],['D','detective',w=>w.detectives],['X','importExport',w=>w.importExporters],
+  ['I','investigator',w=>w.investigators],['X','importExport',w=>w.importExporters],
 ];
 const ST = { FILLED:0, BACKSTOPPED:1, VACANT:2 } as const;
 

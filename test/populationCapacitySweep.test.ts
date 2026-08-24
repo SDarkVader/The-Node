@@ -16,7 +16,7 @@ const BURN_IN = 400;
 const SEEDS = [1, 2];
 
 function totalSlots(config: WorldConfig): number {
-  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective + config.rImportExport;
+  return config.rMiller + config.rBaker + config.rCourier + config.rInvestigator + config.rImportExport;
 }
 
 function measure(config: WorldConfig, seeds: readonly number[] = SEEDS) {
@@ -64,8 +64,7 @@ describe('population-capacity sweep: does the real engine reproduce the addendum
       rMiller: round(DEFAULT_WORLD_CONFIG.rMiller),
       rBaker: round(DEFAULT_WORLD_CONFIG.rBaker),
       rCourier: round(DEFAULT_WORLD_CONFIG.rCourier),
-      rJournalist: round(DEFAULT_WORLD_CONFIG.rJournalist),
-      rDetective: round(DEFAULT_WORLD_CONFIG.rDetective),
+      rInvestigator: round(DEFAULT_WORLD_CONFIG.rInvestigator),
       rImportExport: round(DEFAULT_WORLD_CONFIG.rImportExport),
       shardConfig: {
         ...DEFAULT_WORLD_CONFIG.shardConfig,
@@ -91,8 +90,7 @@ describe('population-capacity sweep: does the real engine reproduce the addendum
       rMiller: round(DEFAULT_WORLD_CONFIG.rMiller),
       rBaker: round(DEFAULT_WORLD_CONFIG.rBaker),
       rCourier: round(DEFAULT_WORLD_CONFIG.rCourier),
-      rJournalist: round(DEFAULT_WORLD_CONFIG.rJournalist),
-      rDetective: round(DEFAULT_WORLD_CONFIG.rDetective),
+      rInvestigator: round(DEFAULT_WORLD_CONFIG.rInvestigator),
       rImportExport: round(DEFAULT_WORLD_CONFIG.rImportExport),
       shardConfig: {
         ...DEFAULT_WORLD_CONFIG.shardConfig,
@@ -113,8 +111,7 @@ describe('population-capacity sweep: does the real engine reproduce the addendum
       rMiller: round(DEFAULT_WORLD_CONFIG.rMiller),
       rBaker: round(DEFAULT_WORLD_CONFIG.rBaker),
       rCourier: round(DEFAULT_WORLD_CONFIG.rCourier),
-      rJournalist: round(DEFAULT_WORLD_CONFIG.rJournalist),
-      rDetective: round(DEFAULT_WORLD_CONFIG.rDetective),
+      rInvestigator: round(DEFAULT_WORLD_CONFIG.rInvestigator),
       rImportExport: round(DEFAULT_WORLD_CONFIG.rImportExport),
       shardConfig: {
         ...DEFAULT_WORLD_CONFIG.shardConfig,
@@ -143,8 +140,7 @@ describe('the addendum\'s cited "validated default" (M3/B7/IE2/C6/J5/D3=26) was 
     expect(DEFAULT_WORLD_CONFIG.rMiller).toBe(9);
     expect(DEFAULT_WORLD_CONFIG.rBaker).toBe(9);
     expect(DEFAULT_WORLD_CONFIG.rCourier).toBe(7);
-    expect(DEFAULT_WORLD_CONFIG.rJournalist).toBe(7);
-    expect(DEFAULT_WORLD_CONFIG.rDetective).toBe(8);
+    expect(DEFAULT_WORLD_CONFIG.rInvestigator).toBe(15);
     expect(DEFAULT_WORLD_CONFIG.rImportExport).toBe(6);
     expect(DEFAULT_WORLD_CONFIG.targetPopulation).toBe(100);
     // The addendum's cited default (M3 B7 IE2 C6 J5 D3 = 26) still does NOT match the

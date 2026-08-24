@@ -5,7 +5,7 @@ import { shardCharacterFor, CANONICAL_ROLE_TITLES, isSpineRole, type RoleKey } f
  * the identical economic model; see engine/shardIdentity.ts for why that is enforced
  * structurally rather than by convention.
  */
-const ROLES: RoleKey[] = ['miller', 'baker', 'courier', 'journalist', 'detective', 'importExport'];
+const ROLES: RoleKey[] = ['miller', 'baker', 'courier', 'investigator', 'importExport'];
 const SHARDS = Number(process.argv[2] ?? 6);
 
 console.log('Local role framing by shard — cosmetic only, mechanics are identical everywhere.\n');

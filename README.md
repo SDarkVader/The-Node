@@ -15,7 +15,7 @@ The world is built to sit permanently a little uphill — never comfortable
 for long, never actually collapsing either. If a place ever starts to feel
 safe, that's the system telling on itself. Somebody's about to notice.
 
-## Status (2026-08-21)
+## Status (2026-08-22)
 
 **Live and wired**: the Miller/Baker economic core, the vacancy/backstop
 system, role conscription, the grammar-constrained Wall and private diary,
@@ -23,8 +23,8 @@ proximity conversation, rumour decay, district weather, identity resolution,
 role-holder occupancy, the Oracle, universal housing with reputation gating,
 and a real multi-shard registry. The economy tracks wealth (Gini coefficient
 plateaus around 0.5, stays stable), Courier pay indexes actual distance, and
-role completion is uniformly tested across all six roles. 714 tests cover all
-of it.
+role completion is uniformly tested across all five roles (Journalist and Detective merged
+into Investigator, 2026-08-22). 714 tests cover all of it.
 
 **Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry.
 Role-holders occupy their buildings (not drawn on street), marked by glyphs

@@ -43,8 +43,7 @@ function scalarSnapshot(world: World) {
     millerValues: world.millers.map((m) => ({ state: m.slot.state, value: m.value, exp: m.experience, wealth: m.wealth })),
     bakerValues: world.bakers.map((b) => ({ state: b.slot.state, value: b.value, exp: b.experience, wealth: b.wealth })),
     courierValues: world.couriers.map((c) => ({ state: c.slot.state, wealth: c.wealth })),
-    journalistValues: world.journalists.map((j) => ({ state: j.slot.state, wealth: j.wealth })),
-    detectiveValues: world.detectives.map((d) => ({ state: d.slot.state, wealth: d.wealth })),
+    investigatorValues: world.investigators.map((i) => ({ state: i.slot.state, wealth: i.wealth })),
     importExportValues: world.importExporters.map((x) => ({ state: x.slot.state, wealth: x.wealth })),
     grifterCount: world.grifters.length,
     grifterTotalWealth: world.grifters.reduce((a, g) => a + g.wealth, 0),
@@ -202,8 +201,7 @@ describe('stepWorld — comms propagation uses real spatial proximity', () => {
       rMiller: 3,
       rBaker: 3,
       rCourier: 0,
-      rJournalist: 0,
-      rDetective: 0,
+      rInvestigator: 0,
       rImportExport: 0,
     };
     let world = createWorld(3, config);
@@ -503,7 +501,7 @@ describe('wealth remediation proposals — taxAndRedistributeIncome / applyWealt
 
 /**
  * 5-role roster + grifter pool (2026-08-11, user-specified). Miller, Baker, Courier,
- * Journalist, Detective, plus individually-tracked roleless "grifters." Covers population
+ * Investigator, plus individually-tracked roleless "grifters." Covers population
  * conservation (the invariant grifters.length + total FILLED across all 5 roles ==
  * population), the grifter income floor and daysAsGrifter wait-time tracking, the flat
  * support-role wage, and district-aware building assignment.
@@ -514,16 +512,15 @@ function totalFilledAcrossRoles(world: World): number {
     world.millers.filter((m) => m.slot.state === 'FILLED').length +
     world.bakers.filter((b) => b.slot.state === 'FILLED').length +
     world.couriers.filter((c) => c.slot.state === 'FILLED').length +
-    world.journalists.filter((j) => j.slot.state === 'FILLED').length +
-    world.detectives.filter((d) => d.slot.state === 'FILLED').length +
+    world.investigators.filter((i) => i.slot.state === 'FILLED').length +
     world.importExporters.filter((x) => x.slot.state === 'FILLED').length
   );
 }
 
 describe('createWorld — 5-role roster + grifter pool', () => {
   it('the default role split sums to 46, re-derived against the real multi-shard system at targetPopulation=100 (see world.ts\'s own comment, 2026-08-13)', () => {
-    const { rMiller, rBaker, rCourier, rJournalist, rDetective } = DEFAULT_WORLD_CONFIG;
-    expect(rMiller + rBaker + rCourier + rJournalist + rDetective + DEFAULT_WORLD_CONFIG.rImportExport).toBe(46);
+    const { rMiller, rBaker, rCourier, rInvestigator } = DEFAULT_WORLD_CONFIG;
+    expect(rMiller + rBaker + rCourier + rInvestigator + DEFAULT_WORLD_CONFIG.rImportExport).toBe(46);
   });
 
   it('grifters.length + total FILLED across all 5 roles equals population at creation', () => {
@@ -533,7 +530,7 @@ describe('createWorld — 5-role roster + grifter pool', () => {
 
   it('every role starts fully FILLED, and every grifter starts at 0 wealth / 0 daysAsGrifter', () => {
     const world = createWorld(1);
-    for (const arr of [world.millers, world.bakers, world.couriers, world.journalists, world.detectives, world.importExporters]) {
+    for (const arr of [world.millers, world.bakers, world.couriers, world.investigators, world.importExporters]) {
       for (const s of arr) expect(s.slot.state).toBe('FILLED');
     }
     for (const g of world.grifters) {
@@ -549,16 +546,14 @@ describe('createWorld — 5-role roster + grifter pool', () => {
       ...ids(world.millers),
       ...ids(world.bakers),
       ...ids(world.couriers),
-      ...ids(world.journalists),
-      ...ids(world.detectives),
+      ...ids(world.investigators),
       ...ids(world.importExporters),
     ];
     expect(new Set(allIds).size).toBe(allIds.length); // no building double-assigned
     expect(world.millers.length).toBe(DEFAULT_WORLD_CONFIG.rMiller);
     expect(world.bakers.length).toBe(DEFAULT_WORLD_CONFIG.rBaker);
     expect(world.couriers.length).toBe(DEFAULT_WORLD_CONFIG.rCourier);
-    expect(world.journalists.length).toBe(DEFAULT_WORLD_CONFIG.rJournalist);
-    expect(world.detectives.length).toBe(DEFAULT_WORLD_CONFIG.rDetective);
+    expect(world.investigators.length).toBe(DEFAULT_WORLD_CONFIG.rInvestigator);
   });
 
   it('throws a clear error when the 5 roles combined exceed the shard\'s building count', () => {
@@ -578,7 +573,7 @@ describe('stepWorld — population conservation across ticks (5 roles + grifter 
   });
 
   it('holds under high churn and small role counts too, across several seeds', () => {
-    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rJournalist: 2, rDetective: 2, pMonthly: 0.9 };
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rInvestigator: 4, pMonthly: 0.9 };
     for (const seed of [1, 2, 3]) {
       let world = createWorld(seed, config);
       for (let i = 0; i < 500; i++) {
@@ -634,7 +629,7 @@ describe('stepWorld — grifter income floor and daysAsGrifter wait-time trackin
   });
 
   it('over a long high-churn run, at least one grifter is eventually drafted or fills an open role (pool never stuck at a single ever-growing size)', () => {
-    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rJournalist: 2, rDetective: 2, pMonthly: 0.9, conscriptionDelay: 3 };
+    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rInvestigator: 4, pMonthly: 0.9, conscriptionDelay: 3 };
     let world = createWorld(5, config);
     const initialCount = world.grifters.length;
     let sawShrinkBelowInitial = false;
@@ -655,7 +650,7 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
     // Oracle (engine/oracle.ts) now also touches wealth once per tick for every FILLED
     // slot — a real, deliberate interaction, bounded rather than exact.
     let world = createWorld(1);
-    const before = { c: world.couriers.map((c) => c.wealth), j: world.journalists.map((j) => j.wealth), d: world.detectives.map((d) => d.wealth) };
+    const before = { c: world.couriers.map((c) => c.wealth), i: world.investigators.map((inv) => inv.wealth) };
     world = stepWorld(world);
     world.couriers.forEach((c, i) => {
       if (c.slot.state === 'FILLED') {
@@ -669,18 +664,11 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
         expect(c.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
       }
     });
-    world.journalists.forEach((j, i) => {
-      if (j.slot.state === 'FILLED') {
-        const expectedTotal = before.j[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.journalist;
-        expect(j.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
-        expect(j.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
-      }
-    });
-    world.detectives.forEach((d, i) => {
-      if (d.slot.state === 'FILLED') {
-        const expectedTotal = before.d[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.detective;
-        expect(d.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
-        expect(d.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
+    world.investigators.forEach((inv, i) => {
+      if (inv.slot.state === 'FILLED') {
+        const expectedTotal = before.i[i]! + SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER + COMPLETION_REWARD.investigator;
+        expect(inv.wealth).toBeGreaterThanOrEqual(expectedTotal - ORACLE_ENTRY_COST - 1e-9);
+        expect(inv.wealth).toBeLessThanOrEqual(expectedTotal + ORACLE_WEALTH_PRIZE_AMOUNT + 1e-9);
       }
     });
   });
@@ -756,8 +744,7 @@ describe('District.population — real bug found and fixed 2026-08-13, probing t
         ...world.millers,
         ...world.bakers,
         ...world.couriers,
-        ...world.journalists,
-        ...world.detectives,
+        ...world.investigators,
         ...world.importExporters,
       ].filter((s) => s.slot.state === 'FILLED').length;
       const districtSum = world.shard.districts.reduce((sum, d) => sum + d.population, 0);

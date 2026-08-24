@@ -55,7 +55,7 @@ The single source of truth. Every field, grouped by what it is for.
 |---|---|
 | **Identity / clock** | `seed`, `tick`, `rng`, `config` |
 | **Geography** | `shard` (districts → plots, buildings, plaza; plus `hubPlot`) |
-| **Role slots** | `millers`, `bakers` (`RoleEconomicSlot[]`), `couriers`, `journalists`, `detectives`, `importExporters` (`SupportRoleSlot[]`) |
+| **Role slots** | `millers`, `bakers` (`RoleEconomicSlot[]`), `couriers`, `investigators`, `importExporters` (`SupportRoleSlot[]`) |
 | **Roleless pool** | `grifters` (`GrifterSlot[]`), `nextGrifterId` |
 | **Market** | `flourPrice`, `resources` (`ResourceLedger`: cumulative + today) |
 | **Aggregates** | `population`, `economicHealth`, `economicHealthWithExperience`, `wealthGini` |
@@ -128,7 +128,8 @@ guess awaiting data.
 ### Shipped configuration
 ```
 DEFAULT_SHARD_CONFIG   1 district, radius 7, spacing 1, 62 buildings, targetPopulation 100
-DEFAULT_WORLD_CONFIG   M9 B9 C7 J7 D8 IE6  (S=46 role slots)
+DEFAULT_WORLD_CONFIG   M9 B9 C7 I15 IE6  (S=46 role slots; I=Investigator, merged from
+                       Journalist+Detective 2026-08-22, sum-preserving default not re-derived)
                        pMonthly 0.2, conscriptionDelay 14, gamma 1, noiseSigma 0.01
                        sabotageCadenceDays 20, saboteurCount 3, witnessRadius 6
                        arrivalPDaily 0.1, acquireDays 5, damagePerSuccess 4
@@ -281,8 +282,10 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
 - **Nothing moves role-holders in the shipped world** — only the sim-side driver applier does.
   Whatever changes that owes a witness-count re-measurement.
 - **`identityResolved` has no sender** — needs per-connection observer state.
-- **Four of six roles have no player verb** — Courier, Journalist, Detective and Import/Export all
+- **Three of five roles have no player verb** — Courier, Investigator and Import/Export all
   reduce to `districtFriction >= bar`. Only Miller (quantity) and Baker (price) make a decision.
+  (Investigator does have one real mechanic — a FILLED Investigator sets `investigatedBy` for
+  sabotage in its own district — but that's occupancy-driven, not a player decision.)
 - **Crafting items** (Key, Firestarter, Theft-tool) designed, not built.
 - **Arson** built and calibrated, not wired into `stepWorld`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was

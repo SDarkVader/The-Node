@@ -34,19 +34,18 @@ interface RoleSplit {
   rMiller: number;
   rBaker: number;
   rCourier: number;
-  rJournalist: number;
-  rDetective: number;
+  rInvestigator: number;
   rImportExport: number;
 }
 
 const ROLE_SPLITS: RoleSplit[] = [
-  { label: 'shipped default (S=32)', rMiller: 4, rBaker: 8, rCourier: 8, rJournalist: 7, rDetective: 3, rImportExport: 2 },
-  { label: 'Miller-heavier, for chain coherence (S=32)', rMiller: 6, rBaker: 8, rCourier: 6, rJournalist: 6, rDetective: 3, rImportExport: 3 },
-  { label: 'even-ish across six (S=32)', rMiller: 5, rBaker: 6, rCourier: 6, rJournalist: 6, rDetective: 5, rImportExport: 4 },
-  { label: 'support-heavy (S=32)', rMiller: 3, rBaker: 6, rCourier: 9, rJournalist: 8, rDetective: 4, rImportExport: 2 },
-  { label: 'fewer Bakers, Miller-led (S=32)', rMiller: 7, rBaker: 6, rCourier: 7, rJournalist: 6, rDetective: 3, rImportExport: 3 },
-  { label: 'smaller total (S=26)', rMiller: 4, rBaker: 6, rCourier: 6, rJournalist: 5, rDetective: 3, rImportExport: 2 },
-  { label: 'larger total (S=38)', rMiller: 6, rBaker: 9, rCourier: 9, rJournalist: 8, rDetective: 3, rImportExport: 3 },
+  { label: 'shipped default (S=32)', rMiller: 4, rBaker: 8, rCourier: 8, rInvestigator: 10, rImportExport: 2 },
+  { label: 'Miller-heavier, for chain coherence (S=32)', rMiller: 6, rBaker: 8, rCourier: 6, rInvestigator: 9, rImportExport: 3 },
+  { label: 'even-ish across five (S=32)', rMiller: 5, rBaker: 6, rCourier: 6, rInvestigator: 11, rImportExport: 4 },
+  { label: 'support-heavy (S=32)', rMiller: 3, rBaker: 6, rCourier: 9, rInvestigator: 12, rImportExport: 2 },
+  { label: 'fewer Bakers, Miller-led (S=32)', rMiller: 7, rBaker: 6, rCourier: 7, rInvestigator: 9, rImportExport: 3 },
+  { label: 'smaller total (S=26)', rMiller: 4, rBaker: 6, rCourier: 6, rInvestigator: 8, rImportExport: 2 },
+  { label: 'larger total (S=38)', rMiller: 6, rBaker: 9, rCourier: 9, rInvestigator: 11, rImportExport: 3 },
 ];
 
 const DISTRICT_LAYOUTS: { label: string; shardConfig: ShardLayoutConfig }[] = [
@@ -70,8 +69,7 @@ function runCandidate(shardConfig: ShardLayoutConfig, split: RoleSplit) {
     rMiller: split.rMiller,
     rBaker: split.rBaker,
     rCourier: split.rCourier,
-    rJournalist: split.rJournalist,
-    rDetective: split.rDetective,
+    rInvestigator: split.rInvestigator,
     rImportExport: split.rImportExport,
   };
 
@@ -132,7 +130,7 @@ console.log(`shipped FLOUR_PER_BREAD=${FLOUR_PER_BREAD} — "breakEvenFPB" is th
 console.log('=== Role allocation (default district layout) ===\n');
 console.log('candidate                                        S   pop/65  health  shards   gini  waitMean  waitMax  flourRatio  breakEvenFPB  grainCover');
 for (const sp of ROLE_SPLITS) {
-  const S = sp.rMiller + sp.rBaker + sp.rCourier + sp.rJournalist + sp.rDetective + sp.rImportExport;
+  const S = sp.rMiller + sp.rBaker + sp.rCourier + sp.rInvestigator + sp.rImportExport;
   const r = runCandidate(DEFAULT_WORLD_CONFIG.shardConfig, sp);
   const coherent = r.flourRatio <= 1.0 ? ' ' : '!';
   console.log(
@@ -140,7 +138,7 @@ for (const sp of ROLE_SPLITS) {
       `${r.shards.toFixed(1).padStart(6)}  ${r.gini.toFixed(3)}  ${r.waitMean.toFixed(1).padStart(8)}  ${String(r.waitMax).padStart(7)}  ` +
       `${r.flourRatio.toFixed(3).padStart(10)}${coherent}  ${r.breakEvenFPB.toFixed(3).padStart(12)}  ${r.grainCover.toFixed(2).padStart(10)}`,
   );
-  console.log(`${''.padEnd(45)}      M=${sp.rMiller} B=${sp.rBaker} C=${sp.rCourier} J=${sp.rJournalist} D=${sp.rDetective} IE=${sp.rImportExport}`);
+  console.log(`${''.padEnd(45)}      M=${sp.rMiller} B=${sp.rBaker} C=${sp.rCourier} I=${sp.rInvestigator} IE=${sp.rImportExport}`);
 }
 
 console.log('\n=== District layout (shipped role split held fixed) ===\n');

@@ -55,8 +55,7 @@ function configFor(c: Candidate): WorldConfig {
     rMiller: round(DEFAULT_WORLD_CONFIG.rMiller),
     rBaker: round(DEFAULT_WORLD_CONFIG.rBaker),
     rCourier: round(DEFAULT_WORLD_CONFIG.rCourier),
-    rJournalist: round(DEFAULT_WORLD_CONFIG.rJournalist),
-    rDetective: round(DEFAULT_WORLD_CONFIG.rDetective),
+    rInvestigator: round(DEFAULT_WORLD_CONFIG.rInvestigator),
     rImportExport: round(DEFAULT_WORLD_CONFIG.rImportExport),
     shardConfig: {
       ...DEFAULT_WORLD_CONFIG.shardConfig,
@@ -67,7 +66,7 @@ function configFor(c: Candidate): WorldConfig {
 }
 
 function totalSlots(config: WorldConfig): number {
-  return config.rMiller + config.rBaker + config.rCourier + config.rJournalist + config.rDetective + config.rImportExport;
+  return config.rMiller + config.rBaker + config.rCourier + config.rInvestigator + config.rImportExport;
 }
 
 console.log(`Population-capacity sweep: does slot-scaling or settlement-scaling protect grifter headroom, in the REAL engine? (${DAYS} days, burn-in ${BURN_IN}, seeds ${SEEDS.join(',')})\n`);

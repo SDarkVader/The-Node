@@ -65,7 +65,7 @@ describe('tickMessage — what a client may know', () => {
   it('streams a station for every role slot, and a person only for FILLED ones', () => {
     const w = stepN(7, 120);
     const msg = tickMessage(w, 'secret-a');
-    const allSlots = [...w.millers, ...w.bakers, ...w.couriers, ...w.journalists, ...w.detectives, ...w.importExporters];
+    const allSlots = [...w.millers, ...w.bakers, ...w.couriers, ...w.investigators, ...w.importExporters];
     const filled = allSlots.filter((s) => s.slot.state === 'FILLED').length;
 
     expect(msg.stations.length).toBe(allSlots.length);

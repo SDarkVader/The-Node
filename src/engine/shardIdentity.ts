@@ -4,7 +4,7 @@
  * constraints ... so we can have diversity also"). Pure, dependency-free.
  *
  * TIER 1 ONLY, AND STRUCTURALLY SO. This is presentation, not mechanics. Every shard runs
- * the identical economic model with identical constants; only what the six roles are CALLED
+ * the identical economic model with identical constants; only what the five roles are CALLED
  * and how a shard describes itself vary. That is deliberate and enforced by construction:
  *
  *   Nothing here is stored on `World`, and `world.ts` does not import this module.
@@ -24,7 +24,7 @@
  *
  * ESSENTIAL VS REFRAMED, per the user's own distinction. Miller and Baker are the economic
  * spine — flour and bread are the same everywhere — so their local names stay close to
- * recognisable. Courier, Journalist, Detective and Import/Export are framed much more freely
+ * recognisable. Courier, Investigator and Import/Export are framed much more freely
  * by local conditions, because what they *mean* in a place varies more than what they do.
  *
  * THE RULE FOR PREMISES (2026-08-11, user-specified: "relate social economics within
@@ -42,7 +42,7 @@
  * are identical to every other place? If it implies different numbers, rewrite it.
  */
 
-export type RoleKey = 'miller' | 'baker' | 'courier' | 'journalist' | 'detective' | 'importExport';
+export type RoleKey = 'miller' | 'baker' | 'courier' | 'investigator' | 'importExport';
 
 export interface ShardCharacter {
   /** The shard's own name for itself. */
@@ -59,7 +59,7 @@ export interface ShardCharacter {
  * assembled, and a player who has seen three shards should recognise a fourth as a *place*,
  * not as a permutation.
  *
- * Miller/Baker titles stay legible across all of them (the spine); the other four drift
+ * Miller/Baker titles stay legible across all of them (the spine); the other three drift
  * further, because their local meaning is what actually differs.
  */
 export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
@@ -70,8 +70,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Miller',
       baker: 'Baker',
       courier: 'Runner',
-      journalist: 'Chronicler',
-      detective: 'Asker',
+      investigator: 'Asker',
       importExport: 'Factor',
     },
   },
@@ -82,8 +81,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Grinder',
       baker: 'Oven-keeper',
       courier: 'Legman',
-      journalist: 'Broadsheet',
-      detective: 'Inspector',
+      investigator: 'Inspector',
       importExport: 'Consignor',
     },
   },
@@ -94,8 +92,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Miller',
       baker: 'Breadwright',
       courier: 'Carrier',
-      journalist: 'Crier',
-      detective: 'Watch',
+      investigator: 'Watch',
       importExport: 'Dockmaster',
     },
   },
@@ -106,8 +103,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Mill-hand',
       baker: 'Baker',
       courier: 'Courier',
-      journalist: 'Recorder',
-      detective: 'Questioner',
+      investigator: 'Questioner',
       importExport: 'Gatekeeper',
     },
   },
@@ -118,8 +114,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Miller',
       baker: 'Oven-keeper',
       courier: 'Stairrunner',
-      journalist: 'Noticewright',
-      detective: 'Overlook',
+      investigator: 'Overlook',
       importExport: 'Broker',
     },
   },
@@ -130,8 +125,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Millwright',
       baker: 'Oven-keeper',
       courier: 'Tunnelhand',
-      journalist: 'Lamplighter',
-      detective: 'Delver',
+      investigator: 'Delver',
       importExport: 'Winchmaster',
     },
   },
@@ -142,8 +136,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Miller',
       baker: 'Baker',
       courier: 'Porter',
-      journalist: 'Gazetteer',
-      detective: 'Auditor',
+      investigator: 'Auditor',
       importExport: 'Merchant',
     },
   },
@@ -154,8 +147,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Grindmaster',
       baker: 'Bakehouse',
       courier: 'Errander',
-      journalist: 'Scribe',
-      detective: 'Assessor',
+      investigator: 'Assessor',
       importExport: 'Creditor',
     },
   },
@@ -166,8 +158,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Miller',
       baker: 'Breadwright',
       courier: 'Between-runner',
-      journalist: 'Townsvoice',
-      detective: 'Arbiter',
+      investigator: 'Arbiter',
       importExport: 'Tollkeeper',
     },
   },
@@ -178,8 +169,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Mill-hand',
       baker: 'Oven-keeper',
       courier: 'Wader',
-      journalist: 'Hearsay',
-      detective: 'Nose',
+      investigator: 'Nose',
       importExport: 'Salvor',
     },
   },
@@ -190,8 +180,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Grinder',
       baker: 'Baker',
       courier: 'Roadman',
-      journalist: 'Postboard',
-      detective: 'Marshal',
+      investigator: 'Marshal',
       importExport: 'Waymaster',
     },
   },
@@ -202,8 +191,7 @@ export const SHARD_CHARACTERS: readonly ShardCharacter[] = [
       miller: 'Grinder',
       baker: 'Baker',
       courier: 'Ferryhand',
-      journalist: 'Witness',
-      detective: 'Reckoner',
+      investigator: 'Reckoner',
       importExport: 'Harbourmaster',
     },
   },
@@ -214,8 +202,7 @@ export const CANONICAL_ROLE_TITLES: Readonly<Record<RoleKey, string>> = {
   miller: 'Miller',
   baker: 'Baker',
   courier: 'Courier',
-  journalist: 'Journalist',
-  detective: 'Detective',
+  investigator: 'Investigator',
   importExport: 'Import/Export',
 };
 

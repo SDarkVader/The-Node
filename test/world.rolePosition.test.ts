@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { createWorld, stepWorld, type World } from '../src/world/world.js';
 
 function allRoleSlots(w: World) {
-  return [...w.millers, ...w.bakers, ...w.couriers, ...w.journalists, ...w.detectives, ...w.importExporters];
+  return [...w.millers, ...w.bakers, ...w.couriers, ...w.investigators, ...w.importExporters];
 }
 
 function buildingsById(w: World) {

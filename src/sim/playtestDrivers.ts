@@ -128,7 +128,7 @@ export function participantsOf(world: World): Participant[] {
 function visibleStateFor(world: World, p: Participant, radius: number): DriverVisibleState {
   const buildings = world.shard.districts.flatMap((d) => d.buildings);
   const occupied = new Set<string>();
-  for (const s of [...world.millers, ...world.bakers, ...world.couriers, ...world.journalists, ...world.detectives, ...world.importExporters]) {
+  for (const s of [...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters]) {
     if (s.slot.state === 'FILLED') occupied.add(s.buildingId);
   }
   const nearby = buildings.filter((b) => b.id !== p.atBuildingId && distance(p.atPlot, b) <= radius);

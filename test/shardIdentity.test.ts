@@ -7,7 +7,7 @@ import {
 } from '../src/engine/shardIdentity.js';
 import { createWorld, stepWorld, DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
 
-const ROLES: RoleKey[] = ['miller', 'baker', 'courier', 'journalist', 'detective', 'importExport'];
+const ROLES: RoleKey[] = ['miller', 'baker', 'courier', 'investigator', 'importExport'];
 
 describe('shardIdentity — Tier 1 is structurally inert', () => {
   it('the simulation never imports it — framing cannot reach the tick even by accident', () => {
