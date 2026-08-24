@@ -6,6 +6,91 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-24 — The basic day: real intra-day windows for offline + Import/Export
+
+User pivot mid-session, twice: first asked to "start with the presence/session primitive"
+(the online/offline tracking that Shift Cover, trespass, arson, and the login-buffer postcard
+system all depend on, none of which exist anywhere in the codebase). Investigated that first —
+confirmed the live-world server path (`startWorldServer`) has NO connection→player identity
+binding at all (only the legacy `startServer` scenario path does, via `?player=<id>`), which
+reframes presence as needing a login/identity layer before it can attach to anyone on the path
+that actually matters. That investigation is still valid groundwork, not wasted, but before
+writing any presence code the user redirected: *"we have economic down time, 2*4hr offline
+periods etc that appear to be missing entirely. we have import and export happening two a day
+yet there's nothing logged. we need a basic day before we can have anything more"* — followed
+by: *"the import/export serves as passage for migration with different shards. windows of
+opportunity open twice daily for migration for legal and illegal routing of people and goods.
+these need to be structural to the game before I expand it."*
+
+**Checked what actually exists before building anything** (this project's own standing rule —
+don't assume, verify): `wealth.ts`'s `DAILY_ACTIVITY_MULTIPLIER` already blends exactly 2x4hr
+of dampened activity into every flow, and its own header comment already named this exact gap:
+*"What this does NOT do: literally block real player actions from arriving during specific UTC
+hours, or place the two windows at any particular time of day — that's a real-time
+server-clock policy... a separate and later concern... genuinely unbuildable here until that
+server exists to have a wall clock at all."* So offline downtime was never "missing entirely"
+— it was real math with no visible structure. Import/Export's nodule/grain supply
+(`importExport.ts`) was the same shape: one blended-per-day number, computed once in
+`world.ts`, never split or logged per window. Migration crossing (`attemptCrossing`/
+`drawTicketProgress`) exists and is wired into `multiShardHarness.ts`'s `migrationValveStep`,
+but fires continuously with zero time-of-day gating — no "twice daily window" concept
+anywhere.
+
+**Pushed back on my own scoping question, correctly**: asked the user whether this should be
+World-state-only or also wire real wall-clock gating into the live server right now. Their
+answer reframed the premise rather than picking an option: *"I'm not sure why any of this
+would work as a game if it weren't happening in real time. I can't work on the assumption that
+its not. it's an online multiplayer game."* Checked `ws.ts` to ground the response in fact
+rather than argue from priors: `tickIntervalMs` defaults to 2500ms and each tick advances the
+*entire* deterministic economy by one full game-day — so today, one real day of game-economy
+happens roughly every 2.5 real seconds, with zero wall-clock anchoring. A past session had
+already written this down as "CONFIRMED: 1 tick = 24 hours, aligned to server reset"
+(`NODE_BUILD_SPEC_2026-08-07.md`) but never built it — the live server's cadence is a dev
+shortcut, not the design. Agreed the user's instinct is correct; asked one more scoped
+question — build the day/window structure into the deterministic kernel now, real live-server
+wall-clock cadence as an explicit follow-up — since flipping the production tick cadence
+mid-session would also break every existing rapid-iteration dev/test workflow without a
+decision on a compressed dev cadence. User confirmed: **"Kernel first, server cadence next
+pass."**
+
+**Built, scoped exactly to that**:
+- `src/engine/dayCycle.ts` (new, pure) — `OFFLINE_WINDOWS_UTC` (reuses `wealth.ts`'s own
+  `THROTTLE_WINDOWS_PER_DAY`/`THROTTLE_WINDOW_HOURS` rather than re-deriving them, so the
+  blended multiplier and the named windows can never drift into two different numbers),
+  `IMPORT_EXPORT_WINDOWS_UTC` (2 windows, placed to not coincide with an offline window —
+  [ILLUSTRATIVE] hour placement, ships tagged as such per this repo's own convention),
+  `isOfflineHour`/`isImportExportWindowHour` predicates, and `importExportWindowEvents()` —
+  splits one daily nodule/grain total into N real per-window events, byte-identical sum.
+- `World.lastImportExportWindows` — new field, same "report what happened this tick"
+  convention as `lastOracleStats`/`lastSabotage`/`lastProximityConversations`, not a
+  cumulative log. Computed from the exact same `nodulesReceived`/`grainAvailable` values
+  `world.ts` already computed for the Miller grain-supply gate — verified in
+  `test/world.dayCycle.test.ts` against `world.resources.today.nodulesReceived`/
+  `grainDelivered`, which are fed from those same two variables in the same tick, so the
+  cross-check can't silently pass on a coincidence.
+- `MultiShardState.lastMigrationWindows` (`multiShardHarness.ts`) — tags each migration
+  attempt this tick by which of the day's two windows it falls in (alternating in processing
+  order — reporting only, consumes no rng, doesn't touch which attempts happen or how they
+  resolve). At this kernel's daily-tick granularity, "twice daily windows" for migration means
+  splitting the day's attempts into two labeled, counted batches — the same "one blended day →
+  N real equal sub-events" move `wealth.ts` already made for `THROTTLE_WINDOWS_PER_DAY`, not
+  fabricated hourly gating the tick model can't actually support yet.
+- 9 new tests: `test/dayCycle.test.ts` (pure module — window shape, no-overlap, hour
+  normalization, split-is-lossless), `test/world.dayCycle.test.ts` (World wiring —
+  determinism, per-tick presence, cross-check against the resource ledger), 3 added to
+  `test/multiShardHarness.test.ts` (starts real-not-missing, attempted/succeeded accounting
+  balances, window tagging never perturbs the deterministic population trajectory).
+
+**Deliberately NOT done, flagged not silently narrowed**: `ws.ts`'s live tick cadence is
+untouched — still 2.5s dev ticks, no wall-clock anchoring, no gating of real connections by
+hour. That's the explicit next-pass item, and it still needs the presence/session primitive
+(connection→player identity binding, absent on the live path) to exist first for a wall-clock
+gate to have anything real to gate.
+
+728/729 tests passing (the one failure, `ws.inbound.test.ts`'s real-socket test, is a
+pre-existing, already-documented CPU-contention flake under full-suite load — passes clean
+run in isolation, unrelated to this session's changes), typecheck clean.
+
 ## 2026-08-22 — Journalist + Detective merged into Investigator
 
 User directive, following the driver-heterogeneity work: merge Journalist and Detective into

@@ -3,6 +3,28 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-24**: The basic day — first real intra-day structure (user directive: "we need a
+basic day before we can have anything more"). New `src/engine/dayCycle.ts`: gives the
+existing daily-blended economics (`wealth.ts`'s 2x4hr offline dampening, `importExport.ts`'s
+once-a-day nodule/grain aggregate) real UTC-anchored windows instead of one number per day.
+`World.lastImportExportWindows` reports that tick's nodule/grain supply as two real dated
+window events (byte-identical total to before — reporting structure changed, not the
+economics). `MultiShardState.lastMigrationWindows` (in `multiShardHarness.ts`) tags each
+migration attempt by which window it fell in, purely for reporting — never changes which
+attempts happen, consumes no extra rng, doesn't touch the seed trajectory. **Deliberately NOT
+done this pass** (explicit user scoping decision, "kernel first, server cadence next pass"):
+the live server (`ws.ts`) still ticks every 2.5 real seconds by default with each tick
+advancing the whole economy one full day — there is still no real wall-clock anchoring on the
+live path, even though a past session already "confirmed" (on paper, never built) that 1 tick
+should = 24 real hours aligned to server reset. Gating real player connections/actions by
+wall-clock hour needs that server-cadence change plus a real session/presence primitive
+first — both still open, and the presence primitive investigation done earlier this session
+(live-world path has no connection→player identity binding at all) is still valid groundwork
+for whenever that's picked up. 9 new tests (`test/dayCycle.test.ts`,
+`test/world.dayCycle.test.ts`, plus 3 added to `multiShardHarness.test.ts`), 728/729 passing
+(1 pre-existing, previously-documented CPU-contention flake in `ws.inbound.test.ts`,
+unrelated — passes clean in isolation), typecheck clean.
+
 **2026-08-22 (later)**: Journalist and Detective merged into Investigator (user directive).
 `World.investigators` replaces the two separate arrays; `WorldConfig.rInvestigator` (default
 15, sum-preserving) replaces `rJournalist`/`rDetective`. Investigator inherits Detective's

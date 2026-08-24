@@ -66,6 +66,7 @@ The single source of truth. Every field, grouped by what it is for.
 | **Social** | `identityLedger`, `completionStats`, `pressureLedger` |
 | **Sabotage** | `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`, `lastSabotage` (legacy) |
 | **Oracle** | `lastOracleStats` |
+| **Day cycle** | `lastImportExportWindows` (`ImportExportWindowEvent[]`, `engine/dayCycle.ts`) |
 
 ### Slot shapes
 
@@ -147,6 +148,16 @@ COURIER_FEE_PER_DISTANCE_UNIT  0.344      [CALIBRATED — courier-station mean d
 COURIER_MIN_ROUTE_DISTANCE     1          [constraint 2 — a station on the hub must still earn]
 PERSONAL_RESOURCE_CAP          5          RESTOCK_INTERVAL_DAYS       3
 ```
+
+### Day cycle (`engine/dayCycle.ts`, 2026-08-24) — [ILLUSTRATIVE hour placement]
+```
+HOURS_PER_DAY                   24
+OFFLINE_WINDOWS_UTC              [0,4), [12,16)   (= wealth.ts's THROTTLE_WINDOWS/HOURS)
+IMPORT_EXPORT_WINDOWS_PER_DAY    2
+IMPORT_EXPORT_WINDOW_HOURS       2
+IMPORT_EXPORT_WINDOWS_UTC        [6,8), [18,20)
+```
+Not gated against a live wall clock yet — see §9 "no real-time wall clock."
 
 ### Roles and progression
 ```
@@ -290,3 +301,18 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
 - **Arson** built and calibrated, not wired into `stepWorld`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
+- **The live server has no real-time wall clock.** `ws.ts`'s `tickIntervalMs` defaults to
+  2500ms and every tick advances the whole deterministic economy by one full game-day — no
+  anchoring to real UTC hours anywhere on the live path. `NODE_BUILD_SPEC_2026-08-07.md`
+  already "confirmed" 1 tick = 24 real hours, aligned to server reset; never built. §4's
+  `dayCycle.ts` windows (offline, Import/Export) are real UTC-anchored hour ranges at the
+  deterministic-kernel level, but nothing gates a live connection or action by them yet —
+  that needs this server-cadence change plus the item below. (2026-08-24, explicit
+  user-scoped follow-up, not started.)
+- **No presence/session primitive.** Nothing tracks online/offline anywhere in the engine
+  (`player.ts` is 22 lines, just an id). The live-world server path (`startWorldServer`) has
+  no connection→player identity binding at all — only the legacy scenario path
+  (`startServer`) has `?player=<id>`, and that never touches `World` or persists. At least
+  five designed mechanics depend on this not existing yet: the login-buffer postcard system,
+  Shift Cover, trespass eligibility, arson eligibility, and Import/Export automation-if-
+  offline. (2026-08-24, investigated, not built — see `DEVLOG.md`'s 2026-08-24 entry.)

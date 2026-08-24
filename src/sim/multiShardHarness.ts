@@ -1,6 +1,7 @@
 import { mulberry32 } from './rng.js';
 import { createWorld, stepWorld, createDormantWorld, receiveMigrants, type World, type WorldConfig } from '../world/world.js';
 import { attemptCrossing, drawTicketProgress } from '../engine/importExport.js';
+import { IMPORT_EXPORT_WINDOWS_UTC } from '../engine/dayCycle.js';
 import {
   createShardRegistry,
   canOpenNewShard,
@@ -38,6 +39,27 @@ import {
  */
 export const MIGRATION_FAILURE_RATE = 0.15;
 
+/**
+ * The basic day (2026-08-24, user-specified: "windows of opportunity open twice daily for
+ * migration for legal and illegal routing of people and goods"). Reports which of the day's
+ * two `dayCycle.ts` windows each migration attempt this tick fell in — real per-window
+ * structure, at the same daily-tick granularity `stepMultiShard` already runs at (one call
+ * per day, attempts resolved within that call assigned alternately to window 0/1, matching
+ * this kernel's "one blended day -> N equal real sub-events" convention rather than
+ * fabricating hourly gating the tick model can't yet support). Route resolution itself
+ * (attemptCrossing/drawTicketProgress) is unchanged — this only tags and counts, it never
+ * alters which attempts happen or how they resolve. */
+export interface MigrationWindowReport {
+  window: number;
+  hourUtc: number;
+  attempted: number;
+  succeeded: number;
+}
+
+function emptyMigrationWindowReport(): MigrationWindowReport[] {
+  return IMPORT_EXPORT_WINDOWS_UTC.map(([hourUtc], window) => ({ window, hourUtc, attempted: 0, succeeded: 0 }));
+}
+
 export interface MultiShardState {
   registry: ShardRegistry;
   worlds: Map<number, World>;
@@ -59,6 +81,10 @@ export interface MultiShardState {
   /** Use the pre-Import/Export flat failure constant instead of real route resolution —
    *  for A/B comparison only; the route mechanism is the default. */
   useLegacyFlatFailureRate: boolean;
+  /** This tick's migration attempts, tagged by which of the day's two Import/Export windows
+   *  they fell in. Reset every `stepMultiShard` call — same "report what actually happened
+   *  this tick" convention as `world.ts`'s `lastX` fields, not a cumulative log. */
+  lastMigrationWindows: MigrationWindowReport[];
 }
 
 export function createMultiShardState(
@@ -73,7 +99,18 @@ export function createMultiShardState(
   for (const shard of registry.shards) {
     worlds.set(shard.id, createWorld(seed * 1000 + shard.id + 1, config));
   }
-  return { registry, worlds, day: 0, rng, seed, config, totalFailedMigrations: 0, migrationFailureRate, useLegacyFlatFailureRate };
+  return {
+    registry,
+    worlds,
+    day: 0,
+    rng,
+    seed,
+    config,
+    totalFailedMigrations: 0,
+    migrationFailureRate,
+    useLegacyFlatFailureRate,
+    lastMigrationWindows: emptyMigrationWindowReport(),
+  };
 }
 
 /**
@@ -95,8 +132,15 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
   }
 
   let totalFailedMigrations = state.totalFailedMigrations;
+  const migrationWindows = emptyMigrationWindowReport();
+  let attemptIndex = 0;
   for (const { fromShardId, count } of emigrantBatches) {
     for (let i = 0; i < count; i++) {
+      // Tags which of the day's two Import/Export windows this attempt falls in — reporting
+      // only, alternating in the same order attempts are already processed. Consumes no rng
+      // and never affects whether the attempt happens or how it resolves.
+      const windowIndex = attemptIndex % migrationWindows.length;
+      attemptIndex += 1;
       const destId = chooseMigrationDestination(registry, fromShardId, state.rng);
       if (destId === null) continue; // only one shard exists — nowhere else to go, an honest edge case
 
@@ -110,6 +154,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
       // drawn, stateless interception probability. `useLegacyFlatFailureRate` keeps the old
       // constant available for A/B comparison; the emergent rate reproduces it (~0.149 vs
       // 0.15), so existing multi-shard calibration is preserved, not silently moved.
+      migrationWindows[windowIndex]!.attempted += 1;
       const crossed = state.useLegacyFlatFailureRate
         ? state.rng() >= state.migrationFailureRate
         : attemptCrossing(drawTicketProgress(state.rng), state.rng);
@@ -117,6 +162,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
         totalFailedMigrations += 1;
         continue;
       }
+      migrationWindows[windowIndex]!.succeeded += 1;
 
       const destRecord = registry.shards.find((s) => s.id === destId);
       const wasDormant = destRecord?.state === 'DORMANT';
@@ -136,7 +182,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
     registry = openNewShard(registry, state.day);
   }
 
-  return { ...state, registry, worlds, day: state.day + 1, totalFailedMigrations };
+  return { ...state, registry, worlds, day: state.day + 1, totalFailedMigrations, lastMigrationWindows: migrationWindows };
 }
 
 export function totalPopulation(state: MultiShardState): number {

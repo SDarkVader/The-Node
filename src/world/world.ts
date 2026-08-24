@@ -136,6 +136,7 @@ import {
 } from '../engine/ecosystem.js';
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
+import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
 import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
@@ -637,6 +638,12 @@ export interface World {
    *  logic itself. Same "report what actually happened, don't make the caller infer it from
    *  field deltas" convention as `lastDiaryRejections`. */
   lastOracleStats: OracleTickStats;
+  /** The basic day (2026-08-24) — this tick's Import/Export nodule/grain supply, split into
+   *  `engine/dayCycle.ts`'s two real UTC-anchored windows instead of one blended daily
+   *  number. Byte-identical total to the pre-existing single figure; only the reporting
+   *  granularity is new. Same "report what actually happened this tick" convention as
+   *  `lastOracleStats`/`lastSabotage`. */
+  lastImportExportWindows: ImportExportWindowEvent[];
   /** Queued proximity-conversation turns — consumed and cleared every `stepWorld` call, same
    *  pattern as `pendingWallPosts`/`pendingDiaryEntries`. */
   pendingProximityUtterances: PendingProximityUtterance[];
@@ -861,6 +868,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastDiaryWrites: [],
     lastDiaryRejections: [],
     lastOracleStats: { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } },
+    lastImportExportWindows: [],
     pendingProximityUtterances: [],
     lastProximityConversations: [],
     lastProximityRejections: [],
@@ -1383,6 +1391,9 @@ export function stepWorld(world: World): World {
   const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED').length;
   const nodulesReceived = nodulesReceivedToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
   const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
+  // The basic day (2026-08-24) — same total nodules/grain as above, now reported as two real
+  // UTC-anchored window events instead of one blended daily number. See dayCycle.ts's header.
+  const importExportWindows = importExportWindowEvents(nodulesReceived, grainAvailable);
   const intendedMillerSupply = computeMillerSupply(millers);
   const grainDemanded = intendedMillerSupply * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR;
   const grainFactor = millingCapacityFactor(grainAvailable, grainDemanded);
@@ -2205,6 +2216,7 @@ export function stepWorld(world: World): World {
     lastDiaryWrites,
     lastDiaryRejections,
     lastOracleStats: oracleStats,
+    lastImportExportWindows: importExportWindows,
     pendingProximityUtterances: [],
     lastProximityConversations,
     lastProximityRejections,

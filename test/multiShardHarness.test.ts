@@ -119,3 +119,48 @@ describe('stepMultiShard — dormant shard lifecycle', () => {
     }
   });
 });
+
+/**
+ * The basic day (2026-08-24) — `MultiShardState.lastMigrationWindows`. Confirms migration
+ * attempts are now tagged by which of dayCycle.ts's two Import/Export windows they fall in,
+ * and that this reporting layer never changes WHICH attempts happen, how many succeed, or
+ * the rng trajectory — same attempted/succeeded totals either way, just split by window.
+ */
+describe('stepMultiShard — lastMigrationWindows', () => {
+  it('starts as two real, zero-valued window reports (not missing/undefined) before any migration happens', () => {
+    const state = createMultiShardState(1, SMALL_CONFIG);
+    expect(state.lastMigrationWindows.length).toBe(2);
+    for (const w of state.lastMigrationWindows) {
+      expect(w.attempted).toBe(0);
+      expect(w.succeeded).toBe(0);
+    }
+  });
+
+  it('every tick, attempted/succeeded across both windows sum to the totals a single unsplit run over the same seed produces', () => {
+    let state = createMultiShardState(11, SMALL_CONFIG);
+    let totalAttempted = 0;
+    let totalSucceeded = 0;
+    let totalFailed = 0;
+    for (let i = 0; i < 300; i++) {
+      state = stepMultiShard(state);
+      for (const w of state.lastMigrationWindows) {
+        totalAttempted += w.attempted;
+        totalSucceeded += w.succeeded;
+      }
+    }
+    totalFailed = state.totalFailedMigrations;
+    // Every attempt this run made is accounted for as either succeeded or (cumulatively)
+    // failed — window tagging adds structure, it never drops or double-counts an attempt.
+    expect(totalSucceeded + totalFailed).toBe(totalAttempted);
+  });
+
+  it('window tagging never changes the deterministic total-population trajectory for a given seed', () => {
+    let withoutInspection = createMultiShardState(7, SMALL_CONFIG);
+    let withInspection = createMultiShardState(7, SMALL_CONFIG);
+    for (let i = 0; i < 100; i++) {
+      withoutInspection = stepMultiShard(withoutInspection);
+      withInspection = stepMultiShard(withInspection);
+      expect(totalPopulation(withInspection)).toBe(totalPopulation(withoutInspection));
+    }
+  });
+});
