@@ -137,6 +137,7 @@ import {
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
 import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
+import { stepPresenceLedger, type PresenceRecord } from '../engine/presence.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
 import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
@@ -644,6 +645,19 @@ export interface World {
    *  granularity is new. Same "report what actually happened this tick" convention as
    *  `lastOracleStats`/`lastSabotage`. */
   lastImportExportWindows: ImportExportWindowEvent[];
+  /** The presence/session primitive (2026-08-24) — who the caller reports as currently
+   *  connected, e.g. `ws.ts` populating this from real open connections each tick. UNLIKE
+   *  `pendingX` fields, this is NOT drained/cleared by `stepWorld` — it's a live snapshot the
+   *  caller keeps current, read fresh every tick, the same "persistent field the caller
+   *  updates between calls" convention `rng`/`config` already use. Defaults to an empty set
+   *  (nobody reported online) for every sim/test context that never sets it, matching this
+   *  field's honest neutral default. See `engine/presence.ts`'s header for scope (role-holders
+   *  only, daily-tick granularity, no wire exposure — presence is WITHHELD, not broadcast). */
+  currentlyOnline: ReadonlySet<PlayerId>;
+  /** This tick's reconciled presence ledger, keyed by buildingId — see `engine/presence.ts`.
+   *  Rebuilt fresh from the FINAL post-tick FILLED role-slot set each tick, so a vacated slot
+   *  simply has no entry rather than a stale one. */
+  presence: Readonly<Record<PlayerId, PresenceRecord>>;
   /** Queued proximity-conversation turns — consumed and cleared every `stepWorld` call, same
    *  pattern as `pendingWallPosts`/`pendingDiaryEntries`. */
   pendingProximityUtterances: PendingProximityUtterance[];
@@ -869,6 +883,8 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastDiaryRejections: [],
     lastOracleStats: { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } },
     lastImportExportWindows: [],
+    currentlyOnline: new Set(),
+    presence: {},
     pendingProximityUtterances: [],
     lastProximityConversations: [],
     lastProximityRejections: [],
@@ -2138,12 +2154,19 @@ export function stepWorld(world: World): World {
     ...importExporters,
   ];
   const districtPopulationById: Record<string, number> = {};
+  const filledPlayerIds = new Set<PlayerId>();
   for (const s of allRoleSlotsFinal) {
     if (s.slot.state !== 'FILLED') continue;
+    filledPlayerIds.add(s.buildingId);
     const districtId = buildingDistrictId.get(s.buildingId);
     if (!districtId) continue;
     districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
   }
+  // The presence/session primitive (2026-08-24) — reconciled from the SAME final post-tick
+  // FILLED set districtPopulationById above just built, against whatever `world.currentlyOnline`
+  // the caller reported. See presence.ts's header for why this is a live snapshot, not a
+  // pendingX queue.
+  const presence = stepPresenceLedger(world.presence, filledPlayerIds, world.currentlyOnline);
 
   // Grifter housing (2026-08-13, docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §1.3): a
   // role-holder is already housed in the same district as their workplace — counted above via
@@ -2237,6 +2260,8 @@ export function stepWorld(world: World): World {
     lastDiaryRejections,
     lastOracleStats: oracleStats,
     lastImportExportWindows: importExportWindows,
+    currentlyOnline: world.currentlyOnline,
+    presence,
     pendingProximityUtterances: [],
     lastProximityConversations,
     lastProximityRejections,

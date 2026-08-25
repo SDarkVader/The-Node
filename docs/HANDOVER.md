@@ -3,6 +3,28 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-24 (latest) — presence/session primitive**: `src/engine/presence.ts` (new, pure) —
+`World.currentlyOnline` (a live `ReadonlySet<PlayerId>` the caller keeps current, NOT a
+drained `pendingX` queue — `ws.ts` populates it each tick from the real `identities` map
+built for the action vocabulary) reconciles into `World.presence`
+(`Record<PlayerId, PresenceRecord>`: `online`, `consecutiveOnlineDays`,
+`consecutiveOfflineDays`), keyed by buildingId, role-holders only (grifters out of scope, same
+"no fixed building position" reasoning comms already uses), daily-tick granularity (this
+kernel has no finer resolution — flagged, not silently narrowed, same honesty `dayCycle.ts`
+already holds itself to). Rebuilt fresh from the FINAL post-tick FILLED role-slot set every
+tick, so a vacated slot has no stale entry and a new occupant never inherits a stranger's
+streak. Byte-identical trajectory proven for every run that never sets `currentlyOnline`
+(every existing sim/test). **Deliberately NOT exposed on the wire** — presence joins wealth/
+experience/personalResourceStock as WITHHELD, not broadcast; knowing exactly when another
+player is offline is precisely the information trespass/arson eligibility need to STAY
+mechanical rather than becoming a real-time surveillance signal one player can use against
+another. 21 new tests (`test/presence.test.ts` pure, `test/world.presence.test.ts` World
+wiring, `test/ws.presence.test.ts` real-socket connect/disconnect). 768/768 passing (no
+flake this run), typecheck clean. This is the FOUNDATION only — nothing yet consumes
+`World.presence` (login-buffer postcards, Shift Cover, trespass, arson, Import/Export
+automation-if-offline all still need their own build-out on top of it), and the live server's
+own tick cadence is still 2.5s-by-default dev ticks with no real wall-clock anchoring.
+
 **2026-08-24 (later) — action vocabulary**: The inbound pipe now interprets three real
 actions — `wallPost`, `diaryEntry`, `proximityUtterance` (`src/server/actionVocabulary.ts`,
 new). Chosen because they're the only mechanics with existing, tested, `stepWorld`-consumed

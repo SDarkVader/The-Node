@@ -328,6 +328,12 @@ export function startWorldServer(options: WorldServerOptions = {}): Promise<Serv
       const authorId = action.connectionId ? (identities.get(action.connectionId) ?? null) : null;
       world = applyClientAction(world, authorId, action.action, action.payload);
     }
+    // The presence/session primitive (2026-08-24) — `identities`' current values are exactly
+    // "who is bound to a still-open connection right now" (entries are removed on close, see
+    // the connection handler above), so this needs no separate bookkeeping. Set fresh each
+    // tick BEFORE stepping, same "live snapshot the caller keeps current" contract
+    // `World.currentlyOnline`'s own header describes — not drained/cleared like pendingX.
+    world = { ...world, currentlyOnline: new Set(identities.values()) };
     for (let i = 0; i < daysPerTick; i++) world = stepWorld(world);
     // Reported alongside what happened. This is the seam a recorder hooks: it sees the world
     // AND what was sent at it.

@@ -24,7 +24,7 @@ role-holder occupancy, the Oracle, universal housing with reputation gating,
 and a real multi-shard registry. The economy tracks wealth (Gini coefficient
 plateaus around 0.5, stays stable), Courier pay indexes actual distance, and
 role completion is uniformly tested across all five roles (Journalist and Detective merged
-into Investigator, 2026-08-22). 746 tests cover all of it.
+into Investigator, 2026-08-22). 768 tests cover all of it.
 
 **The basic day (2026-08-24)**: offline downtime and Import/Export supply now
 have real UTC-anchored windows (twice daily each) instead of one blended
@@ -36,6 +36,13 @@ actions — Wall posting, diary entries, proximity conversation — gated to a
 connection's bound identity. Everything else (Miller/Baker's price/quantity,
 the other three roles) still has no real player-input slot in the engine;
 see `docs/BLUEPRINT.md` §9.
+
+**Presence/session primitive (2026-08-24)**: `World` now tracks real
+online/offline state per role-holder, fed from the live server's actual
+connections — the foundation the login-buffer, Shift Cover, trespass, and
+arson designs all depend on. Deliberately withheld from the wire (same
+privacy boundary as wealth), and nothing consumes it yet — see
+`docs/BLUEPRINT.md` §9.
 
 **Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry.
 Role-holders occupy their buildings (not drawn on street), marked by glyphs

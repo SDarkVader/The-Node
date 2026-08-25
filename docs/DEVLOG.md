@@ -6,6 +6,95 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-24 (latest) — Presence/session primitive
+
+Third piece of the same session, in order: the basic day -> action vocabulary -> presence.
+User: "let's build the presence/session primitive next" — the same request from earlier this
+session, now unblocked, since the action vocabulary work already built the minimal
+connection→identity binding presence needed as a foundation (`isFilledRoleHolder`, the
+`identities` map in `ws.ts`).
+
+**Design question settled before writing code**: where does "who is online" live — a
+server-side side channel, or real deterministic `World` state? Went with `World` state, for
+the same reason argued earlier this session when this was first investigated: the mechanics
+that need it (Shift Cover, trespass, arson eligibility) live inside `stepWorld`'s own future
+logic, not the transport layer, so presence has to be something `stepWorld` can actually see
+and reason about, not just something the server remembers.
+
+**Shape decision**: `World.currentlyOnline` is a LIVE SNAPSHOT the caller keeps current
+(`ws.ts` sets it fresh from `identities.values()` before every tick), NOT a `pendingX` queue
+that `stepWorld` drains and clears. This is a real, deliberate departure from the
+`pendingWallPosts`/`pendingDiaryEntries`/`pendingProximityUtterances` pattern — those are
+discrete EVENTS that happened since the last tick; online-ness is ONGOING STATE, closer to
+`rng`/`config` (a persistent field the caller sets once and `stepWorld` reads repeatedly) than
+to a queue of things that occurred. Named this distinction explicitly in the field's own doc
+comment so a future reader doesn't assume it follows the queue convention and gets confused
+when nothing clears it.
+
+**Granularity, said plainly rather than glossed over**: `stepWorld` is still one call per day
+(unchanged this pass, per the earlier "kernel first, server cadence next pass" scoping
+decision). So "online" here means "connected at all on the tick this was observed" — a daily
+on/off signal, not session start/end times. `consecutiveOnlineDays`/`consecutiveOfflineDays`
+are the honest unit at this resolution. A mechanic that genuinely needs sub-day precision
+(real-time trespass gating, for instance) still needs the live server's wall-clock cadence to
+exist first — this module doesn't pretend to solve that, consistent with `dayCycle.ts`'s own
+"IMPLEMENTATION SCOPE" honesty about the same limitation.
+
+**Scope decision, checked against the design docs rather than assumed**: role-holders only
+(`buildingId`), not grifters. Matches the existing "grifters have no fixed building position,
+out of scope for spatially-anchored mechanics" precedent already used for comms — a grifter
+has nowhere to be trespassed into or absent from, so there's nothing for a grifter's presence
+record to mean yet.
+
+**Privacy decision, made explicitly rather than defaulted into**: `worldProtocol.ts`'s tick
+message does NOT expose presence. Checked against the existing WITHHELD list (wealth,
+personalResourceStock, experience, completionStats, wealthGini, diary, in-flight sabotage) and
+reasoned by the same logic: knowing precisely when another specific player is offline is
+exactly the signal trespass and arson eligibility are built to gate on — broadcasting it would
+hand every player a live surveillance readout of exactly when to strike, which is the opposite
+of "mechanical, not behavioral" (CLAUDE.md constraint 3) and turns absence itself into a
+weapon. Presence joins the WITHHELD set for the same reason wealth does: real signal that
+must stay server-internal.
+
+**Built**:
+- `src/engine/presence.ts` (new, pure): `PresenceRecord` (`online`,
+  `consecutiveOnlineDays`, `consecutiveOfflineDays`), `initialPresence`, `stepPresenceRecord`
+  (per-entry reconciliation, `prev === undefined` treated as a fresh occupant — same
+  "new occupant inherits nothing" reset convention every other per-slot field already
+  follows), `stepPresenceLedger` (rebuilds the WHOLE ledger fresh from `filledPlayerIds` each
+  call, rather than mutating the previous map — a vacated buildingId simply has no entry,
+  which is both simpler than pruning and semantically correct: there's no player there to
+  have presence, and it can't silently go stale).
+- `src/world/world.ts`: `World.currentlyOnline: ReadonlySet<PlayerId>` (defaults to an empty
+  set in `createWorld` — the honest "nobody reported online" neutral, matching every existing
+  sim/test that will never set it) and `World.presence: Readonly<Record<PlayerId,
+  PresenceRecord>>`. Computed in `stepWorld` from the SAME final post-tick FILLED-slot pass
+  `districtPopulationById` already builds (`allRoleSlotsFinal`) — reused, not duplicated, one
+  more `Set<PlayerId>` accumulated alongside the existing loop.
+- `src/server/ws.ts` (`startWorldServer` only): `world.currentlyOnline` is set fresh each
+  tick, before stepping, from `identities.values()` — no new bookkeeping needed, since
+  `identities` already IS "who's bound to a still-open connection right now" (entries removed
+  on `close`, built for the action vocabulary earlier this session).
+- 21 new tests: `test/presence.test.ts` (pure — streak accrual, transitions, ledger
+  rebuild-not-mutate semantics), `test/world.presence.test.ts` (byte-identical trajectory
+  proof when `currentlyOnline` is never touched, real streak accrual across real `stepWorld`
+  ticks, exactly-one-entry-per-FILLED-slot invariant, determinism), `test/ws.presence.test.ts`
+  (real socket — bound/unbound connections, multiple simultaneous connections, disconnect/
+  reconnect, none of it able to crash the connection or server; presence itself isn't
+  wire-visible by design, so these test the TRANSPORT wiring, same honest scope
+  `ws.actionVocabulary.test.ts` already settled on for the same reason).
+
+**Deliberately NOT done, flagged not silently narrowed**: this is the FOUNDATION only.
+Nothing yet reads `World.presence` — the login-buffer postcard system, Shift Cover's live
+triggering, trespass eligibility, arson eligibility, and Import/Export automation-if-offline
+all still need their own build-out on top of this primitive, none of them wired this pass. The
+live server's tick cadence is still unchanged (2.5s dev ticks, no wall-clock anchoring) — "the
+basic day" entry above already flagged this as a separate, later piece, and it still is.
+
+768/768 tests passing this run (no flake), typecheck clean, golden regression snapshot
+(`world.regression.test.ts`) unchanged — presence consumes no rng and touches no other field,
+confirmed by the untouched golden numbers, not just by inspection.
+
 ## 2026-08-24 (later) — Action vocabulary: the first three real, interpreted actions
 
 Follow-up to the basic-day work, same session. User asked to "look at next steps," was given

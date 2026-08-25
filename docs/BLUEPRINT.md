@@ -67,6 +67,7 @@ The single source of truth. Every field, grouped by what it is for.
 | **Sabotage** | `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`, `lastSabotage` (legacy) |
 | **Oracle** | `lastOracleStats` |
 | **Day cycle** | `lastImportExportWindows` (`ImportExportWindowEvent[]`, `engine/dayCycle.ts`) |
+| **Presence** | `currentlyOnline` (live snapshot, caller-set, NOT drained), `presence` (`Record<PlayerId, PresenceRecord>`, `engine/presence.ts`) |
 
 ### Slot shapes
 
@@ -230,11 +231,28 @@ validates wire shape + enum membership only (total, never throws); semantic vali
 runs each tick. No role's economic mechanic (Miller/Baker/Courier/Investigator/Import-Export)
 takes real player input yet — see §9.
 
+**Presence/session primitive** (`src/engine/presence.ts`, 2026-08-24) — the foundation, not
+yet consumed by anything. `World.currentlyOnline: ReadonlySet<PlayerId>` is a LIVE SNAPSHOT
+the caller keeps current (`startWorldServer` sets it fresh each tick from the same
+`identities` map the action vocabulary uses) — unlike `pendingX` fields, `stepWorld` does NOT
+drain/clear it. `World.presence: Record<PlayerId, PresenceRecord>` (`online`,
+`consecutiveOnlineDays`, `consecutiveOfflineDays`) is rebuilt fresh every tick from the FINAL
+post-tick FILLED role-slot set, keyed by buildingId — role-holders only, grifters out of
+scope. Daily-tick granularity: "online" means "connected at all on the tick observed," not
+session start/end times — this kernel has no finer resolution (see `dayCycle.ts`'s own scope
+note for the same limitation elsewhere). Not exposed on the wire — see "Withheld" below. Not
+yet consumed by anything: the login-buffer postcard system, Shift Cover, trespass eligibility,
+arson eligibility, and Import/Export automation-if-offline all still need their own build-out
+on top of this.
+
 **Public**: geometry, role-per-building, slot state, per-building heat, per-district tension, and
 that a body is at a position.
 
 **Withheld, always**: `wealth`, `personalResourceStock`, `experience`, `completionStats`,
-`wealthGini`, anything diary-shaped, and in-flight `sabotageCampaigns`.
+`wealthGini`, anything diary-shaped, in-flight `sabotageCampaigns`, and (2026-08-24) `presence`
+— knowing precisely when another player is offline is exactly the signal trespass/arson
+eligibility are built to gate on; broadcasting it would hand every player a live surveillance
+readout of when to strike.
 
 **Pseudonymous**: people carry a per-connection `handle` derived from a **server-generated**
 secret, so two clients see disjoint handles for the same person and cannot correlate. Real ids
@@ -331,11 +349,10 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   deterministic-kernel level, but nothing gates a live connection or action by them yet —
   that needs this server-cadence change plus the item below. (2026-08-24, explicit
   user-scoped follow-up, not started.)
-- **No presence/session primitive — narrowed but not closed, 2026-08-24 (later).**
-  `startWorldServer` now binds `?player=<buildingId>` per connection (§5's action vocabulary
-  needs to know who's authoring), but that binding is minimal — it exists only to gate
-  authorship (`isFilledRoleHolder`), not to track online/offline state, session duration, or
-  anything `World` itself remembers. Nothing tracks online/offline anywhere in the engine
-  still (`player.ts` is still 22 lines, just an id). At least five designed mechanics still
-  depend on real presence not existing yet: the login-buffer postcard system, Shift Cover,
-  trespass eligibility, arson eligibility, and Import/Export automation-if-offline.
+- **Presence/session primitive exists now (2026-08-24, latest), but nothing consumes it
+  yet.** `World.currentlyOnline`/`World.presence` (§5) are real, tested, wired from the live
+  server's real connections. What's still missing is every mechanic that was supposed to READ
+  it: the login-buffer postcard system, Shift Cover's live triggering, trespass eligibility,
+  arson eligibility, and Import/Export automation-if-offline all still need their own
+  build-out on top of this foundation — none of them wired this pass. `player.ts` is still 22
+  lines, unchanged; presence lives entirely in `World`, not there.
