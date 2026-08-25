@@ -6,6 +6,94 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-24 (later) — Action vocabulary: the first three real, interpreted actions
+
+Follow-up to the basic-day work, same session. User asked to "look at next steps," was given
+four options (presence primitive, live-server cadence, wire arson, action vocabulary) and
+picked the last, the biggest and most open-ended one: the inbound pipe has existed since
+2026-08-19 but nothing has ever interpreted an action — both server paths only ever echo
+`{action, payload}` back for observability. README's own text: "Action vocabulary is
+deliberately undesigned; the grammar belongs to a later session." This is that session.
+
+**Surveyed every candidate mechanic before designing anything** (checked, not assumed):
+- Only three mechanics have real, tested, `stepWorld`-consumed queues already:
+  `pendingWallPosts`, `pendingDiaryEntries`, `pendingProximityUtterances`. These became v1.
+- Miller/Baker's `value` (quantity/price) — despite BLUEPRINT.md's slot-shape comment calling
+  them "the two roles with a real player decision" — is 100% algorithmic best-response
+  (`stepMillers`/`stepBakers`, verified by reading their signatures): no parameter exists
+  anywhere for a player-supplied override. Wiring a real action here means changing the
+  economic kernel itself, not adding plumbing — bigger, separate work, correctly out of scope.
+- Shift Cover (`shiftCover.ts`) and Oracle entry (`oracle.ts`) — grepped for any opt-in/pending
+  hook, found none. Both are entirely probability-driven today despite BLUEPRINT calling Shift
+  Cover "player-initiated opt-in" (task item 7's own name is aspirational, not yet accurate).
+- Courier/Investigator/Import-Export all reduce to `districtFriction >= bar` — no decision
+  point in the engine at all for any of them.
+
+**The catch, surfaced before building rather than discovered mid-way**: all three real
+candidates need `authorId`/`speakerId` (a `PlayerId` — a currently-FILLED `buildingId`), and
+`startWorldServer` (the live path) had zero connection→identity binding, confirmed earlier
+this session while investigating the presence primitive. So "action vocabulary" wasn't fully
+separable from that earlier finding after all — at minimum, ACTION AUTHORSHIP needed a minimal
+identity binding, even without full online/offline session tracking. Said this to the user
+plainly rather than silently working around it or silently re-doing the deferred presence
+work; user confirmed the recommended scope: all three actions plus minimal identity binding
+(not full presence/session state).
+
+**Built**:
+- `src/world/world.ts`: `isFilledRoleHolder(world, playerId)` — the real gate. A claimed
+  identity must currently occupy a FILLED role slot to author anything; VACANT/BACKSTOPPED
+  slots and grifters have no standing.
+- `src/server/actionVocabulary.ts` (new, pure): `GameAction` discriminated union,
+  `parseGameAction` (wire-shape + enum-membership validation only, total — never throws,
+  same contract `parseClientMessage` already holds itself to; unknown action names return
+  `null` rather than erroring), `queueGameAction` (maps a validated action onto the matching
+  `pendingX` field, immutable-snapshot convention), `applyClientAction` (the full pipe:
+  identity gate -> parse -> queue, no-op on any failure). Deliberately does NOT duplicate
+  semantic validation (self-reference, unresolved subject, absent referent) — that's already
+  `writeDiaryEntry`/`composeUtterance`'s job, and `stepWorld` already reports the outcome via
+  `lastDiaryRejections`/`lastProximityRejections`; re-checking here would just be a second,
+  driftable copy of the same rule.
+- `src/server/ws.ts` (`startWorldServer` only — the legacy scenario path is deliberately left
+  alone, it isn't the game): `?player=<buildingId>` binding via a `secret -> PlayerId` map,
+  kept strictly separate from the outbound pseudonymity `secret` (same secret string is the
+  join key, but the two maps solve opposite problems — one is anti-correlation, the other is
+  authorship, and conflating them would leak identity through the "anonymous" handle). Actions
+  are resolved and applied to `world` BEFORE `stepWorld` runs each tick — the same "caller
+  populates, stepWorld consumes and clears" contract every other `pendingX` field already
+  uses. Same "stand-in for real auth, not real auth" caveat the legacy path's own `?player=`
+  binding already carries — said explicitly in the new code, not left implicit.
+- Updated stale doc comments that were no longer true: `ClientActionMessage`'s header ("the
+  action vocabulary has not been designed"), `WorldServerOptions.onActions`'s header ("unable
+  to affect the simulation"), and `test/ws.inbound.test.ts`'s own header — all three actually
+  said something now false, fixed rather than left to rot.
+- 22 new tests: `test/actionVocabulary.test.ts` (pure — parse/reject every malformed shape per
+  action kind without throwing, queue wiring, the full gate including "authorId not a real
+  FILLED holder" and "unrecognized action name"), `test/ws.actionVocabulary.test.ts` (real
+  socket — `?player=` binding over a live connection, an invalid claimed identity staying
+  inert rather than fatal, no binding at all staying inert, and identity cleanup on close
+  freeing the binding for reuse — proving the NEW `ws.ts` wiring itself, which the pure tests
+  structurally cannot reach).
+
+**What "real end-to-end" honestly means here, worth recording rather than overclaiming**:
+`worldProtocol.ts`'s tick message deliberately never exposes Wall-post/diary/proximity content
+on the wire — that's the privacy boundary these mechanics are built around, not an oversight.
+So there is no outward wire signal to assert a queued action's semantic effect against from a
+socket test. The real-socket tests therefore verify the TRANSPORT wiring (identity binds,
+survives a real connection, doesn't crash on an invalid or missing identity, cleans up
+correctly on close) while the pure tests verify the INTERPRETATION logic — together they cover
+the whole pipe without needing to compromise the privacy boundary just to make a test easier
+to write.
+
+**Deliberately NOT done, flagged not silently narrowed**: no full presence/session state
+(online/offline duration, login-buffer accrual) — just enough identity to know who's asking,
+per the user's confirmed scope. `mvp/scenario.ts` (legacy path) still only echoes actions —
+not extended, since it isn't the game. Miller/Baker/Courier/Investigator/Import-Export/Shift
+Cover/Oracle all still have zero real player-input slot in the engine; adding one to any of
+them is separate, later design work, not scoped here.
+
+746/747 tests passing (`ws.inbound.test.ts`'s same pre-existing CPU-contention flake as
+earlier this session, unrelated — passes clean in isolation), typecheck clean.
+
 ## 2026-08-24 — The basic day: real intra-day windows for offline + Import/Export
 
 User pivot mid-session, twice: first asked to "start with the presence/session primitive"

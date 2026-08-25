@@ -40,6 +40,7 @@ import type { RumourEvent } from '../comms/rumourMill.js';
 import type { PlayerId } from '../engine/player.js';
 import { createWorld, stepWorld } from '../world/world.js';
 import { helloMessage, tickMessage } from './worldProtocol.js';
+import { applyClientAction } from './actionVocabulary.js';
 
 export interface TickMessage {
   type: 'tick';
@@ -88,14 +89,17 @@ function toRumourMessage(day: number, rumour: RumourEvent): RumourMessage {
  * A message FROM a client (2026-08-19). The first inbound message type this server has ever
  * had — until now the socket was write-only, broadcasting ticks outward and reading nothing.
  *
- * `action` and `payload` are deliberately generic, and that is the whole point rather than a
- * placeholder to tidy up later. The action vocabulary has not been designed: it needs to be
- * settled by hand against the scenario mechanics, not invented by whoever happened to be
- * wiring up the transport. This type carries bytes and nothing else.
- *
- * The immediate use is recording and driving simulation runs — pulling data out of a live
- * world and feeding a data model — so what matters here is that the pipe is real, defensive,
- * and observable. What an action MEANS is a separate, later decision.
+ * `action` and `payload` are still deliberately generic at THIS type's level — the frame is
+ * parsed here without knowing what it means, same as always. What an action MEANS is decided
+ * one layer up, in `actionVocabulary.ts` (2026-08-24): `wallPost`, `diaryEntry`, and
+ * `proximityUtterance` are real, validated, and wired into `startWorldServer`'s tick loop —
+ * the three mechanics that already had tested, `stepWorld`-consumed plumbing
+ * (`pendingWallPosts`/`pendingDiaryEntries`/`pendingProximityUtterances`). Every other
+ * mechanic (Miller/Baker's quantity/price, Courier/Investigator/Import-Export's occupancy
+ * verbs, Shift Cover, Oracle entry) still has no player-input slot in the engine at all —
+ * unknown `action` strings return `null` from `parseGameAction` and are silently ignored, not
+ * an error. The legacy scenario path (`startServer`, below) still only echoes actions back —
+ * this vocabulary was deliberately not extended to `mvp/scenario.ts`, which isn't the game.
  */
 export interface ClientActionMessage {
   type: 'action';
@@ -244,9 +248,11 @@ export interface WorldServerOptions extends ServerOptions {
    * Called once per tick with whatever a client sent since the previous one, and the world tick
    * it landed on. Omitted entirely when nothing arrived.
    *
-   * Exists so a recorder can capture inbound alongside outbound without this module having to
-   * know what an action means. It is an observer, not a handler: returning nothing, changing
-   * nothing, and unable to affect the simulation.
+   * Exists so a recorder can capture inbound alongside outbound. This callback itself still
+   * cannot affect the simulation — but as of 2026-08-24 the actions it's handed MAY already
+   * have (`actionVocabulary.ts` applies recognized ones to `world` before this fires, in the
+   * same tick). `onActions` sees the raw drained batch either way, so a recorder can compare
+   * what was sent against what actually changed.
    */
   onActions?: (actions: readonly PendingClientAction[], tick: number) => void;
 }
@@ -260,6 +266,15 @@ export interface WorldServerOptions extends ServerOptions {
  * The secret is per-CONNECTION, not per-player, and is generated here rather than derived from
  * anything the client sends: a client-supplied value would let two cooperating clients agree on
  * one and correlate their views, which is exactly the thing being prevented.
+ *
+ * ACTION AUTHORSHIP IDENTITY (2026-08-24) is a SEPARATE thing from the pseudonymity secret
+ * above and must not be confused with it: `?player=<buildingId>` binds a connection to a
+ * `PlayerId` for the sole purpose of `actionVocabulary.ts` knowing who is asking to post to
+ * the Wall, write a diary entry, or speak in proximity. Same "stand-in for real auth, not real
+ * auth" caveat this file's header already puts on the legacy path's `?player=<id>` — nothing
+ * here verifies the claim beyond `isFilledRoleHolder` (must currently occupy that buildingId's
+ * role slot). Deliberately NOT reused for outbound pseudonymity: a real identity binding and
+ * the anti-correlation secret solve opposite problems and must stay on separate maps.
  */
 export function startWorldServer(options: WorldServerOptions = {}): Promise<ServerHandle> {
   const tickIntervalMs = options.tickIntervalMs ?? 2500;
@@ -269,17 +284,28 @@ export function startWorldServer(options: WorldServerOptions = {}): Promise<Serv
   let world = createWorld(seed);
   const secrets = new WeakMap<WebSocket, string>();
   let nextSecret = 0;
-  // Inbound actions received since the last tick. `stepWorld` does NOT read them — the action
-  // vocabulary is undesigned — but they are drained on the same cadence as the legacy path so
-  // both behave identically, and handed to `onActions` so a recorder can capture what a client
-  // sent alongside what the world did.
+  // secret -> claimed authorship identity, for actionVocabulary.ts only. Keyed by secret
+  // (not the socket) because that's all a drained PendingClientAction carries as
+  // `connectionId` — see attachActionReceiver below.
+  const identities = new Map<string, PlayerId>();
+  // Inbound actions received since the last tick. Resolved through actionVocabulary.ts and
+  // applied to `world` before it steps (see the tick interval below), then handed to
+  // `onActions` so a recorder can still capture what a client sent alongside what happened.
   let pendingActions: PendingClientAction[] = [];
 
   const wss = new WebSocketServer({ port: options.port ?? 0 });
 
-  wss.on('connection', (socket: WebSocket) => {
+  wss.on('connection', (socket: WebSocket, req) => {
     const secret = `c${nextSecret++}-${seed}-${Math.random().toString(36).slice(2)}`;
     secrets.set(socket, secret);
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    const playerId = url.searchParams.get('player');
+    if (playerId) {
+      identities.set(secret, playerId);
+      socket.on('close', () => {
+        identities.delete(secret);
+      });
+    }
     attachActionReceiver(socket, secret, pendingActions);
     // Geometry first and once — it does not change tick to tick, and it is the largest payload
     // in the protocol. A client that joins mid-run still gets a complete picture: hello, then
@@ -293,9 +319,18 @@ export function startWorldServer(options: WorldServerOptions = {}): Promise<Serv
     // previous tick belongs to this one, and the queue is empty again before the next batch.
     const drained = pendingActions;
     pendingActions = [];
+    // Queue onto world.pendingX BEFORE stepping — the same "caller populates, stepWorld
+    // consumes and clears" contract pendingWallPosts/pendingDiaryEntries/
+    // pendingProximityUtterances already use everywhere else. Unresolved identity or a
+    // malformed action is silently a no-op (see applyClientAction's header) — this file still
+    // doesn't decide what a REJECTED action means, only what a VALID one does.
+    for (const action of drained) {
+      const authorId = action.connectionId ? (identities.get(action.connectionId) ?? null) : null;
+      world = applyClientAction(world, authorId, action.action, action.payload);
+    }
     for (let i = 0; i < daysPerTick; i++) world = stepWorld(world);
-    // Reported, never interpreted. This is the seam a recorder hooks: it sees the world AND
-    // what was sent at it, without this file deciding that any action means anything.
+    // Reported alongside what happened. This is the seam a recorder hooks: it sees the world
+    // AND what was sent at it.
     if (drained.length > 0) options.onActions?.(drained, world.tick);
     for (const client of wss.clients) {
       if (client.readyState !== client.OPEN) continue;

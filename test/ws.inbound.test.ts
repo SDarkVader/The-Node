@@ -16,9 +16,12 @@ import type { PendingClientAction } from '../src/mvp/scenario.js';
  *
  * WHAT THESE TESTS ASSERT, AND WHAT THEY DELIBERATELY DO NOT. They prove bytes travel from a
  * real client, over a real socket, into a real server, and come back out observable — nothing
- * more. **No test here asserts that any action MEANS anything**, because no action means
- * anything yet: the vocabulary is undesigned on purpose, to be settled by hand against the
- * scenario mechanics rather than invented by whoever wired the transport.
+ * more. Every action name used below ('probe', 'a', 'once', 'survivor', 'flood', 'legacy-probe')
+ * is deliberately NOT one of the three real, recognized actions ('wallPost', 'diaryEntry',
+ * 'proximityUtterance' — see `actionVocabulary.ts`, 2026-08-24), and none of these connections
+ * bind a `?player=` identity, so `applyClientAction` treats every message here as unresolved —
+ * these tests stay about the transport, not interpretation. Interpretation is covered
+ * separately in `test/ws.actionVocabulary.test.ts`.
  *
  * The negative assertions matter as much as the positive ones. A malformed frame must be
  * dropped without killing the connection — a client is untrusted input, and a server that dies

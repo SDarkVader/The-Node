@@ -3,6 +3,27 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-24 (later) — action vocabulary**: The inbound pipe now interprets three real
+actions — `wallPost`, `diaryEntry`, `proximityUtterance` (`src/server/actionVocabulary.ts`,
+new). Chosen because they're the only mechanics with existing, tested, `stepWorld`-consumed
+plumbing (`pendingWallPosts`/`pendingDiaryEntries`/`pendingProximityUtterances`); every other
+mechanic either has no player-input slot in the engine at all (Miller/Baker's `value` is
+100% algorithmic best-response — no parameter exists for a player choice) or reduces to
+occupancy/friction with no decision point (Courier, Investigator, Import/Export, Shift Cover,
+Oracle entry — Shift Cover has no opt-in hook despite BLUEPRINT calling it "player-initiated,"
+worth knowing before assuming it's already real). `startWorldServer` now binds
+`?player=<buildingId>` per connection (separate map from the outbound pseudonymity secret —
+same "stand-in for real auth, not real auth" caveat the legacy path's own binding already
+carries) and gates every action through `isFilledRoleHolder` before it can author anything.
+Wire-shape validation only in `parseGameAction` (never throws on bad input, same contract as
+`parseClientMessage`); semantic validation (self-reference, unresolved subject, absent
+referent) is deliberately not duplicated — `writeDiaryEntry`/`composeUtterance` and
+`stepWorld`'s existing rejection reporting already own that. 22 new tests across
+`test/actionVocabulary.test.ts` (pure) and `test/ws.actionVocabulary.test.ts` (real socket);
+`test/ws.inbound.test.ts`'s header updated to stay accurate now that some actions ARE
+interpreted. 746/747 passing (the same pre-existing `ws.inbound.test.ts` CPU-contention flake
+as before, unrelated), typecheck clean.
+
 **2026-08-24**: The basic day — first real intra-day structure (user directive: "we need a
 basic day before we can have anything more"). New `src/engine/dayCycle.ts`: gives the
 existing daily-blended economics (`wealth.ts`'s 2x4hr offline dampening, `importExport.ts`'s

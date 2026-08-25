@@ -925,6 +925,26 @@ export function receiveMigrants(world: World, count: number): World {
 }
 
 /**
+ * Whether `playerId` (a `buildingId`, the same identity convention every role-holder-authored
+ * mechanic already uses — `WallPost.authorId`, `PendingProximityUtterance.speakerId`, diary
+ * `authorId`) is a currently-FILLED role slot in this world. The action vocabulary's server-
+ * side gate (2026-08-24): before a connection's claimed identity can author anything, it must
+ * actually be someone real in the world right now — VACANT/BACKSTOPPED slots and grifters have
+ * no standing to act. Cheap and pure; not memoized, since this only runs once per inbound
+ * action, not in a hot per-tick loop.
+ */
+export function isFilledRoleHolder(world: World, playerId: PlayerId): boolean {
+  const allSlots: { buildingId: string; slot: RoleSlot }[] = [
+    ...world.millers,
+    ...world.bakers,
+    ...world.couriers,
+    ...world.investigators,
+    ...world.importExporters,
+  ];
+  return allSlots.some((s) => s.buildingId === playerId && s.slot.state === 'FILLED');
+}
+
+/**
  * Runs Cournot/Bertrand competition among only the currently-FILLED slots, freezing every
  * other slot's `value`. A real, found contradiction (documented in docs/BLUEPRINT.md's
  * "Phase B" entry, not silently papered over): `stepMillers`/`stepBakers` both require at

@@ -210,9 +210,25 @@ a **privacy boundary** and not a serialization detail.
 **Inbound** (2026-08-19): `{ type: 'action', action: string, payload: unknown }`. Parsed
 defensively (`parseClientMessage`, total — malformed frames return `null`, never throw), shared
 by both server paths so a legacy-scenario connection and a live-world connection are handled
-identically. **`action`/`payload` are carried, never interpreted** — the vocabulary is
-undesigned by intent. `startWorldServer`'s `onActions(actions, tick)` reports what arrived each
-tick for recording; `stepWorld` reads none of it. Queue caps at `MAX_PENDING_ACTIONS = 256`.
+identically. `startWorldServer`'s `onActions(actions, tick)` reports what arrived each tick for
+recording. Queue caps at `MAX_PENDING_ACTIONS = 256`.
+
+**Inbound: the action vocabulary** (`src/server/actionVocabulary.ts`, 2026-08-24) —
+`startWorldServer` only, the legacy scenario path still only echoes. Three recognized
+`action` names, chosen because they're the only mechanics with real, tested,
+`stepWorld`-consumed queues already: `wallPost` (`{ state: SelfState }`), `diaryEntry`
+(`{ subject, observation, reading, context? }`), `proximityUtterance`
+(`{ intent, tone, referent, context? }`). Every other `action` string is a silent no-op —
+not an error. `authorId` is never taken from `payload`; it comes from the connection's bound
+identity (`?player=<buildingId>`, a separate map from the outbound pseudonymity secret — same
+"stand-in for real auth" caveat the legacy path's own binding already carries), gated by
+`isFilledRoleHolder` (must currently occupy that buildingId's role slot). `parseGameAction`
+validates wire shape + enum membership only (total, never throws); semantic validation
+(self-reference, unresolved subject, absent referent) is NOT duplicated here —
+`writeDiaryEntry`/`composeUtterance` and `stepWorld`'s own `lastDiaryRejections`/
+`lastProximityRejections` already own that. Applied to `world.pendingX` BEFORE `stepWorld`
+runs each tick. No role's economic mechanic (Miller/Baker/Courier/Investigator/Import-Export)
+takes real player input yet — see §9.
 
 **Public**: geometry, role-per-building, slot state, per-building heat, per-district tension, and
 that a body is at a position.
@@ -293,8 +309,14 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
 - **Nothing moves role-holders in the shipped world** — only the sim-side driver applier does.
   Whatever changes that owes a witness-count re-measurement.
 - **`identityResolved` has no sender** — needs per-connection observer state.
-- **Three of five roles have no player verb** — Courier, Investigator and Import/Export all
-  reduce to `districtFriction >= bar`. Only Miller (quantity) and Baker (price) make a decision.
+- **No role has a real player-input slot in the engine yet, corrected 2026-08-24.** Courier,
+  Investigator and Import/Export all reduce to `districtFriction >= bar` — no decision point.
+  Miller (quantity) and Baker (price) were previously described here as "making a decision,"
+  which turned out not to be checked: `stepMillers`/`stepBakers` are 100% algorithmic
+  best-response dynamics with a noise term — no parameter exists anywhere for a player-supplied
+  override. Shift Cover and Oracle entry are the same shape (grepped, no opt-in/pending hook
+  exists) despite §2's own table implying otherwise. See §5's "Inbound: the action vocabulary"
+  for what DOES now take real player input (three comms actions, none of these five roles).
   (Investigator does have one real mechanic — a FILLED Investigator sets `investigatedBy` for
   sabotage in its own district — but that's occupancy-driven, not a player decision.)
 - **Crafting items** (Key, Firestarter, Theft-tool) designed, not built.
@@ -309,10 +331,11 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   deterministic-kernel level, but nothing gates a live connection or action by them yet —
   that needs this server-cadence change plus the item below. (2026-08-24, explicit
   user-scoped follow-up, not started.)
-- **No presence/session primitive.** Nothing tracks online/offline anywhere in the engine
-  (`player.ts` is 22 lines, just an id). The live-world server path (`startWorldServer`) has
-  no connection→player identity binding at all — only the legacy scenario path
-  (`startServer`) has `?player=<id>`, and that never touches `World` or persists. At least
-  five designed mechanics depend on this not existing yet: the login-buffer postcard system,
-  Shift Cover, trespass eligibility, arson eligibility, and Import/Export automation-if-
-  offline. (2026-08-24, investigated, not built — see `DEVLOG.md`'s 2026-08-24 entry.)
+- **No presence/session primitive — narrowed but not closed, 2026-08-24 (later).**
+  `startWorldServer` now binds `?player=<buildingId>` per connection (§5's action vocabulary
+  needs to know who's authoring), but that binding is minimal — it exists only to gate
+  authorship (`isFilledRoleHolder`), not to track online/offline state, session duration, or
+  anything `World` itself remembers. Nothing tracks online/offline anywhere in the engine
+  still (`player.ts` is still 22 lines, just an id). At least five designed mechanics still
+  depend on real presence not existing yet: the login-buffer postcard system, Shift Cover,
+  trespass eligibility, arson eligibility, and Import/Export automation-if-offline.
