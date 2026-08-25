@@ -6,6 +6,64 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-25 — Trespass eligibility, wired onto real presence
+
+User: "wire trespass eligibility on top of presence" — the immediate follow-up to yesterday's
+presence primitive, and the first of the five dependent mechanics it named to actually get
+built on top of it.
+
+**Read the design doc in full before writing anything** (`DESIGN_HOUSING_REPUTATION_
+2026-08-13.md` §7.1-7.2, §7.6): "Trespass is only possible while the owner is absent from the
+abode — offline, or online but physically elsewhere." §7.6 later generalizes the same
+absence-gate shape to arson — which turned out to already be built (`src/engine/arson.ts`,
+`ArsonPresence`/`canAttemptArson`), giving a real, in-repo precedent for exactly this kind of
+function: a pure eligibility gate taking presence/location as opaque caller-supplied booleans,
+not resolving them internally, staged the same way sabotage was before its own harness
+existed.
+
+**Real gap found and NOT built around** (checked, not assumed — the design doc's own §7.1
+text claims "whether the owner is online, and... where they currently are relative to their
+own Home building — both already representable, nothing new to invent"): grepped for
+`abode`/`Housing` across `src/engine` and `src/world` and read every hit. `space.ts`'s
+`HOUSING_FLOORS_PER_BUILDING`/`HOUSING_RESIDENTS_PER_FLOOR` are DISTRICT-level capacity
+aggregates (`housingCapacity(district)` sums floors × residents-per-floor across a district's
+buildings) — used only to check whether a district has headroom for one more grifter,
+`chooseHousingDistrict`. There is no per-player `abodeBuildingId`, no "current position
+relative to abode" tracking, nothing that answers "is this specific player home right now."
+The design doc's claim was wrong against the actual codebase. Said so directly in the new
+code's own header rather than either (a) silently building a stub abode system to paper over
+the gap, or (b) refusing to build anything until abode tracking exists — the ONLINE half of
+the gate genuinely is real and buildable today via `World.presence`, so that's exactly the
+scope this pass covers.
+
+**Built**:
+- `src/engine/trespass.ts` (new, pure): `TrespassEligibility` (`targetOnline`,
+  `targetAtAbode`), `canAttemptTrespass` — `!targetOnline || !targetAtAbode`, i.e. offline
+  alone is always sufficient regardless of the (unresolvable-today) abode signal. Mirrors
+  `ArsonPresence`'s two-boolean shape for consistency, but the actual rule differs: arson
+  needs BOTH signals absent, trespass needs only one.
+- `src/world/world.ts`: `isTrespassEligible(world, targetId, targetAtAbode)` — resolves
+  `targetOnline` from real `world.presence[targetId]?.online`, still takes `targetAtAbode` as
+  a required explicit parameter (no silent default), and returns `false` outright for any
+  target with no presence record at all (not a currently-FILLED role holder — no real
+  occupant, so no real abode to trespass). Placed directly next to `isFilledRoleHolder`, the
+  same kind of small World-level predicate.
+- 8 new tests: `test/trespass.test.ts` (pure — full 4-row truth table over
+  online/at-abode), `test/world.trespass.test.ts` (real `stepWorld` runs — a target that's
+  never existed, a real role holder observed offline via real presence, the same holder
+  observed online via real presence, and eligibility tracking a real online→offline
+  transition across ticks).
+
+**Deliberately NOT done, flagged not silently narrowed**: the trespass ACT itself (spending a
+key, reading the diary's SUBJECT graph per §7.3-7.4) — needs the key-crafting item (unbuilt)
+and a real per-tick witness pass (would reuse `patternSabotageAttempt`, per `arson.ts`'s own
+established precedent, but not attempted here). Per-player abode-location tracking — the real
+next blocker, and now a SHARED one: fixing it unblocks both trespass's `targetAtAbode` and
+arson's `targetPresentAtAbode` at once, since both eligibility gates already consume the exact
+same shape of signal.
+
+776/776 tests passing, typecheck clean.
+
 ## 2026-08-24 (latest) — Presence/session primitive
 
 Third piece of the same session, in order: the basic day -> action vocabulary -> presence.

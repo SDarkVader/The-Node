@@ -3,6 +3,25 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-25 — trespass eligibility**: `src/engine/trespass.ts` (new, pure) —
+`canAttemptTrespass({ targetOnline, targetAtAbode })` implements
+`DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.1's absence-gate exactly: eligible whenever
+offline (regardless of `targetAtAbode`) or online-but-elsewhere. `World.isTrespassEligible`
+(in `world.ts`, next to `isFilledRoleHolder`) wires the ONLINE half onto real
+`World.presence` — the one half that's actually buildable today. **The ABODE half is not
+built and not faked**: there is no per-player "this building is your abode" assignment
+anywhere in the engine — `space.ts`'s housing constants are district-level capacity
+aggregates, not individual assignments, contradicting the design doc's own claim that this
+was "already representable." Corrected in the code rather than silently built around:
+`targetAtAbode` stays a required parameter every caller must supply explicitly. A target with
+no presence record (not a currently-FILLED role holder) is never eligible. 8 new tests
+(`test/trespass.test.ts` pure truth table, `test/world.trespass.test.ts` real
+`World.presence` wiring). 776/776 passing, typecheck clean. Explicitly NOT built this pass:
+the trespass ACT itself (needs the key-crafting item, unbuilt; witness/detection math, would
+reuse `patternSabotageAttempt` per `arson.ts`'s own precedent, not attempted), and per-player
+abode-location tracking (the real prerequisite for a live `targetAtAbode` signal, which is
+now the concrete next blocker for both trespass and arson to become fully real).
+
 **2026-08-24 (latest) — presence/session primitive**: `src/engine/presence.ts` (new, pure) —
 `World.currentlyOnline` (a live `ReadonlySet<PlayerId>` the caller keeps current, NOT a
 drained `pendingX` queue — `ws.ts` populates it each tick from the real `identities` map

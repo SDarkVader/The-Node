@@ -138,6 +138,7 @@ import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type Resou
 import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
 import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
 import { stepPresenceLedger, type PresenceRecord } from '../engine/presence.js';
+import { canAttemptTrespass } from '../engine/trespass.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
 import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
@@ -958,6 +959,21 @@ export function isFilledRoleHolder(world: World, playerId: PlayerId): boolean {
     ...world.importExporters,
   ];
   return allSlots.some((s) => s.buildingId === playerId && s.slot.state === 'FILLED');
+}
+
+/**
+ * Trespass eligibility, wired onto real `World.presence` (2026-08-25). Resolves the ONLINE
+ * half of `trespass.ts`'s `canAttemptTrespass` gate from live data; `targetAtAbode` stays a
+ * required, externally-supplied parameter — no per-player abode-location tracking exists
+ * anywhere in `World` yet (see `trespass.ts`'s header for what's missing and why). A target
+ * with no presence record at all (not a currently-FILLED role holder — never observed,
+ * VACANT/BACKSTOPPED, or a grifter) is never eligible: there is no real occupant, and so no
+ * real abode, to trespass.
+ */
+export function isTrespassEligible(world: World, targetId: PlayerId, targetAtAbode: boolean): boolean {
+  const record = world.presence[targetId];
+  if (record === undefined) return false;
+  return canAttemptTrespass({ targetOnline: record.online, targetAtAbode });
 }
 
 /**
