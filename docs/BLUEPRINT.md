@@ -241,10 +241,8 @@ post-tick FILLED role-slot set, keyed by buildingId — role-holders only, grift
 scope. Daily-tick granularity: "online" means "connected at all on the tick observed," not
 session start/end times — this kernel has no finer resolution (see `dayCycle.ts`'s own scope
 note for the same limitation elsewhere). Not exposed on the wire — see "Withheld" below. Real
-consumer as of 2026-08-25: trespass eligibility (below). Still not consumed: the login-buffer
-postcard system, Shift Cover, arson eligibility (`arson.ts` predates presence — its
-`ArsonPresence.targetPresentAtAbode`/`targetActivelyWorkingRole` are still opaque
-caller-supplied booleans, not wired to `World` yet), and Import/Export automation-if-offline.
+consumers as of 2026-08-25: trespass and arson eligibility (both below). Still not consumed:
+the login-buffer postcard system, Shift Cover, and Import/Export automation-if-offline.
 
 **Trespass eligibility** (`src/engine/trespass.ts` + `World.isTrespassEligible`, 2026-08-25) —
 `docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.1's absence-gate: eligible whenever the
@@ -260,6 +258,23 @@ against the actual codebase, corrected here rather than silently built around. T
 SAME gap `arson.ts`'s `targetPresentAtAbode` already had; fixing abode-location tracking once
 unblocks both. Only the eligibility gate is built — the trespass ACT (key item, SUBJECT-graph
 reveal, witness detection) is not, see §9.
+
+**Arson eligibility** (`World.isArsonEligible`, 2026-08-25) — wires the already-existing
+`arson.ts`'s `canAttemptArson`/`ArsonPresence` onto real `World` state. **A real bug was
+found and fixed before shipping, not after**: a first draft mirrored `isTrespassEligible`'s
+"no presence record -> return false" literally, which made the function PROVABLY ALWAYS
+FALSE — `presence.ts` only tracks currently-FILLED role holders, and a currently-FILLED role
+holder always fails `targetActivelyWorkingRole` by definition (occupancy IS that signal), so
+gating on "has a presence record" excluded exactly the only population that could ever pass.
+Fixed: `targetActivelyWorkingRole` resolves independent of presence (`isFilledRoleHolder`
+alone, always correct); online status defaults to `true` ("assume present," same conservative
+direction `isTrespassEligible` already uses) only when no record exists, not the whole
+function's output. Net effect: a real role holder is always ineligible (occupancy alone
+decides it); a roleless target (grifter, or any vacated slot — `resolveArsonTarget` already
+supports grifter targets via `abodeBuildingId`) has real eligibility driven entirely by the
+caller's own `targetAtAbode` claim, since presence has no data for them at all. Same
+abode-location gap as trespass, not a second one. Only the eligibility gate is wired —
+`stepWorld` still doesn't call it, see §9.
 
 **Public**: geometry, role-per-building, slot state, per-building heat, per-district tension, and
 that a body is at a position.
@@ -354,9 +369,9 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   (Investigator does have one real mechanic — a FILLED Investigator sets `investigatedBy` for
   sabotage in its own district — but that's occupancy-driven, not a player decision.)
 - **Crafting items** (Key, Firestarter, Theft-tool) designed, not built.
-- **Arson** built and calibrated, not wired into `stepWorld`. Its own `ArsonPresence`
-  eligibility gate is the same shape trespass's now is (2026-08-25) but still takes both
-  signals as opaque caller-supplied booleans, unwired to real `World.presence`.
+- **Arson** built and calibrated, not wired into `stepWorld`. Its eligibility gate IS wired
+  to real `World` state now (`World.isArsonEligible`, 2026-08-25, §5) — but the act itself
+  (Firestarter item, real per-tick witness pass) is not.
 - **No per-player abode-location tracking anywhere.** `space.ts`'s housing constants are
   district-level capacity aggregates, not an individual "this building is your abode"
   assignment — confirmed 2026-08-25 while wiring trespass eligibility, contradicting the
@@ -373,10 +388,11 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   deterministic-kernel level, but nothing gates a live connection or action by them yet —
   that needs this server-cadence change plus the item below. (2026-08-24, explicit
   user-scoped follow-up, not started.)
-- **Presence/session primitive exists (2026-08-24) and has its first real consumer
-  (trespass eligibility, 2026-08-25).** `World.currentlyOnline`/`World.presence` (§5) are
+- **Presence/session primitive exists (2026-08-24) with two real consumers now** (trespass
+  and arson eligibility, both 2026-08-25). `World.currentlyOnline`/`World.presence` (§5) are
   real, tested, wired from the live server's real connections. Still not consuming it: the
-  login-buffer postcard system, Shift Cover's live triggering, arson eligibility (its own gate
-  predates presence and isn't wired to it — see above), and Import/Export
-  automation-if-offline. `player.ts` is still 22 lines, unchanged; presence lives entirely in
-  `World`, not there.
+  login-buffer postcard system, Shift Cover's live triggering, and Import/Export
+  automation-if-offline. Also still true: presence only tracks currently-FILLED role
+  holders — it has NO data for grifters or vacated slots, which is why arson's eligibility
+  gate could only ever be half-wired (see above and §5's "Arson eligibility"). `player.ts` is
+  still 22 lines, unchanged; presence lives entirely in `World`, not there.

@@ -3,6 +3,24 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-08-25 (later) — arson eligibility, and a real bug caught before shipping**:
+`World.isArsonEligible(world, targetId, targetAtAbode)` wires `arson.ts`'s existing
+`canAttemptArson`/`ArsonPresence` onto real World state. **First draft was provably
+always-false** — mirrored `isTrespassEligible`'s "no presence record -> return false"
+pattern literally, but `presence.ts` only tracks currently-FILLED role holders, and a
+currently-FILLED role holder always fails arson's `targetActivelyWorkingRole` check — so
+gating the whole function on "has a presence record" excluded exactly the only population
+that could ever pass. Caught by tracing the logic before running anything, not by a failing
+test. Fixed: `targetActivelyWorkingRole` = `isFilledRoleHolder` (independent of presence,
+always correctly excludes active role holders); online status defaults to `true` ("assume
+present," same conservative direction `isTrespassEligible` already commits to) only when no
+presence record exists, rather than short-circuiting the whole function. Net effect: a real
+role holder is always ineligible (occupancy alone decides it); a roleless target (grifter, or
+a vacated slot) has real, non-trivial eligibility driven by the caller's own `targetAtAbode`
+claim, since presence doesn't track them. 4 new tests in `test/world.arson.test.ts`,
+including one that pins the corrected (not the buggy) behavior. 780/780 passing, typecheck
+clean. Same abode-location-tracking gap as trespass — not a new one.
+
 **2026-08-25 — trespass eligibility**: `src/engine/trespass.ts` (new, pure) —
 `canAttemptTrespass({ targetOnline, targetAtAbode })` implements
 `DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.1's absence-gate exactly: eligible whenever

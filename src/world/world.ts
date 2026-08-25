@@ -139,6 +139,7 @@ import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from
 import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
 import { stepPresenceLedger, type PresenceRecord } from '../engine/presence.js';
 import { canAttemptTrespass } from '../engine/trespass.js';
+import { canAttemptArson } from '../engine/arson.js';
 import { courierDailyPay, courierRouteDistance } from '../engine/courierPay.js';
 import { shiftCoverPay, shiftCoverNoticedIndices, orderGrifterCandidatesForNotice } from '../engine/shiftCover.js';
 import { stepClarity, applyDistortion } from '../comms/decay.js';
@@ -974,6 +975,51 @@ export function isTrespassEligible(world: World, targetId: PlayerId, targetAtAbo
   const record = world.presence[targetId];
   if (record === undefined) return false;
   return canAttemptTrespass({ targetOnline: record.online, targetAtAbode });
+}
+
+/**
+ * Arson eligibility, wired onto real `World` state (2026-08-25). `arson.ts`'s own
+ * `canAttemptArson` predates this session's presence/trespass work and still takes both
+ * `ArsonPresence` signals as opaque caller-supplied booleans — this resolves what it actually
+ * can against real data.
+ *
+ * A REAL FINDING, caught by tracing the logic before shipping it (an early draft of this
+ * function early-returned `false` whenever `world.presence[targetId]` was missing, mirroring
+ * `isTrespassEligible` literally — that was wrong here, and would have made this function
+ * PROVABLY ALWAYS FALSE for every resolvable input, not just narrower). The reason: `presence.ts`
+ * only tracks currently-FILLED role holders, and a currently-FILLED role holder always fails
+ * `targetActivelyWorkingRole` (see below) — so gating the WHOLE function on "has a presence
+ * record" excluded exactly the population that could ever pass. Fixed by only defaulting the
+ * ONLINE signal conservatively when no record exists, not the whole function's output.
+ *
+ * `targetActivelyWorkingRole` resolves FULLY from `World`, independent of presence:
+ * `arson.ts`'s own doc comment defines it as "is the target's role slot currently FILLED and
+ * actively worked right now" — this engine has no finer-grained activity signal than slot
+ * state, so that's exactly `isFilledRoleHolder`. A currently-FILLED role holder is therefore
+ * ALWAYS ineligible here, correctly and non-trivially — occupancy alone already decides it,
+ * presence data isn't even needed for this half.
+ *
+ * `targetPresentAtAbode` composes online status with the SAME externally-supplied
+ * `targetAtAbode` signal `isTrespassEligible` needs, for the identical reason: no per-player
+ * abode-location tracking exists anywhere in this engine (`trespass.ts`'s header has the full
+ * explanation — this is the SAME gap, not a second one). Online status comes from
+ * `world.presence[targetId]?.online` when a record exists (true for a FILLED role holder,
+ * though moot there since the first condition already excludes them) — and defaults to `true`
+ * ("assume present," never "assume absent") when it doesn't: `resolveArsonTarget` explicitly
+ * treats a roleless grifter as a valid arson target via their own `abodeBuildingId`, and
+ * `presence.ts` doesn't track grifters (same "no fixed building position" scoping already
+ * used for comms) or VACANT/BACKSTOPPED slots (nobody there to have presence) — so for that
+ * population, online status is genuinely unresolvable, and the conservative default (never
+ * grant eligibility on missing data — same direction `isTrespassEligible` already commits to)
+ * means the caller's own `targetAtAbode` claim becomes the deciding signal. Extending presence
+ * to cover grifters, if ever wanted, is separate work — not attempted here.
+ */
+export function isArsonEligible(world: World, targetId: PlayerId, targetAtAbode: boolean): boolean {
+  const online = world.presence[targetId]?.online ?? true;
+  return canAttemptArson({
+    targetActivelyWorkingRole: isFilledRoleHolder(world, targetId),
+    targetPresentAtAbode: online && targetAtAbode,
+  });
 }
 
 /**

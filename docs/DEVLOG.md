@@ -6,6 +6,78 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-08-25 (later) — Arson eligibility, and a real bug caught before it shipped
+
+User: "Wire in arson to presence too please" — the immediate follow-up to trespass, extending
+the same treatment to the second mechanic §7.6 of the housing doc explicitly names as sharing
+trespass's absence-gate shape.
+
+**Started by writing the obvious thing — mirroring `isTrespassEligible` literally**:
+`if (world.presence[targetId] === undefined) return false`, then compute both
+`ArsonPresence` signals. Typechecked clean, looked identical in shape to the trespass wiring
+that had just worked. Before writing the test file, traced through what the function would
+actually return for real inputs, and found it couldn't ever return `true`: `presence.ts` only
+builds a ledger entry for a currently-FILLED role holder (confirmed by re-reading
+`stepPresenceLedger`'s own `filledPlayerIds` construction), and a currently-FILLED role holder
+is BY DEFINITION `targetActivelyWorkingRole: true` (arson.ts's own doc comment: "is the
+target's role slot currently FILLED and actively worked right now" — occupancy IS the signal).
+`canAttemptArson` requires that signal `false` to pass. So "has a presence record" and "fails
+the gate outright" turned out to be the SAME set, by construction — the early-return excluded
+exactly the only population that could ever have passed. This is a provable always-false
+function, not a narrower-than-ideal one. Caught by reasoning about the code before running a
+single test, the same discipline that caught the `LEVEL_1_ROLES` bug during the Investigator
+merge and the tenure-measurement bug in `evictionProtectionHarness.ts` — neither of those
+would have failed a naive test either, if the test had been written to match the (wrong)
+implementation instead of the actual intent.
+
+**Why the literal trespass pattern didn't transfer**: trespass and arson share an absence-gate
+SHAPE (§7.6's own framing) but not the same TARGET POPULATION. Trespass's interesting
+population is role-holders who are away from home — squarely inside `presence.ts`'s
+role-holder-only scope. Arson's interesting population is specifically people NOT actively
+holding a FILLED role (§7.6: "can't do it when they're active in their role, but can when
+they're not at home") — `resolveArsonTarget` in `arson.ts` already explicitly supports
+roleless grifter targets via their own `abodeBuildingId`. `presence.ts` was deliberately
+scoped to FILLED role holders only (matching the "no fixed building position" reasoning
+already used for comms) when it was built the day before — a reasonable scope for the
+mechanic it was built for, but one that turns out to structurally exclude arson's own most
+relevant population. Not a bug in presence.ts itself, just a real mismatch between two
+already-shipped, individually-correct pieces, surfaced by trying to compose them.
+
+**Fixed**, not worked around: don't gate the WHOLE function on presence-record existence.
+`targetActivelyWorkingRole` is resolved independent of presence (`isFilledRoleHolder` alone
+already answers it, correctly, for every target). Online status — the one piece presence
+COULD contribute — defaults to `true` ("assume present") only when no record exists, same
+conservative direction `isTrespassEligible` already committed to ("never grant eligibility on
+missing data"), rather than defaulting the wrong way and accidentally making every untracked
+target trivially eligible (checked this too: an earlier internal draft defaulted missing
+online to `false`, which would have made every non-role-holder target automatically eligible
+regardless of `targetAtAbode` — caught by working out the truth table on paper before
+settling on the final version).
+
+**Net effect, now genuinely real**: a currently-FILLED role holder is always ineligible —
+occupancy alone decides it, presence isn't even load-bearing for that half, though it's still
+read from real data rather than assumed. A roleless target (grifter, or anyone not currently
+holding a FILLED slot) has real, non-trivial eligibility that comes down to the caller's own
+`targetAtAbode` claim, since presence genuinely has no data for them. Same abode-location gap
+as trespass, explicitly not a second one — flagged, not duplicated.
+
+**Built**:
+- `src/world/world.ts`: `isArsonEligible(world, targetId, targetAtAbode)`, next to
+  `isTrespassEligible`. Imports `canAttemptArson` from `arson.ts`.
+- 4 new tests in `test/world.arson.test.ts`: a FILLED role holder is ineligible offline AND
+  online (occupancy dominates either way), a target with no presence record is NOT
+  automatically ineligible (the specific assertion that pins the fix, not the bug), and online
+  status is confirmed read from real presence data when it exists rather than defaulted.
+
+**Deliberately NOT done**: extending `presence.ts` to track grifters (the one change that
+would let this function's online signal actually matter for arson's real target population,
+instead of just being read-but-moot for role holders and defaulted for everyone else) — a real
+scope change to an already-shipped, documented primitive, not made unilaterally.
+
+780/780 tests passing (one real-socket flake this run, in a DIFFERENT file than usual —
+`ws.actionVocabulary.test.ts`, same pre-existing CPU-contention class, confirmed passing clean
+in isolation, unrelated to this change which never touches `ws.ts`), typecheck clean.
+
 ## 2026-08-25 — Trespass eligibility, wired onto real presence
 
 User: "wire trespass eligibility on top of presence" — the immediate follow-up to yesterday's
