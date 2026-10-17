@@ -1,3 +1,5 @@
+> Offline broker modules: protocol.ts validates closed four-slot decisions from a trusted minimal context; broker.ts runs fixtures only and denies live admission; httpBody.ts reads bounded streams with pre-destruction error handling. No participant host, live provider, ledger or replay integration. See [scope](recovery/BROKER_RECONSTRUCTION.md).
+
 # NODE — System Blueprint
 
 **A map of the architecture as it exists now.** Constants, state, data flow, invariants. No
