@@ -1,3 +1,7 @@
+> Current separate-checkout work: [offline participant integration reconstruction](OFFLINE_INTEGRATION_STATUS.md).
+> The historical implementation and original ledger described below remain missing; new
+> offline code and new test results do not replace that historical evidence.
+
 # Interrupted Node experiment: recovered record
 
 Recovered on 2026-10-17 from this conversation, tool results and the user's screenshots.
