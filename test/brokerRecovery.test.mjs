@@ -117,7 +117,7 @@ test('non-callable fixture and current callbacks fail closed without consumption
 test('fixture cannot mutate validation snapshot; changed legal moves rejected', async () => {
   const fixture = async input => { input.legalMoves.push({x: 9, y: 9}); return response({...idle(), move: {x: 9, y: 9}}); };
   assert.equal((await new OfflineBroker().evaluate(context(), fixture, context)).code, 'invalid_decision');
-  assert.equal((await new OfflineBroker().evaluate(context(), async () => response({...idle(), move: {x: 1, y: 2}}), () => ({...context(), legalMoves: []}))).code, 'invalid_decision');
+  assert.equal((await new OfflineBroker().evaluate(context(), async () => response({...idle(), move: {x: 1, y: 2}}), () => ({...context(), legalMoves: []}))).code, 'stale_context');
 });
 
 for (const bad of [{status: 'incomplete'}, {model: 'wrong'}, {inputTokens: -1}, {outputTokens: 2049}, {inputTokens: NaN}]) {
