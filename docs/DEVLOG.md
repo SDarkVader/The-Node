@@ -6,6 +6,31 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-10-17 — Revision-3 credential retry and lost-snapshot recovery record
+
+User supplied screenshots of the interrupted publishing step and ten changed files. The
+current workspace still contains original `e6be3b2`; previous HEAD `f825fe0` is absent from
+its object database. Reflog/unreachable and local workspace/temp searches found no original
+broker patch, private ledger or experiment documents. No exact recovery is claimed.
+
+Environment status now reports current revision 3, API binding ready. Retried Responses
+authentication through managed proxy/CA with deliberately invalid empty input/max-output 0,
+which cannot start generation: **401 invalid_api_key**. No key/error text printed, no game
+pilot resumed. Preserve historical US$0.019114 uncertain reserve; never reset missing
+accounting to zero. Normal sandbox previously denied socket creation; approved execution
+reached the provider. The diagnostic is not a successful agent call or Evals run.
+
+Reconstructed four experiment documents and index under docs/recovery from conversation
+and screenshots, explicitly separating historical implemented/tested behavior from current
+missing source. Kept original game code/build briefs/NODE-P1 untouched. Created local main
+from the restored baseline to follow repository branch policy; documentation committed
+individually. Updated README/handover/blueprint to avoid stale readiness claims. Historical
+868-test pass is not current validation. No tests added/run for documentation-only changes.
+
+Recovery requires secure active key, prior snapshot/patch/bundle and original cumulative
+accounting before paid work. Current tools expose no snapshot restoration or historical UI
+diff contents. Source and protocol must not be invented/simplified to conceal this loss.
+
 ## 2026-08-25 (later) — Arson eligibility, and a real bug caught before it shipped
 
 User: "Wire in arson to presence too please" — the immediate follow-up to trespass, extending
