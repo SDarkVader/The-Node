@@ -1,4 +1,4 @@
-> Implementation update: [synthetic fixture accounting mechanics](SYNTHETIC_ACCOUNTING.md) are now implemented and tested. They have no real-account importer, reset, financial reconciliation or live dispatch. The operator proposal below remains unexecuted, and the historical reservation/count/evidence issues remain unresolved.
+> Current implementation: [the interrupted-account ledger and broker rebuild](BROKER_ACCOUNTING_REBUILD.md) now carries the original documentary hold, combined admissions and unbounded diagnostic liability. Explicit evidence-linked operator reconciliation and full-ceiling uncertain-request disposition mechanics are implemented and tested, but no actual financial decision was executed. The original ledger bytes and actual billing remain unknown. The proposal below remains a decision for the human operator; neither a synthetic test nor this reconstruction supplies that decision.
 
 # Accounting reconciliation proposal — not executed
 

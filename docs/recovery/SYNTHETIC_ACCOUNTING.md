@@ -1,5 +1,7 @@
 # Synthetic cumulative accounting and mocked dispatch
 
+> Subsequent stage: [the broker and account-specific recovery ledger](BROKER_ACCOUNTING_REBUILD.md) supersedes the synthetic-only stopping point. This file remains the historical fixture-mechanics record. The newer journal carries actual documentary liabilities without executing an operator settlement or enabling live transport.
+
 17 October 2026. Continues audited rebuild `0b51994620def4a1d35568c81e3bf9364e234f8b` in a fresh checkout on `broker-synthetic-accounting-2026-10-17`. This implements accounting mechanics for synthetic fixtures only. It does not initialize or replace the original account ledger, settle the historical hold, import original records or enable live admission.
 
 ## Implementation

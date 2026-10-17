@@ -21,3 +21,7 @@ participant.checkpoint.json
 # Synthetic accounting fixture journals; not real-account spending state.
 synthetic-budget.json
 .synthetic-budget.*
+
+# Reconstructed account evidence and private accounting journals.
+accounting.journal.json
+.accounting.*
