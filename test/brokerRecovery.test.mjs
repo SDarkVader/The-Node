@@ -138,7 +138,8 @@ test('fixture timeout aborts signal, returns no decision and permits no same-tic
 test('fixture exception is sanitized and cannot trigger retry', async () => {
   const broker = new OfflineBroker();
   assert.deepEqual(await broker.evaluate(context(), async () => {throw Error('private-provider-body');}, context), {kind: 'rejected', code: 'fixture_failure'});
-  assert.equal((await broker.evaluate(context(), async () => response(idle()), context)).code, 'tick_already_attempted');
+  assert.equal((await broker.evaluate(context(), async () => response(idle()), context)).code, 'fixture_halted');
+  assert.equal((await broker.evaluate({...context(), tick: 11}, async () => response(idle()), context)).code, 'fixture_halted');
 });
 
 test('oversized input and widened bounds denied before fixture invocation', async () => {
