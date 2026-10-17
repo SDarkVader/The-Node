@@ -1,3 +1,5 @@
+> Latest: [durable participant checkpoint and crash recovery](CHECKPOINT_RECOVERY.md). This adds game-state persistence only; original spending records, historical holds and paid-execution restrictions remain unchanged.
+
 > Latest reconstruction work: [authenticated local transport review and verification](LOCAL_TRANSPORT_REVIEW.md). This new code does not recover the historical spending ledger or enable paid execution.
 
 > Current separate-checkout work: [offline participant integration reconstruction](OFFLINE_INTEGRATION_STATUS.md).
