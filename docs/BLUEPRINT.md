@@ -12,6 +12,12 @@ is right and this file is stale — fix it.
 
 ---
 
+**Hosted-inhabitant integration state:** the current checkout has no recovered `src/agent/`
+broker, persistent-person repair, owner-only observer or cumulative budget implementation.
+Conversation-derived design/protocol records live in `docs/recovery/`; they are historical
+recovery targets, not installed architecture. Do not enable a paid inhabitant on this source
+until exact implementation and accounting are restored and reverified.
+
 ## 1. Shape of the system
 
 ```
