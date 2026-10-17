@@ -80,10 +80,25 @@ run evidence, full patch or prior four documents. The screenshot confirms the in
 file list but cannot restore source contents. The current source was not modified for
 these credential diagnostics; the recovery document pack is new documentation only.
 
+## Follow-up publication/authentication distinction
+
+The user confirmed publication. Current/observed runtime revisions both remain 3. A fresh
+zero-generation Responses request returned 401 invalid_api_key. A read-only GET /v1/models
+using the same binding/proxy/CA returned **200 with a valid model list**. Repeating the
+zero-generation Responses diagnostic with curl instead of Python also returned 401.
+
+This is a request-path difference, not evidence that publication is missing. Asking the
+user to rotate the key again was premature. The available metadata cannot establish whether
+the cause is endpoint/account authorization, request handling or cloud credential injection.
+No generation or Evals started; further unchanged retries are unwarranted. Resolve the
+Responses-specific authentication path before paid work; do not treat model listing as a
+successful agent trial or erase historical accounting.
+
 ## Required next steps
 
-1. Correct the active OpenAI API key binding securely in environment settings and publish.
-   Do not paste a key into chat, repository or shell text.
+1. Diagnose the Responses-specific authentication/binding path; publication is confirmed
+   and read-only model listing succeeds. Do not request another rotation without evidence.
+   Any required secret update belongs in secure environment settings, never chat/files.
 2. Recover the previous prepared filesystem/change set, Git bundle or source patch. Earlier
    remote push was denied 403, so local commits are not assumed to exist on GitHub.
 3. Restore exact cumulative accounting/evidence; never start replacement accounting at zero.
