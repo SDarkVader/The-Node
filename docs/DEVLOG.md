@@ -6,6 +6,20 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-10-17 — Publication confirmed; model listing succeeds while Responses rejects
+
+Accepted the user's publication confirmation and retried a zero-generation Responses probe:
+401 invalid_api_key at current/observed revision 3. Compared the same binding through the
+configured proxy/CA with GET /v1/models: 200 and valid list. A second client (curl, credential
+on stdin rather than command arguments, key stripped from child environment) also returned
+401 for the deliberately invalid zero-output Responses probe. No generation/Evals started.
+
+This is an endpoint/request-path authentication difference, not missing publication. Asking
+for another key replacement was premature; acknowledged that correction. Available metadata
+does not identify account/endpoint authorization versus proxy injection/request handling.
+No additional unchanged retries or automatic budget reset. Preserve original held cost.
+Updated recovery results and handover; no application source changes or tests warranted.
+
 ## 2026-10-17 — Revision-3 credential retry and lost-snapshot recovery record
 
 User supplied screenshots of the interrupted publishing step and ten changed files. The
