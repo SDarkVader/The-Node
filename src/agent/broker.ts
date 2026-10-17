@@ -72,7 +72,10 @@ export class OfflineBroker {
         return { kind: 'rejected', code: 'invalid_response' };
       }
       const now = policyInput(current());
-      if (now.tick !== snapshot.tick || now.selfRef !== snapshot.selfRef || now.role !== snapshot.role || now.roleEpoch !== snapshot.roleEpoch) {
+      if (now.tick !== snapshot.tick || now.selfRef !== snapshot.selfRef || now.role !== snapshot.role || now.roleEpoch !== snapshot.roleEpoch ||
+          JSON.stringify(now.legalMoves) !== JSON.stringify(snapshot.legalMoves) ||
+          JSON.stringify(now.presentRefs) !== JSON.stringify(snapshot.presentRefs) ||
+          JSON.stringify(now.knownSubjects) !== JSON.stringify(snapshot.knownSubjects)) {
         return { kind: 'rejected', code: 'stale_context' };
       }
       const decision = validateDecision(result.decision, snapshot);
