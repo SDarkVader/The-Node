@@ -1,3 +1,5 @@
+> Current integration: see [offline integration status](recovery/OFFLINE_INTEGRATION_STATUS.md). Stable people/episodes, private observers, in-memory controller leases, authoritative movement/price/social admission and action-bearing replay are implemented in this separate checkout. 74 native checks plus 757 existing offline tests and full TypeScript pass. Original core fingerprints and original restored checkout unchanged; no live listener/provider/ledger activation. Earlier status below is retained as historical context.
+
 > Current work in this separate checkout: new offline broker contract, validation and bounded-body reconstruction; 40 checks and scoped strict compilation pass. Original game/server source unchanged. Live admission disabled and accounting unresolved. See [reconstruction status](recovery/BROKER_RECONSTRUCTION.md). Earlier text below is historical.
 
 # Handover
