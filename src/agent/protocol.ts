@@ -23,11 +23,12 @@ const object = (v: unknown): v is JsonObject => v !== null && typeof v === 'obje
 const exact = (v: JsonObject, keys: string[]) => Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const member = (v: unknown, values: readonly string[]) => typeof v === 'string' && values.includes(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const coordinate = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v);
 
 export function validateContext(c: DecisionContext): void {
   if (!Number.isSafeInteger(c.tick) || c.tick < 0 || !Number.isSafeInteger(c.roleEpoch) || c.roleEpoch < 0 ||
       typeof c.selfRef !== 'string' || !c.selfRef || typeof c.role !== 'string' || !c.role ||
-      !Array.isArray(c.legalMoves) || !c.legalMoves.every(p => object(p) && exact(p, ['x', 'y']) && finite(p.x) && finite(p.y)) ||
+      !Array.isArray(c.legalMoves) || !c.legalMoves.every(p => object(p) && exact(p, ['x', 'y']) && coordinate(p.x) && coordinate(p.y)) ||
       !Array.isArray(c.presentRefs) || !c.presentRefs.every(r => typeof r === 'string' && r.length > 0) ||
       !Array.isArray(c.knownSubjects) || !c.knownSubjects.every(r => typeof r === 'string' && r.length > 0)) {
     throw new Error('invalid_context');
@@ -48,7 +49,7 @@ export function validateDecision(value: unknown, c: DecisionContext): Decision |
   validateContext(c);
   if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'role'])) return null;
   const { move, communication, diary, role } = value;
-  if (move !== null && (!object(move) || !exact(move, ['x', 'y']) || !finite(move.x) || !finite(move.y) ||
+  if (move !== null && (!object(move) || !exact(move, ['x', 'y']) || !coordinate(move.x) || !coordinate(move.y) ||
       !c.legalMoves.some(p => p.x === move.x && p.y === move.y))) return null;
   if (c.role === 'Grifter' && (communication !== null || diary !== null || role !== null)) return null;
   if (communication !== null) {
