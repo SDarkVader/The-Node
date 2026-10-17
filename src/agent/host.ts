@@ -81,7 +81,7 @@ export class OfflineParticipantHost {
     if (result.kind !== 'validated_offline') return result;
     // Recheck session and observation after asynchronous fixture work before queueing.
     const now = this.read(session);
-    if (now.observationId !== observation.observationId || this.#used.size) throw Error('observation_changed');
+    if (this.#session !== session || now.observationId !== observation.observationId || this.#used.size) throw Error('observation_changed');
     this.#pending = result.decision;
     for (const category of ['move','communication','diary','role'] as const) if (result.decision[category] !== null) this.#used.add(category);
     return result;
