@@ -1,3 +1,5 @@
+> Local participant transport: participantSocket.ts wraps OfflineParticipantHost on 127.0.0.1 only, with authenticate-first sessions, exact Origin/path admission, bounded frames/rate/queues/output, heartbeat, safe per-tick host admission and deterministic cleanup. No remote tick or provider command. See [bounds and verified scope](recovery/LOCAL_TRANSPORT_REVIEW.md).
+
 > Participant mode: optional exact transition hooks in stepWorld; stable person/role-episode registry; HMAC observer references; in-memory lease/tick-bound admission; same-district movement and bounded Baker input before demand; isolated diary aging; ordered complete-state replay. Legacy mode retains its seeded trajectory. See [module map and limits](recovery/OFFLINE_INTEGRATION_STATUS.md).
 
 > Offline broker modules: protocol.ts validates closed four-slot decisions from a trusted minimal context; broker.ts runs fixtures only and denies live admission; httpBody.ts reads bounded streams with pre-destruction error handling. No participant host, live provider, ledger or replay integration. See [scope](recovery/BROKER_RECONSTRUCTION.md).
