@@ -1,3 +1,5 @@
+> Latest, 2026-10-17: [offline provider mock boundary](OFFLINE_PROVIDER_BOUNDARY.md) is implemented and all 929 tests plus TypeScript pass. [Read-only accounting inventory](ACCOUNTING_RECOVERY_INVENTORY.md) corrects the handoff count wording: nine combined documented admissions include the original actor attempt; the protected reminder uses an ambiguous diagnostic label. [Reconciliation proposal](ACCOUNTING_RECONCILIATION_PROPOSAL.md) is not executed. Original ledger/actual billing are missing; live admission remains closed. Historical credential reports below are not current environment tests.
+
 > Latest: [durable participant checkpoint and crash recovery](CHECKPOINT_RECOVERY.md). This adds game-state persistence only; original spending records, historical holds and paid-execution restrictions remain unchanged.
 
 > Latest reconstruction work: [authenticated local transport review and verification](LOCAL_TRANSPORT_REVIEW.md). This new code does not recover the historical spending ledger or enable paid execution.
