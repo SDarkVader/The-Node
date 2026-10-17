@@ -1,3 +1,5 @@
+> Implementation update: [synthetic fixture accounting mechanics](SYNTHETIC_ACCOUNTING.md) are now implemented and tested. They have no real-account importer, reset, financial reconciliation or live dispatch. The operator proposal below remains unexecuted, and the historical reservation/count/evidence issues remain unresolved.
+
 # Accounting reconciliation proposal — not executed
 
 17 October 2026. The read-only [inventory](ACCOUNTING_RECOVERY_INVENTORY.md) did not locate the original ledger. No financial disposition, request-count reset, new budget or paid request has been made. The following is a reviewable plan, not an instruction to settle anything automatically.

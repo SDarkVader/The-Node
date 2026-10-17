@@ -17,3 +17,7 @@ docs/web/world.json
 # Private evaluator checkpoints and interrupted-write evidence; never publish these.
 participant.checkpoint.json
 .participant.*
+
+# Synthetic accounting fixture journals; not real-account spending state.
+synthetic-budget.json
+.synthetic-budget.*
