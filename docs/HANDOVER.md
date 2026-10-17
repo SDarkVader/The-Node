@@ -1,3 +1,5 @@
+> Current work in this separate checkout: new offline broker contract, validation and bounded-body reconstruction; 40 checks and scoped strict compilation pass. Original game/server source unchanged. Live admission disabled and accounting unresolved. See [reconstruction status](recovery/BROKER_RECONSTRUCTION.md). Earlier text below is historical.
+
 # Handover
 
 Read this first. It's rewritten at the end of every session to reflect current reality —
