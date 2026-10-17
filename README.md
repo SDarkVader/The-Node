@@ -1,3 +1,5 @@
+> Current: offline participant identity, authenticated in-memory observation/action admission, kernel effects and complete-state replay are reconstructed. 74 native checks and 757 existing offline regression tests pass; TypeScript passes. Live transport/accounting remain disabled or unresolved. See [integration status](docs/recovery/OFFLINE_INTEGRATION_STATUS.md). Earlier recovery notes below are historical.
+
 > Separate offline broker reconstruction: 40 new checks pass; no live provider or participant integration. See [reconstruction status](docs/recovery/BROKER_RECONSTRUCTION.md).
 
 # NODE
