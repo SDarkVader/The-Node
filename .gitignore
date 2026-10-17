@@ -25,3 +25,6 @@ synthetic-budget.json
 # Reconstructed account evidence and private accounting journals.
 accounting.journal.json
 .accounting.*
+
+# Confirmed local OpenAI credential destination. Never include in commits or handoff bundles.
+/.env.local

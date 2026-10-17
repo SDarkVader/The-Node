@@ -39,7 +39,7 @@ export class AccountedBroker {
     const observation = host.read(session);
     return this.#prepare(observation.context, prices, observation.projection, now);
   }
-  async complete(requestId: string, responseBytes: Buffer, current: () => DecisionContext): Promise<Outcome> {
+  async complete(requestId: string, responseBytes: Buffer, current: () => DecisionContext | Promise<DecisionContext>): Promise<Outcome> {
     const q = this.ledger.view().requests.find(q => q.request.id === requestId);
     if (!q) return fail('accounted_request_missing');
     if (q.decisionClaimed) return { kind: 'rejected', code: 'response_already_consumed' };
@@ -55,8 +55,12 @@ export class AccountedBroker {
       this.ledger.recordDecision(requestId, 'provider_rejected', null);
       return { kind: 'rejected', code: accounted.bookedMicroUsd === null ? 'usage_unknown_reservation_held' : view.overrun ? 'usage_exceeded_reservation' : q.uncertain ? 'request_previously_uncertain' : 'provider_response_rejected' };
     }
-    const result = await new OfflineBroker().evaluate(q.request.context, async () => ({ status: 'completed', model: response.receipt.model,
-      inputTokens: response.receipt.usage!.inputTokens, outputTokens: response.receipt.usage!.outputTokens, decision: response.decision }), current,
+    let latest: DecisionContext;
+    const result = await new OfflineBroker().evaluate(q.request.context, async () => {
+      latest = await current();
+      return { status: 'completed', model: response.receipt.model, inputTokens: response.receipt.usage!.inputTokens,
+        outputTokens: response.receipt.usage!.outputTokens, decision: response.decision };
+    }, () => latest,
       { model: q.request.prices.model, maxInputTokens: q.request.maxInputTokens, maxOutputTokens: q.request.maxOutputTokens, deadlineMs: 12_000 });
     if (this.ledger.view().requests.find(q => q.request.id === requestId)!.cancelled) {
       this.ledger.recordDecision(requestId, 'provider_rejected', null);

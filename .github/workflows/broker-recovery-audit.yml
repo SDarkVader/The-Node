@@ -8,6 +8,7 @@ on:
       - broker-audit-rebuild-2026-10-17
       - broker-synthetic-accounting-2026-10-17
       - broker-accounting-rebuild-2026-10-17
+      - broker-provider-adapter-2026-10-17
       - broker-reconstruction-2026-10-17
   workflow_dispatch:
 permissions:

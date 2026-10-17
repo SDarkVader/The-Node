@@ -1,3 +1,5 @@
+> Subsequent stage: [Responses transport and separate-host rebuild](PROVIDER_ADAPTER_REBUILD.md) implements the previously absent final-wire serializer, verified HTTPS/CONNECT adapter, lazy credential reader and credential-separated host. Actual accounting remains unreconciled and live admission stays closed. This page records the earlier ledger reconstruction stage.
+
 # Broker and interrupted-account ledger rebuild
 
 17 October 2026. Continues `6f090f0c688a7b17e3bef52b5136d6c5be41c477` in a separate checkout and branch `broker-accounting-rebuild-2026-10-17`. This stage replaces the previous synthetic-only stopping point with an account-specific recovery journal and a broker that accounts locally supplied response archives before considering game actions. It does not recover missing original bytes or establish actual provider billing.
