@@ -3,6 +3,30 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+## Current recovery status — 2026-10-17
+
+The environment restored original revision `e6be3b2`, without the previous local broker,
+private budget/run evidence or extensive experiment documents. Git object/reflog and local
+recovery searches did not find the old commits or patch. Reconstructed records from the
+conversation/screenshots are indexed in [docs/recovery](recovery/README.md); they are not
+byte-for-byte source recovery or current test evidence. Older handover below describes the
+restored original source, not the missing repaired integration.
+
+New environment revision 3 is active with API binding ready, but the zero-generation
+Responses credential check still returned **401 / invalid_api_key**. Correct the key via
+secure environment settings and publish; never send it in chat. Paid gameplay remains
+stopped. Preserve the historical **US$0.019114** held reservation and first request count;
+original accounting is unavailable, so do not initialize a replacement allowance at zero.
+Initial authorization remains US$0.25/10 requests and cumulative US$5.
+
+Historical repaired-source result was 868/868 tests, not a test result for this checkout.
+No game source was reconstructed or simplified during credential recovery. Recover the old
+snapshot/change set/bundle and cumulative ledger, reverify exact source, then resume only the
+remaining bounded pass. Earlier GitHub push was denied 403. Recovery documentation is on
+local main and a new documentation-only patch will be retained outside checkout.
+
+## Earlier source handover
+
 **2026-08-25 (later) — arson eligibility, and a real bug caught before shipping**:
 `World.isArsonEligible(world, targetId, targetAtAbode)` wires `arson.ts`'s existing
 `canAttemptArson`/`ArsonPresence` onto real World state. **First draft was provably
