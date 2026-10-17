@@ -15,6 +15,16 @@ The world is built to sit permanently a little uphill — never comfortable
 for long, never actually collapsing either. If a place ever starts to feel
 safe, that's the system telling on itself. Somebody's about to notice.
 
+## Recovery status (2026-10-17)
+
+The running environment restored the original source without the earlier local agent
+integration or private spending ledger. [Recovered experiment records](docs/recovery/README.md)
+preserve the decisions, protocol, safeguards and known results; they do not claim the
+missing code is installed. Revision-3 API credential check still returns **401 invalid_api_key**.
+No generation started. Paid agent work is stopped pending secure credential and source/
+accounting recovery. Historical 868-test results apply to the missing integration, not this
+restored checkout. No game logic was changed during this recovery.
+
 ## Status (2026-08-24)
 
 **Live and wired**: the Miller/Baker economic core, the vacancy/backstop
