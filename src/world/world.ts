@@ -75,6 +75,8 @@
  */
 
 import { mulberry32, gaussian } from '../sim/rng.js';
+import type { ParticipantHooks } from '../engine/inhabitants.js';
+import type { IndexedRoleEvent } from '../sim/multiRoleConscription.js';
 import {
   generateShardLayout,
   occupantsWithin,
@@ -1136,7 +1138,7 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
 }
 
 /** One deterministic tick. See this file's header comment for the pinned stage order. */
-export function stepWorld(world: World): World {
+export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const { rng, config } = world;
   const day = world.tick;
 
@@ -1219,6 +1221,7 @@ export function stepWorld(world: World): World {
           // (rare) case housing assignment finds nowhere to place them, and for anything that
           // might read mid-tick state before that pass runs.
           const evictedFrom = allBuildingsById.get(s.buildingId);
+          participant?.transition({from: s.buildingId, to: `grifter-${nextGrifterId}`, role: null});
           grifters = [
             ...grifters,
             {
@@ -1294,6 +1297,7 @@ export function stepWorld(world: World): World {
     { roleId: 'investigator', slots: investigators.map((d) => d.slot), params: vacancyParamsFor(config.rInvestigator, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('investigator'), occupantTenure: investigators.map((d) => d.daysInRole), occupantPerformance: investigators.map((d) => occupantPerformanceFor(d.buildingId, 'investigator')) },
     { roleId: 'importExport', slots: importExporters.map((x) => x.slot), params: vacancyParamsFor(config.rImportExport, world.population, config.pMonthly, config), minReputationLevelForFill: minLevelForRole('importExport'), occupantTenure: importExporters.map((x) => x.daysInRole), occupantPerformance: importExporters.map((x) => occupantPerformanceFor(x.buildingId, 'importExport')) },
   ];
+  const indexedEvents: IndexedRoleEvent[] = [];
   const conscriptionResult = stepMultiRoleConscriptionDay(
     roleGroupsIn,
     grifters.length,
@@ -1301,6 +1305,7 @@ export function stepWorld(world: World): World {
     config.conscriptionDelay,
     rng,
     grifterLevelCounts,
+    participant ? e => indexedEvents.push(e) : undefined,
   );
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
 
@@ -1338,8 +1343,12 @@ export function stepWorld(world: World): World {
   // `justFilledSet` itself already relies on, not a new kind of assumption.
   const millerFloorQueue: number[] = [];
   const bakerFloorQueue: number[] = [];
-  for (const event of conscriptionResult.events) {
+  const slotArrays = {miller: millers, baker: bakers, courier: couriers, investigator: investigators, importExport: importExporters};
+  for (const [eventIndex, event] of conscriptionResult.events.entries()) {
+    const indexed = indexedEvents[eventIndex];
+    const destination = indexed ? slotArrays[event.roleId as RoleType][indexed.slotIndex]!.buildingId : undefined;
     if (event.type === 'churn') {
+      if (destination) participant!.transition({from: destination, to: `grifter-${nextGrifterId}`, role: null});
       grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
       nextGrifterId += 1;
     } else if (event.type === 'genuineFill') {
@@ -1369,6 +1378,7 @@ export function stepWorld(world: World): World {
         for (const o of atLowestLevel) if (o.days > longest.days) longest = o;
         if (event.roleId === 'miller') millerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.miller ?? 0);
         else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.baker ?? 0);
+        if (destination) participant!.transition({from: grifters[longest.i]!.id, to: destination, role: event.roleId as RoleType});
         grifters = grifters.filter((_, i) => i !== longest.i);
       }
     } else if (event.type === 'conscriptionFromGrifters') {
@@ -1393,9 +1403,13 @@ export function stepWorld(world: World): World {
         if (longestIdx >= 0) {
           if (event.roleId === 'miller') millerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.miller ?? 0);
           else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.baker ?? 0);
+          if (destination) participant!.transition({from: grifters[longestIdx]!.id, to: destination, role: event.roleId as RoleType});
         }
         grifters = grifters.filter((_, i) => i !== longestIdx);
       }
+    } else if (event.type === 'conscriptionFromOtherRole' && destination && indexed?.fromSlotIndex !== undefined) {
+      const source = slotArrays[event.fromRoleId as RoleType][indexed.fromSlotIndex]!.buildingId;
+      participant!.transition({from: source, to: destination, role: event.roleId as RoleType});
     }
     // conscriptionFromOtherRole / backstopFires: no grifter-pool change — that player
     // moves directly between roles, or the slot stays mechanically covered.
@@ -1447,6 +1461,7 @@ export function stepWorld(world: World): World {
     for (let k = 0; k < placeCount; k++) {
       const grifter = overdue[k]!;
       const target = openSlots[k]!;
+      participant?.transition({from: grifter.id, to: slotArrays[target.role][target.index]!.buildingId, role: target.role});
       placedGrifterIds.add(grifter.id);
       const fill = { state: 'FILLED' as const, vacantSince: null };
       if (target.role === 'miller') {
@@ -1507,6 +1522,16 @@ export function stepWorld(world: World): World {
     bakerExperienceFloor,
     allBuildingsById,
   );
+
+  // Participant prices are applied AFTER the normal reaction/RNG and BEFORE demand,
+  // profit and completion. The trusted participant hook rechecks person and episode.
+  if (participant) bakers = bakers.map(b => {
+    if (b.slot.state !== 'FILLED') return b;
+    const price = participant.bakerPrice(b.buildingId);
+    if (price === undefined) return b;
+    if (!Number.isFinite(price) || price < 0 || price > 2) throw Error('invalid_participant_price');
+    return {...b, value: price};
+  });
 
   // Wealth accrual (2026-08-10, user-requested; demand model + downtime window revised
   // 2026-08-11; support-role wage + grifter floor added 2026-08-11) — the stock variable
@@ -1933,6 +1958,7 @@ export function stepWorld(world: World): World {
         (e) => e.buildingId === outcome.campaign.targetBuildingId,
       );
       if (target) {
+        participant?.transition({from: target.buildingId, to: `grifter-${nextGrifterId}`, role: null});
         grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
         nextGrifterId += 1;
         const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
@@ -1992,6 +2018,7 @@ export function stepWorld(world: World): World {
 
   let lastNewArrivals = 0;
   if (rng() < config.arrivalPDaily) {
+    participant?.transition({from: null, to: `grifter-${nextGrifterId}`, role: null});
     population += 1;
     lastNewArrivals = 1;
     grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
@@ -2018,11 +2045,13 @@ export function stepWorld(world: World): World {
       // least invested, and this is what keeps population exactly conserved without ever
       // touching a role-holder's slot unless there's truly nobody roleless left to leave.
       const idx = Math.floor(rng() * grifters.length);
+      participant?.transition({from: grifters[idx]!.id, to: null, role: null});
       grifters = grifters.filter((_, i) => i !== idx);
     } else {
       const filled = filledEntries({ millers, bakers, couriers, investigators, importExporters });
       if (filled.length > 0) {
         const pick = filled[Math.floor(rng() * filled.length)]!;
+        participant?.transition({from: pick.buildingId, to: null, role: null});
         const vacate = { state: 'VACANT' as const, vacantSince: day };
         if (pick.role === 'miller') millers = millers.map((m, i) => (i === pick.index ? { ...m, slot: vacate } : m));
         else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? { ...b, slot: vacate } : b));
@@ -2060,12 +2089,13 @@ export function stepWorld(world: World): World {
     ...occupantsOf(couriers),
     ...occupantsOf(investigators),
     ...occupantsOf(importExporters),
-  ];
+  ].map(p => participant ? {...p,playerId:participant.identityFor(p.playerId)} : p);
   const occupantPositionById = new Map(occupants.map((o) => [o.playerId, { x: o.x, y: o.y }]));
   const proximityGraph = buildProximityGraph(occupants, config.commsProximityRange);
 
   let lastRumourEvents: RumourEventLite[] = [];
   for (const post of world.pendingWallPosts) {
+    if (participant && !participant.allowAction('communication', post.authorId)) continue;
     for (const { id: neighborId, weight } of proximityGraph.neighbors(post.authorId)) {
       const step = stepClarity(1, weight, { baseSuccessChance: 0.6, decayPerStep: 0.3, clarityFloor: 0.15 }, rng);
       if (!step.passed) continue;
@@ -2106,6 +2136,7 @@ export function stepWorld(world: World): World {
   const lastProximityConversations: ProximityConversationHeardEvent[] = [];
   const lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }> = [];
   for (const pending of world.pendingProximityUtterances) {
+    if (participant && !participant.allowAction('communication', pending.speakerId)) continue;
     const neighbors = proximityGraph.neighbors(pending.speakerId);
     const presentPlayerIds = new Set(neighbors.map((n) => n.id));
     try {
@@ -2151,6 +2182,7 @@ export function stepWorld(world: World): World {
   const lastDiaryWrites: PlayerId[] = [];
   const lastDiaryRejections: Array<{ authorId: PlayerId; reason: string }> = [];
   for (const entry of world.pendingDiaryEntries) {
+    if (participant && !participant.allowAction('diary', entry.authorId)) continue;
     try {
       writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, resolvedSubjects(identityLedger, entry.authorId), entry.context);
       lastDiaryWrites.push(entry.authorId);
@@ -2165,6 +2197,7 @@ export function stepWorld(world: World): World {
   // pressure-skew record. Real per-tick state, never a name — see pressureDetection.ts.
   let pressureLedger: Readonly<Record<string, PressureRecord>> = world.pressureLedger;
   for (const post of world.pendingWallPosts) {
+    if (participant && !participant.allowAction('communication', post.authorId)) continue;
     const existing = pressureLedger[post.authorId] ?? emptyPressureRecord();
     pressureLedger = { ...pressureLedger, [post.authorId]: recordPost(existing, day, post.state) };
   }
@@ -2183,7 +2216,7 @@ export function stepWorld(world: World): World {
   const sabotagedDistrictId = lastSabotage ? buildingDistrictId.get(lastSabotage.targetBuildingId) : undefined;
   const pressureContributionByDistrict: Record<string, number> = {};
   for (const [authorId, record] of Object.entries(pressureLedger)) {
-    const districtId = buildingDistrictId.get(authorId);
+    const districtId = buildingDistrictId.get(participant?.locationFor(authorId) ?? authorId);
     if (!districtId) continue; // grifters and anyone without a building have no district to register in
     const contribution = pressureContribution(record, knownFraction(identityLedger, authorId));
     if (contribution > (pressureContributionByDistrict[districtId] ?? 0)) {
@@ -2219,7 +2252,7 @@ export function stepWorld(world: World): World {
   const filledPlayerIds = new Set<PlayerId>();
   for (const s of allRoleSlotsFinal) {
     if (s.slot.state !== 'FILLED') continue;
-    filledPlayerIds.add(s.buildingId);
+    filledPlayerIds.add(participant?.identityFor(s.buildingId) ?? s.buildingId);
     const districtId = buildingDistrictId.get(s.buildingId);
     if (!districtId) continue;
     districtPopulationById[districtId] = (districtPopulationById[districtId] ?? 0) + 1;
