@@ -27,6 +27,17 @@ from the restored baseline to follow repository branch policy; documentation com
 individually. Updated README/handover/blueprint to avoid stale readiness claims. Historical
 868-test pass is not current validation. No tests added/run for documentation-only changes.
 
+Saved a start_skill-only configuration draft (confirmed saved, requires publish) replacing
+stale claims that the restored old server was loopback/auth hardened. Source inspection
+found new WebSocketServer({port}) without host restriction, so startup now forbids automatic
+listeners/paid requests until reviewed source/accounting recovery. Network, secret and
+install settings preserved. Saving is not runtime application or publication.
+
+Created a documentation-only recovery patch and complete Git bundle, verified with git
+bundle verify. These preserve the new reconstruction, not the missing original code or
+ledger. Local documentation links and diff checks pass; no application tests required for
+these documentation-only changes. Original briefs and game source unchanged.
+
 Recovery requires secure active key, prior snapshot/patch/bundle and original cumulative
 accounting before paid work. Current tools expose no snapshot restoration or historical UI
 diff contents. Source and protocol must not be invented/simplified to conceal this loss.
