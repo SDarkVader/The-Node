@@ -13,8 +13,9 @@ byte-for-byte source recovery or current test evidence. Older handover below des
 restored original source, not the missing repaired integration.
 
 New environment revision 3 is active with API binding ready, but the zero-generation
-Responses credential check still returned **401 / invalid_api_key**. Correct the key via
-secure environment settings and publish; never send it in chat. Paid gameplay remains
+Responses credential check still returned **401 / invalid_api_key**. Publication is confirmed. A follow-up model-list GET returned 200 with the same binding,
+while Responses POST returned 401 with both Python and curl. Diagnose this request-path
+authentication difference; do not ask for another rotation without evidence or send keys in chat. Paid gameplay remains
 stopped. Preserve the historical **US$0.019114** held reservation and first request count;
 original accounting is unavailable, so do not initialize a replacement allowance at zero.
 Initial authorization remains US$0.25/10 requests and cumulative US$5.
