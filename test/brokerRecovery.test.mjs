@@ -135,6 +135,18 @@ test('fixture timeout aborts signal, returns no decision and permits no same-tic
   assert.equal((await broker.evaluate({...context(), tick: 11}, async () => response(idle()), context)).code, 'fixture_halted');
 });
 
+test('changed affordances reject an otherwise valid asynchronous decision', async () => {
+  for (const changed of [
+    {legalMoves: [{x: 2, y: 2}]},
+    {presentRefs: []},
+    {knownSubjects: []},
+  ]) {
+    const broker = new OfflineBroker();
+    const result = await broker.evaluate(context(), async () => response(idle()), () => ({...context(), ...changed}));
+    assert.deepEqual(result, {kind: 'rejected', code: 'stale_context'});
+  }
+});
+
 test('fixture exception is sanitized and cannot trigger retry', async () => {
   const broker = new OfflineBroker();
   assert.deepEqual(await broker.evaluate(context(), async () => {throw Error('private-provider-body');}, context), {kind: 'rejected', code: 'fixture_failure'});
