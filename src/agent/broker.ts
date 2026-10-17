@@ -61,7 +61,9 @@ export class OfflineBroker {
       catch {
         // Aborting does not prove a callback stopped. Never overlap a later fixture
         // with a timed-out callback that ignored cancellation.
-        if (timedOut) this.halted = true;
+        // A rejecting callback may have launched work before failing. Its
+        // termination cannot be established from a rejected promise alone.
+        this.halted = true;
         return { kind: 'rejected', code: timedOut ? 'fixture_timeout' : 'fixture_failure' };
       }
       if (!result || result.status !== 'completed' || result.model !== bounds.model ||
