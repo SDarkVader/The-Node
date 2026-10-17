@@ -1,3 +1,5 @@
+> Separate offline broker reconstruction: 40 new checks pass; no live provider or participant integration. See [reconstruction status](docs/recovery/BROKER_RECONSTRUCTION.md).
+
 # NODE
 
 *Nobody is fully anonymous here. Nobody is fully known either. Everyone knows
