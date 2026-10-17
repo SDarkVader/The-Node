@@ -14,10 +14,11 @@ Do not infer that the prior integration is currently installed or that its tests
 - [Evals, safeguards and recovery procedures](EXPERIMENT_EVALS_AND_SAFEGUARDS.md).
 - [Historical first pass and current credential checks](EXPERIMENT_FIRST_PASS_RESULTS.md).
 
-Current environment revision 3 reports its API binding ready. A credential diagnostic through
+Current environment revision 5 reports its API binding ready and network policy enforced. A new credential diagnostic through
 the configured proxy nevertheless returned **HTTP 401 / `invalid_api_key`**. No generation
-started. The user should correct the binding securely in environment settings and publish;
-no key value belongs in chat, repository files or command text.
+started. Publication is confirmed; repeated publication is not the next diagnostic. See the
+[remaining-authentication support report](CREDENTIAL_BINDING_SUPPORT_REPORT.md). No key value
+belongs in chat, repository files or command text.
 
 The prior US$0.019114 reservation must remain accounted. Do not initialize replacement
 accounting at zero or resume a paid actor while the original ledger is unavailable.
