@@ -12,11 +12,14 @@ conversation/screenshots are indexed in [docs/recovery](recovery/README.md); the
 byte-for-byte source recovery or current test evidence. Older handover below describes the
 restored original source, not the missing repaired integration.
 
-New environment revision 3 is active with API binding ready, but the zero-generation
-Responses credential check still returned **401 / invalid_api_key**. Publication is confirmed. A follow-up model-list GET returned 200 with the same binding,
-while Responses POST returned 401 with both Python and curl. Diagnose this request-path
-authentication difference; do not ask for another rotation without evidence or send keys in chat. Paid gameplay remains
-stopped. Preserve the historical **US$0.019114** held reservation and first request count;
+Environment revision 5 is published/current, secret ready and network policy enforced.
+The new zero-generation Responses check still returned **401 invalid_api_key**. Earlier
+revision-3 model listing succeeded, but that does not prove current generation access.
+The save/publish blocker is resolved; stop asking for unchanged publication or blind key
+rotation. See [the prepared authentication report](recovery/CREDENTIAL_BINDING_SUPPORT_REPORT.md).
+No support message has been sent. Diagnostics now total nine conservative request admissions
+including the original attempt and sandbox denials, so stop automatic probes. Paid gameplay
+remains stopped. Preserve the historical **US$0.019114** reservation and first request count;
 original accounting is unavailable, so do not initialize a replacement allowance at zero.
 Initial authorization remains US$0.25/10 requests and cumulative US$5.
 
