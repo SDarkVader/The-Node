@@ -154,21 +154,22 @@ export async function startParticipantSocket(options: ParticipantSocketOptions) 
     if(closePromise)return closePromise;
     closing=true;clearInterval(heartbeat);queue=[];
     for(const c of connections.values()){release(c);c.socket.terminate();}
-    host.close();
+    let closeFailed=false;
+    try{host.close();}catch{closeFailed=true;}
     for(const socket of rawSockets)socket.destroy();
     closePromise=Promise.all([
       new Promise<void>(resolve=>wss.close(()=>resolve())),
       new Promise<void>(resolve=>http.close(()=>resolve())),
-    ]).then(()=>{});
+    ]).then(()=>{if(closeFailed)throw Error('checkpoint_close_failed');});
     return closePromise;
   };
-  wss.on('error',()=>{void close();});
+  wss.on('error',()=>{void close().catch(()=>{});});
   await new Promise<void>((resolve,reject)=>{
-    const failure=()=>{void close();reject(Error('transport_start_failed'));};
+    const failure=()=>{void close().catch(()=>{});reject(Error('transport_start_failed'));};
     http.once('error',failure);
     http.listen(options.port??0,'127.0.0.1',()=>{http.off('error',failure);resolve();});
   });
-  http.on('error',()=>{void close();});
+  http.on('error',()=>{void close().catch(()=>{});});
   heartbeat=setInterval(()=>{
     for(const c of connections.values()){
       if(!c.alive){release(c);c.socket.terminate();continue;}
@@ -186,16 +187,19 @@ export async function startParticipantSocket(options: ParticipantSocketOptions) 
     advance:()=>{
       if(closing)throw Error('transport_closed');
       const batch=queue;queue=[];
+      const replies:{connection:Connection;message:{type:string;accepted:boolean;code?:string}}[]=[];
       for(const c of connections.values())c.queued=0;
       for(const {connection:c,frame}of batch){
         if(c.released||c.session===null)continue;
-        try{host.submit(c.session,frame);send(c,{type:'admission',accepted:true});}
+        try{host.submit(c.session,frame);replies.push({connection:c,message:{type:'admission',accepted:true}});}
         catch(error){
           const code=error instanceof Error && rejectionCodes.has(error.message)?error.message:'proposal_rejected';
-          send(c,{type:'admission',accepted:false,code});
+          replies.push({connection:c,message:{type:'admission',accepted:false,code}});
         }
       }
-      try{host.advance();}catch{void close();throw Error('kernel_execution_failed');}
+      try{host.advance();}catch{void close().catch(()=>{});throw Error('kernel_execution_failed');}
+      // Completion precedes positive admission; durable hosts finish their checkpoint first.
+      for(const {connection:c,message}of replies)if(!c.released)send(c,message);
       for(const c of connections.values())observe(c);
     },
     close,

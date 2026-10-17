@@ -13,3 +13,7 @@ node-playtest-look.html
 
 # Generated world recordings for the browser viewer (regenerate with npm run web-export)
 docs/web/world.json
+
+# Private evaluator checkpoints and interrupted-write evidence; never publish these.
+participant.checkpoint.json
+.participant.*

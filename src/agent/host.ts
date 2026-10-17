@@ -4,7 +4,8 @@ import { validateDecision, type Decision } from './protocol.js';
 import { OfflineBroker, type FixtureResponse } from './broker.js';
 import type { DecisionContext } from './protocol.js';
 import { createParticipantState, stepParticipantState, type Genesis, type ParticipantState, type CanonicalAction } from './participantWorld.js';
-import { newTape, evidenceHash, digest, type ReplayTape } from './replay.js';
+import { newTape, evidenceHash, digest, replay, type ReplayTape } from './replay.js';
+import type { CheckpointStore } from './checkpoint.js';
 
 const idle = (): Decision => ({move:null,communication:null,diary:null,role:null});
 const object = (v: unknown): v is Record<string,unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -21,12 +22,20 @@ export class OfflineParticipantHost {
   #used = new Set<string>();
   #broker = new OfflineBroker();
   #tape: ReplayTape;
-  constructor(genesis: Genesis, existingPerson: string, controllerToken: string) {
+  #checkpoint?:CheckpointStore;
+  constructor(genesis: Genesis, existingPerson: string, controllerToken: string, checkpoint?:CheckpointStore) {
     if (controllerToken.length < 16 || controllerToken.length > 256) throw Error('invalid_controller_token');
     this.#state = createParticipantState(genesis);
     if (this.#state.registry.people.get(existingPerson)?.location == null) throw Error('unknown_person');
     this.#person = existingPerson; this.#token = Buffer.from(controllerToken);
     this.#tape = newTape(this.#state);
+    if(checkpoint){
+      const record=checkpoint.current();
+      if(record.status!=='running'||record.person!==existingPerson||digest(record.tape.genesis)!==digest(genesis))throw Error('checkpoint_host_mismatch');
+      this.#state=replay(record.tape,genesis.sourceRevision);this.#tape=record.tape;
+      if(this.#state.registry.people.get(existingPerson)?.location==null)throw Error('checkpoint_person_departed');
+      this.#checkpoint=checkpoint;
+    }
   }
   authenticate(token: string): string {
     if (this.#closed || typeof token !== 'string' || token.length > 256) throw Error('authentication_failed');
@@ -83,20 +92,36 @@ export class OfflineParticipantHost {
     const online = this.#session !== null && person.location !== null ? [person.id] : [];
     const actions: CanonicalAction[] = this.#used.size ? [{person:person.id,epoch:person.roleEpoch,tick:this.#state.world.tick,decision:structuredClone(this.#pending)}] : [];
     const tick = this.#state.world.tick;
+    try{this.#checkpoint?.prepare(this.#tape,{tick,online,actions});}
+    catch{this.#stop();throw Error('checkpoint_write_failed');}
     let result: ReturnType<typeof stepParticipantState>;
     try { result = stepParticipantState(this.#state,actions,online); }
     catch {
       // A failed step may already have advanced the mutable RNG lineage. Never retry
       // that partially executed lineage as though it were a clean pre-tick snapshot.
-      this.close(); throw Error('kernel_execution_failed');
+      try{this.#checkpoint?.halt();}catch{/* Preserve the prepared intent if storage failed. */}
+      this.#stop(); throw Error('kernel_execution_failed');
     }
+    const tape=structuredClone(this.#tape);
+    try{
+      tape.ticks.push({tick,online,actions,stateHash:evidenceHash(result.state),effectsHash:digest(result.effects)});
+      this.#checkpoint?.complete(tape,result.state.registry.people.get(this.#person)?.location==null);
+    }catch{this.#stop();throw Error('checkpoint_write_failed');}
     this.#state = result.state; this.#pending=idle(); this.#used.clear();
-    this.#tape.ticks.push({tick,online,actions,stateHash:evidenceHash(this.#state),effectsHash:digest(result.effects)});
-    if (this.#state.registry.people.get(this.#person)?.location == null) { this.#session=null; this.#closed=true; }
+    this.#tape=tape;
+    if (this.#state.registry.people.get(this.#person)?.location == null) this.#stop();
     return structuredClone(result.effects);
   }
   disconnect(session: string): void { this.#authorize(session); this.#session=null; this.#pending=idle(); this.#used.clear(); }
-  close(): void { this.#closed=true;this.#session=null;this.#token.fill(0);this.#pending=idle();this.#used.clear(); }
+  #stop():void {
+    this.#closed=true;this.#session=null;this.#token.fill(0);this.#pending=idle();this.#used.clear();
+    try{this.#checkpoint?.release();}catch{/* Never remove a lock no longer owned by this writer. */}
+  }
+  close(): void {
+    if(this.#closed){this.#stop();return;}
+    try{this.#checkpoint?.cleanShutdown();}catch{this.#stop();throw Error('checkpoint_close_failed');}
+    this.#stop();
+  }
   /** Trusted evaluator-only access; never included in read() or fixture input. */
   exportTape(): ReplayTape { return structuredClone(this.#tape); }
   evidence(): string { return evidenceHash(this.#state); }
