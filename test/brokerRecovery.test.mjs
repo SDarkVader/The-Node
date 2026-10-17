@@ -117,7 +117,7 @@ test('non-callable fixture and current callbacks fail closed without consumption
 test('fixture cannot mutate validation snapshot; changed legal moves rejected', async () => {
   const fixture = async input => { input.legalMoves.push({x: 9, y: 9}); return response({...idle(), move: {x: 9, y: 9}}); };
   assert.equal((await new OfflineBroker().evaluate(context(), fixture, context)).code, 'invalid_decision');
-  assert.equal((await new OfflineBroker().evaluate(context(), async () => response({...idle(), move: {x: 1, y: 2}}), () => ({...context(), legalMoves: []}))).code, 'invalid_decision');
+  assert.equal((await new OfflineBroker().evaluate(context(), async () => response({...idle(), move: {x: 1, y: 2}}), () => ({...context(), legalMoves: []}))).code, 'stale_context');
 });
 
 for (const bad of [{status: 'incomplete'}, {model: 'wrong'}, {inputTokens: -1}, {outputTokens: 2049}, {inputTokens: NaN}]) {
@@ -133,6 +133,18 @@ test('fixture timeout aborts signal, returns no decision and permits no same-tic
   assert.equal(result.code, 'fixture_timeout'); assert.equal(signal.aborted, true);
   assert.equal((await broker.evaluate(context(), async () => response(idle()), context)).code, 'fixture_halted');
   assert.equal((await broker.evaluate({...context(), tick: 11}, async () => response(idle()), context)).code, 'fixture_halted');
+});
+
+test('changed affordances reject an otherwise valid asynchronous decision', async () => {
+  for (const changed of [
+    {legalMoves: [{x: 2, y: 2}]},
+    {presentRefs: []},
+    {knownSubjects: []},
+  ]) {
+    const broker = new OfflineBroker();
+    const result = await broker.evaluate(context(), async () => response(idle()), () => ({...context(), ...changed}));
+    assert.deepEqual(result, {kind: 'rejected', code: 'stale_context'});
+  }
 });
 
 test('fixture exception is sanitized and cannot trigger retry', async () => {
