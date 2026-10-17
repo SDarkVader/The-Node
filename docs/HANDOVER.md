@@ -23,7 +23,10 @@ Historical repaired-source result was 868/868 tests, not a test result for this 
 No game source was reconstructed or simplified during credential recovery. Recover the old
 snapshot/change set/bundle and cumulative ledger, reverify exact source, then resume only the
 remaining bounded pass. Earlier GitHub push was denied 403. Recovery documentation is on
-local main and a new documentation-only patch will be retained outside checkout.
+local main and a new documentation-only patch and verified complete Git bundle are retained outside checkout.
+A start_skill-only draft is confirmed saved and requires publication; it forbids automatically
+launching the old all-interface server or paid calls until source/accounting recovery.
+Install/network/secrets were preserved. This draft is not claimed applied or published.
 
 ## Earlier source handover
 
