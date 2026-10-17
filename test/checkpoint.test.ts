@@ -58,6 +58,23 @@ describe('durable participant checkpoint and crash recovery',()=>{
     expect(Object.hasOwn(resumed.exportTape().genesis.config,'wealthCap')).toBe(true);
     expect(evidenceHash(replay(resumed.exportTape(),genesis.sourceRevision))).toBe(hash);
   });
+  it('does not resurrect an in-flight fixture after clean shutdown and checkpoint reopening',async()=>{
+    const dir=directory();const h=track(createDurableHost(dir,genesis,person,token));const session=h.authenticate(token);
+    let finish!: (value:{status:'completed';model:string;inputTokens:number;outputTokens:number;decision:{move:null;communication:null;diary:null;role:{kind:'bakerPrice';price:number}}})=>void;
+    const pending=h.evaluateFixture(session,()=>new Promise(resolve=>{finish=resolve;}));
+    h.close();
+    const reopened=track(openDurableHost(dir,genesis.sourceRevision,token,{resumeCleanShutdown:true}));
+    const replacement=reopened.authenticate(token);
+    finish({status:'completed',model:'offline-fixture',inputTokens:10,outputTokens:10,decision:{move:null,communication:null,diary:null,role:{kind:'bakerPrice',price:1.25}}});
+    const outcome=await pending.then(value=>value,error=>error);
+    expect(outcome instanceof Error || outcome.kind==='rejected').toBe(true);
+    expect(reopened.exportTape().ticks).toHaveLength(0);
+    expect(reopened.read(replacement).context.tick).toBe(0);
+    reopened.advance();
+    expect(reopened.exportTape().ticks[0]!.actions).toEqual([]);
+    expect(reopened.read(replacement).context.tick).toBe(1);
+    expect(evidenceHash(replay(reopened.exportTape(),genesis.sourceRevision))).toBe(reopened.evidence());
+  });
   it('does not persist controller/session/observation tokens or resurrect queued proposals',()=>{
     const dir=directory();const h=track(createDurableHost(dir,genesis,person,token));const s=h.authenticate(token);const frame=submit(h,s);
     h.close();const bytes=readFileSync(join(dir,'participant.checkpoint.json'),'utf8');
