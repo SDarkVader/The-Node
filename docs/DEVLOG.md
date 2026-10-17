@@ -6,6 +6,19 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-10-17 — Revision 5 published and ready; Responses still returns 401
+
+Verified current/observed revision 5, secret ready and network enforced after user publication.
+New deliberately invalid zero-output Responses probe returned 401 invalid_api_key. No
+model generation/Evals. Nine conservative diagnostic/old-actor admissions recorded; no
+allowance widening, accounting reset or automatic further probes. Original held cost remains.
+
+Prepared a non-secret authentication support report distinguishing revision-3 GET success
+from revision-5 POST failure and runtime readiness from actual authorization. The report
+was not sent externally. Updated recovery index/handover; save/publish is resolved, root
+cause of API auth remains unknown. No further key rotation requested. Original source and
+ledger recovery remain necessary before paid gameplay. Documentation-only changes.
+
 ## 2026-10-17 — Publication confirmed; model listing succeeds while Responses rejects
 
 Accepted the user's publication confirmation and retried a zero-generation Responses probe:
