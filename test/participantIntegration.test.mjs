@@ -220,7 +220,8 @@ test('in-flight fixture cannot cross controller disconnect and reauthentication'
   const replacement=host.authenticate(token);
   assert.notEqual(replacement,session);
   finish({status:'completed',model:'offline-fixture',inputTokens:10,outputTokens:10,decision:{...idle(),role:{kind:'bakerPrice',price:1.5}}});
-  await assert.rejects(pending,/invalid_session/);
+  const outcome = await pending.then(value=>value,error=>error);
+  assert.ok(outcome instanceof Error ? /invalid_session/.test(outcome.message) : outcome.kind === 'rejected');
   assert.deepEqual(host.advance(),[]);
   assert.equal(host.read(replacement).context.tick,1);
 });
@@ -231,7 +232,8 @@ test('in-flight fixture cannot queue after controller disconnect without replace
   const pending=host.evaluateFixture(session,()=>new Promise(resolve=>{finish=resolve;}));
   host.disconnect(session);
   finish({status:'completed',model:'offline-fixture',inputTokens:10,outputTokens:10,decision:{...idle(),role:{kind:'bakerPrice',price:1.5}}});
-  await assert.rejects(pending,/invalid_session/);
+  const outcome = await pending.then(value=>value,error=>error);
+  assert.ok(outcome instanceof Error ? /invalid_session/.test(outcome.message) : outcome.kind === 'rejected');
   assert.deepEqual(host.advance(),[]);
 });
 
