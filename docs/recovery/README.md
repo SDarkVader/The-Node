@@ -1,3 +1,5 @@
+> Latest reconstruction work: [authenticated local transport review and verification](LOCAL_TRANSPORT_REVIEW.md). This new code does not recover the historical spending ledger or enable paid execution.
+
 > Current separate-checkout work: [offline participant integration reconstruction](OFFLINE_INTEGRATION_STATUS.md).
 > The historical implementation and original ledger described below remain missing; new
 > offline code and new test results do not replace that historical evidence.
