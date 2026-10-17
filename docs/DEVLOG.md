@@ -1,3 +1,5 @@
+> 2026-10-17 integration reconstruction: implemented stable participant registry and exact lifecycle hooks, authorized observer, authenticated in-memory admission, real kernel movement/price/social effects and complete-state replay. Expanded parity tests caught target overcounting in sabotage witnesses after identity mapping; restricted person mapping to the social boundary and reverified seeded parity. 74 native tests plus 757 existing offline regressions and repository-wide typecheck pass. Socket tests intentionally excluded; no provider/agent/API/ledger operations. See [evidence and limitations](recovery/OFFLINE_INTEGRATION_STATUS.md).
+
 > 2026-10-17: Created separate checkout directly from complete bundle after local Git transport hit a sandbox shell restriction. Added new offline protocol/broker/body modules and 40 passing fixture/stream tests, plus scoped strict compilation. Native test subprocess isolation hit EPERM; used supported in-process test isolation. No existing engine/server source changed. No agents, API requests, accounting reset, or historical source-recovery claim. See [details](recovery/BROKER_RECONSTRUCTION.md).
 
 # Devlog
