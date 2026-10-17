@@ -42,6 +42,14 @@ const invalid = [
 ];
 for (const [name, d] of invalid) test(`reject ${name}`, () => assert.equal(validateDecision(d, context()), null));
 
+test('grid coordinate contract rejects fractional and unsafe coordinates', () => {
+  for (const x of [0.5, Number.MAX_SAFE_INTEGER + 1, -0.25]) {
+    assert.throws(() => policyInput({...context(), legalMoves:[{x,y:2}]}), /invalid_context/);
+    assert.equal(validateDecision({...idle(), move:{x,y:2}}, context()), null);
+  }
+  assert.ok(validateDecision({...idle(), move:{x:1,y:2}}, context()));
+});
+
 test('role authority and Grifter limitations', () => {
   assert.equal(validateDecision({...idle(), role: {kind: 'bakerPrice', price: 1}}, {...context(), role: 'Miller'}), null);
   assert.equal(validateDecision({...idle(), communication: {kind: 'wallPost', state: 'hopeful'}}, {...context(), role: 'Grifter'}), null);
