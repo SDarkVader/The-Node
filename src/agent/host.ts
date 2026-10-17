@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
 import { observe } from '../server/observer.js';
 import { validateDecision, type Decision } from './protocol.js';
-import { OfflineBroker, type FixtureResponse } from './broker.js';
+import { OfflineBroker, type FixtureResponse, type Outcome } from './broker.js';
 import type { DecisionContext } from './protocol.js';
 import { createParticipantState, stepParticipantState, type Genesis, type ParticipantState, type CanonicalAction } from './participantWorld.js';
 import { newTape, evidenceHash, digest, replay, type ReplayTape } from './replay.js';
@@ -23,6 +23,7 @@ export class OfflineParticipantHost {
   #broker = new OfflineBroker();
   #tape: ReplayTape;
   #checkpoint?:CheckpointStore;
+  #activeFixtureAttempt:string|null=null;
   constructor(genesis: Genesis, existingPerson: string, controllerToken: string, checkpoint?:CheckpointStore) {
     if (controllerToken.length < 16 || controllerToken.length > 256) throw Error('invalid_controller_token');
     this.#state = createParticipantState(genesis);
@@ -74,17 +75,40 @@ export class OfflineParticipantHost {
     if (!validated || validated[category] === null) throw Error('invalid_proposal');
     this.#pending = {...this.#pending,[category]:validated[category]}; this.#used.add(category);
   }
-  async evaluateFixture(session: string, fixture: (input: DecisionContext, signal: AbortSignal) => Promise<FixtureResponse>) {
+  async evaluateFixture(session: string, fixture: (input: DecisionContext, signal: AbortSignal) => Promise<FixtureResponse>):Promise<Outcome> {
     const observation = this.read(session);
     if (this.#used.size) throw Error('decision_already_pending');
-    const result = await this.#broker.evaluate(observation.context,fixture,() => this.read(session).context);
-    if (result.kind !== 'validated_offline') return result;
-    // Recheck session and observation after asynchronous fixture work before queueing.
-    const now = this.read(session);
-    if (this.#session !== session || now.observationId !== observation.observationId || this.#used.size) throw Error('observation_changed');
-    this.#pending = result.decision;
-    for (const category of ['move','communication','diary','role'] as const) if (result.decision[category] !== null) this.#used.add(category);
-    return result;
+    if(typeof fixture!=='function')return {kind:'rejected',code:'invalid_callback'};
+    if(this.#checkpoint){
+      const record=this.#checkpoint.current();
+      const attempt=record.fixtureAttempt;
+      if(record.version!==2||attempt?.status==='halted'||attempt?.status==='pending'&&attempt.id!==this.#activeFixtureAttempt)
+        return {kind:'rejected',code:'fixture_halted'};
+      if(attempt?.status==='pending')return {kind:'rejected',code:'in_flight'};
+      if(attempt?.tick===observation.context.tick)return {kind:'rejected',code:'tick_already_attempted'};
+    }
+    let checkpointFailed=false;
+    const invoke=this.#checkpoint?async(input:DecisionContext,signal:AbortSignal)=>{
+      try{this.#activeFixtureAttempt=this.#checkpoint!.beginFixtureAttempt(input.tick,input.roleEpoch,digest(input));}
+      catch{checkpointFailed=true;throw Error('checkpoint_write_failed');}
+      return fixture(input,signal);
+    }:fixture;
+    try{
+      const result = await this.#broker.evaluate(observation.context,invoke,() => this.read(session).context);
+      if(checkpointFailed){this.#stop();throw Error('checkpoint_write_failed');}
+      if(this.#checkpoint&&this.#activeFixtureAttempt!==null&&!this.#closed){
+        const halted=result.kind==='rejected'&&['fixture_failure','fixture_timeout'].includes(result.code);
+        try{this.#checkpoint.finishFixtureAttempt(this.#activeFixtureAttempt,halted?'halted':'consumed');}
+        catch{this.#stop();throw Error('checkpoint_write_failed');}
+      }
+      if (result.kind !== 'validated_offline') return result;
+      // Recheck session and observation after asynchronous fixture work before queueing.
+      const now = this.read(session);
+      if (this.#session !== session || now.observationId !== observation.observationId || this.#used.size) throw Error('observation_changed');
+      this.#pending = result.decision;
+      for (const category of ['move','communication','diary','role'] as const) if (result.decision[category] !== null) this.#used.add(category);
+      return result;
+    }finally{this.#activeFixtureAttempt=null;}
   }
   advance() {
     if (this.#closed) throw Error('host_closed');

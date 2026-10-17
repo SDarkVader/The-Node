@@ -11,14 +11,23 @@ const MAX_BYTES=16*1024*1024;
 const MAX_TICKS=10000;
 export type WriteStage='before_write'|'after_file_sync'|'after_rename';
 export interface TickIntent {tick:number;online:string[];actions:CanonicalAction[]}
+export interface FixtureAttempt {
+  id:string;
+  tick:number;
+  epoch:number;
+  contextHash:string;
+  status:'pending'|'consumed'|'halted';
+}
 export interface CheckpointRecord {
-  version:1;
+  version:1|2;
   sequence:number;
   person:string;
   status:'running'|'prepared'|'closed'|'halted';
   reason:null|'clean_shutdown'|'departed'|'kernel_execution_failed';
   tape:ReplayTape;
   pending:TickIntent|null;
+  /** v1 has no attempt history; absence must never be interpreted as unused admission. */
+  fixtureAttempt?:FixtureAttempt|null;
 }
 export interface CheckpointOpenOptions {
   recoverStaleLock?:boolean;
@@ -86,7 +95,10 @@ function validateIntent(v:unknown,person:string,tick:number):asserts v is TickIn
   }
 }
 function validateRecord(v:unknown,expectedSource:string):asserts v is CheckpointRecord {
-  if(!object(v)||!exact(v,['version','sequence','person','status','reason','tape','pending'])||v.version!==1||!integer(v.sequence)||
+  if(!object(v))throw Error('checkpoint_schema');
+  const keys=['version','sequence','person','status','reason','tape','pending'];
+  if(v.version===2)keys.push('fixtureAttempt');
+  if(!exact(v,keys)||(v.version!==1&&v.version!==2)||!integer(v.sequence)||
      !safeText(v.person)||!['running','prepared','closed','halted'].includes(String(v.status))||!object(v.tape))throw Error('checkpoint_schema');
   const tape=v.tape;
   if(!exact(tape,['genesis','genesisHash','ticks'])||!object(tape.genesis)||!Array.isArray(tape.ticks)||tape.ticks.length>MAX_TICKS)throw Error('checkpoint_schema');
@@ -101,6 +113,13 @@ function validateRecord(v:unknown,expectedSource:string):asserts v is Checkpoint
     if(!object(record)||!exact(record,['tick','online','actions','stateHash','effectsHash']))throw Error('checkpoint_tick');
     validateIntent({tick:record.tick,online:record.online,actions:record.actions},v.person,index);
     if(!/^[a-f0-9]{64}$/.test(String(record.stateHash))||!/^[a-f0-9]{64}$/.test(String(record.effectsHash)))throw Error('checkpoint_hash');
+  }
+  if(v.version===2&&v.fixtureAttempt!==null){
+    const attempt=v.fixtureAttempt;
+    if(!object(attempt)||!exact(attempt,['id','tick','epoch','contextHash','status'])||
+       typeof attempt.id!=='string'||!/^[a-f0-9]{32}$/.test(attempt.id)||!integer(attempt.tick)||attempt.tick>tape.ticks.length||
+       !integer(attempt.epoch)||typeof attempt.contextHash!=='string'||!/^[a-f0-9]{64}$/.test(attempt.contextHash)||
+       !['pending','consumed','halted'].includes(String(attempt.status)))throw Error('checkpoint_fixture');
   }
   if(v.status==='prepared'){
     validateIntent(v.pending,v.person,tape.ticks.length);
@@ -119,9 +138,10 @@ function readRecord(directory:string,source:string):{record:CheckpointRecord;byt
   privateDirectory(directory);const file=join(directory,FILE);regularFile(file);
   const bytes=readFileSync(file,'utf8');let envelope:unknown;
   try{envelope=JSON.parse(bytes);}catch{throw Error('checkpoint_encoding');}
-  if(!object(envelope)||!exact(envelope,['format','checksum','payload'])||envelope.format!=='node-participant-checkpoint-v1'||
+  if(!object(envelope)||!exact(envelope,['format','checksum','payload'])||!['node-participant-checkpoint-v1','node-participant-checkpoint-v2'].includes(String(envelope.format))||
      typeof envelope.payload!=='string'||typeof envelope.checksum!=='string'||hash(envelope.payload)!==envelope.checksum)throw Error('checkpoint_checksum');
   const record=decode(envelope.payload);validateRecord(record,source);
+  if(envelope.format!==`node-participant-checkpoint-v${record.version}`)throw Error('checkpoint_version');
   const state=replay(record.tape,source);
   const person=state.registry.people.get(record.person);
   if(!person||(record.status==='running'||record.status==='prepared')&&person.location===null||
@@ -163,7 +183,7 @@ export class CheckpointStore {
   static create(directory:string,genesis:Genesis,person:string,options:CheckpointOpenOptions={}):CheckpointStore {
     const initial=createParticipantState(genesis);
     if(initial.registry.people.get(person)?.location==null)throw Error('checkpoint_person');
-    const record:CheckpointRecord={version:1,sequence:0,person,status:'running',reason:null,tape:newTape(initial),pending:null};
+    const record:CheckpointRecord={version:2,sequence:0,person,status:'running',reason:null,tape:newTape(initial),pending:null,fixtureAttempt:null};
     validateRecord(record,genesis.sourceRevision);
     mkdirSync(directory,{mode:0o700});privateDirectory(directory);
     const identity=this.#acquireLock(directory,false);
@@ -202,7 +222,7 @@ export class CheckpointStore {
     if(this.#bytes===null){if(existsSync(file))throw Error('checkpoint_already_exists');}
     else{regularFile(file);if(readFileSync(file,'utf8')!==this.#bytes)throw Error('checkpoint_changed');}
     const payload=canonical(record);
-    const bytes=JSON.stringify({format:'node-participant-checkpoint-v1',checksum:hash(payload),payload});
+    const bytes=JSON.stringify({format:`node-participant-checkpoint-v${record.version}`,checksum:hash(payload),payload});
     if(Buffer.byteLength(bytes)>MAX_BYTES)throw Error('checkpoint_full');
     this.#fault?.('before_write');
     const next=join(this.#directory,NEXT);
@@ -210,6 +230,22 @@ export class CheckpointStore {
     try{writeFileSync(fd,bytes);fsyncSync(fd);}finally{closeSync(fd);}
     this.#fault?.('after_file_sync');renameSync(next,file);this.#fault?.('after_rename');syncDirectory(this.#directory);
     this.#record=structuredClone(record);this.#bytes=bytes;
+  }
+  /** Durable offline execution fence, not a request counter, budget or billing record. */
+  beginFixtureAttempt(tick:number,epoch:number,contextHash:string):string {
+    const current=this.#record;
+    const prior=current.fixtureAttempt;
+    if(current.version!==2||current.status!=='running'||tick!==current.tape.ticks.length||!integer(epoch)||
+       !/^[a-f0-9]{64}$/.test(contextHash)||prior&&prior.status!=='consumed'||prior&&prior.tick>=tick)throw Error('checkpoint_fixture_blocked');
+    const attempt:FixtureAttempt={id:randomBytes(16).toString('hex'),tick,epoch,contextHash,status:'pending'};
+    this.#publish({...current,sequence:current.sequence+1,fixtureAttempt:attempt});
+    return attempt.id;
+  }
+  finishFixtureAttempt(id:string,status:'consumed'|'halted'):void {
+    const current=this.#record;
+    const attempt=current.fixtureAttempt;
+    if(current.version!==2||current.status!=='running'||!attempt||attempt.id!==id||attempt.status!=='pending')throw Error('checkpoint_fixture_changed');
+    this.#publish({...current,sequence:current.sequence+1,fixtureAttempt:{...attempt,status}});
   }
   prepare(tape:ReplayTape,intent:TickIntent):void {
     if(this.#record.status!=='running'||digest(tape)!==digest(this.#record.tape))throw Error('checkpoint_state_changed');

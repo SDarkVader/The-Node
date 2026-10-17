@@ -233,7 +233,7 @@ describe('real participant host with the offline mock adapter', () => {
     const fixture = createMockProviderFixture(() => { calls++; return response({}, 401); });
     try {
       expect(await host.evaluateFixture(session, fixture)).toEqual({ kind: 'rejected', code: 'fixture_failure' });
-      expect(await host.evaluateFixture(session, fixture)).toEqual({ kind: 'rejected', code: 'tick_already_attempted' });
+      expect(await host.evaluateFixture(session, fixture)).toEqual({ kind: 'rejected', code: 'fixture_halted' });
       host.advance(); expect(host.exportTape().ticks[0]!.actions).toHaveLength(0); expect(calls).toBe(1);
     } finally { host.close(); }
   });
