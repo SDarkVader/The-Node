@@ -86,6 +86,26 @@ for (const changed of [{selfRef: 'replacement'}, {roleEpoch: 3}, {role: 'Miller'
   });
 }
 
+test('fixture cannot mutate trusted context or current affordances', async () => {
+  const trusted = context();
+  const broker = new OfflineBroker();
+  const result = await broker.evaluate(trusted, async input => {
+    input.legalMoves[0].x = 99;
+    input.knownSubjects.push('forged');
+    return response({...idle(), move: {x: 1, y: 2}});
+  }, () => trusted);
+  assert.equal(result.kind, 'validated_offline');
+  assert.deepEqual(trusted.legalMoves, [{x: 1, y: 2}]);
+  assert.deepEqual(trusted.knownSubjects, ['known']);
+});
+
+test('non-callable fixture and current callbacks fail closed without consumption', async () => {
+  const broker = new OfflineBroker();
+  assert.deepEqual(await broker.evaluate(context(), null, context), {kind:'rejected',code:'invalid_callback'});
+  assert.deepEqual(await broker.evaluate(context(), async () => response(idle()), null), {kind:'rejected',code:'invalid_callback'});
+  assert.equal((await broker.evaluate(context(), async () => response(idle()), context)).kind, 'validated_offline');
+});
+
 test('fixture cannot mutate validation snapshot; changed legal moves rejected', async () => {
   const fixture = async input => { input.legalMoves.push({x: 9, y: 9}); return response({...idle(), move: {x: 9, y: 9}}); };
   assert.equal((await new OfflineBroker().evaluate(context(), fixture, context)).code, 'invalid_decision');

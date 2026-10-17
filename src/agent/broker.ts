@@ -35,6 +35,7 @@ export class OfflineBroker {
     bounds = { model: 'offline-fixture', maxInputTokens: 36_864, maxOutputTokens: 2_048, deadlineMs: 12_000 },
   ): Promise<Outcome> {
     if (this.halted) return { kind: 'rejected', code: 'fixture_halted' };
+    if (typeof fixture !== 'function' || typeof current !== 'function') return { kind: 'rejected', code: 'invalid_callback' };
     if (this.busy) return { kind: 'rejected', code: 'in_flight' };
     this.busy = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -56,7 +57,7 @@ export class OfflineBroker {
         timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new Error('deadline')); }, bounds.deadlineMs);
       });
       let result: FixtureResponse;
-      try { result = await Promise.race([fixture(input, controller.signal), timeout]); }
+      try { result = await Promise.race([fixture(structuredClone(input), controller.signal), timeout]); }
       catch {
         // Aborting does not prove a callback stopped. Never overlap a later fixture
         // with a timed-out callback that ignored cancellation.
