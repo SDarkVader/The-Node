@@ -1,3 +1,5 @@
+> 2026-10-17: Created separate checkout directly from complete bundle after local Git transport hit a sandbox shell restriction. Added new offline protocol/broker/body modules and 40 passing fixture/stream tests, plus scoped strict compilation. Native test subprocess isolation hit EPERM; used supported in-process test isolation. No existing engine/server source changed. No agents, API requests, accounting reset, or historical source-recovery claim. See [details](recovery/BROKER_RECONSTRUCTION.md).
+
 # Devlog
 
 Chronological record of work on NODE, newest entry on top. Include failures and dead ends,
