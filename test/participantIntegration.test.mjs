@@ -212,6 +212,29 @@ test('offline broker joins authoritative context without tokens and rejects late
   assert.deepEqual(host.advance(),[]);
 });
 
+test('in-flight fixture cannot cross controller disconnect and reauthentication',async()=>{
+  const {host,session}=makeHost();
+  let finish;
+  const pending=host.evaluateFixture(session,()=>new Promise(resolve=>{finish=resolve;}));
+  host.disconnect(session);
+  const replacement=host.authenticate(token);
+  assert.notEqual(replacement,session);
+  finish({status:'completed',model:'offline-fixture',inputTokens:10,outputTokens:10,decision:{...idle(),role:{kind:'bakerPrice',price:1.5}}});
+  await assert.rejects(pending,/invalid_session/);
+  assert.deepEqual(host.advance(),[]);
+  assert.equal(host.read(replacement).context.tick,1);
+});
+
+test('in-flight fixture cannot queue after controller disconnect without replacement',async()=>{
+  const {host,session}=makeHost();
+  let finish;
+  const pending=host.evaluateFixture(session,()=>new Promise(resolve=>{finish=resolve;}));
+  host.disconnect(session);
+  finish({status:'completed',model:'offline-fixture',inputTokens:10,outputTokens:10,decision:{...idle(),role:{kind:'bakerPrice',price:1.5}}});
+  await assert.rejects(pending,/invalid_session/);
+  assert.deepEqual(host.advance(),[]);
+});
+
 test('complete evidence distinguishes private state, ordered collections and queue contents',()=>{
   const s=state();const before=evidenceHash(s);s.world.diary.set('private-owner',[]);assert.notEqual(evidenceHash(s),before);
   assert.notEqual(canonical(new Map([['a',1],['b',2]])),canonical(new Map([['b',2],['a',1]])));
