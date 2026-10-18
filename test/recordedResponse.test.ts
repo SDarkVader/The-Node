@@ -40,6 +40,28 @@ describe('recorded Responses-shaped envelopes without a provider call', () => {
     const parsed = parseRecordedResponse(Buffer.from(JSON.stringify(value)), 'test-request');
     expect(parsed.actionable).toBe(true); expect(JSON.stringify(parsed)).not.toContain('not copied'); expect(JSON.stringify(parsed)).not.toContain('reasoning_id');
   });
+  it.each([undefined, null, 'opaque-provider-metadata-not-for-policy'])('accepts empty reasoning content and discards encrypted metadata (%s)', encrypted => {
+    const value = JSON.parse(response().toString());
+    value.output.unshift({ type: 'reasoning', id: 'empty_content_reasoning_id', summary: [], content: [], encrypted_content: encrypted });
+    value.output[1].phase = 'final_answer'; value.output[1].content[0].logprobs = [];
+    const parsed = parseRecordedResponse(Buffer.from(JSON.stringify(value)), 'test-request');
+    expect(parsed).toMatchObject({ actionable: true, decision: { move: null, role: null }, receipt: { usage: { inputTokens: 10, outputTokens: 10 } } });
+    expect(JSON.stringify(parsed)).not.toContain('opaque-provider-metadata-not-for-policy');
+    expect(JSON.stringify(parsed)).not.toContain('empty_content_reasoning_id');
+    expect(JSON.stringify(parsed)).not.toContain('encrypted_content');
+  });
+  it.each([
+    { summary: [], content: null }, { summary: [], content: {} }, { summary: [], content: '' },
+    { summary: [], content: [{ type: 'reasoning_text', text: 'must-not-reach-policy' }] },
+    { summary: [], content: ['must-not-reach-policy'] },
+    { summary: [{ type: 'summary_text', text: 'must-not-reach-policy' }], content: [] },
+    { summary: null, content: [] }, { content: [] },
+  ])('rejects malformed or nonempty reasoning even beside a valid answer: %j', metadata => {
+    const value = JSON.parse(response().toString()); value.output.unshift({ type: 'reasoning', ...metadata });
+    const parsed = parseRecordedResponse(Buffer.from(JSON.stringify(value)), 'test-request');
+    expect(parsed).toMatchObject({ actionable: false, decision: null, receipt: { usage: { inputTokens: 10, outputTokens: 10 } } });
+    expect(JSON.stringify(parsed)).not.toContain('must-not-reach-policy');
+  });
   it('rejects multiple messages, annotated or multiple text fragments while preserving known usage', () => {
     for (const mutate of [(v: any) => v.output.push(v.output[0]), (v: any) => v.output[0].content.push(v.output[0].content[0]),
       (v: any) => v.output[0].content[0].annotations.push({ type: 'url_citation' })]) {

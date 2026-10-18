@@ -101,6 +101,7 @@ describe('durable final-wire broker accounting with a real local service fixture
   it('joins actual wire transport, usage accounting, authenticated price effect and full replay', async () => {
     const { ledger } = setup(), prices = authorize(ledger), p = participant(); const value = JSON.parse(response().toString());
     value.output[0].content[0].text = JSON.stringify({ move: null, communication: null, diary: null, role: { kind: 'bakerPrice', price: 0.75 } });
+    value.output.unshift({ type: 'reasoning', summary: [], content: [], encrypted_content: 'opaque-fixture-metadata' });
     const url = await listen(jsonServer(Buffer.from(JSON.stringify(value))));
     const result = await new ResponsesBroker(ledger).evaluateLoopbackFixture(p.request, prices, url, () => p.host.read(p.session).context);
     if (result.kind !== 'validated_offline') throw Error('fixture decision was not accepted');

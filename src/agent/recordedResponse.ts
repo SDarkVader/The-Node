@@ -33,8 +33,11 @@ export function parseRecordedResponse(bytes: Buffer, requestId: string): Recorde
   let decision: unknown = null, actionable = false, refused = false;
   if (Array.isArray(value.output)) {
     const messages = value.output.filter(item => object(item) && item.type === 'message');
+    // Stateless responses may include content: [] plus opaque encrypted metadata.
+    // Neither is policy input; continue rejecting nonempty/plaintext reasoning.
     const unsupported = value.output.some(item => !object(item) || !['message', 'reasoning'].includes(String(item.type)) ||
-      item.type === 'reasoning' && (!Array.isArray(item.summary) || item.summary.length !== 0 || Object.hasOwn(item, 'content')));
+      item.type === 'reasoning' && (!Array.isArray(item.summary) || item.summary.length !== 0 ||
+        Object.hasOwn(item, 'content') && (!Array.isArray(item.content) || item.content.length !== 0)));
     const message = messages[0];
     if (messages.length === 1 && object(message) && message.role === 'assistant' && message.status === 'completed' && Array.isArray(message.content)) {
       refused = message.content.some(part => object(part) && part.type === 'refusal');
