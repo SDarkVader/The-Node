@@ -262,10 +262,13 @@ try {
     if (!result.ok) process.exitCode = 2;
   } else if (command === 'hook-start') {
     const result = verify();
+    // A verified clean clone gets its local exact-state checkpoint on startup.
+    // A mismatch is left untouched so an older checkpoint cannot be hidden.
+    if (result.ok) capture();
     const checkpoint = readCheckpoint();
     const shared = checkpoint ? null : readSharedCheckpoint();
     const message = result.ok
-      ? `Verified ${result.source === 'git-tracked-checkpoint' ? 'Git-tracked' : 'local'} development checkpoint for ${result.actual.branch} at ${result.actual.commit}. Read its recorded completed work, test results, unresolved issues and exact next steps before making changes.\n\n${checkpoint?.continuity ?? shared?.markdown ?? result.continuity}`
+      ? `Verified ${result.source === 'git-tracked-checkpoint' ? 'Git-tracked' : 'local'} development checkpoint and saved a local exact-state snapshot for ${result.actual.branch} at ${result.actual.commit}. Read its recorded completed work, test results, unresolved issues and exact next steps before making changes.\n\n${checkpoint?.continuity ?? shared?.markdown ?? result.continuity}`
       : `Development checkpoint verification needs attention: ${result.reason ?? 'repository_mismatch'}. ${result.next ?? result.notice} Do not restore or overwrite files automatically. Inspect .codex/session-recovery/checkpoint.json and the actual Git state first.`;
     print({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: message } });
   } else if (command === 'show') {

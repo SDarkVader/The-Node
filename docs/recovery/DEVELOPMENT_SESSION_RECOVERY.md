@@ -10,8 +10,10 @@ Codex lifecycle configuration is `.codex/hooks.json`.
 
 Fetch/open the development branch in any checkout. The session-start hook checks the
 Git-tracked branch and commit anchor even when the local recovery directory is absent,
-then supplies the tracked continuity notes. If the local ignored checkpoint exists,
-it also verifies the exact branch, commit and worktree fingerprint. Read
+then creates a local exact-state snapshot if the checkout is a clean descendant and
+supplies the tracked continuity notes. A mismatch leaves existing local data alone.
+If a local ignored checkpoint already exists, the hook first verifies its exact branch,
+commit and worktree fingerprint. Read
 `docs/recovery/CURRENT_SESSION.md` and verify the reported Git state before editing.
 You can do this manually at any time:
 

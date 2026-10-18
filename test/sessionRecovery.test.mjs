@@ -166,5 +166,10 @@ test('a fresh checkout verifies the Git-tracked handover without a local checkpo
 
   const start = JSON.parse(run(root, 'hook-start').stdout).hookSpecificOutput.additionalContext;
   assert.match(start, /Verified Git-tracked development checkpoint/);
+  assert.match(start, /saved a local exact-state snapshot/);
   assert.match(start, /Fresh-session test handover/);
+  const localCheckpoint = JSON.parse(readFileSync(path.join(root, '.codex', 'session-recovery', 'checkpoint.json'), 'utf8'));
+  assert.equal(localCheckpoint.repository.branch, branch);
+  assert.equal(localCheckpoint.repository.commit, git(root, 'rev-parse', 'HEAD'));
+  assert.equal(localCheckpoint.worktree.clean, true);
 });
