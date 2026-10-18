@@ -1,0 +1,157 @@
+{
+  "sourceRevision": "1f40ed61ec9be77a93f6fa8e72564c544d20e54b",
+  "scope": "Full texts of available top-level design/specification documents and both PDFs, plus research questions and recovered experiment contracts. Historical DEVLOG, HANDOVER and BLUEPRINT_HISTORY are navigation/audit records rather than a replacement rulebook.",
+  "readMethod": "Full sequential text, 31 bounded parts, plus supplementary reads; truncated boundaries reread. PDF text extracted from every page using pypdf.",
+  "sources": [
+    {
+      "path": "docs/ADVERSARIAL_CONTAINMENT.md",
+      "characters": 44159,
+      "lines": 701,
+      "sha256": "f817022bdf02c0b44e4a98cfe64ba6deabdf63bd66f66b58a173ac7d8ef5bb3f"
+    },
+    {
+      "path": "docs/BLUEPRINT.md",
+      "characters": 28362,
+      "lines": 420,
+      "sha256": "a099a031f11353e3efdfc3d5c5b8491598733410213edf0f8aef66b97cf6b9c7"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-06.md",
+      "characters": 42402,
+      "lines": 663,
+      "sha256": "41c9f061a80c58cabcd5112b3b103b47be5b4a3afab27818fa4ad8c3ebc939c5"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-07.md",
+      "characters": 14429,
+      "lines": 271,
+      "sha256": "c880af831a83fc5799aa05100edcdd4a60e27f1605cff639004c8e4d2b9c0c1e"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-08.md",
+      "characters": 6065,
+      "lines": 104,
+      "sha256": "dcc20d423f82dd223b796fe4f6bcfa575924d4988c0c3b2e060c3c06e27d476d"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-11.md",
+      "characters": 16452,
+      "lines": 277,
+      "sha256": "a2dd737471c619bdaddccefb74e765c5321e37691d17ac5034a3e440275a8f63"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-12.md",
+      "characters": 25923,
+      "lines": 555,
+      "sha256": "b21082c6cc5cf633c574ad9d86df0d124fa0a243121ec39ff90c182fed361693"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-13.md",
+      "characters": 10424,
+      "lines": 259,
+      "sha256": "0a3446e420ebafa68d3f97d092f89a3d693ae708147bc6a9be51496c38b40f50"
+    },
+    {
+      "path": "docs/DESIGN_FINES_ECONOMY_2026-08-13.md",
+      "characters": 16213,
+      "lines": 256,
+      "sha256": "772de5628c4625f3e79272882b1bc93123bd1d74d4c9b8c32414b165bfd219bf"
+    },
+    {
+      "path": "docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md",
+      "characters": 40260,
+      "lines": 600,
+      "sha256": "a1b609b1adca19e13971d2ee282c7265e189c37b3829ce7637d557dee3907e3b"
+    },
+    {
+      "path": "docs/DESIGN_MODERATION_LOGGING_2026-08-13.md",
+      "characters": 11260,
+      "lines": 155,
+      "sha256": "7e88a9a9886cb6d4864fa4c83a5cd3b6655cf61ceedb360f2b1ba4fb2d48fac2"
+    },
+    {
+      "path": "docs/DESIGN_NODE_VISUAL_FOUNDATION_2026-08-19.md",
+      "characters": 18354,
+      "lines": 260,
+      "sha256": "28e2672fa64edd84391a8cf8e3f90479b2e7fdc5a2911dbe6c3ef5ce21be418f"
+    },
+    {
+      "path": "docs/DESIGN_ORACLE_2026-08-13.md",
+      "characters": 8971,
+      "lines": 142,
+      "sha256": "013c58823292c9f45cfdf89f2da4ebacc09a128fad7b3bbcbf3c8e46c8c08b48"
+    },
+    {
+      "path": "docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md",
+      "characters": 12681,
+      "lines": 220,
+      "sha256": "b88959debeefa368c7969ffb265b05b7f9dce53db7b96add50b734494dd4df9a"
+    },
+    {
+      "path": "docs/ECOSYSTEM_VISION_2026-08-06.md",
+      "characters": 16191,
+      "lines": 248,
+      "sha256": "76a6c6a3556bd39e140145c3290dac7ce8d1728ed113eac819b87020e61d805a"
+    },
+    {
+      "path": "docs/NODE_BUILD_SPEC_2026-08-07.md",
+      "characters": 10084,
+      "lines": 169,
+      "sha256": "2824f72f85d0f6b8e62a4e0416f6f44eb987da8810ba033e471cdee643b532aa"
+    },
+    {
+      "path": "docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md",
+      "characters": 10129,
+      "lines": 171,
+      "sha256": "f25f94dce1ff2b773a13898213192418bd6afdda1b36755acf50367765da2e70"
+    },
+    {
+      "path": "docs/RENDER_CAPABILITY_2026-08-19.md",
+      "characters": 5825,
+      "lines": 94,
+      "sha256": "65f1b61bb190f2f8edd91403cb0360bc80d6989cfa8282603119ae9342ca712b"
+    },
+    {
+      "path": "docs/VISUAL_FRAMEWORK_2026-08-12.md",
+      "characters": 32344,
+      "lines": 422,
+      "sha256": "f805361bed593297c1220838a8c5a19766de6430922dd37e1099377feb3968dc"
+    },
+    {
+      "path": "docs/NODE_Build_Brief_v1.pdf",
+      "pages": 24,
+      "extractedCharacters": 26700,
+      "sha256": "e5c2f4fc8385bdca30fd7505f0d36b65251e9b71a22886d3a9403cf0798af50e"
+    },
+    {
+      "path": "docs/NODE_OBSERVATORY_BUILD_SPEC.pdf",
+      "pages": 32,
+      "extractedCharacters": 15169,
+      "sha256": "f5d20e6d26ba22133ccd94939d0ed3a1641e7f7b047fb8b22e88c112ca2b335a"
+    },
+    {
+      "path": "docs/RESEARCH_QUESTIONS.md",
+      "characters": 18569,
+      "lines": 323,
+      "sha256": "388489f5898ec11a9194a2384314601e2f305363b6cbc8354f3878e48ed40a93"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_FIRST_INHABITANT.md",
+      "characters": 11216,
+      "lines": 130,
+      "sha256": "04b00d05eac3028399cb69c869e87a815d75c1a841b5f4d0fd445c3cd878af5a"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_BROKER_PROTOCOL.md",
+      "characters": 9768,
+      "lines": 148,
+      "sha256": "a350986857e4537adf12535aa4fbcd77c088e4f264faad862eeec559f1405a2c"
+    }
+  ],
+  "currentHumanClarifications": [
+    "Diary contents/connections are mechanical and degrade according to game rules.",
+    "A player may mark events but cannot alter diary contents.",
+    "Trespass can expose a limited diary view and is a privacy risk."
+  ],
+  "providerRequestsDuringReview": 0
+}

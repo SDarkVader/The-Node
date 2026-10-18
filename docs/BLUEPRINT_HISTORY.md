@@ -1,3 +1,5 @@
+> 2026-10-18 rules review: the full available design corpus distinguishes mechanical, degrading diary connections and owner event marks from the older composed-entry interface reconstructed for the broker. Current human clarification disallows changing diary contents. No game rule or implementation was silently changed to resolve the mismatch. The old wealth-first smoke goal was provisional, and two API turns are not a social-game validation. Both exact provider schemas forced diary=null. The review and acceptance plan preserve the separate boundaries of mortal personal memory, civic history, diagnostics, signed-reputation proposals, existing opportunity progress and trespass permissions. See [evidence and decisions](recovery/RULES_REVIEW_2026-10-18.md).
+
 # Blueprint History — the decision record
 
 **This is the chronological record of how NODE's architecture was arrived at: what was tried,

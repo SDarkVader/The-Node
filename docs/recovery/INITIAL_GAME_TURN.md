@@ -1,5 +1,7 @@
 # Initial budgeted game turn
 
+> Rules-review correction: both archived live schemas forced `diary` to null because recognition was empty. The model did not choose to omit an available marking action. The older composed-entry adapter also does not implement the user's automatic mechanical memory/non-editing event-mark contract. The two turns establish execution and replay, not full game compliance. See [complete rules review](RULES_REVIEW_2026-10-18.md).
+
 This adds an explicitly invoked single-turn experiment to the existing forward test allowance. It does not replace the missing historical implementation or change the protected production live gate. The selected model, five-request ceiling, $0.10 total and $0.02 per request remain unchanged.
 
 `src/agent/initialGameTurn.ts` reserves the final serialized request before dispatch, records returned usage before validation, checks the current authenticated observation, submits the validated actions, advances one tick, and compares complete-state evidence with deterministic replay. A consumed tick cannot be sent again. Failed transport retains its reservation; invalid, stale or late decisions retain their cost. Post-commit evidence failures are reported separately from rejected actions.
