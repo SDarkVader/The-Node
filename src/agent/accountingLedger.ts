@@ -292,6 +292,12 @@ function derive(document: Document, now: string): AccountingView {
     remainingMicroUsd: remaining, authorization: structuredClone(authorization), requests: structuredClone([...requests.values()]), overrun, blockers };
 }
 
+/** Pure inspection for a carried historical snapshot; does not initialize, reconcile or grant spending. */
+export function inspectAccountingDocument(document: unknown, now = new Date().toISOString()): AccountingView {
+  if (!iso(now)) return fail('accounting_time');
+  return derive(validate(document), now);
+}
+
 /** Reconstructs this interrupted account from pinned documentary evidence; never starts at zero. */
 export class AccountingLedger {
   private constructor(private store: AccountingStore<Document>) {}
