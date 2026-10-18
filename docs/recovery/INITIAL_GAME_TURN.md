@@ -4,12 +4,12 @@ This adds an explicitly invoked single-turn experiment to the existing forward t
 
 `src/agent/initialGameTurn.ts` reserves the final serialized request before dispatch, records returned usage before validation, checks the current authenticated observation, submits the validated actions, advances one tick, and compares complete-state evidence with deterministic replay. A consumed tick cannot be sent again. Failed transport retains its reservation; invalid, stale or late decisions retain their cost. Post-commit evidence failures are reported separately from rejected actions.
 
-`scripts/run-initial-game-turn.mjs` is a first-turn-only executable, not a loop. It requires an existing unused allowance and a new artifact directory. Private genesis, request, response, replay tape and durable game checkpoint remain outside Git. Future turns must resume that checkpoint and the same allowance; generating another identity is not a continuation.
+`scripts/run-initial-game-turn.mjs` is a single-turn executable, not a loop. Initial mode requires an existing unused allowance and a new artifact directory. Resume mode requires the latest successful turn's directory and the same allowance. Private genesis, request, response, replay tape and durable game checkpoint remain outside Git. Generating another identity is not a continuation.
 
 Compile with the locked local TypeScript compiler, including the separate host child:
 
 ```powershell
-node node_modules/typescript/bin/tsc --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --noUncheckedIndexedAccess --skipLibCheck --types node --outDir <runtime> --rootDir src src/agent/initialGameTurn.ts src/agent/isolatedHost.ts src/agent/isolatedHostChild.ts
+node node_modules/typescript/bin/tsc --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --noUncheckedIndexedAccess --skipLibCheck --types node --outDir <runtime> --rootDir src src/agent/initialGameTurn.ts src/agent/initialGameResume.ts src/agent/isolatedHost.ts src/agent/isolatedHostChild.ts
 ```
 
 Place a `package.json` with `{"type":"module"}` in that emitted runtime. Invoke once with explicit absolute paths:
@@ -45,4 +45,14 @@ Private local evidence is in the workspace's sibling output directories:
 - `outputs/initial-test-budget-2026-10-18/accounting.journal.json` preserves the existing allowance and consumed request.
 - The previously approved credential file remains `outputs/broker-accounting-rebuild/.env.local`, outside this branch.
 
-For the next turn, add an explicit resume-mode wrapper around `runInitialGameTurn`, resuming the checkpoint with source revision `c20e3ffcf153cf6c633f5193059eeeda52ad0c1a` and a fresh controller token, then opening the same allowance. Check stable participant ref, expected tick, remaining budget and authorization expiry before dispatch. Retain the request/response/report in a fresh attempt directory. Do not invoke this first-turn-only script again, create a new allowance, recreate genesis or automatically exhaust the four remaining requests. The current grant expires 2026-10-19T13:21:24.584Z.
+## Explicit continuation
+
+Resume mode now copies the last clean checkpoint into a fresh attempt directory and resumes with a fresh controller token. It verifies the saved tape by replay, compares genesis evidence, matches the prior successful report to the journal's latest request and usage receipt, and checks the participant reference, next tick and complete-state hash. These checks precede any new reservation, credential read or API call. A stale prior directory cannot branch the experiment after the allowance has advanced. The source revision embedded in genesis remains `c20e3ffcf153cf6c633f5193059eeeda52ad0c1a`; the report separately records the committed runner revision.
+
+```powershell
+node scripts/run-initial-game-turn.mjs <runtime> <same-budget-directory> <new-attempt-directory> <approved-env-file> <runner-commit-sha> --resume <latest-successful-turn-directory>
+```
+
+Offline continuation tests exercise a real durable game and allowance restart, two distinct receipts retained, replay of two committed ticks, and rejection of stale reports, wrong participant, wrong tick and mismatched complete-state evidence. Together with existing allowance and isolated-host checks, 39 tests pass; repository TypeScript, emitted-runtime compilation and CLI syntax pass. No production transport or validated core files are changed.
+
+Resume is always explicit and single-shot. Do not create a new allowance, recreate genesis or automatically exhaust remaining requests. Preserve every prior attempt directory. The current grant expires 2026-10-19T13:21:24.584Z.
