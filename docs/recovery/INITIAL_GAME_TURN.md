@@ -56,3 +56,21 @@ node scripts/run-initial-game-turn.mjs <runtime> <same-budget-directory> <new-at
 Offline continuation tests exercise a real durable game and allowance restart, two distinct receipts retained, replay of two committed ticks, and rejection of stale reports, wrong participant, wrong tick and mismatched complete-state evidence. Together with existing allowance and isolated-host checks, 39 tests pass; repository TypeScript, emitted-runtime compilation and CLI syntax pass. No production transport or validated core files are changed.
 
 Resume is always explicit and single-shot. Do not create a new allowance, recreate genesis or automatically exhaust remaining requests. Preserve every prior attempt directory. The current grant expires 2026-10-19T13:21:24.584Z.
+
+## Verified continuation to tick 2, 2026-10-18
+
+Runner implementation commit: `3314caaac73b702fa2575b200189e71c409131db`. The original genesis source revision remains pinned. A single explicitly authorized continuation request returned HTTP 200 using the same selected model and low reasoning. Usage was 12,884 input and 296 output tokens; estimated standard cost $0.0029468. No additional provider diagnostics, retries or model calls ran during verification.
+
+The resumed Baker moved from (0, -3) back to (-1, -3). It submitted no price, communication or diary action. The normal kernel tick increased wealth from 0.2781655308372743 to 0.8882031136885489 and changed the Baker price from 0.70 to 0.5903047581967446. This price change was not a model price action: `src/world/world.ts` runs the competitive Baker reaction first, and `src/agent/participantWorld.ts` only overrides that result when an explicit role action is present. A null role action delegates to the normal mechanical reaction; it does not hold the prior price fixed.
+
+The return move is an observed two-turn reversal, not proof of a policy defect or useful long-run strategy. The current request has only the authorized game observation, with no immortal conversation history. Diagnose behaviour with the participant's available view and legitimate memory before changing prompts, observation privileges, price semantics or model selection. No such experimental changes were made here.
+
+Complete-state SHA256 agreed across the resumed host, two-tick replay, independently reloaded tape, and a second clean checkpoint restart:
+
+`b5ba959c03e2e2295f1646adb96e1d39d937014a1b146c81ccb36361fa862c28`
+
+The reopened allowance retains both request receipts and books 11,418 microUSD conservatively, with no outstanding hold. Remaining allowance is 88,582 microUSD ($0.088582) and three requests. The two-turn standard-cost estimate totals $0.0057088; conservative booking is intentionally higher. Prior diagnostic history remains separately carried in the same journal.
+
+Private second-turn evidence is `outputs/initial-game-turn-2-2026-10-18/`, including the new checkpoint and `restart-verification.json`. This is now the latest successful directory for any future continuation. The first-turn directory and its checkpoint were preserved unchanged. A deliberate stale resume from that first directory failed with `resume_report_not_latest_accounted_turn`, zero dispatches, no credential access, and no allowance change; evidence is in `outputs/stale-resume-check-2026-10-18/report.json`. That expected rejection exits with status 1.
+
+The historical journal and all four validated core files remain unchanged. The continuation suite passed 39 tests, including durable two-turn continuation and failed evidence checks. No full-suite rerun is claimed.
