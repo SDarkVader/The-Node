@@ -10,44 +10,48 @@ NODE is a persistent multiplayer social-economic game. The design source of trut
 everything else in it is an explicitly revisable hypothesis. Read it before starting work
 if you haven't already.
 
-## Branch policy (2026-08-08, user directive — do not silently revert this)
+## Cross-device orientation and branch policy (2026-10-18)
 
-**Work directly on `main`. Do not stage work on a side/feature branch waiting for a
-separate merge approval.** Earlier sessions used a branch-then-PR-then-wait-for-approval
-workflow; the user ended it explicitly: staging everything on a branch until someone
-remembers to ask for a merge left `main` — the thing anyone actually looks at — silently
-stale, over and over, and put the burden of noticing that on the user instead of on the
-work itself. Commit and push to `main` as you go, the same discipline as pushing docs
-"one at a time, not batched." If a specific task's own instructions say otherwise for
-that run, that's a per-task override, not a reason to quietly resume the old default
-next time.
+`AGENTS.md` is the common entry point for Codex and other repository-aware assistants.
+Follow its GitHub-first contract: read `docs/recovery/GITHUB_FIRST_CONTINUATION.md`
+and `docs/recovery/CURRENT_SESSION.md` from the current development branch, verify
+Git HEAD and inspect relevant source before making claims or edits. This applies to
+Claude as well; do not use this file to select a different branch or handover.
 
-## Documentation rules (mandatory every session, not optional polish)
+The current shared development branch is `broker-rules-context-2026-10-18`.
+Continue on the user's agreed branch and do not silently switch to `main`, merge,
+or create a feature branch. The older August instruction to work directly on
+`main` was intended to prevent stranded, unpublished work; it is superseded
+for this development line by the explicit GitHub-first branch contract.
+A future branch change requires the user's direction. Commit and push sanitized
+handover updates so a fresh phone, cloud or PC session can resume without a local
+machine. Never assume ignored/uncommitted files or private runtime state exist
+on GitHub. No paid model calls or budget reset without explicit authorization.
 
-This project carries four living documents. Update them as you go, not as an afterthought
-at the very end — if the session is interrupted, the docs should still be current.
+## Documentation rules (mandatory every session)
 
-1. **Start by reading `docs/HANDOVER.md`.** It's the fast-orientation doc — current state,
-   how to run things, what's next. Don't re-derive context that's already written down there.
-2. **Log everything in `docs/DEVLOG.md` as you go, chronologically, newest entry on top.**
-   Include failures and dead ends, not just what worked — a wrong assumption caught and
-   reverted is exactly the kind of thing the next session needs to know about so it isn't
-   repeated. One entry per session at minimum; more if the session covers distinct pieces
-   of work worth separating.
-3. **Keep `docs/BLUEPRINT.md` in sync with what's actually implemented**, not what's
-   aspirational. **`BLUEPRINT.md` is a MAP, not a narrative** — constants, state shape, data
-   flow, invariants, current values. It answers "what is it?" and nothing else. The reasoning
-   and the reversals belong in `docs/BLUEPRINT_HISTORY.md` (the decision record) or the devlog;
-   if you find yourself writing a date or the word "then" in the blueprint, it is going in the
-   wrong file. If you build something that deviates from the brief, or resolve one of the
-   brief's open questions (§7), record the decision and the reasoning there. If a mechanic
-   doesn't hold up once built, say so in the blueprint and the devlog both — per the brief's
-   own instructions, don't silently work around a rule that breaks.
-4. **Rewrite `docs/HANDOVER.md` at the end of the session** so it accurately reflects the
-   new current state — assume the next session has zero memory of this one.
-5. **`README.md` must always reflect current system state** — it's the first thing anyone
-   (human or agent) sees. Keep its Status section in sync with what's actually built and
-   tested, not what's planned.
+1. **Primary orientation:** `AGENTS.md` →
+   `docs/recovery/GITHUB_FIRST_CONTINUATION.md` →
+   `docs/recovery/CURRENT_SESSION.md`. These define the active branch, completed
+   work, current gaps, evidence boundaries and next steps. Read the relevant
+   implementation and scoped evidence before continuing.
+2. **Historical orientation:** `docs/HANDOVER.md` is valuable background, not a
+   competing current-session authority. Resolve older status claims against the
+   active branch, current source and verified evidence; do not blindly overwrite
+   the current checkpoint from a historical handover.
+3. **Log development** in `docs/DEVLOG.md` chronologically, including failures,
+   reversals and evidence. Keep `docs/BLUEPRINT.md` as a map of implemented
+   constants, state, flows and invariants, with decisions and reversals in
+   `docs/BLUEPRINT_HISTORY.md`. Preserve the original design constraints.
+4. **After meaningful work**, update `docs/recovery/CURRENT_SESSION.md` and,
+   when the shared continuation contract changes,
+   `docs/recovery/GITHUB_FIRST_CONTINUATION.md`. Commit and push the sanitized
+   context on the agreed branch. Keep `docs/HANDOVER.md` and `README.md`
+   accurate when affected, distinguishing current state from historical stages.
+5. **Local recovery is optional:** `.codex/session-recovery/` and Codex hooks
+   can preserve unpublished machine-specific work but are not prerequisites
+   for GitHub-first continuation. Never publish secrets, private game state,
+   experimental inputs or accounting journals in tracked documentation.
 
 ## Build order
 
