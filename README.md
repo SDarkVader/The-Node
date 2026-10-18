@@ -15,82 +15,41 @@ The world is built to sit permanently a little uphill — never comfortable
 for long, never actually collapsing either. If a place ever starts to feel
 safe, that's the system telling on itself. Somebody's about to notice.
 
-## Status (2026-08-24)
+## Project status — 18 October 2026
 
-**Live and wired**: the Miller/Baker economic core, the vacancy/backstop
-system, role conscription, the grammar-constrained Wall and private diary,
-proximity conversation, rumour decay, district weather, identity resolution,
-role-holder occupancy, the Oracle, universal housing with reputation gating,
-and a real multi-shard registry. The economy tracks wealth (Gini coefficient
-plateaus around 0.5, stays stable), Courier pay indexes actual distance, and
-role completion is uniformly tested across all five roles (Journalist and Detective merged
-into Investigator, 2026-08-22). 780 tests cover all of it.
+**This `main` branch is not the latest development line.** Its documented baseline is the August 2026 multiplayer simulation and Godot client. More recent broker, agent-context, accounting, security and recovery work is maintained on [`broker-rules-context-2026-10-18`](https://github.com/SDarkVader/The-Node/tree/broker-rules-context-2026-10-18). **Do not assume the development branch's features, tests or files are present on `main`.** Check the branch and source before running, changing or reporting anything.
 
-**The basic day (2026-08-24)**: offline downtime and Import/Export supply now
-have real UTC-anchored windows (twice daily each) instead of one blended
-number — see `docs/BLUEPRINT.md` §2/§4. The live server's own tick cadence
-isn't wall-clock-anchored yet; that's the deliberate next step.
+For current development, begin with the development branch's [`AGENTS.md`](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/AGENTS.md), [GitHub-first continuation contract](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/GITHUB_FIRST_CONTINUATION.md) and [current session checkpoint](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/CURRENT_SESSION.md). Those are the cross-device source of shared, sanitized project context; no local PC or previous conversation is required to read them. Verify the live development branch HEAD rather than relying on a fixed SHA.
 
-**Action vocabulary (2026-08-24)**: the inbound pipe now interprets three real
-actions — Wall posting, diary entries, proximity conversation — gated to a
-connection's bound identity. Everything else (Miller/Baker's price/quantity,
-the other three roles) still has no real player-input slot in the engine;
-see `docs/BLUEPRINT.md` §9.
+### What exists on this branch
 
-**Presence/session primitive (2026-08-24)**: `World` now tracks real
-online/offline state per role-holder, fed from the live server's actual
-connections — the foundation the login-buffer, Shift Cover, trespass, and
-arson designs all depend on. Deliberately withheld from the wire (same
-privacy boundary as wealth).
+The August baseline includes a TypeScript social-economic world with a Miller/Baker supply chain, Courier and other roles, a multi-shard registry, district conditions, constrained social communication, presence, reputation and an Oracle. The Godot client provides an isometric world view and visual signals for stations, districts and movement. These are **historically documented implementation claims** for `main`, not a new test run or a guarantee that every proposed mechanic is complete.
 
-**Trespass and arson eligibility (2026-08-25)**: both now wired onto real
-presence data. Building arson's caught a real bug before it shipped — a
-first draft mirroring trespass's own pattern turned out to be provably
-always-false, since presence only tracks people arson's gate is designed
-to exclude. Fixed by resolving each signal independently rather than
-gating the whole function on one. Both still share the same open gap:
-no per-player abode-location tracking exists anywhere in the engine, so
-that half of each gate stays caller-supplied — see `docs/BLUEPRINT.md` §9.
+The simulation is designed around partial knowledge, temporary private memory, persistent collectively witnessed events, noncombat social consequences and deterministic mechanics. The [original build brief](docs/NODE_Build_Brief_v1.pdf) defines the design intent; [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) describes implementation and invariants.
 
-**Visual (Godot 4.3)**: isometric 3D rendering with real settlement geometry.
-Role-holders occupy their buildings (not drawn on street), marked by glyphs
-above roofs. Streets carry district tension as color (blue–Ember–red). Stations
-glow with economic heat (radius and intensity encode occupancy state). Courier
-routes show as ribbons from stations to the hub. Watch it run with `npm run
-playtest` (terminal, synthetic drivers) or connect the Godot client to `npm
-run server`.
+### Work on the active development branch
 
-**Inbound pipe (2026-08-19)**: WebSocket now receives client actions. Parser
-is defensive—malformed frames drop without killing the connection. Action
-vocabulary is deliberately undesigned; the grammar belongs to a later session.
-Queue caps at 256 actions/tick.
+The development branch adds offline participant/broker integration, durable execution and replay protections, reconstructed accounting controls, a Responses provider adapter, rules-aware agent context and deterministic evaluation fixtures. See its [rules-aware context evidence](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/RULES_AWARE_CONTEXT.md) and [recovery documentation](https://github.com/SDarkVader/The-Node/tree/broker-rules-context-2026-10-18/docs/recovery).
 
-**What's next**: design the action vocabulary (players interacting with the
-world), then wire it into the simulation.
+Its last recorded rules-context stage reported **1,143 Vitest tests, 80 native checks and passing TypeScript**, but these are stage-specific recorded results, not tests rerun for this README update. The deterministic memory fixture reported eight of eight with legitimate memory, four of eight without, and eight of eight after replay restoration. That does **not** establish real model comprehension or live multi-turn strategy.
 
-## How to run it
+Known development gaps include automatic diary/event connections, full restricted trespass transactions and held-out live-model evaluation. Historical private accounting evidence and the original held reservation are not reconstructed merely by cloning GitHub. **Do not initialize/reset budgets, assume private runtime state is available, or launch paid model requests without explicit authorization and verified prerequisites.**
+
+### Run the checked-out branch
 
 ```bash
 npm install
-npm test                # 714 tests
-
-npm run server          # Real world over WebSocket
-npm run playtest        # Terminal render with synthetic drivers
+npm test
 npm run typecheck
+npm run sim
+npm run server
+npm run playtest
 ```
 
-**With the Godot client:** See [`client/README.md`](client/README.md) for
-setup. The client connects to `npm run server` and renders the live world.
+These commands are available in the repository; actual results depend on the checked-out branch and environment. The Godot setup is described in [`client/README.md`](client/README.md). To work on the latest development line, explicitly switch to `broker-rules-context-2026-10-18` first and read its handover.
 
-## Where things are
+### Project documentation
 
-**Architecture**: [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) — what's built now
-(constants, state shape, data flow, invariants). [`docs/HANDOVER.md`](docs/HANDOVER.md)
-— fast orientation, current state, open work.
+[Blueprint](docs/BLUEPRINT.md) records mechanics and invariants; [development log](docs/DEVLOG.md) records implementation history; [historical handover](docs/HANDOVER.md) preserves earlier session context; and the [build brief](docs/NODE_Build_Brief_v1.pdf) captures original design intent. The historical handover on `main` is **not** the authority for current cross-device development: use the active development branch's Git-tracked checkpoint.
 
-**History**: [`docs/DEVLOG.md`](docs/DEVLOG.md) — build log, session by session,
-including failures. [`docs/NODE_Build_Brief_v1.pdf`](docs/NODE_Build_Brief_v1.pdf)
-— the original design intent (§0 is load-bearing).
-
-**Repo layout**: `src/engine/` (pure mechanics), `src/world/` (the kernel),
-`src/server/` (WebSocket), `client/` (Godot), `test/` (714 tests).
+**Branch policy:** this README update documents the state of `main`; it does not merge the development branch or change runtime code. Continue active work on the agreed development branch unless explicitly directed otherwise.
