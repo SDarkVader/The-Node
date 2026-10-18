@@ -23,3 +23,26 @@ The trusted PowerShell worker reads the already approved credential file. The cr
 Acceptance checks cover durable reservation before dispatch, receipt before gameplay admission, real Baker price effects and complete replay, invalid/stale decisions charged without action, pre-cancellation, failed transport retaining the hold, incomplete replies, model mismatch, late responses and honest post-commit replay failure reporting. Existing budget, parser, host, accounting and request/transport tests also apply. The four validated core files remain byte-identical.
 
 Runtime reports record actual outcomes and estimated token costs separately from conservative allowance booking. No invoice reconciliation, historical spending reset, autonomous agent loop, model substitution or production rollout is included.
+
+## Verified first turn, 2026-10-18
+
+Implementation commit: `c20e3ffcf153cf6c633f5193059eeeda52ad0c1a`. One request, HTTP 200, selected `gpt-5.4-nano-2026-03-17`, low reasoning. Usage: 12,935 input and 140 output tokens; estimated standard cost $0.002762. The allowance conservatively books 5,524 microUSD ($0.005524), leaving 94,476 microUSD ($0.094476), no outstanding hold, and four requests remaining. This is a token-price estimate, not an invoice.
+
+The existing Baker moved from (-1, -3) to (0, -3) and changed price from 0.6725960365030914 to 0.70. Both effects were admitted in the tick-0 decision batch and committed at tick 1. Wealth after the normal tick was 0.2781655308372743; this single tick is not evidence of long-run policy quality.
+
+Host, immediate replay, independently reloaded saved tape, and restarted durable checkpoint all agreed on complete-state SHA256:
+
+`cf8b085e676f8b6938ad051fe966ad3cbf8aeaf38b0fe10d3bb400628f62a434`
+
+The allowance reopened with exactly one new request and the same booked amount. The resumed host retained the same participant reference at tick 1. These restart checks made no further API requests. The historical journal retained SHA256 `fc91bd96dc2b34ba43aa063bfc5a9eabb2aff48ce7ca92d4c1fedaa77ac808df`. All four protected core files retained their recorded fingerprints.
+
+Validation: 189 focused tests across 10 files, repository TypeScript compilation, emitted runtime compilation, Node CLI syntax and PowerShell syntax checks passed. The full repository suite was not rerun for this addition.
+
+Private local evidence is in the workspace's sibling output directories:
+
+- `outputs/initial-game-run-2026-10-18/report.json` and `restart-verification.json`.
+- That directory's `genesis.json`, `replay-tape.json`, `request.json`, `response.json` and `checkpoint/` preserve continuation evidence. Genesis/checkpoints contain private observer material; do not publish them.
+- `outputs/initial-test-budget-2026-10-18/accounting.journal.json` preserves the existing allowance and consumed request.
+- The previously approved credential file remains `outputs/broker-accounting-rebuild/.env.local`, outside this branch.
+
+For the next turn, add an explicit resume-mode wrapper around `runInitialGameTurn`, resuming the checkpoint with source revision `c20e3ffcf153cf6c633f5193059eeeda52ad0c1a` and a fresh controller token, then opening the same allowance. Check stable participant ref, expected tick, remaining budget and authorization expiry before dispatch. Retain the request/response/report in a fresh attempt directory. Do not invoke this first-turn-only script again, create a new allowance, recreate genesis or automatically exhaust the four remaining requests. The current grant expires 2026-10-19T13:21:24.584Z.
