@@ -4,6 +4,9 @@
   "private": true,
   "description": "NODE — persistent multiplayer social-economic game engine",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -45,7 +48,7 @@
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "ws": "^8.21.2"
