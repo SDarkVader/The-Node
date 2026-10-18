@@ -9,6 +9,9 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:session-recovery": "node --test test/sessionRecovery.test.mjs",
+    "recovery:verify": "node scripts/session-recovery.mjs verify",
+    "recovery:capture": "node scripts/session-recovery.mjs capture",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/sim/cli.ts",
