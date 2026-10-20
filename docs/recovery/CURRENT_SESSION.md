@@ -2,9 +2,10 @@
 {
   "format": "the-node-git-session-checkpoint",
   "version": 1,
-  "branch": "inspect-safety-evals-2026-10-20",
-  "verifiedBaseCommit": "41da84f1cdba2cbe7faafb0ccee6f2630fa59559",
+  "branch": "broker-rules-context-2026-10-18",
+  "verifiedBaseCommit": "294106795dc2ccc6a755ed2502d06fb8a5abeb47",
   "completedWork": [
+    "2026-10-20 post-merge orientation: PR #21 was merged by GitHub at 2941067; its tracked tree equals independently reviewed 298b636. Root README now has one current overview, source-anchored evidence, current commands, game/evaluation limits and next steps. The accounted-agent/framework design is now tracked in docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md; design only. AGENTS.md and CLAUDE.md require README/checkpoint maintenance together.",
     "2026-10-20 PR #21 independent review: target 41da84f merged into the evaluation branch; both documentation histories and the shard fix preserved. Fixed evaluation-only stale role instructions, failed-integrity scoring, incomplete verifier success, exported JSON replay and Python-source provenance. See docs/recovery/PR21_REVIEW_2026-10-20.md.",
     "2026-10-20: shard availability no longer depends on population: canOpenNewShard's mean-population gate replaced by a population-independent SHARD_COUNT_CAP (3); stability, cooldown and every migration path unchanged. Every seed now reaches 3 shards; seed 1 was stranded at 2.",
     "2026-10-20: funded settlement (default): wealth follows the person through every role change, the dock pays for nodules (WEALTH_PER_NODULE 2.0), wages come from districtPool (floor first), upkeep (0.0073 of holdings) is the sink. 'legacy' mode is byte-identical to the pre-settlement economy.",
@@ -17,6 +18,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-20 documentation refresh: 7/7 session-recovery tests passed; 25 local documentation links and README npm-script references checked; no runtime/test/dependency changes. At 2941067 a real clean development-branch clone failed recovery with exit 2 because the checkpoint named inspect-safety-evals-2026-10-20; corrected destination metadata. Prior full game/evaluation results below were not rerun by this documentation change.",
     "2026-10-20 PR #21: 1188/1188 Vitest (95 files), TypeScript, 18/18 Python tests, 7/7 recovery, 80/80 native checks against target 41da84f. Two Inspect runs: 29/29 matching state hashes and event digests; 29/29 in-memory and exported replays in each run; 56/56 fixture checks each; CLI control task 2/2. Scripted infrastructure evidence only; no live models, model APIs, paid inference or real-account resets.",
     "2026-10-20 shard availability: 1177 Vitest + TypeScript + 7/7 session recovery pass; restoring the old population gate fails 9 of the new/rewritten tests. multi-shard-validation: all 3 seeds reach 3 shards (mean 254.4 people).",
     "2026-10-20 funded settlement: 1170 Vitest and TypeScript pass. The full suite also passed with legacy as default; the legacy golden matches the original snapshot exactly. settlement-report legacy -> funded: new money 45.79 -> 6.27/tick, role-change losses 37.86 -> 0, Gini 0.68 -> 0.32, health 0.905 -> 0.914; multi-shard 7/8 seeds equal or higher (seed 1 shard-opening knife edge, pre-existing).",
@@ -40,10 +42,9 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "In any new phone, PC or cloud session, open the GitHub development branch and read AGENTS.md, GITHUB_FIRST_CONTINUATION.md and this checkpoint; verify Git HEAD and relevant source. No PC connection required.",
-    "Review and trust the project recovery hooks in /hooks, or use npm run recovery:verify and npm run recovery:capture manually.",
-    "Continue the next user-directed game task from the diary/event-mark or trespass gaps, preserving broker, kernel, accounting, replay, and existing experiment evidence.",
-    "After meaningful work, update this tracked checkpoint with sanitized results and commit/push the handover when it should be available to a fresh checkout."
+    "Audit development versus main and all remote branch tips; preserve unique work and prepare a reviewed consolidation PR into main, as requested. Do not delete branches without an explicit cleanup decision.",
+    "Continue the designed accounted-agent evaluation and framework-fit work only when directed; execution remains disabled and private accounting/unknown liabilities must not be reset.",
+    "Keep root README and this checkpoint current together, with source-anchored evidence; preserve historical logs and private data boundaries."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false
 }
@@ -51,15 +52,14 @@ NODE_SESSION_CHECKPOINT -->
 
 # Current development checkpoint
 
-The current shared development line is `broker-rules-context-2026-10-18`. **This copy of
-the checkpoint is on the evaluation branch `inspect-safety-evals-2026-10-20`**, cut from that
-line at `afb6d61`, now incorporating target `41da84f`; the checkpoint names the eval branch because `recovery:verify` requires the
-recorded branch to match the checkout. When the eval branch is merged into the development
-line, set `branch` back to `broker-rules-context-2026-10-18`. The Git
-branch and its current `HEAD` are authoritative; the recorded base commit anchors
-this checkpoint in that branch's history. The working tree at the checkpoint commit
-is clean. Local in-progress work is preserved in `.codex/session-recovery/`, which
-is Git-ignored and is never required to read this shared summary.
+The current shared development branch is `broker-rules-context-2026-10-18`.
+PR #21 was merged into it at `2941067` on 2026-10-20, incorporating the reviewed
+Inspect harness and preserving the shard-availability fix. That merge has the same
+tracked tree as reviewed evidence commit `298b636`. This checkpoint now names the
+destination branch and anchors its history at the merge. The next integration task
+is to audit and consolidate development into `main`; that merge has not happened.
+Git HEAD and the working tree are authoritative. Ignored local recovery snapshots
+are optional and are never evidence that private runtime/accounting state exists.
 
 ## Cross-device continuation
 
@@ -105,7 +105,7 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
   6.27 per tick, losses at role changes 37.86 → 0, Gini 0.68 → 0.32. 'legacy' mode stays
   byte-identical. Open: currency option A/B/C, and whether the lower Gini is intended.
 
-## Evaluation harness (2026-10-20, eval branch)
+## Evaluation harness (2026-10-20; original evaluation-branch evidence)
 
 - Inspect AI drives one controlled Baker per episode through the unchanged participant
   pipeline (`src/eval/`, `evals/inspect_node/`). Scripted policies run through Inspect's
@@ -129,15 +129,13 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
 
 ## Exact next steps
 
-1. In any fresh GitHub-backed session (phone, PC or cloud), read the GitHub-first continuation contract, this checkpoint and the relevant source. Confirm branch HEAD before editing; no PC or local recovery directory is required.
-2. Review/trust the `.codex/hooks.json` project hooks in `/hooks`; until then use
-   `npm run recovery:capture` at each handover.
-3. Continue the next user-directed game task from diary/event marking or restricted
-   trespass, preserving validated core and private experiment evidence.
-4. Update this record after meaningful work and commit/push the sanitized handover
-   when another checkout needs it. Keep credentials and private experiment inputs
-   out of this file and GitHub.
+1. Audit `main`, the shared development branch and remaining remote branch tips;
+   preserve unique changes and prepare a consolidation PR into `main`.
+2. Follow the tracked [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
+   for later evaluation work. It is a design, not an enabled live backend.
+3. Update root README and this checkpoint together after meaningful work. Manual
+   recovery commands work independently of optional trusted project hooks.
 
 ## PR #21 independent review (2026-10-20)
 
-Target `41da84f` is incorporated on the evaluation branch. The population-dependent shard-opening defect is resolved; the remaining shard limit is the deliberate cap of three. Both conflict histories are retained. See [PR21_REVIEW_2026-10-20](PR21_REVIEW_2026-10-20.md) for reproduced failures, evaluation-only fixes, command evidence and experimental limitations. Current totals: 1188 Vitest, 18 Python, 7 recovery and 80 native checks; two 29-sample Inspect runs with exported replay. No live inference or accounting reset.
+PR #21, including target `41da84f`, is now merged into the shared development branch at `2941067`. The population-dependent shard-opening defect is resolved; the remaining shard limit is the deliberate cap of three. Both conflict histories are retained. See [PR21_REVIEW_2026-10-20](PR21_REVIEW_2026-10-20.md) for reproduced failures, evaluation-only fixes, command evidence and experimental limitations. Current totals: 1188 Vitest, 18 Python, 7 recovery and 80 native checks; two 29-sample Inspect runs with exported replay. No live inference or accounting reset.

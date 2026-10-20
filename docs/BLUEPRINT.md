@@ -25,18 +25,20 @@ history, no narrative, no dates except where a value's provenance matters.
 
 The reasoning behind these choices — what was tried, measured, and rejected — is in
 `docs/BLUEPRINT_HISTORY.md`. Session-by-session work is in `docs/DEVLOG.md`. Current state and
-next steps are in `docs/HANDOVER.md`. **This file answers "what is it?" and nothing else.**
+next steps are in `docs/recovery/CURRENT_SESSION.md`; `docs/HANDOVER.md` is historical background. **This file answers "what is it?" and nothing else.**
 
 Verified against the code, not memory. If a number here disagrees with the source, the source
 is right and this file is stale — fix it.
 
 ---
 
-**Hosted-inhabitant integration state:** the current checkout has no recovered `src/agent/`
-broker, persistent-person repair, owner-only observer or cumulative budget implementation.
-Conversation-derived design/protocol records live in `docs/recovery/`; they are historical
-recovery targets, not installed architecture. Do not enable a paid inhabitant on this source
-until exact implementation and accounting are restored and reverified.
+**Hosted-inhabitant integration state (2026-10-20):** `src/agent/` now contains the
+participant identity/host, owner-only observer boundary, durable checkpoints, replay,
+accounting and bounded Responses transport. `src/eval/` and `evals/` provide the offline
+Inspect harness merged through PR #21. These implementations do not recover missing
+private account/runtime evidence or enable paid inference; the live gate stays closed.
+See `docs/recovery/CURRENT_SESSION.md`, `docs/recovery/PR21_REVIEW_2026-10-20.md` and
+`docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md`.
 
 ## 1. Shape of the system
 

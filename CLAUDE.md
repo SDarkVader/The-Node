@@ -46,7 +46,10 @@ on GitHub. No paid model calls or budget reset without explicit authorization.
 4. **After meaningful work**, update `docs/recovery/CURRENT_SESSION.md` and,
    when the shared continuation contract changes,
    `docs/recovery/GITHUB_FIRST_CONTINUATION.md`. Commit and push the sanitized
-   context on the agreed branch. Keep `docs/HANDOVER.md` and `README.md`
+   context on the agreed branch. Update root `README.md` alongside the checkpoint
+   for feature, behaviour, verification, branch-integration or next-step changes,
+   following `AGENTS.md`'s README contract. Keep one current overview and dated
+   evidence links; do not stack historical status banners. Keep `docs/HANDOVER.md`
    accurate when affected, distinguishing current state from historical stages.
 5. **Local recovery is optional:** `.codex/session-recovery/` and Codex hooks
    can preserve unpublished machine-specific work but are not prerequisites

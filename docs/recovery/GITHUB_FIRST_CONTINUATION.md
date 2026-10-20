@@ -1,6 +1,6 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-18. This is the cross-device entry point for a **new ChatGPT, Codex, PC, phone or cloud checkout**. GitHub is the shared source of code and sanitized development context; a local PC checkout is optional.
+Updated 2026-10-20. This is the cross-device entry point for a **new ChatGPT, Codex, PC, phone or cloud checkout**. GitHub is the shared source of code and sanitized development context; a local PC checkout is optional.
 
 ## Start from GitHub, not a previous chat or PC
 
@@ -9,6 +9,17 @@ Repository: `SDarkVader/The-Node`. Current development branch: `broker-rules-con
 The local recovery hook is optional convenience for uncommitted work on the *same machine*. It is not the cross-device transport. Only committed/pushed files are shared; ignored local patches, private data, secret bindings, runtime game checkpoints and local account ledgers **do not follow** a GitHub clone. Never infer that they have been transferred.
 
 ## Current code and verification
+
+PR #21 is merged into the development branch at `2941067`, with the same tracked
+tree as reviewed `298b636`. Latest full evidence: 1188 Vitest, TypeScript, 18 Python,
+7 recovery and 80 native checks; two 29-sample Inspect runs with exported replay.
+See [PR #21 review](PR21_REVIEW_2026-10-20.md) for commands and limitations.
+Those results were verified before this documentation refresh, not rerun by it.
+The post-merge checkpoint branch mismatch is corrected in CURRENT_SESSION.md.
+The next integration task is to audit and consolidate development into `main`.
+Root [README](../../README.md) is the current overview; update it with the checkpoint.
+The [accounted-agent design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md) is
+tracked for cross-device continuity; execution remains disabled.
 
 The branch includes the TypeScript simulation and broker under `src/`, Godot client under `client/`, and deterministic tests under `test/`. Current rules-aware context lives in `src/agent/rulesContext.ts`, `rulesAwareContext.ts`, `observationTables.ts`, `responsesRequest.ts` and `offlineRulesEvaluation.ts`. Detailed implementation, source boundaries and reproducible evidence: [RULES_AWARE_CONTEXT](RULES_AWARE_CONTEXT.md). Its historical stage reported 1,143 Vitest + 80 native checks, TypeScript passing, and a deterministic bounded-memory fixture (8/8 with diary, 4/8 without, 8/8 replay-restored). These are **reported historical runs**, not independently rerun here and not proof of real-model strategy.
 

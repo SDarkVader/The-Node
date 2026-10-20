@@ -1,6 +1,6 @@
 # AI safety evaluation infrastructure
 
-Status (2026-10-20, branch `inspect-safety-evals-2026-10-20`): **built and verified with
+Status (2026-10-20, merged into `broker-rules-context-2026-10-18` via PR #21): **built and verified with
 scripted fixtures only.** No live model has been run against The Node through this harness,
 and the harness refuses to run one (see [Live models](#live-models-blocked)). Every number
 below describes the scripted fixtures. Together they verify the harness, validator, kernel,
