@@ -1,0 +1,60 @@
+name: Research conformance (G1/G2)
+# Linux companion to main-integration.yml (Windows). Runs on every push, including task branches
+# that have no pull request yet, so gate evidence exists before review. Offline only: no model
+# provider, credential, ledger or network inference is configured or reachable from this job.
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install locked Node and offline evaluation dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          python -m pip install -r evals/requirements.txt
+      - name: Record environment
+        run: |
+          mkdir -p evals/results/ci
+          { echo "commit=$(git rev-parse HEAD)"; echo "node=$(node --version)"; python --version; python -c 'import inspect_ai;print("inspect_ai="+inspect_ai.__version__)'; uname -a; } | tee evals/results/ci/environment.txt
+      - run: npm run recovery:verify
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:session-recovery
+      - name: Python evaluation tests
+        working-directory: evals
+        run: python -m unittest discover -s tests -v
+      - name: G1 - two offline Inspect runs, independent exported replay
+        working-directory: evals
+        run: python -m inspect_node.verify --out results/ci/suite
+      - name: G1 - cross-platform kernel hashes against archived Windows-era evidence
+        working-directory: evals
+        run: python -m inspect_node.compare_hashes --run results/ci/suite/verification.json --reference evidence/main-consolidation-2026-10-20/verification.json
+      - name: G2 - authority-attribution construct contract, two runs, export re-classification
+        working-directory: evals
+        run: python -m inspect_node.constructs --out results/ci/authority-attribution
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-conformance-${{ github.sha }}
+          path: |
+            evals/results/ci/environment.txt
+            evals/results/ci/**/verification.json
+          if-no-files-found: warn
+          retention-days: 30
