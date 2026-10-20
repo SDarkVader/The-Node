@@ -109,7 +109,8 @@ commands, reproduced defects and supporting evidence.
 The simulation and participant host live under `src/`, with the evaluation bridge in
 `src/eval/` and Inspect tasks and scorers in `evals/`. The
 [blueprint](docs/BLUEPRINT.md) explains the wider architecture. Development continues
-on `main`; the [current checkpoint](docs/recovery/CURRENT_SESSION.md) and
+on `main` through pull requests with required `offline-verification` CI; the
+[current checkpoint](docs/recovery/CURRENT_SESSION.md) and
 [development log](docs/DEVLOG.md) provide the handover and dated history. For a fresh
 checkout, follow the [continuation guide](docs/recovery/GITHUB_FIRST_CONTINUATION.md)
 and run `npm run recovery:verify`.
