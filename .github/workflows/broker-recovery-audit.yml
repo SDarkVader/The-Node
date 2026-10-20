@@ -1,0 +1,47 @@
+name: Broker recovery and participant verification
+on:
+  pull_request:
+    branches:
+      - broker-reconstruction-2026-10-17
+  push:
+    branches:
+      - broker-audit-rebuild-2026-10-17
+      - broker-synthetic-accounting-2026-10-17
+      - broker-accounting-rebuild-2026-10-17
+      - broker-provider-adapter-2026-10-17
+      - broker-reconstruction-2026-10-17
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: reconstruction
+      - name: Checkout preserved original baseline
+        uses: actions/checkout@v4
+        with:
+          ref: 9126afbaadc3b16455f735c109a6bf67e9fcdd6f
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: reconstruction/package-lock.json
+      - name: Install locked dependencies
+        working-directory: reconstruction
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript
+        working-directory: reconstruction
+        run: node node_modules/typescript/bin/tsc --noEmit
+      - name: Full offline regression suite
+        working-directory: reconstruction
+        run: node node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=2 --no-file-parallelism
+      - name: Native broker and participant parity checks
+        working-directory: reconstruction
+        shell: pwsh
+        run: |
+          ./scripts/verify-participant-integration.ps1 -TypeScriptRoot "$PWD/node_modules" -BaselineRepository "$PWD/../baseline" -BuildDirectory "$env:RUNNER_TEMP/participant-native-build"

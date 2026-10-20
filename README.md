@@ -4,64 +4,160 @@
 something; nobody knows everything. There's always another shard to run to —
 but what the node did together, it did for good.*
 
-There's no combat in NODE. The tension comes from somewhere quieter: you can
-never be sure who knows what about you, whether the price you just saw is
-real or a message, whether the shop that's been quiet for three days is a
-coincidence or a squeeze. A node holds somewhere between 50 and 80 people.
-Small enough that everyone is, eventually, someone's business. Big enough
-that you'll never actually know all of them.
+NODE is a persistent multiplayer social-economic game. Its deterministic simulation
+combines interdependent roles, uncertain social information, decaying personal memory,
+and migration between settlements. The TypeScript server runs the world; the Godot
+client renders it. The evaluation harness tests agent decisions against the real
+participant pipeline.
 
-The world is built to sit permanently a little uphill — never comfortable
-for long, never actually collapsing either. If a place ever starts to feel
-safe, that's the system telling on itself. Somebody's about to notice.
+## Current state — 2026-10-20
 
-## Project status — 20 October 2026
+This integration tree brings the verified development work into `main`. The review
+branch is `consolidate-main-2026-10-20`; `main` is the destination and intended shared
+line after merge. The branch audit is recorded in
+[the consolidation report](docs/recovery/MAIN_CONSOLIDATION_2026-10-20.md).
+[PR #21](https://github.com/SDarkVader/The-Node/pull/21) was merged there at `2941067`,
+including the independently reviewed evaluation fixes and evidence. The consolidation PR separately preserves `main`'s existing documentation and security
+work. The unique Godot sky/navigation and Vitest 5 branches remain outside this tree.
 
-**This `main` branch is not the latest development line.** Its documented baseline is the August 2026 multiplayer simulation and Godot client. More recent broker, agent-context, accounting, security and recovery work is maintained on [`broker-rules-context-2026-10-18`](https://github.com/SDarkVader/The-Node/tree/broker-rules-context-2026-10-18). **Do not assume the development branch's features, tests or files are present on `main`.** Check the branch and source before running, changing or reporting anything.
+- **Game:** five economic roles (Miller, Baker, Courier, Investigator and Import/Export),
+  roleless inhabitants, vacancies/backstops, conscription, housing, the Oracle, Wall
+  posts, proximity communication, rumour and diary decay, and multi-shard migration.
+- **Funded settlement is the default:** wealth follows the person through role changes;
+  the dock funds nodules, district pools fund wages, and upkeep transfers a proportion
+  of holdings to the dock. The legacy economy remains available for comparison.
+- **Alternative shards no longer depend on population growth.** A population-independent
+  cap currently allows three shards; stability and cooldown gates still apply.
+- **Participant infrastructure:** authorized observations, authenticated action admission,
+  bounded Baker price input and movement, durable checkpoints, deterministic replay,
+  and isolated mechanical-host execution. The ordinary Godot server and the durable
+  participant trial are separate entry points.
+- **Evaluation:** Inspect AI runs one controlled Baker through the real observation,
+  request builder, validator and kernel. Current evidence uses scripted offline fixtures.
+  Live-agent evaluation remains disabled.
 
-For current development, begin with the development branch's [`AGENTS.md`](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/AGENTS.md), [GitHub-first continuation contract](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/GITHUB_FIRST_CONTINUATION.md) and [current session checkpoint](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/CURRENT_SESSION.md). Those are the cross-device source of shared, sanitized project context; no local PC or previous conversation is required to read them. Verify the live development branch HEAD rather than relying on a fixed SHA.
+Read [the current session checkpoint](docs/recovery/CURRENT_SESSION.md) for continuity,
+[the blueprint](docs/BLUEPRINT.md) for architecture, and
+[the development log](docs/DEVLOG.md) for dated history. Older stage reports retain their
+historical meaning; they do not supersede this status or the current source.
 
-### What exists on this branch
+## Verified evidence
 
-The August baseline includes a TypeScript social-economic world with a Miller/Baker supply chain, Courier and other roles, a multi-shard registry, district conditions, constrained social communication, presence, reputation and an Oracle. The Godot client provides an isometric world view and visual signals for stations, districts and movement. These are **historically documented implementation claims** for `main`, not a new test run or a guarantee that every proposed mechanic is complete.
+The consolidation runtime at `8281db6` was rechecked with the full offline suite.
+Hosted CI then exposed a wall-clock-dependent deadline fixture; its clock is now
+deterministic and an earlier-expiry regression is added. The current local suite has
+1,189 Vitest tests. Runtime/evaluation/dependency files still match development `320592e`;
+the recovery branch-contract regression brings recovery checks to eight. Earlier PR #21
+verification used code `96a431f`, evidence `298b636`, and identical-tree merge `2941067`.
 
-The simulation is designed around partial knowledge, temporary private memory, persistent collectively witnessed events, noncombat social consequences and deterministic mechanics. The [original build brief](docs/NODE_Build_Brief_v1.pdf) defines the design intent; [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) describes implementation and invariants.
+| Check | Result |
+|---|---|
+| Vitest | 1,189 passed across 95 files after the deadline-fixture correction |
+| TypeScript | Passed |
+| Python evaluation unit tests | 18 passed |
+| Session-recovery tests | 8 passed; fresh review/main checkouts also verified |
+| Native broker/participant checks | 80 passed, using target `41da84f` as baseline |
+| Two independent Inspect runs | 29 samples each; 29/29 final state hashes and event digests match |
+| Replay | 29/29 in-memory and exported-record replays verified in each run |
+| Scripted fixture checks | 56/56 passed in each run |
+| Inspect CLI control task | 2/2 samples passed |
 
-### Work on the active development branch
+[Full commands, reproduced failures, fixes and limitations](docs/recovery/PR21_REVIEW_2026-10-20.md)
+and [current consolidation evidence](evals/evidence/main-consolidation-2026-10-20/)
+are available in the repository. The standalone 44-check broker run overlaps the
+combined 80 native checks; it is not 124 distinct checks.
 
-The development branch adds offline participant/broker integration, durable execution and replay protections, reconstructed accounting controls, a Responses provider adapter, rules-aware agent context and deterministic evaluation fixtures. See its [rules-aware context evidence](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/recovery/RULES_AWARE_CONTEXT.md) and [recovery documentation](https://github.com/SDarkVader/The-Node/tree/broker-rules-context-2026-10-18/docs/recovery).
+These tests establish harness and simulation behaviour. They do not establish a real
+model's reasoning, cooperation, honesty or long-term strategy. Subjective Wall states
+are not proof of deception, low prices alone are not proof of harmful competition,
+and a passive monitor flag does not demonstrate prevention.
 
-Its last recorded rules-context stage reported **1,143 Vitest tests, 80 native checks and passing TypeScript**, but these are stage-specific recorded results, not tests rerun for this README update. The deterministic memory fixture reported eight of eight with legitimate memory, four of eight without, and eight of eight after replay restoration. That does **not** establish real model comprehension or live multi-turn strategy.
+## Run the simulation
 
-**Added on 20 October 2026** (development branch, now at `41da84f`; see its [DEVLOG](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/DEVLOG.md) and [settlement design](https://github.com/SDarkVader/The-Node/blob/broker-rules-context-2026-10-18/docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md)):
+Node 24 is recommended; `package.json` also accepts the supported Node 20.19 and
+22.12 release lines. From the repository root:
 
-- **Settlement ledger.** Every wealth change in a tick is a named payment, a transfer between accounts, or money leaving with an emigrant, and nothing is destroyed. The default "funded" mode makes wealth follow the person through role changes; the dock pays for each tick's nodules, wages come from a district pool (the grifter income floor first), and upkeep is the sink that keeps holdings bounded. The previous economy remains available as a byte-identical "legacy" mode. Measured before → after: new money per tick 45.8 → 6.3, and losses at role changes 37.9 → 0.
-- **Import/Export can never be fully vacant.** At least one slot is always staffed or backstopped, so nodule income never drops to zero.
-- **Migrants carry their holdings between shards**, and a failed crossing returns them to the departure shard's dock.
-- **Dormant shards no longer hold staffed Import/Export slots with nobody in them** (a bug fix).
-- **Alternative shards no longer depend on population.** Opening used to require an average of 100 people per shard, which could only happen on the first day or two. A fixed cap of three shards replaces it, and migration is unchanged.
-
-Verified at `41da84f` on 20 October from a fresh clone: **1,177 Vitest, passing TypeScript and 7/7 session-recovery tests**. The 80 native checks were not rerun, because they need private baseline files that a fresh clone doesn't include.
-
-**In review:** an [Inspect AI safety evaluation harness](https://github.com/SDarkVader/The-Node/tree/inspect-safety-evals-2026-10-20) (branch `inspect-safety-evals-2026-10-20`, pull request into the development branch). It runs an agent through the real participant pipeline using scripted fixtures and Inspect's offline mock model only, so it makes no model API calls. Independent scorers keep observed actions, inferred intentions and simulation failures separate, and results are classified against the NIST AI RMF. Verified from a fresh clone: 29 samples deterministic across two runs, 29/29 replays, and 56/56 fixture checks. Real-model runs stay blocked until they go through the accounted broker and budget ledger. See that branch's [`docs/EVAL_INFRASTRUCTURE.md`](https://github.com/SDarkVader/The-Node/blob/inspect-safety-evals-2026-10-20/docs/EVAL_INFRASTRUCTURE.md).
-
-Known development gaps include automatic diary/event connections, full restricted trespass transactions and held-out live-model evaluation. Several settlement questions are open design decisions rather than defects: the currency question, whether the lower inequality under funded settlement (Gini 0.68 → 0.32) is the intended feel, and whether the world should ever grow beyond three shards. Historical private accounting evidence and the original held reservation are not reconstructed merely by cloning GitHub. **Do not initialize/reset budgets, assume private runtime state is available, or launch paid model requests without explicit authorization and verified prerequisites.**
-
-### Run the checked-out branch
-
-```bash
-npm install
+```sh
+npm ci
 npm test
 npm run typecheck
-npm run sim
-npm run server
-npm run playtest
+npm run test:session-recovery
+npm run playtest          # terminal rendering with synthetic drivers
+npm run server            # mechanical world over WebSocket
+npm run settlement-report # compare legacy and funded settlement
 ```
 
-These commands are available in the repository; actual results depend on the checked-out branch and environment. The Godot setup is described in [`client/README.md`](client/README.md). To work on the latest development line, explicitly switch to `broker-rules-context-2026-10-18` first and read its handover.
+For the visual client, follow [client/README.md](client/README.md). The ordinary
+world server does not persist its world across restarts; durable participant
+checkpoints use the separate [participant recovery path](docs/recovery/CHECKPOINT_RECOVERY.md).
+These simulation and offline-test commands require no model key or paid inference.
 
-### Project documentation
+## Run the offline evaluation
 
-[Blueprint](docs/BLUEPRINT.md) records mechanics and invariants; [development log](docs/DEVLOG.md) records implementation history; [historical handover](docs/HANDOVER.md) preserves earlier session context; and the [build brief](docs/NODE_Build_Brief_v1.pdf) captures original design intent. The historical handover on `main` is **not** the authority for current cross-device development: use the active development branch's Git-tracked checkpoint.
+Install Node dependencies above first. On Windows, from the repository root:
 
-**Branch policy:** this README update documents the state of `main`; it does not merge the development branch or change runtime code. Continue active work on the agreed development branch unless explicitly directed otherwise.
+```powershell
+py -3.14 -m venv .venv-eval
+.venv-eval/Scripts/python -m pip install -r evals/requirements.txt
+cd evals
+../.venv-eval/Scripts/python -m unittest discover -s tests -v
+../.venv-eval/Scripts/python -m inspect_node.verify --out results/verify
+../.venv-eval/Scripts/inspect eval node_tasks.py@node_control --model mockllm/model
+```
+
+On Unix, use the corresponding Python interpreter and `.venv-eval/bin/` executables.
+Python 3.14.3 and Inspect AI 0.3.282 were used for the recorded verification.
+`verify` executes the full suite twice and independently replays exported evidence.
+Use a new output directory for a separate verification run so prior logs are not mixed in.
+See [EVAL_INFRASTRUCTURE.md](docs/EVAL_INFRASTRUCTURE.md) for tasks and export details.
+
+Inspect is integrated as the runner. AgentDojo and ControlArena are currently adapted
+patterns, not installed native integrations; Concordia is not integrated. Current
+scorers and the monitor are deterministic rules, and NIST mappings/thresholds are
+project interpretations. Installing framework packages alone would not validate the
+behavioural constructs.
+
+## Next work and existing limits
+
+The next evaluation step is the
+[accounted-agent and framework-alignment design](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md),
+with execution disabled. It specifies feasible Node behaviours, controls, evidence
+boundaries, an accounted inference path, and bounded decision-justification metrics.
+That integration and explanation contract are designed, not implemented.
+
+The existing harness, shard fix and PR conflict resolution do not need rebuilding.
+The next implementation should first prove that each proposed task is feasible using
+current actions, then connect evaluation inference through the existing accounted
+broker. It must preserve the kernel, observation boundary, validator and replay.
+Broader cooperation, factual deception, multiple controlled agents, held-out seeds
+and long-horizon reasoning need additional experimental coverage; existing fixtures
+cannot supply it by changing labels.
+
+Automatic event-derived personal memory and non-editing event marks, complete restricted
+trespass transactions, and individual abode tracking remain game implementation gaps.
+Growing beyond three shards and the intended settlement balance remain design choices.
+
+Live inference stays blocked by `assertLiveAdmission`. Missing private accounting
+records, unknown billing and historical holds remain unresolved evidence; a fresh
+clone is not a fresh allowance. No model request, paid judge, credential diagnostic,
+operator settlement or accounting reset is enabled by these instructions.
+
+## Repository map and continuation
+
+| Location | Purpose |
+|---|---|
+| `src/engine/`, `src/world/`, `src/sim/` | Mechanics, kernel and simulation/reporting tools |
+| `src/server/`, `src/agent/` | Server, participant host, observation, broker and accounting boundaries |
+| `src/eval/`, `evals/` | Node episode bridge and Python Inspect tasks/scorers |
+| `client/` | Godot client |
+| `test/`, `evals/tests/` | TypeScript/native and Python tests |
+| [AGENTS.md](AGENTS.md) | Common assistant entry point and documentation-maintenance contract |
+| [GitHub-first continuation](docs/recovery/GITHUB_FIRST_CONTINUATION.md) | Cross-device source and evidence rules |
+| [Current checkpoint](docs/recovery/CURRENT_SESSION.md) | Active branch, completed work, limits and next steps |
+| [Original build brief](docs/NODE_Build_Brief_v1.pdf) | Original design intent |
+
+Start a fresh session from the current GitHub branch, then run `npm run recovery:verify`.
+After meaningful work, update this README and the tracked checkpoint together, link
+verified evidence, and record history in the devlog. Keep one current status here;
+do not stack old “Current” banners above it. Local hooks and ignored recovery snapshots
+are optional and do not transfer private state or credentials between machines.

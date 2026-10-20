@@ -207,8 +207,7 @@ export function startServer(options: ServerOptions = {}): Promise<ServerHandle> 
   const interval = setInterval(() => {
     // Drain before stepping: everything that arrived during the previous tick belongs to this
     // one, and the queue must be empty again before the next batch lands.
-    const drained = pendingActions;
-    pendingActions = [];
+    const drained = pendingActions.splice(0);
     const stepped = stepScenario(scenarioState, drained);
     scenarioState = stepped.state;
     const message = toTickMessage(stepped.result);
@@ -317,8 +316,7 @@ export function startWorldServer(options: WorldServerOptions = {}): Promise<Serv
   const interval = setInterval(() => {
     // Drain before stepping, same contract as the legacy path: whatever arrived during the
     // previous tick belongs to this one, and the queue is empty again before the next batch.
-    const drained = pendingActions;
-    pendingActions = [];
+    const drained = pendingActions.splice(0);
     // Queue onto world.pendingX BEFORE stepping — the same "caller populates, stepWorld
     // consumes and clears" contract pendingWallPosts/pendingDiaryEntries/
     // pendingProximityUtterances already use everywhere else. Unresolved identity or a

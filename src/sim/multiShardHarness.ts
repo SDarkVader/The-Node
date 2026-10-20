@@ -85,6 +85,20 @@ export interface MultiShardState {
    *  they fell in. Reset every `stepMultiShard` call — same "report what actually happened
    *  this tick" convention as `world.ts`'s `lastX` fields, not a cumulative log. */
   lastMigrationWindows: MigrationWindowReport[];
+  /** Transit vouchers settled this tick (2026-10-20, engine/settlement.ts): what emigrants
+   *  carried out, how much arrived with them, and how much went to a source shard's dock
+   *  because the crossing failed or there was nowhere to go. carried = arrived + toDock. */
+  lastVoucherSettlement: VoucherSettlement;
+}
+
+export interface VoucherSettlement {
+  carried: number;
+  arrived: number;
+  toDock: number;
+}
+
+function emptyVoucherSettlement(): VoucherSettlement {
+  return { carried: 0, arrived: 0, toDock: 0 };
 }
 
 export function createMultiShardState(
@@ -110,6 +124,7 @@ export function createMultiShardState(
     migrationFailureRate,
     useLegacyFlatFailureRate,
     lastMigrationWindows: emptyMigrationWindowReport(),
+    lastVoucherSettlement: emptyVoucherSettlement(),
   };
 }
 
@@ -122,27 +137,45 @@ export function createMultiShardState(
 export function stepMultiShard(state: MultiShardState): MultiShardState {
   let registry = state.registry;
   const worlds = new Map(state.worlds);
-  const emigrantBatches: { fromShardId: number; count: number }[] = [];
+  const emigrantBatches: { fromShardId: number; count: number; holdings: readonly number[] }[] = [];
 
   for (const shardId of [...worlds.keys()]) {
     const stepped = stepWorld(worlds.get(shardId)!);
     worlds.set(shardId, stepped);
     registry = setShardPopulation(registry, shardId, stepped.population);
-    if (stepped.lastEmigrants > 0) emigrantBatches.push({ fromShardId: shardId, count: stepped.lastEmigrants });
+    if (stepped.lastEmigrants > 0) {
+      emigrantBatches.push({ fromShardId: shardId, count: stepped.lastEmigrants, holdings: stepped.lastSettlement.emigrantHoldings });
+    }
   }
+
+  // Transit vouchers (2026-10-20, engine/settlement.ts): an emigrant's holdings either arrive
+  // with them or, if they never arrive anywhere, go to the SOURCE shard's dock — returning as
+  // nodules where they left, rather than vanishing (DESIGN_SETTLEMENT_FLOW_BALANCE §4.2).
+  const vouchers = emptyVoucherSettlement();
+  const toSourceDock = (shardId: number, amount: number) => {
+    vouchers.toDock += amount;
+    if (amount === 0) return;
+    const w = worlds.get(shardId)!;
+    worlds.set(shardId, { ...w, settlement: { ...w.settlement, dock: w.settlement.dock + amount } });
+  };
 
   let totalFailedMigrations = state.totalFailedMigrations;
   const migrationWindows = emptyMigrationWindowReport();
   let attemptIndex = 0;
-  for (const { fromShardId, count } of emigrantBatches) {
+  for (const { fromShardId, count, holdings } of emigrantBatches) {
     for (let i = 0; i < count; i++) {
+      const carried = holdings[i] ?? 0;
+      vouchers.carried += carried;
       // Tags which of the day's two Import/Export windows this attempt falls in — reporting
       // only, alternating in the same order attempts are already processed. Consumes no rng
       // and never affects whether the attempt happens or how it resolves.
       const windowIndex = attemptIndex % migrationWindows.length;
       attemptIndex += 1;
       const destId = chooseMigrationDestination(registry, fromShardId, state.rng);
-      if (destId === null) continue; // only one shard exists — nowhere else to go, an honest edge case
+      if (destId === null) {
+        toSourceDock(fromShardId, carried);
+        continue; // only one shard exists — nowhere else to go, an honest edge case
+      }
 
       // The source shard already lost this person (stepWorld's own emigration accounting
       // happened before lastEmigrants was reported). A failed crossing means they simply
@@ -160,6 +193,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
         : attemptCrossing(drawTicketProgress(state.rng), state.rng);
       if (!crossed) {
         totalFailedMigrations += 1;
+        toSourceDock(fromShardId, carried);
         continue;
       }
       migrationWindows[windowIndex]!.succeeded += 1;
@@ -169,7 +203,8 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
       if (!worlds.has(destId)) {
         worlds.set(destId, createDormantWorld(state.seed * 1000 + destId + 1, state.config));
       }
-      const dest = receiveMigrants(worlds.get(destId)!, 1);
+      const dest = receiveMigrants(worlds.get(destId)!, 1, [carried]);
+      vouchers.arrived += carried;
       worlds.set(destId, dest);
       if (wasDormant) registry = markShardActive(registry, destId);
       registry = setShardPopulation(registry, destId, dest.population);
@@ -178,11 +213,33 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
 
   const populatedWorlds = [...worlds.values()].filter((w) => w.population > 0);
   const meanHealth = populatedWorlds.length > 0 ? populatedWorlds.reduce((sum, w) => sum + w.economicHealth, 0) / populatedWorlds.length : 0;
-  if (canOpenNewShard(registry, meanHealth, state.day, state.config.targetPopulation)) {
+  if (canOpenNewShard(registry, meanHealth, state.day)) {
     registry = openNewShard(registry, state.day);
   }
 
-  return { ...state, registry, worlds, day: state.day + 1, totalFailedMigrations, lastMigrationWindows: migrationWindows };
+  return {
+    ...state,
+    registry,
+    worlds,
+    day: state.day + 1,
+    totalFailedMigrations,
+    lastMigrationWindows: migrationWindows,
+    lastVoucherSettlement: vouchers,
+  };
+}
+
+/** Every shard's holdings plus its settlement accounts — the system-wide total that changes
+ *  only by issuance (settlement.ts). Vouchers resolve within one `stepMultiShard`, so nothing
+ *  is in transit between calls. */
+export function systemValue(state: MultiShardState): number {
+  let total = 0;
+  for (const w of state.worlds.values()) {
+    total += [w.millers, w.bakers, w.couriers, w.investigators, w.importExporters, w.grifters]
+      .flat()
+      .reduce((s, x) => s + x.wealth, 0);
+    total += w.settlement.districtPool + w.settlement.oraclePool + w.settlement.dock;
+  }
+  return total;
 }
 
 export function totalPopulation(state: MultiShardState): number {

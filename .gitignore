@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 .DS_Store
+.codex/session-recovery/
 
 # Godot
 client/.godot/
@@ -13,3 +14,27 @@ node-playtest-look.html
 
 # Generated world recordings for the browser viewer (regenerate with npm run web-export)
 docs/web/world.json
+
+# Private evaluator checkpoints and interrupted-write evidence; never publish these.
+participant.checkpoint.json
+.participant.*
+
+# Synthetic accounting fixture journals; not real-account spending state.
+synthetic-budget.json
+.synthetic-budget.*
+
+# Reconstructed account evidence and private accounting journals.
+accounting.journal.json
+.accounting.*
+
+# Confirmed local OpenAI credential destination. Never include in commits or handoff bundles.
+/.env.local
+
+# Inspect evaluation harness (evals/): local venv, Inspect logs and regenerable result exports.
+# Reviewed verification evidence lives in evals/evidence/ and is tracked.
+.venv*/
+__pycache__/
+evals/logs*/
+evals/results/
+evals/evidence/**/episodes.jsonl
+evals/evidence/**/logs/

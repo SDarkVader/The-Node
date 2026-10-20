@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Offline verification must never load the user's confirmed .env.local credential.
+  envDir: false,
   test: {
     include: ['test/**/*.test.ts'],
     /**

@@ -1,0 +1,55 @@
+name: Main integration verification
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-verification:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install locked Node and offline evaluation dependencies
+        shell: pwsh
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -r evals/requirements.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: npm run recovery:verify
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:session-recovery
+      - name: Native broker and participant checks against the reviewed funded baseline
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ../native-baseline -Force | Out-Null
+          git archive --format=tar --output=../native-baseline.tar 320592efdee5073a16d447f1c2f33eacebb86e24 src package.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          tar -xf ../native-baseline.tar -C ../native-baseline
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/verify-participant-integration.ps1 -TypeScriptRoot "$PWD/node_modules" -BaselineRepository "$PWD/../native-baseline" -BuildDirectory "$PWD/../native-build"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Python evaluation tests
+        working-directory: evals
+        run: python -m unittest discover -s tests -v
+      - name: Two offline Inspect runs and independent exported replay
+        working-directory: evals
+        run: python -m inspect_node.verify --out results/ci

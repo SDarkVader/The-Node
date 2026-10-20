@@ -1,0 +1,60 @@
+{
+  "description": "Verify and maintain local development-session recovery for The Node.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|compact)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/session-recovery.mjs\" hook-start",
+            "commandWindows": "powershell -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root 'scripts/session-recovery.mjs') hook-start\"",
+            "statusMessage": "Verifying The Node recovery checkpoint",
+            "timeout": 20,
+            "additionalContextLimit": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Write|Edit|apply_patch|functions\\.apply_patch|exec_command|functions\\.exec|Bash)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/session-recovery.mjs\" hook-capture",
+            "commandWindows": "powershell -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root 'scripts/session-recovery.mjs') hook-capture\"",
+            "statusMessage": "Saving The Node worktree recovery checkpoint",
+            "timeout": 90
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/session-recovery.mjs\" hook-capture",
+            "commandWindows": "powershell -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root 'scripts/session-recovery.mjs') hook-capture\"",
+            "statusMessage": "Saving recovery context before compaction",
+            "timeout": 90
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/session-recovery.mjs\" hook-capture",
+            "commandWindows": "powershell -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root 'scripts/session-recovery.mjs') hook-capture\"",
+            "statusMessage": "Saving The Node session handover",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

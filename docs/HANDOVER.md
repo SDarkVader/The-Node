@@ -1,3 +1,30 @@
+> Current orientation: this file preserves historical handovers. For the main-consolidation
+> candidate and subsequent main line, read root README.md and
+> docs/recovery/CURRENT_SESSION.md. Older branch, test and missing-integration statements
+> below describe their dated stages, not the current source.
+
+> CURRENT, 2026-10-18: development continues from 6ba5b2d in a fresh outputs/broker-rules-context checkout on broker-rules-context-2026-10-18. Read [RULES_AWARE_CONTEXT](recovery/RULES_AWARE_CONTEXT.md). Implementation f33469d adds observer-grounded role/signal/action/memory explanations, compact instructions, lossless tables under unchanged wire bounds, and offline interpretation/evidence/real-kernel memory evaluations. 1223 checks and TypeScript pass; 8/8 current-memory follow-up vs 4/8 ablated, 8/8 replay-restored, without any model call. The older optional composed diary field is not intended event marking; no new automatic diary, crime, transfer or reputation authority exists. Actual durable checkpoint context continuity also passes. Current private game remains tick 2; the forward allowance remains two consumed requests/three remaining and was not modified. No key access or paid calls. Main security PR #20 is already merged at 0cea112; prior alert-merge caveats below are historical.
+
+> CURRENT, 2026-10-18: read [RULES_REVIEW_2026-10-18](recovery/RULES_REVIEW_2026-10-18.md) before judging or expanding the experiment. It records the full available rulebook reading, current human diary clarification, code gaps and ordered acceptance tests. The dependency fix is commit 31f84c68ca54c409e27caa1d5d5a0e91e4416766 on broker-rules-security-2026-10-18 in outputs/broker-rules-security: npm audit is clean, 1206 tests and TypeScript pass on Node 24. No game source/core, historical ledger or paid allowance was changed. Latest successful game evidence remains outputs/initial-game-turn-2-2026-10-18 (tick 2); the same initial allowance has two consumed requests and three remaining. Do not recreate genesis or an allowance. Crucial correction: both provider schemas forced diary=null, rather than the actor choosing not to mark events. The older diaryEntry composition is not the intended automatic memory/marking contract. No new provider requests ran in this review. Default-main GitHub alerts require merging the isolated security fix; a clean branch audit does not close them. Earlier banners below describe historical stages.
+
+> CURRENT: broker-provider-adapter-2026-10-17 continues ledger commit 70132cf. Read [PROVIDER_ADAPTER_REBUILD](recovery/PROVIDER_ADAPTER_REBUILD.md) first. Provider serializer, HTTPS/verified CONNECT transport, lazy key reader and credential-separated mechanical host are rebuilt; 1168 distinct checks and TypeScript pass. The user confirmed key creation and its destination on mobile; one key is saved in this checkout's ignored .env.local (directory still outputs/broker-accounting-rebuild), never in a bundle. Do not repeat key creation or the resolved credential question in this same checkout. No model request/access diagnostic or financial disposition occurred. Carry forward the INCLUDED journal unchanged: 19114 microUSD held, nine combined admissions including the actor, unknown billing/diagnostics. New credentials do not grant money or resolve the old account. assertLiveAdmission still always rejects; main/core and prior branches are untouched.
+
+> CURRENT: broker-accounting-rebuild-2026-10-17 replaces the prior synthetic-only stopping point with AccountingLedger and AccountedBroker. Read [the current rebuild contract](recovery/BROKER_ACCOUNTING_REBUILD.md). All 1016 Vitest + 80 native = 1096 tests and repository/CLI TypeScript pass. Recovery starts with the full 19114-microUSD hold, nine combined admissions INCLUDING the actor, unbounded diagnostic liability and null actual billing. No actual financial reconciliation or API/key operation occurred. Existing core and prior checkouts are preserved. Recorded response → durable accounting → core validation → authenticated host → real-kernel replay is verified. Current API access, actual wire transport and original billing evidence remain unverified; live gate stays closed. Earlier banners are dated historical stages.
+
+> Latest, 2026-10-17: branch broker-synthetic-accounting-2026-10-17 continues audited 0b51994 in a fresh clone. New SyntheticBudgetLedger and budgetedMock exercise cumulative spend mechanics with synthetic fixture identities/prices only. All 50 new tests, both full regression configurations (926 Vitest), 80 native checks and TypeScript pass: 1006 distinct tests. An initial full run exited with Windows Node access violation 0xC0000005; no assertion was reported. Original files/counters/holds and audited core are unchanged. Read [current implementation, verification and boundaries](recovery/SYNTHETIC_ACCOUNTING.md). No real account import, reconciliation, provider adapter or live admission was enabled.
+
+> Latest audit, 2026-10-17: active development is GitHub broker-reconstruction-2026-10-17 (audited at c1238de); this continuation is isolated on broker-audit-rebuild-2026-10-17. Remote coordinate/callback/affordance/session hardening and local mock commit 89c5379 are preserved together. Version-2 checkpoints now retain pending/consumed/halted fixture execution across restart; legacy v1 allows game replay but no inference from absent fixture history. 956 tests and TypeScript pass. Read [audit and findings](recovery/DEVELOPMENT_BRANCH_AUDIT.md) and [checkpoint compatibility](recovery/DURABLE_FIXTURE_RECOVERY.md). Core fingerprints in old handoffs predate the remote hardening; this continuation does not edit the audited core. No financial settlement or live API work.
+
+> Latest, 2026-10-17: new isolated local branch broker-provider-offline-2026-10-17 adds a provider-neutral in-memory mock adapter and dynamic decision schema. All 929 tests and TypeScript pass; validated core and prior checkouts remain unchanged. The prior handoff overstated nine admissions as a separate diagnostic count: the support report includes the original actor attempt in nine combined admissions. Ledger/actual cost remain unresolved and live admission rejects. Read [current mock status](recovery/OFFLINE_PROVIDER_BOUNDARY.md), [inventory](recovery/ACCOUNTING_RECOVERY_INVENTORY.md) and [unexecuted reconciliation proposal](recovery/ACCOUNTING_RECONCILIATION_PROPOSAL.md) before older status below.
+
+> Current: see [durable checkpoint and recovery verification](recovery/CHECKPOINT_RECOVERY.md). createDurableHost/openDurableHost persist fixed-tick intent and result, rebuild through complete replay, reject corrupt/missing/locked data, invalidate old sessions and retain halted evidence. 21 new checkpoint cases including six real crash windows pass; all 823 Vitest plus 74 native checks and full typecheck pass. Durable behavior is opt-in; original three-argument host stays a volatile fixture. Windows process-crash recovery verified, not physical power-loss persistence. No spending/API/agent operations. Branch: broker-reconstruction-2026-10-17; main and core unchanged.
+
+> Current: authenticated loopback transport and containment tests are complete; see [review and verification](recovery/LOCAL_TRANSPORT_REVIEW.md). Full Vitest suite including all legacy sockets: 802/802; native core/integration: 74/74; full TypeScript passes. Fixed automatic-pong and framing-budget bypasses during review. No listener left running. Paid/provider transport and original ledger recovery remain blocked. Work is on broker-reconstruction-2026-10-17; both main branches and original core preserved.
+
+> Current integration: see [offline integration status](recovery/OFFLINE_INTEGRATION_STATUS.md). Stable people/episodes, private observers, in-memory controller leases, authoritative movement/price/social admission and action-bearing replay are implemented in this separate checkout. 74 native checks plus 757 existing offline tests and full TypeScript pass. Original core fingerprints and original restored checkout unchanged; no live listener/provider/ledger activation. Earlier status below is retained as historical context.
+
+> Current work in this separate checkout: new offline broker contract, validation and bounded-body reconstruction; 40 checks and scoped strict compilation pass. Original game/server source unchanged. Live admission disabled and accounting unresolved. See [reconstruction status](recovery/BROKER_RECONSTRUCTION.md). Earlier text below is historical.
+
 # Handover
 
 Read this first. It's rewritten at the end of every session to reflect current reality —
@@ -11,6 +38,37 @@ standing Import/Export berths, migrant vouchers, a dormant-shard Import/Export f
 population-independent shard availability. An Inspect AI safety evaluation harness is in review
 on `inspect-safety-evals-2026-10-20`. `README.md`'s status section has the summary and the
 verified test results.
+
+## Current recovery status — 2026-10-17
+
+The environment restored original revision `e6be3b2`, without the previous local broker,
+private budget/run evidence or extensive experiment documents. Git object/reflog and local
+recovery searches did not find the old commits or patch. Reconstructed records from the
+conversation/screenshots are indexed in [docs/recovery](recovery/README.md); they are not
+byte-for-byte source recovery or current test evidence. Older handover below describes the
+restored original source, not the missing repaired integration.
+
+Environment revision 5 is published/current, secret ready and network policy enforced.
+The new zero-generation Responses check still returned **401 invalid_api_key**. Earlier
+revision-3 model listing succeeded, but that does not prove current generation access.
+The save/publish blocker is resolved; stop asking for unchanged publication or blind key
+rotation. See [the prepared authentication report](recovery/CREDENTIAL_BINDING_SUPPORT_REPORT.md).
+No support message has been sent. Diagnostics now total nine conservative request admissions
+including the original attempt and sandbox denials, so stop automatic probes. Paid gameplay
+remains stopped. Preserve the historical **US$0.019114** reservation and first request count;
+original accounting is unavailable, so do not initialize a replacement allowance at zero.
+Initial authorization remains US$0.25/10 requests and cumulative US$5.
+
+Historical repaired-source result was 868/868 tests, not a test result for this checkout.
+No game source was reconstructed or simplified during credential recovery. Recover the old
+snapshot/change set/bundle and cumulative ledger, reverify exact source, then resume only the
+remaining bounded pass. Earlier GitHub push was denied 403. Recovery documentation is on
+local main and a new documentation-only patch and verified complete Git bundle are retained outside checkout.
+A start_skill-only draft is confirmed saved and requires publication; it forbids automatically
+launching the old all-interface server or paid calls until source/accounting recovery.
+Install/network/secrets were preserved. This draft is not claimed applied or published.
+
+## Earlier source handover
 
 **2026-08-25 (later) — arson eligibility, and a real bug caught before shipping**:
 `World.isArsonEligible(world, targetId, targetAtAbode)` wires `arson.ts`'s existing

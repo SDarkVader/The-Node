@@ -1,0 +1,58 @@
+{
+  "code_revision": "8281db65a1f3a0246c789cde064aeea2958ea807",
+  "input_main": "1eb695800841de1a39fcd1430f503c17e0f46e17",
+  "input_development": "320592efdee5073a16d447f1c2f33eacebb86e24",
+  "vitest": {
+    "passed": 1189,
+    "files": 95
+  },
+  "typecheck": "passed",
+  "python_unittest": {
+    "passed": 18
+  },
+  "native": {
+    "passed": 80,
+    "baseline": "41da84f1cdba2cbe7faafb0ccee6f2630fa59559"
+  },
+  "recovery_tests": {
+    "passed": 8
+  },
+  "fresh_checkout": {
+    "consolidate-main-2026-10-20": {
+      "exit": 0,
+      "ok": true
+    },
+    "main": {
+      "exit": 0,
+      "ok": true
+    },
+    "unrelated-review": {
+      "exit": 2,
+      "ok": false
+    }
+  },
+  "remote_branches_audited": 25,
+  "historical_branch_tips_already_in_development": 20,
+  "excluded_unique_branches": [
+    "claude/sibling-shard-sky-viz-xbpl1r",
+    "dependabot/npm_and_yarn/npm_and_yarn-8bd3e5320a"
+  ],
+  "live_inference": false,
+  "accounting_reset": false,
+  "hosted_ci": "correction rerun pending",
+  "deadline_regression": {
+    "focused_tests_passed": 12,
+    "test_file_sha256": "8fc6ac1293e50512e4efc0ee9f0a64dd11289708a80bd03d863f2932bbdeb3bb",
+    "production_code_unchanged": true
+  },
+  "first_hosted_run": {
+    "id": 39455761722,
+    "result": "failed",
+    "vitest_passed": 1187,
+    "vitest_failed": 1,
+    "expected": "deadline_or_cancelled_after_accounting",
+    "received": "deadline_before_dispatch",
+    "later_steps": "skipped"
+  },
+  "hosted_dependency_audit": "passed"
+}

@@ -1,0 +1,21 @@
+name: Offline broker regression
+on:
+  push:
+    branches:
+      - offline-broker-fixture-hardening-2026-10-17
+  workflow_dispatch:
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node node_modules/typescript/bin/tsc --noEmit
+      - run: node node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=2 --no-file-parallelism

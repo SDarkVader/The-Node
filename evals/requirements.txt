@@ -1,0 +1,3 @@
+# Inspect AI evaluation harness for The Node (evals/). Verified with Python 3.14.3.
+# Only the offline mockllm provider is used; no model provider SDK is required or installed.
+inspect_ai==0.3.282
