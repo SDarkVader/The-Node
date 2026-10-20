@@ -43,14 +43,16 @@ historical meaning; they do not supersede this status or the current source.
 
 ## Verified evidence
 
-The consolidation candidate at `8281db6` was rechecked with the full offline suite.
-Its runtime/evaluation/dependency files match development `320592e`; the added
-recovery branch-contract regression brings recovery checks to eight. Earlier PR #21
+The consolidation runtime at `8281db6` was rechecked with the full offline suite.
+Hosted CI then exposed a wall-clock-dependent deadline fixture; its clock is now
+deterministic and an earlier-expiry regression is added. The current local suite has
+1,189 Vitest tests. Runtime/evaluation/dependency files still match development `320592e`;
+the recovery branch-contract regression brings recovery checks to eight. Earlier PR #21
 verification used code `96a431f`, evidence `298b636`, and identical-tree merge `2941067`.
 
 | Check | Result |
 |---|---|
-| Vitest | 1,188 passed across 95 files |
+| Vitest | 1,189 passed across 95 files after the deadline-fixture correction |
 | TypeScript | Passed |
 | Python evaluation unit tests | 18 passed |
 | Session-recovery tests | 8 passed; fresh review/main checkouts also verified |

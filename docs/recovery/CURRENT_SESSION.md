@@ -5,6 +5,7 @@
   "branch": "main",
   "verifiedBaseCommit": "320592efdee5073a16d447f1c2f33eacebb86e24",
   "completedWork": [
+    "2026-10-20 PR #22 is open: https://github.com/SDarkVader/The-Node/pull/22, verified development-to-main consolidation. User explicitly chose to keep unique Godot work separate. First hosted run found a deadline fixture reached correct pre-dispatch expiry before its intended stall; made the test clock deterministic and added a separate early-expiry case, preserving all strict assertions and production code.",
     "2026-10-20 main consolidation candidate: integrated existing main 1eb6958 and verified development 320592e, preserving both documentation histories and the existing security fixes. Unique Godot sky/navigation and Vitest 5 work remain separate. Canonical destination is main; the explicit reviewBranch permits the same checkpoint to verify before and after merge. See MAIN_CONSOLIDATION_2026-10-20.md.",
     "2026-10-20 post-merge orientation: PR #21 was merged by GitHub at 2941067; its tracked tree equals independently reviewed 298b636. Root README now has one current overview, source-anchored evidence, current commands, game/evaluation limits and next steps. The accounted-agent/framework design is now tracked in docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md; design only. AGENTS.md and CLAUDE.md require README/checkpoint maintenance together.",
     "2026-10-20 PR #21 independent review: target 41da84f merged into the evaluation branch; both documentation histories and the shard fix preserved. Fixed evaluation-only stale role instructions, failed-integrity scoring, incomplete verifier success, exported JSON replay and Python-source provenance. See docs/recovery/PR21_REVIEW_2026-10-20.md.",
@@ -19,6 +20,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-20 PR #22 CI correction: hosted run 39455761722 failed 1/1188 tests (expected deadline_or_cancelled_after_accounting, actual deadline_before_dispatch); later hosted steps skipped. Hosted dependency audit passed. Corrected fixture: focused 12/12 and full 1189/1189 Vitest plus TypeScript pass locally. Production/evaluation code unchanged; see MAIN_CONSOLIDATION_2026-10-20.md for exact evidence.",
     "2026-10-20 main consolidation candidate: 1188/1188 Vitest across 95 files, TypeScript, 18/18 Python unit tests, 80/80 native checks and 8/8 recovery tests passed. Two 29-sample Inspect runs match state hashes/event digests, with 56/56 fixture checks and 29/29 in-memory/exported replay each. No live models, paid inference or accounting reset. Hosted main/PR CI added; completion is unclaimed until GitHub reports it.",
     "2026-10-20 documentation refresh: 7/7 session-recovery tests passed; 25 local documentation links and README npm-script references checked; no runtime/test/dependency changes. At 2941067 a real clean development-branch clone failed recovery with exit 2 because the checkpoint named inspect-safety-evals-2026-10-20; corrected destination metadata. Prior full game/evaluation results below were not rerun by this documentation change.",
     "2026-10-20 PR #21: 1188/1188 Vitest (95 files), TypeScript, 18/18 Python tests, 7/7 recovery, 80/80 native checks against target 41da84f. Two Inspect runs: 29/29 matching state hashes and event digests; 29/29 in-memory and exported replays in each run; 56/56 fixture checks each; CLI control task 2/2. Scripted infrastructure evidence only; no live models, model APIs, paid inference or real-account resets.",
@@ -130,8 +132,8 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
 
 ## Exact next steps
 
-1. Audit `main`, the shared development branch and remaining remote branch tips;
-   preserve unique changes and prepare a consolidation PR into `main`.
+1. Review [PR #22](https://github.com/SDarkVader/The-Node/pull/22) and its hosted checks;
+   it consolidates verified development into `main`. A merge decision remains pending.
 2. Follow the tracked [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
    for later evaluation work. It is a design, not an enabled live backend.
 3. Update root README and this checkpoint together after meaningful work. Manual

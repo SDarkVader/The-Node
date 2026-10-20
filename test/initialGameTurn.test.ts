@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { InitialTestBudget } from '../src/agent/initialTestBudget.js';
 import { runInitialGameTurn } from '../src/agent/initialGameTurn.js';
@@ -107,10 +107,34 @@ describe('one explicitly budgeted game turn', () => {
     expect(f.budget.view().held).toBeGreaterThan(0n); expect(f.h.exportTape().ticks).toHaveLength(0);
   });
   it('rejects a response after a synchronous stall even when timer delivery was delayed', async () => {
-    const f = fixture(); const result = await runInitialGameTurn(f.budget, f.host, async () => {
-      const until = performance.now() + 70; while (performance.now() < until) {} return f.bytes();
-    }, { deadlineMs: 50 });
-    expect(result).toMatchObject({ status: 'rejected', code: 'deadline_or_cancelled_after_accounting' }); expect(f.budget.view().booked).toBe(29n); expect(f.h.exportTape().ticks).toHaveLength(0);
+    const f = fixture(); let now = 0, calls = 0;
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    try {
+      const result = await runInitialGameTurn(f.budget, f.host, async () => {
+        calls++;
+        // Advance monotonic time without yielding to timers. Real reservation I/O may
+        // take >50 ms on CI; it must not prevent this test reaching the sender.
+        now = 70;
+        return f.bytes();
+      }, { deadlineMs: 50 });
+      expect(calls).toBe(1);
+      expect(result).toMatchObject({ status: 'rejected', code: 'deadline_or_cancelled_after_accounting' });
+      expect(f.budget.view().booked).toBe(29n); expect(f.h.exportTape().ticks).toHaveLength(0);
+    } finally { clock.mockRestore(); }
+  });
+  it('does not dispatch when reservation persistence uses the remaining deadline', async () => {
+    const f = fixture(); let now = 0, calls = 0;
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const reserve = f.budget.reserve.bind(f.budget);
+    const reservation = vi.spyOn(f.budget, 'reserve').mockImplementation((...args) => {
+      const result = reserve(...args); now = 70; return result;
+    });
+    try {
+      const result = await runInitialGameTurn(f.budget, f.host, async () => { calls++; return f.bytes(); }, { deadlineMs: 50 });
+      expect(result).toMatchObject({ status: 'rejected', code: 'deadline_before_dispatch' });
+      expect(calls).toBe(0); expect(f.budget.view().held).toBeGreaterThan(0n);
+      expect(f.budget.view().booked).toBe(0n); expect(f.h.exportTape().ticks).toHaveLength(0);
+    } finally { reservation.mockRestore(); clock.mockRestore(); }
   });
   it('reports a post-commit replay failure honestly instead of pretending no action happened', async () => {
     const f = fixture(); const result = await runInitialGameTurn(f.budget, { ...f.host, evidence: async () => 'incorrect-fixture-hash' }, async () => f.bytes());

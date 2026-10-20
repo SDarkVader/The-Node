@@ -18,7 +18,7 @@ Status: prepared integration candidate; no merge into main or branch deletion is
 | Development README refresh | Pushed at 320592e | 25 local links, npm commands, 7 recovery tests; fresh clean development clone now passes |
 | Recovery before repair | Reproduced exit 2 at 2941067 | Wrong evaluation-branch checkpoint on development |
 | Consolidation recovery regression | 8/8 passed | Actual fresh clone also verified candidate and main at 8281db6; unrelated clean branch rejected with exit 2 |
-| Full Vitest and typecheck | 1,188/1,188; TypeScript clean | Full offline regression on merged candidate |
+| Full Vitest and typecheck | 1,189/1,189; TypeScript clean after the test-only deadline correction | Full offline regression on merged candidate |
 | Python evaluation unit tests | 18/18 passed | No model requests |
 | Two Inspect runs and exported replay | 29/29 deterministic; 56/56 checks and 29/29 exported replays per run | Scripted calibration only |
 | Native checks | 80/80 passed | Actual local funded baseline 41da84f; new CI uses equivalent reviewed 320592e baseline code |
@@ -78,3 +78,22 @@ No new simulation rewrite, duplicate PR #21 integration, accounting reset, model
 ## Source and evidence
 
 The candidate code merge is `8281db6` (parents main `1eb6958` and development `320592e`). Evaluation verification is rerun at that exact source revision; evidence is in `evals/evidence/main-consolidation-2026-10-20/`. Subsequent evidence/CI-order documentation commits do not change the runtime or evaluation implementation.
+
+## First hosted CI failure and correction
+
+[Integration run 39455761722](https://github.com/SDarkVader/The-Node/actions/runs/39455761722)
+failed with 1,187 passing and one failing Vitest test. The regression expected
+`deadline_or_cancelled_after_accounting`, but received `deadline_before_dispatch`.
+Its 50 ms real-time deadline expired during durable reservation I/O on the runner,
+before its sender could produce the synchronous 70 ms stall it intended to exercise.
+Production rejected before dispatch correctly; this was a fixture path-selection defect.
+Subsequent hosted recovery/native/Python/Inspect steps were skipped in that run and
+are not claimed as passed there. The independent hosted dependency audit passed.
+
+The test now advances a controlled monotonic clock without yielding to timers. Its
+strict post-accounting rejection, booked-usage and zero-action assertions remain,
+and it explicitly asserts the sender was called. A separate deterministic regression
+covers deadline expiry during reservation, proving zero dispatch, retained hold,
+zero booked usage and zero game ticks. The focused 12 tests, full 1,189-test suite
+and TypeScript pass locally. No production, deadline limit, assertion or game mechanic
+was relaxed. The hosted workflow is rerun by the correction push.

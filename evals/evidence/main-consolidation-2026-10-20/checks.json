@@ -3,7 +3,7 @@
   "input_main": "1eb695800841de1a39fcd1430f503c17e0f46e17",
   "input_development": "320592efdee5073a16d447f1c2f33eacebb86e24",
   "vitest": {
-    "passed": 1188,
+    "passed": 1189,
     "files": 95
   },
   "typecheck": "passed",
@@ -39,5 +39,20 @@
   ],
   "live_inference": false,
   "accounting_reset": false,
-  "hosted_ci": "not yet confirmed"
+  "hosted_ci": "correction rerun pending",
+  "deadline_regression": {
+    "focused_tests_passed": 12,
+    "test_file_sha256": "8fc6ac1293e50512e4efc0ee9f0a64dd11289708a80bd03d863f2932bbdeb3bb",
+    "production_code_unchanged": true
+  },
+  "first_hosted_run": {
+    "id": 39455761722,
+    "result": "failed",
+    "vitest_passed": 1187,
+    "vitest_failed": 1,
+    "expected": "deadline_or_cancelled_after_accounting",
+    "received": "deadline_before_dispatch",
+    "later_steps": "skipped"
+  },
+  "hosted_dependency_audit": "passed"
 }
