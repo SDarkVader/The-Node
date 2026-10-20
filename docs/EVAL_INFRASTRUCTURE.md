@@ -167,14 +167,31 @@ Reachability evidence and limits are in
 `docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md` §5. That includes the finding that controlled
 actors are coupled through real role transitions, so the statistical unit is the episode × arm.
 
-## Live models (blocked)
+## Live models
 
-`solver.agent_model` refuses every model that is not Inspect's offline `mockllm`, with no
-override. A real provider called through Inspect would bypass this repo's accounted broker,
-budget ledger and US$5 cumulative ceiling (`src/agent/accountedBroker.ts`,
-`docs/recovery/EXPERIMENT_EVALS_AND_SAFEGUARDS.md`). Routing Inspect's model calls through
-that accounting, with reservations and settlement, is the prerequisite for any live run. It is
-**not built**.
+**Through Inspect: still refused.** `solver.agent_model` refuses every model that is not Inspect's
+offline `mockllm`, with no override.
+
+**Through the accounted study runner: built (2026-10-20), not yet run.** Live calls go only through
+TypeScript, where the single accounting authority lives:
+
+- `src/eval/accountedRunner.ts` and `src/agent/experimentBudget.ts`;
+- the scripts `build-study-runtime`, `prepare-experiment-budget`, `run-accounted-study` and `settle-failed-call`.
+
+Each call follows the same order:
+
+1. The request bytes are built with the task and notices inside them (`src/eval/evaluationRequest.ts`).
+2. A durable reservation is made.
+3. The request is dispatched through the existing PowerShell worker.
+4. Usage is booked before the response can affect anything.
+5. Validation, then the kernel step.
+
+Unknown usage keeps its hold and stops the run until the operator settles it at the full ceiling.
+
+Python never calls a provider. It analyses the resulting records (`python -m inspect_node.analyze_study`).
+The owner runs the first study (USD 5 cap, `gpt-5.4-nano-2026-03-17`) on 2026-10-22, following
+`docs/research/RUNBOOK_AUTHORITY_STUDY_1.md`. The production `assertLiveAdmission` gate is unchanged
+and stays closed.
 
 ## Future modules (not implemented)
 

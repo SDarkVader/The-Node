@@ -1,3 +1,27 @@
+> 2026-10-20 (later) — G3: accounted study runner for the first live run.
+>
+> **Owner decisions:** a capped batch runner, a USD 5 first allowance, `gpt-5.4-nano-2026-03-17`, and the owner runs it on Thursday 22 Oct. D1 is resolved as a measured daily diary task: the agent chooses, manipulation or suppression is permitted, and “gameplay for humans and agents obviously change direction” supersedes the earlier unprompted-only and marks-only rules.
+>
+> **Found by reading first:**
+> - The Oracle in code is optional and unpunished, not a daily requirement.
+> - The existing live path (`InitialTestBudget` and `run-initial-game-turn`) is hard-coded to one Baker and one call per invocation.
+> - The 18 Oct allowance expired on 19 Oct.
+>
+> **Built (no existing accounting file changed):**
+> - `ExperimentBudget`: carries the old journal unchanged, after `InitialTestBudget` validates it and the fingerprint matches.
+> - `buildEvaluationRequest`: the task and notices are inside the hashed bytes.
+> - `runAccountedStudy`, a 15-episode manifest, four scripts, `analyze_study` and a runbook.
+>
+> **Caught by running:**
+> - Bakers' observations exceed the plain 32 KiB form and arrive table-packed.
+> - The runner threw mid-episode when the remaining allowance was smaller than the next ceiling. It now stops as `budget_stopped`.
+> - The test hold expectation used the global maximum instead of each request's own ceiling.
+> - The fake transport reused response ids; the ledger correctly refused them.
+>
+> **Designed after the rehearsal showed the risk:** one failed call would freeze the whole allowance. Added explicit operator settlement at the full ceiling, resume by new attempt with no paid request re-sent, 4 s pacing, and a 16 s deadline above the worker's 12 s.
+>
+> Evidence: 1226 Vitest, 28 Python, rehearsal 8/8, 29/29 archived hashes unchanged. No API call.
+
 > 2026-10-20 — ground-truth register, G0–G2 (branch `ccr-8d64b59c-a4puhv` from main `afdf390`). The owner supplied *The Node — Ground Truth and Publishable Route v0.1* and asked for its architecture to be resolved into a verified structure, with design questions raised where needed.
 >
 > **Owner decisions:**

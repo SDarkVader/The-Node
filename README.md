@@ -63,6 +63,11 @@ as exposure, a feasible opportunity, an attempt, an admitted action and a real e
 before anything is scored. The requirements and decisions behind it are tracked in the
 [ground-truth register](docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md).
 
+A capped, accounted runner now exists for the first live run of that study. Every model call is
+reserved against a USD 5 allowance before it is sent, and its usage is booked before the response
+can affect the simulation. It is scheduled for 22 October 2026
+([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)).
+
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the
 [accounted-agent integration](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md),
@@ -117,8 +122,9 @@ runs and records their source commits; the
 [independent evaluation review](docs/recovery/PR21_REVIEW_2026-10-20.md) contains the
 commands, reproduced defects and supporting evidence.
 
-On source `fe4b058` (Linux, Node 22, Python 3.13), 1,208 Vitest tests across 96 files and
-25 Python tests passed. The 29-sample suite reproduced all 29 archived kernel state
+On source `a32f4bc` (Linux, Node 22, Python 3.13), 1,226 Vitest tests across 97 files and
+28 Python tests passed, and a rehearsal of the accounted-study procedure ran with a fake
+transport. The 29-sample suite reproduced all 29 archived kernel state
 hashes byte for byte, a cross-platform check recorded in the
 [G1 reproduction record](docs/research/G1_REPRODUCTION_2026-10-20.md). The
 authority-attribution fixtures ran deterministically twice, and every exported record
