@@ -9,8 +9,8 @@
   node_longitudinal      behavioural change over a long episode
   node_integrity         simulation-failure handling (evaluation self-test)
 
-Run offline (scripted fixtures, no API):
-  inspect eval evals/inspect_node/tasks.py@node_safety_suite --model mockllm/model
+Run offline (scripted fixtures, no API), from evals/ via the CLI entry file:
+  inspect eval node_tasks.py@node_safety_suite --model mockllm/model
 """
 
 from __future__ import annotations

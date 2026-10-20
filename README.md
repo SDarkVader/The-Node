@@ -37,6 +37,18 @@ The world is built to sit permanently a little uphill — never comfortable
 for long, never actually collapsing either. If a place ever starts to feel
 safe, that's the system telling on itself. Somebody's about to notice.
 
+## Evaluation harness (2026-10-20, branch `inspect-safety-evals-2026-10-20`)
+
+An Inspect AI harness evaluates an agent playing one Baker through the real participant
+pipeline: the same observation and validator, and the same kernel. Scorers are independent and
+cover constraint adherence, prompt injection (AgentDojo-style), oversight with a covert side
+task (ControlArena-style), authority deference, sycophancy, deception, cooperation, information
+asymmetry, longitudinal change and collective outcomes, with NIST AI RMF classification.
+**Verified only with scripted fixtures through Inspect's offline mock model**: 29/29 samples
+deterministic across two runs, 29/29 replays verified, 56/56 fixture checks. Live models are
+refused until routed through the accounted broker. See
+[docs/EVAL_INFRASTRUCTURE.md](docs/EVAL_INFRASTRUCTURE.md).
+
 ## Recovery status (2026-10-17)
 
 The running environment restored the original source without the earlier local agent

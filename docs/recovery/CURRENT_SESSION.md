@@ -2,9 +2,10 @@
 {
   "format": "the-node-git-session-checkpoint",
   "version": 1,
-  "branch": "broker-rules-context-2026-10-18",
-  "verifiedBaseCommit": "1adfcbc8da282f45779c0a8e7eef1caa95ea1703",
+  "branch": "inspect-safety-evals-2026-10-20",
+  "verifiedBaseCommit": "3512dedd8bd472e6f42fd6a57322e398a1c3694d",
   "completedWork": [
+    "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md.",
     "2026-10-20: funded settlement (default): wealth follows the person through every role change, the dock pays for nodules (WEALTH_PER_NODULE 2.0), wages come from districtPool (floor first), upkeep (0.0073 of holdings) is the sink. 'legacy' mode is byte-identical to the pre-settlement economy.",
     "2026-10-20: createDormantWorld now vacates Import/Export slots (was leaving 6 FILLED at population 0); test/world.dormant.test.ts.",
     "2026-10-20: settlement ledger (src/engine/settlement.ts): every stepWorld wealth write is a named issuance line, an account transfer (oraclePool, districtPool, dock) or emigrant holdings; per-tick residual tested. Standing berths keep at least one Import/Export slot non-VACANT. Transit vouchers carry emigrant holdings across shards; failed crossings go to the source dock. Design: docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md.",
@@ -14,6 +15,7 @@
     "GitHub-first continuation contract committed at docs/recovery/GITHUB_FIRST_CONTINUATION.md and prioritized in AGENTS.md; PC and local hook are optional for cross-device work."
   ],
   "testResults": [
+    "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths).",
     "2026-10-20 funded settlement: 1170 Vitest and TypeScript pass. The full suite also passed with legacy as default; the legacy golden matches the original snapshot exactly. settlement-report legacy -> funded: new money 45.79 -> 6.27/tick, role-change losses 37.86 -> 0, Gini 0.68 -> 0.32, health 0.905 -> 0.914; multi-shard 7/8 seeds equal or higher (seed 1 shard-opening knife edge, pre-existing).",
     "2026-10-20: 1162 Vitest across 94 files and TypeScript pass; golden world snapshot unchanged. The 80 native checks were not run (they need private baseline paths absent from a fresh clone).",
     "2026-10-20 npm run settlement-report (8 seeds x 3000 days): issuance 45.79/tick, implied k 2.02 per nodule, 82.7% of issuance forfeited at role transitions, standing berth fired 0/20000 populated ticks.",
@@ -25,6 +27,7 @@
     "GitHub Actions Windows fresh-checkout recovery workflow passed at run 39141127029 (commit 3b8ccd7); this verifies script behavior, not interactive Codex hook invocation."
   ],
   "unresolvedIssues": [
+    "Eval harness: live model runs are refused until Inspect's model calls are routed through the accounted broker and budget ledger (not built). ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; one controlled Baker per episode; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
     "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; canOpenNewShard can only open shards on day 0-1 (pre-existing knife edge).",
     "Codex project hooks require review/trust in /hooks before automatic lifecycle execution; manual recovery commands work independently.",
     "Automatic mechanically generated diary connections and non-editing player event marks are not implemented.",
@@ -44,7 +47,11 @@ NODE_SESSION_CHECKPOINT -->
 
 # Current development checkpoint
 
-The current shared development line is `broker-rules-context-2026-10-18`. The Git
+The current shared development line is `broker-rules-context-2026-10-18`. **This copy of
+the checkpoint is on the evaluation branch `inspect-safety-evals-2026-10-20`**, cut from that
+line at `afb6d61`; the checkpoint names the eval branch because `recovery:verify` requires the
+recorded branch to match the checkout. When the eval branch is merged into the development
+line, set `branch` back to `broker-rules-context-2026-10-18`. The Git
 branch and its current `HEAD` are authoritative; the recorded base commit anchors
 this checkpoint in that branch's history. The working tree at the checkpoint commit
 is clean. Local in-progress work is preserved in `.codex/session-recovery/`, which
@@ -93,6 +100,17 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
   the dock pays for nodules, and wages come from the pool. Before → after: new money 45.79 →
   6.27 per tick, losses at role changes 37.86 → 0, Gini 0.68 → 0.32. 'legacy' mode stays
   byte-identical. Open: currency option A/B/C, and whether the lower Gini is intended.
+
+## Evaluation harness (2026-10-20, eval branch)
+
+- Inspect AI drives one controlled Baker per episode through the unchanged participant
+  pipeline (`src/eval/`, `evals/inspect_node/`). Scripted policies run through Inspect's
+  offline `mockllm`; the solver refuses any other model.
+- `python -m inspect_node.verify` at `3512ded`: 29/29 samples deterministic across two runs,
+  29/29 replays verified, 56/56 fixture agreement checks, no live model. 13/13 Python tests.
+  Evidence: `evals/evidence/scripted-fixtures-2026-10-20/`.
+- Blocker for any real-model result: routing Inspect's model calls through the accounted
+  broker and budget ledger (unbuilt). See `docs/EVAL_INFRASTRUCTURE.md`.
 
 ## Unresolved issues
 
