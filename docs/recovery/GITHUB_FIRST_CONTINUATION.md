@@ -22,6 +22,12 @@ overview; maintain it with the checkpoint. The [accounted-agent/framework design
 is tracked, with execution disabled. Unique Godot sky/navigation and Vitest 5 work
 remain separate; do not assume those features are on main.
 
+Branch cleanup deleted 23 fully merged remote branches after exact-tip/ancestry
+verification and explicit user authorization. Only main and the two separate
+Godot/Vitest 5 branches remain. The separately authorized temporary deletion-rule
+change was restored immediately; exact historical tips are in the
+[cleanup manifest](evidence/merged-branches-2026-10-20.json).
+
 The branch includes the TypeScript simulation and broker under `src/`, Godot client under `client/`, and deterministic tests under `test/`. Current rules-aware context lives in `src/agent/rulesContext.ts`, `rulesAwareContext.ts`, `observationTables.ts`, `responsesRequest.ts` and `offlineRulesEvaluation.ts`. Detailed implementation, source boundaries and reproducible evidence: [RULES_AWARE_CONTEXT](RULES_AWARE_CONTEXT.md). Its historical stage reported 1,143 Vitest + 80 native checks, TypeScript passing, and a deterministic bounded-memory fixture (8/8 with diary, 4/8 without, 8/8 replay-restored). These are **reported historical runs**, not independently rerun here and not proof of real-model strategy.
 
 The Windows GitHub Actions workflow `.github/workflows/session-recovery-ci.yml` completed successfully at [run 39141127029](https://github.com/SDarkVader/The-Node/actions/runs/39141127029) after full-history checkout was enabled. It verified the Git-tracked recovery anchor, executed the hook-start script, tested recovery and typechecked. It **did not** verify an interactive Codex app automatically invoking hooks, and it did **not** test whether an agent can continue a substantive task. Check its run SHA when interpreting that result.

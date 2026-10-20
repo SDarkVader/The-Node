@@ -22,6 +22,14 @@ The [consolidation report](docs/recovery/MAIN_CONSOLIDATION_2026-10-20.md) recor
 verification and branch audit. The unique Godot sky/navigation and Vitest 5 work
 remain separate for review.
 
+Branch cleanup is complete: 23 fully merged remote branches were deleted after
+exact-tip and ancestry checks against `4da5301`. Cleanup retained `main`, the Godot sky/navigation
+branch and the Vitest 5 Dependabot branch. This documentation handover follows
+the required pull-request path in a separate review branch. The user approved a temporary
+deletion-rule change; that protection was restored immediately afterward, with
+the other rules preserved. Deleted commits remain reachable from main; pinned tips
+are retained in the [cleanup evidence](docs/recovery/evidence/merged-branches-2026-10-20.json).
+
 - **Game:** five economic roles (Miller, Baker, Courier, Investigator and Import/Export),
   roleless inhabitants, vacancies/backstops, conscription, housing, the Oracle, Wall
   posts, proximity communication, rumour and diary decay, and multi-shard migration.
