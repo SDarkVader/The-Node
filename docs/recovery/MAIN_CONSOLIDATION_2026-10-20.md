@@ -1,6 +1,6 @@
 # Main consolidation and branch audit — 2026-10-20
 
-Status: PR #22 merged into main at `acb3b2d` on 2026-10-20. Its tracked tree equals verified PR head `1b6684a`. No branch deletion has been performed.
+Status: PR #22 merged into main at `acb3b2d` on 2026-10-20. Its tracked tree equals verified PR head `1b6684a`. All 23 approved merged remote branches are now deleted; deletion protection is restored. Main and the two separate Godot/Vitest 5 branches remain.
 
 ## Integration boundaries
 
@@ -112,6 +112,41 @@ The post-merge snapshot has 26 remote heads: main plus 23 other branch tips full
 reachable from main, and the two separately retained Godot/Vitest 5 branches. The
 23 cleanup candidates comprise the 20 historical branches listed above, the existing
 security branch, the former development branch and the completed consolidation branch.
-Deletion requires the user's explicit decision and a final exact-tip ancestry check.
+The user subsequently explicitly approved deletion. Fresh fetch and exact-tip checks
+confirmed 23/23 unchanged candidates and 23/23 ancestors of main `4da5301`.
+
+The atomic push used an exact-SHA lease on every candidate. GitHub rejected every
+deletion with `GH013: Cannot delete this branch`. Active ruleset
+[`verify`](https://github.com/SDarkVader/The-Node/rules/25489816) targets all 26
+branches and restricts deletions to bypass actors. A subsequent `git ls-remote --heads
+origin` confirmed all 26 tips unchanged. No repository rule was changed during
+that first attempt.
+
+### Completed cleanup after separate authorization
+
+The user then explicitly approved temporarily changing only **Restrict deletions**.
+After fresh fetch and another 23/23 exact-tip and ancestry check against main
+`4da5301`, the exact-SHA-leased atomic push deleted all 23 approved refs. Remote
+inventory confirmed exactly three heads and their unchanged tips:
+
+| Retained branch | Tip at cleanup |
+|---|---|
+| `main` | `4da5301ace9522f244e73b99cc8582ec4d4e68c7` |
+| `claude/sibling-shard-sky-viz-xbpl1r` | `90975e407cbaaf9fbdd0d39e4e3445d2e1a278dc` |
+| `dependabot/npm_and_yarn/npm_and_yarn-8bd3e5320a` | `c10f8490dde8c8b15426d9ee28290fa40fea7124` |
+
+Deletion protection was restored immediately after deletion. GitHub confirmed
+**Ruleset updated**; reloading the saved editor showed **Restrict deletions** checked,
+enforcement Active, targeting all branches. Pull-request, force-push and code-quality
+rules and the existing bypass list were preserved. No local branch or worktree was
+deleted. Every deleted tip remains reachable from main; the manifest preserves exact
+names and SHAs for recovery. This was ref/documentation maintenance, with no runtime
+change and no new full regression claim. All 8 session-recovery tests, 38 relative
+documentation links and `git diff --check` passed for this handover.
 
 Exact branch names and pinned tips are recorded in the [post-merge cleanup manifest](evidence/merged-branches-2026-10-20.json).
+
+The subsequent documentation publication was also required to use a pull request:
+GitHub rejected a direct main fast-forward with Changes must be made through a pull
+request. The separate docs/branch-cleanup-handover-2026-10-20 review branch contains
+only this handover; the 23 stale branches remain deleted. Main protection was kept.

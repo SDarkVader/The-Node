@@ -5,6 +5,7 @@
   "branch": "main",
   "verifiedBaseCommit": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e",
   "completedWork": [
+    "2026-10-20: user approved deleting 23 merged remote branches and separately approved a temporary deletion-rule change after initial GH013 rejection. Fresh fetch verified all 23 exact tips unchanged and ancestors of main 4da5301. Atomic SHA-leased deletion succeeded for all 23; exactly main, Godot sky/navigation and Vitest 5 remain with unchanged tips. Restrict deletions was restored immediately, confirmed saved and checked after editor reload; other rules and bypass actors preserved. All deleted commits remain reachable from main and pinned in the cleanup manifest. Local branches/worktrees preserved. The documentation handover uses the exact named review branch because GitHub requires a PR for main updates; no additional protection is disabled.",
     "2026-10-20: user merged PR #22 into main at acb3b2d. Its tracked tree exactly equals verified PR head 1b6684a. Main is now the shared development line; README and continuation reflect the merge and the obsolete reviewBranch allowance is removed from this checkpoint. Unique Godot sky/navigation and Vitest 5 work remain separate.",
     "2026-10-20 PR #22 is open: https://github.com/SDarkVader/The-Node/pull/22, verified development-to-main consolidation. User explicitly chose to keep unique Godot work separate. First hosted run found a deadline fixture reached correct pre-dispatch expiry before its intended stall; made the test clock deterministic and added a separate early-expiry case, preserving all strict assertions and production code.",
     "2026-10-20 main consolidation candidate: integrated existing main 1eb6958 and verified development 320592e, preserving both documentation histories and the existing security fixes. Unique Godot sky/navigation and Vitest 5 work remain separate. Canonical destination is main; the explicit reviewBranch permits the same checkpoint to verify before and after merge. See MAIN_CONSOLIDATION_2026-10-20.md.",
@@ -21,6 +22,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-20 completed branch cleanup: 23/23 exact-tip and 23/23 ancestry checks passed against main 4da5301. Atomic deletion succeeded for 23 refs after separately authorized temporary deletion-rule change. Remote inventory confirmed exactly 3 unchanged retained heads. Saved deletion protection restored and verified after reload; other rules preserved. 8/8 session-recovery tests, 38 relative documentation links and git diff --check pass. No runtime changes or new full regression run.",
     "2026-10-20 merged-main verification: fresh clean main checkout at acb3b2d passes tracked recovery. Hosted integration run 39456555818 and dependency audit 39456555781 passed on identical-tree 1b6684a: 1189 Vitest, TypeScript, 18 Python, 80 native, 8 recovery and two deterministic 29-sample Inspect runs with exported replay. No full regression rerun is claimed for this post-merge documentation update.",
     "2026-10-20 PR #22 CI correction: hosted run 39455761722 failed 1/1188 tests (expected deadline_or_cancelled_after_accounting, actual deadline_before_dispatch); later hosted steps skipped. Hosted dependency audit passed. Corrected fixture: focused 12/12 and full 1189/1189 Vitest plus TypeScript pass locally. Production/evaluation code unchanged; see MAIN_CONSOLIDATION_2026-10-20.md for exact evidence.",
     "2026-10-20 main consolidation candidate: 1188/1188 Vitest across 95 files, TypeScript, 18/18 Python unit tests, 80/80 native checks and 8/8 recovery tests passed. Two 29-sample Inspect runs match state hashes/event digests, with 56/56 fixture checks and 29/29 in-memory/exported replay each. No live models, paid inference or accounting reset. Hosted main/PR CI added; completion is unclaimed until GitHub reports it.",
@@ -48,11 +50,11 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Obtain an explicit branch-cleanup decision for the 23 remote branches proven ancestors of merged main; recheck their exact tips before deleting. Keep main and the unique Godot sky/navigation and Vitest 5 branches.",
     "Continue separate review of the Godot sky/navigation branch and Vitest 5 upgrade when directed.",
     "Continue the tracked accounted-agent/framework design only when directed, with execution disabled; maintain README/checkpoint together and preserve private accounting evidence."
   ],
-  "privateCredentialsOrExperimentalInputsIncluded": false
+  "privateCredentialsOrExperimentalInputsIncluded": false,
+  "reviewBranch": "docs/branch-cleanup-handover-2026-10-20"
 }
 NODE_SESSION_CHECKPOINT -->
 
@@ -61,7 +63,9 @@ NODE_SESSION_CHECKPOINT -->
 `main` is the shared development line. The user merged PR #22 at `acb3b2d` on
 2026-10-20. Its tracked tree matches verified PR head `1b6684a`; hosted integration
 and dependency checks passed. This checkpoint now anchors at that merge and accepts
-only main; the completed consolidation's reviewBranch field has been removed.
+main or the exact docs/branch-cleanup-handover-2026-10-20 review branch. The
+completed consolidation review branch remains removed; this named allowance is
+for the documentation PR required by current GitHub protection.
 Local ignored snapshots are optional and do not imply private runtime/accounting state.
 
 ## Cross-device continuation
@@ -132,8 +136,9 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
 
 ## Exact next steps
 
-1. PR #22 is merged and main is canonical. Obtain an explicit cleanup decision for
-   the 23 branches fully contained in main, then recheck each tip before deletion.
+1. Main is canonical and the 23 merged remote branches are deleted. Deletion
+   protection is restored. Keep the Godot sky/navigation and Vitest 5 branches
+   separate for review when directed.
 2. Follow the tracked [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
    for later evaluation work. It is a design, not an enabled live backend.
 3. Update root README and this checkpoint together after meaningful work. Manual

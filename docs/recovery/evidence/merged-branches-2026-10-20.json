@@ -1,8 +1,23 @@
 {
   "date": "2026-10-20",
   "main_merge": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e",
-  "evidence": "Every candidate tip is an ancestor of merged main; exact tips must be rechecked immediately before deletion.",
-  "deletion_status": "awaiting explicit user approval",
+  "evidence": "All 23 pinned candidate tips were unchanged and ancestors of main 4da5301 immediately before the successful atomic deletion; their commits remain reachable from main.",
+  "deletion_status": "completed: 23 approved remote branches deleted; deletion protection restored",
+  "cleanup_attempt": {
+    "date": "2026-10-20",
+    "user_authorization": "Delete the 23 fully merged branches.",
+    "checked_main": "4da5301ace9522f244e73b99cc8582ec4d4e68c7",
+    "unchanged_candidate_tips": 23,
+    "candidate_tips_ancestor_of_main": 23,
+    "operation": "git push --atomic with exact-SHA force-with-lease guards for each deleted ref",
+    "result": "GH013: Cannot delete this branch; rejected for all 23 refs",
+    "deleted_count": 0,
+    "remote_head_count_after_attempt": 26,
+    "remote_tips_unchanged_after_attempt": true,
+    "blocking_ruleset": "https://github.com/SDarkVader/The-Node/rules/25489816",
+    "blocking_rule": "verify: Restrict deletions; targets all branches",
+    "protection_change_authorization": "Subsequently explicitly approved: Allow temporary deletion-rule change"
+  },
   "candidates": [
     {
       "branch": "broker-accounting-rebuild-2026-10-17",
@@ -108,7 +123,29 @@
     },
     {
       "branch": "main",
-      "tip": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e"
+      "tip": "4da5301ace9522f244e73b99cc8582ec4d4e68c7"
     }
-  ]
+  ],
+  "completed_cleanup": {
+    "date": "2026-10-20",
+    "checked_main": "4da5301ace9522f244e73b99cc8582ec4d4e68c7",
+    "unchanged_candidate_tips": 23,
+    "candidate_tips_ancestor_of_main": 23,
+    "operation": "git push --atomic with an exact-SHA force-with-lease for each of the 23 candidate refs",
+    "deleted_count": 23,
+    "remaining_remote_head_count": 3,
+    "retained_tips_unchanged": true,
+    "rule_change_authorization": "Allow temporary deletion-rule change",
+    "temporary_change": "Only Restrict deletions unchecked; then restored immediately after deletion",
+    "restoration_verification": "GitHub Ruleset updated; saved editor reloaded: Restrict deletions checked, enforcement Active, targets all branches",
+    "other_rules_and_bypass_list_preserved": true,
+    "local_branches_and_worktrees_deleted": 0,
+    "pinned_candidate_tips_retained_for_recovery": true,
+    "documentation_verification": {
+      "session_recovery_tests_passed": 8,
+      "relative_documentation_links_checked": 38,
+      "git_diff_check": "passed",
+      "full_regression_rerun": false
+    }
+  }
 }
