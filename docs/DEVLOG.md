@@ -6,6 +6,27 @@ doesn't have to rediscover them.
 
 ---
 
+## 2026-10-20 — `main` docs brought up to date (docs only)
+
+User: "Update docs on main for current state." `README.md`'s status section, `docs/HANDOVER.md`
+and this file now describe the current state. `main` still holds the August baseline: no code was
+merged and no runtime file changed, consistent with the 18 October README's branch policy. The
+full record of the 20 October work is in the development branch's own DEVLOG
+(`broker-rules-context-2026-10-18`, at `41da84f`): settlement ledger and funded settlement,
+standing Import/Export berths, migrant vouchers, the dormant-shard Import/Export fix, and
+population-independent shard availability. The Inspect AI evaluation harness is in review on
+`inspect-safety-evals-2026-10-20`.
+
+Test numbers in the README were rerun on 20 October from fresh clones, not copied from reports:
+1,177 Vitest, TypeScript and 7/7 session-recovery tests at `41da84f`. For the evaluation branch at
+`bdd7fd5`: 1,179 Vitest, 13/13 Python tests, and `inspect_node.verify` passing (29 samples,
+deterministic, 56/56 checks), with a fresh run reproducing all 29 committed final-state hashes.
+That branch merges cleanly into the development branch apart from two additive doc conflicts
+(`DEVLOG.md`, `CURRENT_SESSION.md`); a locally resolved merge passed 1,186 Vitest and the full
+verify, but was not pushed. The 80 native checks were not run (private baseline paths).
+
+---
+
 ## 2026-08-25 (later) — Arson eligibility, and a real bug caught before it shipped
 
 User: "Wire in arson to presence too please" — the immediate follow-up to trespass, extending

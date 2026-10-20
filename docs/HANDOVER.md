@@ -3,6 +3,15 @@
 Read this first. It's rewritten at the end of every session to reflect current reality —
 if it feels stale, check `DEVLOG.md`'s top entry for what's changed since.
 
+**2026-10-20 — this file is historical on `main`.** Everything below describes the August
+baseline that `main` still holds. Active development is on `broker-rules-context-2026-10-18`
+(at `41da84f`); its Git-tracked checkpoint, `docs/recovery/CURRENT_SESSION.md`, is the current
+handover. Since 18 October that branch has added the settlement ledger and funded settlement,
+standing Import/Export berths, migrant vouchers, a dormant-shard Import/Export fix, and
+population-independent shard availability. An Inspect AI safety evaluation harness is in review
+on `inspect-safety-evals-2026-10-20`. `README.md`'s status section has the summary and the
+verified test results.
+
 **2026-08-25 (later) — arson eligibility, and a real bug caught before shipping**:
 `World.isArsonEligible(world, targetId, targetAtAbode)` wires `arson.ts`'s existing
 `canAttemptArson`/`ArsonPresence` onto real World state. **First draft was provably
