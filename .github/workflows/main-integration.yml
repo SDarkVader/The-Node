@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - consolidate-main-2026-10-20
   pull_request:
     branches:
       - main
@@ -34,10 +33,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install -r evals/requirements.txt
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: npm run recovery:verify
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:session-recovery
-      - run: npm run recovery:verify
       - name: Native broker and participant checks against the reviewed funded baseline
         shell: pwsh
         run: |

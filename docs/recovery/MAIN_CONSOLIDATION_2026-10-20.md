@@ -17,7 +17,7 @@ Status: prepared integration candidate; no merge into main or branch deletion is
 |---|---|---|
 | Development README refresh | Pushed at 320592e | 25 local links, npm commands, 7 recovery tests; fresh clean development clone now passes |
 | Recovery before repair | Reproduced exit 2 at 2941067 | Wrong evaluation-branch checkpoint on development |
-| Consolidation recovery regression | 8/8 passed | Primary and exact named review branch accepted; unrelated clean branch rejected |
+| Consolidation recovery regression | 8/8 passed | Actual fresh clone also verified candidate and main at 8281db6; unrelated clean branch rejected with exit 2 |
 | Full Vitest and typecheck | 1,188/1,188; TypeScript clean | Full offline regression on merged candidate |
 | Python evaluation unit tests | 18/18 passed | No model requests |
 | Two Inspect runs and exported replay | 29/29 deterministic; 56/56 checks and 29/29 exported replays per run | Scripted calibration only |
@@ -74,3 +74,7 @@ No remote branch has been deleted, force-pushed or silently included. The unique
 4. Continue the tracked accounted-agent/framework design as directed, with execution disabled. Native AgentDojo/ControlArena integration and real-agent reasoning evidence remain unimplemented.
 
 No new simulation rewrite, duplicate PR #21 integration, accounting reset, model key, live request, framework package installation or redesign of game actions is required to complete this consolidation.
+
+## Source and evidence
+
+The candidate code merge is `8281db6` (parents main `1eb6958` and development `320592e`). Evaluation verification is rerun at that exact source revision; evidence is in `evals/evidence/main-consolidation-2026-10-20/`. Subsequent evidence/CI-order documentation commits do not change the runtime or evaluation implementation.

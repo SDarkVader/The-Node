@@ -43,16 +43,17 @@ historical meaning; they do not supersede this status or the current source.
 
 ## Verified evidence
 
-The latest full independent verification used code commit `96a431f`; evidence was
-committed at `298b636`. Merge `2941067` has exactly the same tracked files as `298b636`.
-The documentation refresh does not claim a new full regression run.
+The consolidation candidate at `8281db6` was rechecked with the full offline suite.
+Its runtime/evaluation/dependency files match development `320592e`; the added
+recovery branch-contract regression brings recovery checks to eight. Earlier PR #21
+verification used code `96a431f`, evidence `298b636`, and identical-tree merge `2941067`.
 
 | Check | Result |
 |---|---|
 | Vitest | 1,188 passed across 95 files |
 | TypeScript | Passed |
 | Python evaluation unit tests | 18 passed |
-| Session-recovery tests | 7 passed |
+| Session-recovery tests | 8 passed; fresh review/main checkouts also verified |
 | Native broker/participant checks | 80 passed, using target `41da84f` as baseline |
 | Two independent Inspect runs | 29 samples each; 29/29 final state hashes and event digests match |
 | Replay | 29/29 in-memory and exported-record replays verified in each run |
@@ -60,7 +61,7 @@ The documentation refresh does not claim a new full regression run.
 | Inspect CLI control task | 2/2 samples passed |
 
 [Full commands, reproduced failures, fixes and limitations](docs/recovery/PR21_REVIEW_2026-10-20.md)
-and [committed verification evidence](evals/evidence/pr21-review-2026-10-20/)
+and [current consolidation evidence](evals/evidence/main-consolidation-2026-10-20/)
 are available in the repository. The standalone 44-check broker run overlaps the
 combined 80 native checks; it is not 124 distinct checks.
 
