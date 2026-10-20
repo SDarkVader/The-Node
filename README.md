@@ -12,13 +12,15 @@ participant pipeline.
 
 ## Current state — 2026-10-20
 
-This integration tree brings the verified development work into `main`. The review
-branch is `consolidate-main-2026-10-20`; `main` is the destination and intended shared
-line after merge. The branch audit is recorded in
-[the consolidation report](docs/recovery/MAIN_CONSOLIDATION_2026-10-20.md).
-[PR #21](https://github.com/SDarkVader/The-Node/pull/21) was merged there at `2941067`,
-including the independently reviewed evaluation fixes and evidence. The consolidation PR separately preserves `main`'s existing documentation and security
-work. The unique Godot sky/navigation and Vitest 5 branches remain outside this tree.
+`main` is now the shared development line. [PR #22](https://github.com/SDarkVader/The-Node/pull/22)
+merged at `acb3b2d` on 2026-10-20, preserving the verified development, existing main
+security fixes and documentation history. Its tracked tree exactly matches verified
+PR head `1b6684a`. [PR #21](https://github.com/SDarkVader/The-Node/pull/21), including the
+evaluation corrections, was incorporated through that consolidation.
+
+The [consolidation report](docs/recovery/MAIN_CONSOLIDATION_2026-10-20.md) records the
+verification and branch audit. The unique Godot sky/navigation and Vitest 5 work
+remain separate for review.
 
 - **Game:** five economic roles (Miller, Baker, Courier, Investigator and Import/Export),
   roleless inhabitants, vacancies/backstops, conscription, housing, the Oracle, Wall
@@ -43,9 +45,12 @@ historical meaning; they do not supersede this status or the current source.
 
 ## Verified evidence
 
-The consolidation runtime at `8281db6` was rechecked with the full offline suite.
+Hosted [integration verification](https://github.com/SDarkVader/The-Node/actions/runs/39456555818)
+and [dependency security audit](https://github.com/SDarkVader/The-Node/actions/runs/39456555781)
+both passed on `1b6684a`, whose tracked tree is identical to merged main `acb3b2d`.
+The consolidation runtime at `8281db6` was also checked locally with the full offline suite.
 Hosted CI then exposed a wall-clock-dependent deadline fixture; its clock is now
-deterministic and an earlier-expiry regression is added. The current local suite has
+deterministic and an earlier-expiry regression is added. The current verified suite has
 1,189 Vitest tests. Runtime/evaluation/dependency files still match development `320592e`;
 the recovery branch-contract regression brings recovery checks to eight. Earlier PR #21
 verification used code `96a431f`, evidence `298b636`, and identical-tree merge `2941067`.

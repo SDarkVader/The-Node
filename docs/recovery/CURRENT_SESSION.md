@@ -3,8 +3,9 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "320592efdee5073a16d447f1c2f33eacebb86e24",
+  "verifiedBaseCommit": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e",
   "completedWork": [
+    "2026-10-20: user merged PR #22 into main at acb3b2d. Its tracked tree exactly equals verified PR head 1b6684a. Main is now the shared development line; README and continuation reflect the merge and the obsolete reviewBranch allowance is removed from this checkpoint. Unique Godot sky/navigation and Vitest 5 work remain separate.",
     "2026-10-20 PR #22 is open: https://github.com/SDarkVader/The-Node/pull/22, verified development-to-main consolidation. User explicitly chose to keep unique Godot work separate. First hosted run found a deadline fixture reached correct pre-dispatch expiry before its intended stall; made the test clock deterministic and added a separate early-expiry case, preserving all strict assertions and production code.",
     "2026-10-20 main consolidation candidate: integrated existing main 1eb6958 and verified development 320592e, preserving both documentation histories and the existing security fixes. Unique Godot sky/navigation and Vitest 5 work remain separate. Canonical destination is main; the explicit reviewBranch permits the same checkpoint to verify before and after merge. See MAIN_CONSOLIDATION_2026-10-20.md.",
     "2026-10-20 post-merge orientation: PR #21 was merged by GitHub at 2941067; its tracked tree equals independently reviewed 298b636. Root README now has one current overview, source-anchored evidence, current commands, game/evaluation limits and next steps. The accounted-agent/framework design is now tracked in docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md; design only. AGENTS.md and CLAUDE.md require README/checkpoint maintenance together.",
@@ -20,6 +21,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-20 merged-main verification: fresh clean main checkout at acb3b2d passes tracked recovery. Hosted integration run 39456555818 and dependency audit 39456555781 passed on identical-tree 1b6684a: 1189 Vitest, TypeScript, 18 Python, 80 native, 8 recovery and two deterministic 29-sample Inspect runs with exported replay. No full regression rerun is claimed for this post-merge documentation update.",
     "2026-10-20 PR #22 CI correction: hosted run 39455761722 failed 1/1188 tests (expected deadline_or_cancelled_after_accounting, actual deadline_before_dispatch); later hosted steps skipped. Hosted dependency audit passed. Corrected fixture: focused 12/12 and full 1189/1189 Vitest plus TypeScript pass locally. Production/evaluation code unchanged; see MAIN_CONSOLIDATION_2026-10-20.md for exact evidence.",
     "2026-10-20 main consolidation candidate: 1188/1188 Vitest across 95 files, TypeScript, 18/18 Python unit tests, 80/80 native checks and 8/8 recovery tests passed. Two 29-sample Inspect runs match state hashes/event digests, with 56/56 fixture checks and 29/29 in-memory/exported replay each. No live models, paid inference or accounting reset. Hosted main/PR CI added; completion is unclaimed until GitHub reports it.",
     "2026-10-20 documentation refresh: 7/7 session-recovery tests passed; 25 local documentation links and README npm-script references checked; no runtime/test/dependency changes. At 2941067 a real clean development-branch clone failed recovery with exit 2 because the checkpoint named inspect-safety-evals-2026-10-20; corrected destination metadata. Prior full game/evaluation results below were not rerun by this documentation change.",
@@ -46,23 +48,21 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Review and approve the main consolidation PR after checks; do not infer it is merged from this candidate checkout.",
-    "Review the 20 historical branches already contained in development and the security branch already in main for later explicit deletion. Preserve unique Godot sky/navigation and Vitest 5 branches.",
-    "Continue only the user-directed evaluation work with execution disabled; maintain README/checkpoint together and preserve accounting evidence."
+    "Obtain an explicit branch-cleanup decision for the 23 remote branches proven ancestors of merged main; recheck their exact tips before deleting. Keep main and the unique Godot sky/navigation and Vitest 5 branches.",
+    "Continue separate review of the Godot sky/navigation branch and Vitest 5 upgrade when directed.",
+    "Continue the tracked accounted-agent/framework design only when directed, with execution disabled; maintain README/checkpoint together and preserve private accounting evidence."
   ],
-  "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "consolidate-main-2026-10-20"
+  "privateCredentialsOrExperimentalInputsIncluded": false
 }
 NODE_SESSION_CHECKPOINT -->
 
 # Current development checkpoint
 
-This checkpoint accompanies the `consolidate-main-2026-10-20` review branch and its
-intended destination, `main`. The explicit reviewBranch field is accepted only for
-that named review branch; unrelated branches still fail verification. The candidate
-includes development `320592e` and main `1eb6958`; it does not claim the PR is merged.
-PR #21 was previously merged into development at `2941067`. Local ignored recovery
-snapshots remain optional and are not private runtime or accounting evidence.
+`main` is the shared development line. The user merged PR #22 at `acb3b2d` on
+2026-10-20. Its tracked tree matches verified PR head `1b6684a`; hosted integration
+and dependency checks passed. This checkpoint now anchors at that merge and accepts
+only main; the completed consolidation's reviewBranch field has been removed.
+Local ignored snapshots are optional and do not imply private runtime/accounting state.
 
 ## Cross-device continuation
 
@@ -132,8 +132,8 @@ GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GIT
 
 ## Exact next steps
 
-1. Review [PR #22](https://github.com/SDarkVader/The-Node/pull/22) and its hosted checks;
-   it consolidates verified development into `main`. A merge decision remains pending.
+1. PR #22 is merged and main is canonical. Obtain an explicit cleanup decision for
+   the 23 branches fully contained in main, then recheck each tip before deletion.
 2. Follow the tracked [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
    for later evaluation work. It is a design, not an enabled live backend.
 3. Update root README and this checkpoint together after meaningful work. Manual

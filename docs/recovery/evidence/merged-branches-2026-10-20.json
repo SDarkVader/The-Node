@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-20",
+  "main_merge": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e",
+  "evidence": "Every candidate tip is an ancestor of merged main; exact tips must be rechecked immediately before deletion.",
+  "deletion_status": "awaiting explicit user approval",
+  "candidates": [
+    {
+      "branch": "broker-accounting-rebuild-2026-10-17",
+      "tip": "70132cf081672784ba7eefeb7461e4c7218ebe0c"
+    },
+    {
+      "branch": "broker-affordance-stability-2026-10-17",
+      "tip": "7eaac9f6244b76b2464d75e912fa9e0dfefdccc0"
+    },
+    {
+      "branch": "broker-audit-rebuild-2026-10-17",
+      "tip": "0b51994620def4a1d35568c81e3bf9364e234f8b"
+    },
+    {
+      "branch": "broker-diagnostic-import-2026-10-18",
+      "tip": "6f9932eb078392102deb13e3b83e5998e7026e8b"
+    },
+    {
+      "branch": "broker-fixture-failure-hold-2026-10-17",
+      "tip": "354011f529c948b34c7906155e250e859be5992b"
+    },
+    {
+      "branch": "broker-game-resume-2026-10-18",
+      "tip": "1f40ed61ec9be77a93f6fa8e72564c544d20e54b"
+    },
+    {
+      "branch": "broker-game-turn-runner-2026-10-18",
+      "tip": "c35c34385c647c6c81e4eb2477e12d4b69ad18c4"
+    },
+    {
+      "branch": "broker-native-ci-2026-10-17",
+      "tip": "d8511037a653e58ac50082540cba003f91024492"
+    },
+    {
+      "branch": "broker-provider-adapter-2026-10-17",
+      "tip": "0a1bffb069a1d43fbd001a2db6fc111351b792e1"
+    },
+    {
+      "branch": "broker-reconstruction-2026-10-17",
+      "tip": "c1238dee340c1d551907348ec38944344ea3e4fe"
+    },
+    {
+      "branch": "broker-response-compatibility-2026-10-18",
+      "tip": "03b7c612a246fdc79307c0be607d4b7543e7f5e1"
+    },
+    {
+      "branch": "broker-rules-context-2026-10-18",
+      "tip": "320592efdee5073a16d447f1c2f33eacebb86e24"
+    },
+    {
+      "branch": "broker-rules-security-2026-10-18",
+      "tip": "6ba5b2da23291c60c27235d8fc4d1798c3ffadd6"
+    },
+    {
+      "branch": "broker-synthetic-accounting-2026-10-17",
+      "tip": "6f090f0c688a7b17e3bef52b5136d6c5be41c477"
+    },
+    {
+      "branch": "checkpoint-inflight-fixture-2026-10-17",
+      "tip": "5a588c11137f9d4a5808950dfd0329a33775ad53"
+    },
+    {
+      "branch": "claude/new-project-setup-h5m6f8",
+      "tip": "396bdc5c96a26c7d718c5a7ee0b89d3835827495"
+    },
+    {
+      "branch": "consolidate-main-2026-10-20",
+      "tip": "1b6684a33cd19466e7f88d36794e2a14d4be263d"
+    },
+    {
+      "branch": "inspect-safety-evals-2026-10-20",
+      "tip": "298b636913a371997b97c0f5ec3668f3e3130792"
+    },
+    {
+      "branch": "offline-broker-fixture-hardening-2026-10-17",
+      "tip": "b958bccf6e5a9c5288b6d046aa8f8038e81ba2ec"
+    },
+    {
+      "branch": "offline-coordinate-validation-2026-10-17",
+      "tip": "0d19c496f9a7930e29872a7b10a20536ba205035"
+    },
+    {
+      "branch": "participant-lifecycle-ci-2026-10-17",
+      "tip": "6b3278f2ea5cbe8bfd40289de6197680cb9eb9bf"
+    },
+    {
+      "branch": "participant-session-rollover-2026-10-17",
+      "tip": "49c79624bf7b9c866c0b16bed75d2738537e1415"
+    },
+    {
+      "branch": "security-dependencies-2026-10-18",
+      "tip": "6343a9632a6945bd1a1242873e73598c701d417d"
+    }
+  ],
+  "kept": [
+    {
+      "branch": "claude/sibling-shard-sky-viz-xbpl1r",
+      "tip": "90975e407cbaaf9fbdd0d39e4e3445d2e1a278dc"
+    },
+    {
+      "branch": "dependabot/npm_and_yarn/npm_and_yarn-8bd3e5320a",
+      "tip": "c10f8490dde8c8b15426d9ee28290fa40fea7124"
+    },
+    {
+      "branch": "main",
+      "tip": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e"
+    }
+  ]
+}

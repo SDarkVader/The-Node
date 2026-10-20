@@ -4,23 +4,23 @@ Updated 2026-10-20. This is the cross-device entry point for a **new ChatGPT, Co
 
 ## Start from GitHub, not a previous chat or PC
 
-Repository: `SDarkVader/The-Node`. Consolidation destination: `main`; explicit review branch: `consolidate-main-2026-10-20`. Inspect actual refs/PR status before claiming the consolidation has merged. Verify the live branch HEAD with Git before work; do not assume a hardcoded commit is the current HEAD. Read `AGENTS.md`, `docs/recovery/CURRENT_SESSION.md`, this file, and the relevant feature evidence. Treat the user's current task as authoritative. Do not require local `.codex/session-recovery/` files, a running PC, prior conversation memory or trusted Codex hooks to understand the GitHub checkout.
+Repository: `SDarkVader/The-Node`. Shared development branch: `main`, following PR #22 merge `acb3b2d` on 2026-10-20. Verify the live branch HEAD with Git before work; do not assume a hardcoded commit is the current HEAD. Read `AGENTS.md`, `docs/recovery/CURRENT_SESSION.md`, this file, and the relevant feature evidence. Treat the user's current task as authoritative. Do not require local `.codex/session-recovery/` files, a running PC, prior conversation memory or trusted Codex hooks to understand the GitHub checkout.
 
 The local recovery hook is optional convenience for uncommitted work on the *same machine*. It is not the cross-device transport. Only committed/pushed files are shared; ignored local patches, private data, secret bindings, runtime game checkpoints and local account ledgers **do not follow** a GitHub clone. Never infer that they have been transferred.
 
 ## Current code and verification
 
-PR #21 is merged into the development branch at `2941067`, with the same tracked
-tree as reviewed `298b636`. Latest full evidence: 1188 Vitest, TypeScript, 18 Python,
-7 recovery and 80 native checks; two 29-sample Inspect runs with exported replay.
-See [PR #21 review](PR21_REVIEW_2026-10-20.md) for commands and limitations.
-Those results were verified before this documentation refresh, not rerun by it.
-The post-merge checkpoint branch mismatch is corrected in CURRENT_SESSION.md.
-The consolidation candidate now brings development `320592e` and main `1eb6958` together.
-See [the branch audit and verification report](MAIN_CONSOLIDATION_2026-10-20.md).
-Root [README](../../README.md) is the current overview; update it with the checkpoint.
-The [accounted-agent design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md) is
-tracked for cross-device continuity; execution remains disabled.
+PR #22 is merged into main at `acb3b2d`, whose tracked tree matches verified PR
+head `1b6684a`. Hosted [integration](https://github.com/SDarkVader/The-Node/actions/runs/39456555818)
+and [dependency audit](https://github.com/SDarkVader/The-Node/actions/runs/39456555781)
+passed: 1189 Vitest, TypeScript, 18 Python, 80 native, 8 recovery, and two deterministic
+29-sample Inspect runs with exported replay. A fresh main clone passed tracked recovery.
+These are source-anchored results, not another full rerun for this documentation update.
+See [the consolidation report](MAIN_CONSOLIDATION_2026-10-20.md) and the historical
+[PR #21 review](PR21_REVIEW_2026-10-20.md). Root [README](../../README.md) is the current
+overview; maintain it with the checkpoint. The [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
+is tracked, with execution disabled. Unique Godot sky/navigation and Vitest 5 work
+remain separate; do not assume those features are on main.
 
 The branch includes the TypeScript simulation and broker under `src/`, Godot client under `client/`, and deterministic tests under `test/`. Current rules-aware context lives in `src/agent/rulesContext.ts`, `rulesAwareContext.ts`, `observationTables.ts`, `responsesRequest.ts` and `offlineRulesEvaluation.ts`. Detailed implementation, source boundaries and reproducible evidence: [RULES_AWARE_CONTEXT](RULES_AWARE_CONTEXT.md). Its historical stage reported 1,143 Vitest + 80 native checks, TypeScript passing, and a deterministic bounded-memory fixture (8/8 with diary, 4/8 without, 8/8 replay-restored). These are **reported historical runs**, not independently rerun here and not proof of real-model strategy.
 

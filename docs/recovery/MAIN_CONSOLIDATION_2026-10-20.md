@@ -1,6 +1,6 @@
 # Main consolidation and branch audit — 2026-10-20
 
-Status: prepared integration candidate; no merge into main or branch deletion is claimed.
+Status: PR #22 merged into main at `acb3b2d` on 2026-10-20. Its tracked tree equals verified PR head `1b6684a`. No branch deletion has been performed.
 
 ## Integration boundaries
 
@@ -23,7 +23,7 @@ Status: prepared integration candidate; no merge into main or branch deletion is
 | Two Inspect runs and exported replay | 29/29 deterministic; 56/56 checks and 29/29 exported replays per run | Scripted calibration only |
 | Native checks | 80/80 passed | Actual local funded baseline 41da84f; new CI uses equivalent reviewed 320592e baseline code |
 | Runtime/dependency comparison with development | No differences | src/, client/, evals/, package.json/lock and Vitest config |
-| Hosted CI | Added, not claimed complete before GitHub reports it | Main push and main-targeting PRs; Node, Python, native, recovery and two offline Inspect runs |
+| Hosted CI | Integration 39456555818 and dependency audit 39456555781 passed on 1b6684a | Main push and main-targeting PRs; Node, Python, native, recovery and two offline Inspect runs |
 
 The new checkpoint has canonical branch main and one explicit reviewBranch. This avoids changing branch metadata again on merge while retaining exact branch and ancestor checks. It is not an arbitrary branch bypass. The new workflow checks out the named PR branch so it can verify that contract. Existing historical stage workflows are retained.
 
@@ -97,3 +97,21 @@ covers deadline expiry during reservation, proving zero dispatch, retained hold,
 zero booked usage and zero game ticks. The focused 12 tests, full 1,189-test suite
 and TypeScript pass locally. No production, deadline limit, assertion or game mechanic
 was relaxed. The hosted workflow is rerun by the correction push.
+
+## Confirmed main merge
+
+The user merged [PR #22](https://github.com/SDarkVader/The-Node/pull/22) at
+`acb3b2d21698871366d4dbb5431f9c2c68ba6c9e` on 2026-10-20 at 17:38 BST.
+Git tree comparison with `1b6684a` is identical. A real fresh clone of main passed
+tracked recovery. Main is now canonical; the obsolete reviewBranch metadata is removed.
+Both the corrected [integration run](https://github.com/SDarkVader/The-Node/actions/runs/39456555818)
+and [dependency audit](https://github.com/SDarkVader/The-Node/actions/runs/39456555781)
+passed. Earlier candidate and failed-run notes above remain dated evidence.
+
+The post-merge snapshot has 26 remote heads: main plus 23 other branch tips fully
+reachable from main, and the two separately retained Godot/Vitest 5 branches. The
+23 cleanup candidates comprise the 20 historical branches listed above, the existing
+security branch, the former development branch and the completed consolidation branch.
+Deletion requires the user's explicit decision and a final exact-tip ancestry check.
+
+Exact branch names and pinned tips are recorded in the [post-merge cleanup manifest](evidence/merged-branches-2026-10-20.json).

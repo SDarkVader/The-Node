@@ -18,9 +18,8 @@ and `docs/recovery/CURRENT_SESSION.md` from the current development branch, veri
 Git HEAD and inspect relevant source before making claims or edits. This applies to
 Claude as well; do not use this file to select a different branch or handover.
 
-The consolidation target is `main`; its explicit review branch is
-`consolidate-main-2026-10-20`. Read CURRENT_SESSION.md and actual Git refs to
-distinguish an unmerged candidate from the shared main line after merge.
+The shared development line is `main`, following PR #22 merge `acb3b2d` on
+2026-10-20. Read CURRENT_SESSION.md and actual Git refs before further work.
 Continue on the user's agreed branch and do not silently switch to `main`, merge,
 or create a feature branch. The older August instruction to work directly on
 `main` was intended to prevent stranded, unpublished work; it is superseded
