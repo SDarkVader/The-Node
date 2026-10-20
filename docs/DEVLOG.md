@@ -1,3 +1,5 @@
+> 2026-10-20 — PR #26 merged at `9d004e8` on the user's instruction, once every check on head `c59dd70` was green: Windows Main integration (run 39513742598, including 80 native checks) and both Linux Research conformance runs. The merged tree is identical to the verified head, and a clean `main` checkout passes tracked recovery. This docs-only follow-up records the merged state in the checkpoint, the continuation guide and the README. It restarts the task branch from `main` and keeps it as the one review branch. It removes the stale PR #23 anchor wording and the "merge once green" step. No code changes.
+
 > 2026-10-20 (PR #26) — hosted CI on the first push and PR caught three things the local runs could not.
 >
 > 1. **Detached PR checkout.** On `pull_request` events, `actions/checkout` produces a detached merge commit, so `recovery:verify` correctly refused an empty branch name. The fix checks out the head branch by name, as `main-integration.yml` already did (`2407e4b`).
