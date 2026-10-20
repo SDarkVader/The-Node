@@ -137,7 +137,17 @@ import {
   EXPERIENCE_CAP,
 } from '../engine/ecosystem.js';
 import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
-import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor } from '../engine/importExport.js';
+import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor, applyStandingBerths, STANDING_BERTHS_DEFAULT } from '../engine/importExport.js';
+import {
+  emptySettlementAccounts,
+  emptySettlementTick,
+  emptyIssuance,
+  accountsTotal,
+  totalHoldings,
+  totalIssued,
+  type SettlementAccounts,
+  type SettlementTick,
+} from '../engine/settlement.js';
 import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
 import { stepPresenceLedger, type PresenceRecord } from '../engine/presence.js';
 import { canAttemptTrespass } from '../engine/trespass.js';
@@ -265,6 +275,9 @@ export interface WorldConfig {
    *  Defaults to wealth.ts's own PURCHASE_CYCLE_DAYS; exposed here so it's a real,
    *  sweepable knob rather than requiring a source edit to test different values. */
   purchaseCycleDays?: number;
+  /** Minimum Import/Export slots that are never VACANT (`importExport.ts`'s
+   *  `applyStandingBerths`). Defaults to `STANDING_BERTHS_DEFAULT` (1); 0 disables. */
+  standingBerths?: number;
 }
 
 // Six-role split, from a JOINT grid search over allocation x district layout
@@ -643,6 +656,14 @@ export interface World {
    *  logic itself. Same "report what actually happened, don't make the caller infer it from
    *  field deltas" convention as `lastDiaryRejections`. */
   lastOracleStats: OracleTickStats;
+  /** Settlement accounts (2026-10-20, `engine/settlement.ts`): where value that used to be
+   *  destroyed now lands. Civic, not personal — but withheld from the wire like wealth. */
+  settlement: SettlementAccounts;
+  /** This tick's settlement report: every issuance line, emigrant holdings, and the residual
+   *  of the flow-balance invariant (0 up to float error). */
+  lastSettlement: SettlementTick;
+  /** How many Import/Export slots `applyStandingBerths` moved VACANT → BACKSTOPPED this tick. */
+  lastStandingBerthsFired: number;
   /** The basic day (2026-08-24) — this tick's Import/Export nodule/grain supply, split into
    *  `engine/dayCycle.ts`'s two real UTC-anchored windows instead of one blended daily
    *  number. Byte-identical total to the pre-existing single figure; only the reporting
@@ -886,6 +907,9 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     lastDiaryWrites: [],
     lastDiaryRejections: [],
     lastOracleStats: { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } },
+    settlement: emptySettlementAccounts(),
+    lastSettlement: emptySettlementTick(),
+    lastStandingBerthsFired: 0,
     lastImportExportWindows: [],
     currentlyOnline: new Set(),
     presence: {},
@@ -936,13 +960,17 @@ export function createDormantWorld(seed: number, config: WorldConfig): World {
  * Injects `count` real migrants (from another shard, via a multi-shard orchestrator) as
  * new grifters — they arrive roleless, same as any other fresh arrival, and take their
  * place in the ordinary vacancy/conscription cycle from the next tick on.
+ *
+ * `holdings` (2026-10-20, settlement vouchers): what each migrant carries in, settled from
+ * the source shard's `lastSettlement.emigrantHoldings`. Omitted entries arrive with 0, as
+ * every migrant did before vouchers existed.
  */
-export function receiveMigrants(world: World, count: number): World {
+export function receiveMigrants(world: World, count: number, holdings: readonly number[] = []): World {
   if (count <= 0) return world;
   let grifters = world.grifters;
   let nextGrifterId = world.nextGrifterId;
   for (let i = 0; i < count; i++) {
-    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
+    grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: holdings[i] ?? 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
     nextGrifterId += 1;
   }
   return { ...world, grifters, nextGrifterId, population: world.population + count };
@@ -1207,6 +1235,36 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   let grifters = world.grifters;
   let nextGrifterId = world.nextGrifterId;
 
+  // Settlement ledger (2026-10-20, engine/settlement.ts). Opened before anything touches
+  // wealth this tick; every write below posts to `issued`, an account, or `emigrantHoldings`,
+  // and the residual is computed at the end. Consumes no rng — trajectories are unchanged.
+  const holdingsBefore = totalHoldings([millers, bakers, couriers, investigators, importExporters, grifters]);
+  const settlement: SettlementAccounts = { ...world.settlement };
+  const accountsBefore = accountsTotal(settlement);
+  const issued = emptyIssuance();
+  const emigrantHoldings: number[] = [];
+  let forfeitedToDock = 0;
+  /** A balance a refill reset would otherwise wipe: its previous occupant left it behind. */
+  const forfeit = (amount: number) => {
+    if (amount === 0) return;
+    settlement.dock += amount;
+    forfeitedToDock += amount;
+  };
+  const forfeitJustFilled = (arr: readonly { buildingId: string; wealth: number }[], justFilled: ReadonlySet<string>) => {
+    for (const s of arr) if (justFilled.has(s.buildingId)) forfeit(s.wealth);
+  };
+  // Standing berths (2026-10-20, importExport.ts): Import/Export is never fully dark. Applied
+  // after today's role transitions and again after emigration, so both this tick's issuance
+  // and the state handed to the next tick satisfy it.
+  const standingBerths = config.standingBerths ?? STANDING_BERTHS_DEFAULT;
+  let standingBerthsFired = 0;
+  const applyBerths = () => {
+    const r = applyStandingBerths(importExporters.map((x) => x.slot), standingBerths);
+    if (r.fired === 0) return;
+    standingBerthsFired += r.fired;
+    importExporters = importExporters.map((x, i) => ({ ...x, slot: r.slots[i]! }));
+  };
+
   // A district crossing into MERGED today evicts every role-holder physically in it —
   // "excess players" pushed into the grifter pool with a hard consolidationDeadline (the
   // district's own grace period, so "2 weeks to gain a role or be drafted" lands on the
@@ -1318,6 +1376,13 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const courierJustFilled = justFilledSet(couriers, byRole.get('courier')!);
   const investigatorJustFilled = justFilledSet(investigators, byRole.get('investigator')!);
   const importExportJustFilled = justFilledSet(importExporters, byRole.get('importExport')!);
+  // Every just-filled slot is about to reset to wealth 0 (support roles just below, Miller/
+  // Baker inside stepCompetitiveLayer). Nothing changes these balances in between.
+  forfeitJustFilled(millers, millerJustFilled);
+  forfeitJustFilled(bakers, bakerJustFilled);
+  forfeitJustFilled(couriers, courierJustFilled);
+  forfeitJustFilled(investigators, investigatorJustFilled);
+  forfeitJustFilled(importExporters, importExportJustFilled);
 
   millers = millers.map((m, i) => ({ ...m, slot: byRole.get('miller')![i]! }));
   bakers = bakers.map((b, i) => ({ ...b, slot: byRole.get('baker')![i]! }));
@@ -1383,6 +1448,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         if (event.roleId === 'miller') millerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.miller ?? 0);
         else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.baker ?? 0);
         if (destination) participant!.transition({from: grifters[longest.i]!.id, to: destination, role: event.roleId as RoleType});
+        // Their savings don't follow them into the slot (it starts at 0) — posted to the dock
+        // rather than vanishing. See settlement.ts on carrying wealth with the person.
+        forfeit(grifters[longest.i]!.wealth);
         grifters = grifters.filter((_, i) => i !== longest.i);
       }
     } else if (event.type === 'conscriptionFromGrifters') {
@@ -1408,6 +1476,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
           if (event.roleId === 'miller') millerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.miller ?? 0);
           else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.baker ?? 0);
           if (destination) participant!.transition({from: grifters[longestIdx]!.id, to: destination, role: event.roleId as RoleType});
+          forfeit(grifters[longestIdx]!.wealth);
         }
         grifters = grifters.filter((_, i) => i !== longestIdx);
       }
@@ -1467,6 +1536,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       const target = openSlots[k]!;
       participant?.transition({from: grifter.id, to: slotArrays[target.role][target.index]!.buildingId, role: target.role});
       placedGrifterIds.add(grifter.id);
+      forfeit({ miller: millers, baker: bakers, courier: couriers, investigator: investigators, importExport: importExporters }[target.role][target.index]!.wealth);
+      forfeit(grifter.wealth);
       const fill = { state: 'FILLED' as const, vacantSince: null };
       if (target.role === 'miller') {
         millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(m.buildingId) } : m));
@@ -1482,6 +1553,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     }
     if (placedGrifterIds.size > 0) grifters = grifters.filter((g) => !placedGrifterIds.has(g.id));
   }
+
+  applyBerths();
 
   // ---- Stage 3: market (Miller then Baker, then support-role wage + grifter floor) ---
   const noise = () => gaussian(rng, config.noiseSigma);
@@ -1646,6 +1719,18 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
 
   millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]!, ...stepSlotStock(m) } : m));
   bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]!, ...stepSlotStock(b) } : b));
+  {
+    // Tax/redistribution is internal to this flow (it conserves the sum), so the posting is
+    // the post-tax total; completion bonuses are split out as their own line.
+    const mbCompletion =
+      millerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.miller : 0), 0) +
+      bakerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.baker : 0), 0);
+    const mbTotal =
+      millers.reduce((s, m, i) => (m.slot.state === 'FILLED' ? s + finalMillerIncomes[i]! : s), 0) +
+      bakers.reduce((s, b, i) => (b.slot.state === 'FILLED' ? s + finalBakerIncomes[i]! : s), 0);
+    issued.completion += mbCompletion;
+    issued.millerBakerIncome += mbTotal - mbCompletion;
+  }
 
   if (config.wealthCap !== undefined) {
     const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
@@ -1653,6 +1738,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     const combinedWealth = [...millerFilledIdx.map((i) => millers[i]!.wealth), ...bakerFilledIdx.map((i) => bakers[i]!.wealth)];
     if (combinedWealth.length > 0) {
       const capped = applyWealthCap(combinedWealth, config.wealthCap);
+      // Whatever applyWealthCap couldn't place (everyone at the cap, or the Math.min clip)
+      // lands in the district pool instead of vanishing.
+      settlement.districtPool += combinedWealth.reduce((a, b) => a + b, 0) - capped.reduce((a, b) => a + b, 0);
       millers = millers.map((m, i) => {
         const pos = millerFilledIdx.indexOf(i);
         return pos >= 0 ? { ...m, wealth: capped[pos]! } : m;
@@ -1671,21 +1759,23 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
   // — see engine/courierPay.ts's header for the full reasoning, including why a literal
   // commissioner-debit was measured and deliberately NOT built at this scale.
-  couriers = couriers.map((c) =>
-    c.slot.state === 'FILLED'
-      ? {
-          ...c,
-          wealth:
-            c.wealth +
-            courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)),
-          ...stepSlotStock(c),
-          daysInRole: c.daysInRole + 1,
-        }
-      : c,
-  );
-  investigators = investigators.map((d) => (d.slot.state === 'FILLED' ? { ...d, wealth: d.wealth + supportDaily * frictionFor(d.buildingId), ...stepSlotStock(d), daysInRole: d.daysInRole + 1 } : d));
-  importExporters = importExporters.map((x) => (x.slot.state === 'FILLED' ? { ...x, wealth: x.wealth + supportDaily * frictionFor(x.buildingId), ...stepSlotStock(x), daysInRole: x.daysInRole + 1 } : x));
-  grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER }));
+  couriers = couriers.map((c) => {
+    if (c.slot.state !== 'FILLED') return c;
+    const pay = courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId));
+    issued.courierPay += pay;
+    return { ...c, wealth: c.wealth + pay, ...stepSlotStock(c), daysInRole: c.daysInRole + 1 };
+  });
+  const payWage = <T extends SupportRoleSlot>(s: T): T => {
+    if (s.slot.state !== 'FILLED') return s;
+    const wage = supportDaily * frictionFor(s.buildingId);
+    issued.supportWage += wage;
+    return { ...s, wealth: s.wealth + wage, ...stepSlotStock(s), daysInRole: s.daysInRole + 1 };
+  };
+  investigators = investigators.map(payWage);
+  importExporters = importExporters.map(payWage);
+  const grifterFloor = GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER;
+  issued.grifterFloor += grifterFloor * grifters.length;
+  grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + grifterFloor }));
 
   // Shift Cover (2026-08-11 addendum item 7) — every BACKSTOPPED slot across all six roles is
   // a real opportunity for a grifter to notice and cover for the day, at
@@ -1743,6 +1833,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       // can draw an experience head-start from if they later take over that same role.
       const role = shiftCoverOpportunities[noticedIdx[pos]!]!.role;
       const shiftsCoveredByRole = { ...g.shiftsCoveredByRole, [role]: (g.shiftsCoveredByRole?.[role] ?? 0) + 1 };
+      issued.shiftCover += payouts[pos]!;
       return { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1, shiftsCoveredByRole };
     });
   }
@@ -1765,12 +1856,21 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       oracleStats.entrants++;
       if (entrant.wealth < ORACLE_ENTRY_COST) return entrant;
       oracleStats.entered++;
+      // The entry funds the Oracle pool; a wealth prize is paid out of it (settlement.ts).
+      // Solvent by construction: this entrant's own entry lands before they can win, and the
+      // prize never exceeds the entry. `oracleShortfall` exists so that stays checked, not assumed.
+      settlement.oraclePool += ORACLE_ENTRY_COST;
       const afterEntry = { ...entrant, wealth: entrant.wealth - ORACLE_ENTRY_COST };
       if (rng() >= winProbability) return afterEntry;
       oracleStats.wins++;
       const prize = pickPrizeType(isGrifter, rng);
       oracleStats.winsByPrize[prize]++;
-      if (prize === 'wealth') return { ...afterEntry, wealth: afterEntry.wealth + ORACLE_WEALTH_PRIZE_AMOUNT };
+      if (prize === 'wealth') {
+        const fromPool = Math.min(ORACLE_WEALTH_PRIZE_AMOUNT, settlement.oraclePool);
+        settlement.oraclePool -= fromPool;
+        issued.oracleShortfall += ORACLE_WEALTH_PRIZE_AMOUNT - fromPool;
+        return { ...afterEntry, wealth: afterEntry.wealth + ORACLE_WEALTH_PRIZE_AMOUNT };
+      }
       if (prize === 'resourceStock' && 'personalResourceStock' in afterEntry) {
         const s = afterEntry as unknown as { personalResourceStock: number };
         return { ...afterEntry, personalResourceStock: Math.min(PERSONAL_RESOURCE_CAP, s.personalResourceStock + ORACLE_RESOURCE_STOCK_PRIZE_AMOUNT) };
@@ -1826,8 +1926,11 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     // so — unlike the Miller/Baker half — applying the reward straight to wealth here,
     // rather than folding it into a taxed/capped income flow, is not a hole through
     // anything: there is no bound here for it to poke through.
-    const grantIfTaskCompleted = <T extends { wealth: number }>(slot: T, completed: boolean, reward: number): T =>
-      completed ? { ...slot, wealth: slot.wealth + reward } : slot;
+    const grantIfTaskCompleted = <T extends { wealth: number }>(slot: T, completed: boolean, reward: number): T => {
+      if (!completed) return slot;
+      issued.completion += reward;
+      return { ...slot, wealth: slot.wealth + reward };
+    };
     const supportRoleCompletion = <T extends { slot: RoleSlot; buildingId: string; wealth: number }>(
       arr: T[],
       justFilled: Set<string>,
@@ -2050,25 +2153,52 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       // touching a role-holder's slot unless there's truly nobody roleless left to leave.
       const idx = Math.floor(rng() * grifters.length);
       participant?.transition({from: grifters[idx]!.id, to: null, role: null});
+      // They leave carrying what they hold — a transit voucher the multi-shard harness settles
+      // on arrival (or into the source dock, if the crossing fails). settlement.ts.
+      emigrantHoldings.push(grifters[idx]!.wealth);
       grifters = grifters.filter((_, i) => i !== idx);
     } else {
       const filled = filledEntries({ millers, bakers, couriers, investigators, importExporters });
       if (filled.length > 0) {
         const pick = filled[Math.floor(rng() * filled.length)]!;
         participant?.transition({from: pick.buildingId, to: null, role: null});
-        const vacate = { state: 'VACANT' as const, vacantSince: day };
-        if (pick.role === 'miller') millers = millers.map((m, i) => (i === pick.index ? { ...m, slot: vacate } : m));
-        else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? { ...b, slot: vacate } : b));
-        else if (pick.role === 'courier') couriers = couriers.map((c, i) => (i === pick.index ? { ...c, slot: vacate } : c));
-        else if (pick.role === 'investigator') investigators = investigators.map((d, i) => (i === pick.index ? { ...d, slot: vacate } : d));
-        else importExporters = importExporters.map((x, i) => (i === pick.index ? { ...x, slot: vacate } : x));
+        // A role-holder's balance leaves with them too, so the slot is zeroed now rather than
+        // left for a later refill to forfeit.
+        const vacateCarrying = <T extends { slot: RoleSlot; wealth: number }>(s: T): T => {
+          emigrantHoldings.push(s.wealth);
+          return { ...s, slot: { state: 'VACANT' as const, vacantSince: day }, wealth: 0 };
+        };
+        if (pick.role === 'miller') millers = millers.map((m, i) => (i === pick.index ? vacateCarrying(m) : m));
+        else if (pick.role === 'baker') bakers = bakers.map((b, i) => (i === pick.index ? vacateCarrying(b) : b));
+        else if (pick.role === 'courier') couriers = couriers.map((c, i) => (i === pick.index ? vacateCarrying(c) : c));
+        else if (pick.role === 'investigator') investigators = investigators.map((d, i) => (i === pick.index ? vacateCarrying(d) : d));
+        else importExporters = importExporters.map((x, i) => (i === pick.index ? vacateCarrying(x) : x));
+      } else {
+        emigrantHoldings.push(0); // keeps one entry per emigrant, aligned with lastEmigrants
       }
     }
   }
   population = Math.max(0, population - actualEmigrants);
+  applyBerths();
 
   const totalRoleSlots = totalRoleSlotsFor(config);
   const finalFilledCount = filledEntries({ millers, bakers, couriers, investigators, importExporters }).length;
+
+  // Close the settlement ledger: nothing below this point touches wealth.
+  const holdingsAfter = totalHoldings([millers, bakers, couriers, investigators, importExporters, grifters]);
+  const accountsAfter = accountsTotal(settlement);
+  const lastSettlement: SettlementTick = {
+    issued,
+    emigrantHoldings,
+    forfeitedToDock,
+    holdingsBefore,
+    holdingsAfter,
+    accountsBefore,
+    accountsAfter,
+    residual:
+      holdingsAfter + accountsAfter - (holdingsBefore + accountsBefore) -
+      (totalIssued(issued) - emigrantHoldings.reduce((a, b) => a + b, 0)),
+  };
   const filledExpValues = [...millers, ...bakers].filter((x) => x.slot.state === 'FILLED').map((x) => x.experience);
   const avgExp = filledExpValues.length > 0 ? filledExpValues.reduce((a, b) => a + b, 0) / filledExpValues.length : 0;
 
@@ -2358,6 +2488,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     lastDiaryWrites,
     lastDiaryRejections,
     lastOracleStats: oracleStats,
+    settlement,
+    lastSettlement,
+    lastStandingBerthsFired: standingBerthsFired,
     lastImportExportWindows: importExportWindows,
     currentlyOnline: world.currentlyOnline,
     presence,

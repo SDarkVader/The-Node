@@ -92,6 +92,7 @@ The single source of truth. Every field, grouped by what it is for.
 | **Social** | `identityLedger`, `completionStats`, `pressureLedger` |
 | **Sabotage** | `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`, `lastSabotage` (legacy) |
 | **Oracle** | `lastOracleStats` |
+| **Settlement** | `settlement` (`districtPool`, `oraclePool`, `dock`), `lastSettlement` (per-line issuance, `emigrantHoldings`, `forfeitedToDock`, `residual`), `lastStandingBerthsFired` — `engine/settlement.ts`; withheld from the wire |
 | **Day cycle** | `lastImportExportWindows` (`ImportExportWindowEvent[]`, `engine/dayCycle.ts`) |
 | **Presence** | `currentlyOnline` (live snapshot, caller-set, NOT drained), `presence` (`Record<PlayerId, PresenceRecord>`, `engine/presence.ts`) |
 
@@ -174,6 +175,17 @@ PURCHASE_CYCLE_DAYS            7          THROTTLE_WINDOWS_PER_DAY    2
 COURIER_FEE_PER_DISTANCE_UNIT  0.344      [CALIBRATED — courier-station mean distance 4.357]
 COURIER_MIN_ROUTE_DISTANCE     1          [constraint 2 — a station on the hub must still earn]
 PERSONAL_RESOURCE_CAP          5          RESTOCK_INTERVAL_DAYS       3
+STANDING_BERTHS_DEFAULT        1          [Import/Export slots never VACANT; WorldConfig.standingBerths, 0 disables]
+```
+
+### Settlement (`engine/settlement.ts`, `npm run settlement-report`; 8 seeds × 3000 days, burn-in 500)
+```
+Issuance per tick           45.79   supportWage 18.91  completion 11.18  grifterFloor 8.26
+                                    courierPay 6.25  millerBakerIncome 0.97  shiftCover 0.22
+Nodules per tick            22.66   implied k (issuance / nodule) 2.02
+Forfeited to dock per tick  37.86   (82.7% of issuance — role-transition balances)
+Oracle pool at day 3000     ~20.4k  dock at day 3000 ~109.4k (per shard, mean)
+Standing berth fired        0 / 20000 populated-shard ticks; dormant shard first 10 days 75.6 vs 70.6 nodules
 ```
 
 ### Day cycle (`engine/dayCycle.ts`, 2026-08-24) — [ILLUSTRATIVE hour placement]
@@ -359,6 +371,11 @@ Checked by tests, and load-bearing:
 7. **No private state on the wire** — asserted by searching the serialized payload for real
    values, and mutation-tested to confirm the assertion can fail.
 8. **Import guards** — engine/world/server never import drivers or infra.
+9. **Settlement flow balance** — per shard per tick, (holdings + accounts) changes by exactly
+   Σ issuance − Σ emigrant holdings; nothing is destroyed. Across shards, the total changes by
+   Σ issuance only (vouchers arrive or go to the source dock). `test/settlement.test.ts`.
+10. **Import/Export is never fully VACANT** — at least `standingBerths` slots are FILLED or
+    BACKSTOPPED at the end of every tick, so nodule issuance is never 0.
 
 ---
 
@@ -370,6 +387,7 @@ npm run typecheck
 npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for the old scenario)
 npm run playtest              terminal renderer, synthetic drivers
 npm run sabotage-campaign-sim / oracle-sim / experience-floor-sim / ... measurement harnesses
+npm run settlement-report     ledger magnitudes, implied k, standing-berth and voucher effects
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
@@ -406,6 +424,15 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
+- **Wealth does not follow a person through a role change.** A grifter's savings, and a slot's
+  balance when its occupant leaves, go to the dock — 82.7% of all issuance. The ledger makes
+  this visible; it does not change it. It is the economy's de facto sink: carrying wealth
+  with the person removes it, and holdings would then grow without bound unless a designed
+  sink replaces it. Open design decision.
+- **Issuance is not yet funded by nodules.** Every income line is still issued by the system,
+  named in the ledger. The dock only accumulates; nothing drains it back as nodules yet.
+  Funding wages from `districtPool` at a per-nodule rate (measured k ≈ 2.02) is the next step,
+  per `DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md`.
 - **The live server has no real-time wall clock.** `ws.ts`'s `tickIntervalMs` defaults to
   2500ms and every tick advances the whole deterministic economy by one full game-day — no
   anchoring to real UTC hours anywhere on the live path. `NODE_BUILD_SPEC_2026-08-07.md`
