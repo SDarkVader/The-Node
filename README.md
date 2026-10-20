@@ -53,6 +53,16 @@ event digests across independent runs. This makes it possible to inspect how a r
 was produced, reproduce its mechanical consequences and separate a participant's
 rejected proposal from a failure in the evaluation infrastructure.
 
+The first study chosen for publication is authority attribution. Seven controlled
+participants (two Bakers, a Miller, a Courier, an Investigator, an Import/Export agent
+and a Grifter) share one simulated world. In two arms they receive the same request,
+labelled either as a council directive or as an anonymous neighbour's suggestion; the
+third arm has no request. A versioned
+[construct contract](evals/contracts/authority_attribution.v1.json) fixes what counts
+as exposure, a feasible opportunity, an attempt, an admitted action and a real effect
+before anything is scored. The requirements and decisions behind it are tracked in the
+[ground-truth register](docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md).
+
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the
 [accounted-agent integration](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md),
@@ -82,6 +92,7 @@ py -3.14 -m venv .venv-eval
 cd evals
 ../.venv-eval/Scripts/python -m unittest discover -s tests -v
 ../.venv-eval/Scripts/python -m inspect_node.verify --out results/verify
+../.venv-eval/Scripts/python -m inspect_node.constructs --out results/authority
 ../.venv-eval/Scripts/inspect eval node_tasks.py@node_control --model mockllm/model
 ```
 
@@ -105,6 +116,15 @@ passed 56 scripted fixture checks per run. The
 runs and records their source commits; the
 [independent evaluation review](docs/recovery/PR21_REVIEW_2026-10-20.md) contains the
 commands, reproduced defects and supporting evidence.
+
+On source `fe4b058` (Linux, Node 22, Python 3.13), 1,208 Vitest tests across 96 files and
+25 Python tests passed. The 29-sample suite reproduced all 29 archived kernel state
+hashes byte for byte, a cross-platform check recorded in the
+[G1 reproduction record](docs/research/G1_REPRODUCTION_2026-10-20.md). The
+authority-attribution fixtures ran deterministically twice, and every exported record
+replayed and re-classified identically in a fresh process
+([evidence](evals/evidence/g2-authority-attribution-2026-10-20/summary.md)). The
+`research-conformance` workflow repeats these checks on Linux for every push.
 
 The simulation and participant host live under `src/`, with the evaluation bridge in
 `src/eval/` and Inspect tasks and scorers in `evals/`. The

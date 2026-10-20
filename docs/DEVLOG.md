@@ -1,3 +1,27 @@
+> 2026-10-20 — ground-truth register, G0–G2 (branch `ccr-8d64b59c-a4puhv` from main `afdf390`). The owner supplied *The Node — Ground Truth and Publishable Route v0.1* and asked for its architecture to be resolved into a verified structure, with design questions raised where needed.
+>
+> **Owner decisions:**
+> - D2: authority attribution anchors the first publication.
+> - D3: multiple controlled roles.
+> - D5: decouple the research testbed from game UX.
+> - D1: a mandatory daily diary entry chosen from the menus. **It conflicts with** DESIGN_ADDENDUM_2026-08-06 “creation is unprompted-only” and RULES_REVIEW_2026-10-18 principle 4. It is recorded rather than implemented, with four open questions in the register §7.
+>
+> **G0:** each register claim checked against source, with file locations. One qualification: `readDiary`/`getAlive` mutate the store, so the no-drift-on-read property holds only because the observer never calls them.
+>
+> **G1** reproduced at the unmodified `afdf390` on Linux, Node 22 and Python 3.13: 1189 Vitest, 18 Python, 8 recovery, and 29/29/56 Inspect. The 29 kernel hashes are byte-identical to the archived `8281db6`/`96a431f` runs on Node 24 and Python 3.14, and `src` is unchanged between them. The `3512ded` evidence differs, which the episode.ts genesis-normalisation fix explains. `recovery:verify` exits 2 on any unnamed branch by design and passes on a clean `main` worktree. Native checks were not run (no PowerShell).
+>
+> **G2:**
+> - Authority-attribution contract v1.0.0. It is hash-bound and machine-readable, with a pure classifier over exported records.
+> - `MultiActorEpisode`: seven actors, one kernel step per tick. Feasibility comes from a validator probe; effects come from kernel price and pressure-ledger evidence.
+> - Arms are label-only, and prompts are tested byte-identical apart from the label.
+> - Inspect task, verifier and Linux workflow.
+>
+> **Caught by running:**
+> - Four tests passed policy factories where policies were expected. The driver rejected the non-string outputs, as designed.
+> - The no-notice spontaneous fixture executed 5/6, not 6/6. Two Bakers pricing at 1.9 from tick 0 cost `miller-0` its slot during the tick-2 step, so its admitted Wall post had no kernel effect. That outcome is `admitted_without_effect` with `role_changed_in_window`. The test now asserts it, and the contract's statistical unit is episode × arm.
+>
+> Mutations killed: skipping the kernel check, leaking the effect into a prompt, hard-coding feasibility. 1208 Vitest, 25 Python. The 29-sample hashes are unchanged after the change. No live model, credential, ledger or PR.
+
 > 2026-10-20 — main-only GitHub rules. The all-branch PR rule rejected an update to PR #24 itself (GH013, also reproduced through the contents API). Prepared intermediary PR #25; user then asked for a simpler ruleset and authorized applying the recommendation. Ruleset verify now targets exact main, requires PRs and the GitHub Actions offline-verification check, and uses zero required human approvals. Main deletion, force-push and code-quality protections and bypass actors are preserved. This permanent configuration supersedes earlier temporary review-count changes and permits normal PR-branch updates. Intermediary PR #25 is superseded; final narrative remains in PR #24.
 
 > 2026-10-20 — README narrative refinement. Following user feedback, replaced the statement-heavy overview with a connected description of the research purpose, interdependent simulation, concrete Baker authority/injection scenarios and the path from decisions to Inspect metrics and replay evidence. Moved branch history out of the overview and collected detailed limitations in EVALUATION_SCOPE_AND_LIMITATIONS.md, linked at the bottom. Kept framework attribution specific and current scripted validation clear in the description. Runtime, mechanics and live gates unchanged; revised the existing PR #24 before merge.
