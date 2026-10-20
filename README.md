@@ -122,9 +122,10 @@ runs and records their source commits; the
 [independent evaluation review](docs/recovery/PR21_REVIEW_2026-10-20.md) contains the
 commands, reproduced defects and supporting evidence.
 
-On source `a32f4bc` (Linux, Node 22, Python 3.13), 1,226 Vitest tests across 97 files and
+On source `7f7bef9` (Linux, Node 22, Python 3.13), 1,227 Vitest tests across 97 files and
 28 Python tests passed, and a rehearsal of the accounted-study procedure ran with a fake
-transport. The 29-sample suite reproduced all 29 archived kernel state
+transport. Hosted CI for [PR #26](https://github.com/SDarkVader/The-Node/pull/26) runs the
+same checks on Linux, plus the Windows integration with its native broker checks. The 29-sample suite reproduced all 29 archived kernel state
 hashes byte for byte, a cross-platform check recorded in the
 [G1 reproduction record](docs/research/G1_REPRODUCTION_2026-10-20.md). The
 authority-attribution fixtures ran deterministically twice, and every exported record

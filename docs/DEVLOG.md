@@ -1,3 +1,13 @@
+> 2026-10-20 (PR #26) — hosted CI on the first push and PR caught three things the local runs could not.
+>
+> 1. **Detached PR checkout.** On `pull_request` events, `actions/checkout` produces a detached merge commit, so `recovery:verify` correctly refused an empty branch name. The fix checks out the head branch by name, as `main-integration.yml` already did (`2407e4b`).
+> 2. **Deadline counted our own I/O.** On Windows one test stopped as `deadline_exceeded`: the post-response deadline included our own journal write and fsync. Reproduced deterministically with an 80 ms ledger write against a 50 ms deadline; the deadline now ends at response receipt.
+> 3. **Oversized reservations, found while investigating 2.** Each stored the full decision context (about 7.8 KB per call, mostly 99 observer references). One 714-call study would have used about 5.6 MB of the 8 MiB journal, rewritten on every call, and a chained allowance would have stopped after about 300 calls. Reservations now keep the participant identity plus the request-bytes hash (the bytes are archived per call): about 0.9 KB per call, 0.66 MB per study. No real journal existed yet, so nothing needed migrating.
+>
+> A fixture race also surfaced: two `Date.now()` calls could make a TEST-ONLY 24 h window 24 h + 1 ms. Fixed in `7f7bef9`.
+>
+> The push-triggered Linux run on `8f428d6` had already passed every step on Node 24 and Python 3.14. Locally: 1227 Vitest, 28 Python, rehearsal 8/8.
+
 > 2026-10-20 (later) — G3: accounted study runner for the first live run.
 >
 > **Owner decisions:** a capped batch runner, a USD 5 first allowance, `gpt-5.4-nano-2026-03-17`, and the owner runs it on Thursday 22 Oct. D1 is resolved as a measured daily diary task: the agent chooses, manipulation or suppression is permitted, and “gameplay for humans and agents obviously change direction” supersedes the earlier unprompted-only and marks-only rules.

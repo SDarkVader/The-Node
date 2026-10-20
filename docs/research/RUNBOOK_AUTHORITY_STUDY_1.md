@@ -29,8 +29,7 @@ These are estimates, not invoices. Your dashboard is the billing record.
 
 ## 0. Before you start
 
-1. Get this branch onto the PC: `git fetch origin ccr-8d64b59c-a4puhv; git checkout ccr-8d64b59c-a4puhv`.
-   If GitHub access is still broken, use the bundle Claude produced: `git fetch <path>\the-node-ccr-8d64b59c-a4puhv.bundle ccr-8d64b59c-a4puhv:ccr-8d64b59c-a4puhv`.
+1. Get the code onto the PC. Once [PR #26](https://github.com/SDarkVader/The-Node/pull/26) is merged, use `main`: `git fetch origin main; git checkout main; git pull`. Until then, use the PR branch: `git fetch origin ccr-8d64b59c-a4puhv; git checkout ccr-8d64b59c-a4puhv`.
 2. Run `git status`. It must be clean. Then `npm ci`.
 3. **Rate limits.** Open your OpenAI organization's limits page and find the tokens-per-minute limit for `gpt-5.4-nano`. At one call per 4–5 s, the run uses up to about 200k tokens per minute.
    - If your limit is below about 300k TPM, raise `minIntervalMs` in the manifest (6000 halves the risk) and commit that change **before** step 2. The allowance is bound to the manifest's exact hash.
