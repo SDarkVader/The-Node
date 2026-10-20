@@ -15,9 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      # Check out the branch by name, as main-integration.yml does: a pull_request event's default
+      # checkout is a detached synthetic merge commit, which recovery:verify correctly refuses.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
