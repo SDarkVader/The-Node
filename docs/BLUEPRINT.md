@@ -420,6 +420,9 @@ npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for t
 npm run playtest              terminal renderer, synthetic drivers
 npm run sabotage-campaign-sim / oracle-sim / experience-floor-sim / ... measurement harnesses
 npm run settlement-report     legacy vs funded settlement: money, holdings, Gini, health, multi-shard
+npm run eval:bridge           evaluation bridge (JSON lines) the Inspect harness drives
+evals/: python -m inspect_node.verify --out <dir>   Inspect suite twice offline + all checks
+        (see docs/EVAL_INFRASTRUCTURE.md; venv from evals/requirements.txt)
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
@@ -454,6 +457,10 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   housing design doc's own §7.1 claim that this was already representable. This is now the
   concrete shared blocker for both trespass's `targetAtAbode` and arson's
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
+- **The Inspect evaluation harness (`src/eval/`, `evals/`) runs scripted fixtures only.** Live
+  model calls through Inspect are refused because they would bypass the accounted broker and
+  budget ledger; routing them through that accounting is unbuilt. One controlled Baker per
+  episode. See `docs/EVAL_INFRASTRUCTURE.md`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
 - **The shard count is a fixed cap (`SHARD_COUNT_CAP` = 3), not a growth signal.** Alternative

@@ -29,3 +29,12 @@ accounting.journal.json
 
 # Confirmed local OpenAI credential destination. Never include in commits or handoff bundles.
 /.env.local
+
+# Inspect evaluation harness (evals/): local venv, Inspect logs and regenerable result exports.
+# Reviewed verification evidence lives in evals/evidence/ and is tracked.
+.venv*/
+__pycache__/
+evals/logs*/
+evals/results/
+evals/evidence/**/episodes.jsonl
+evals/evidence/**/logs/
