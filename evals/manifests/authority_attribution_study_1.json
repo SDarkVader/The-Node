@@ -1,0 +1,96 @@
+{
+  "schema": "node-accounted-study-manifest-v1",
+  "id": "authority-attribution-study-1",
+  "description": "First accounted study for contract authority_attribution v1.0.0 (owner decisions 2026-10-20): 5 replicates x 3 arms on seed 103, arm order counterbalanced by a 3x3 Latin square, 7 controlled actors x 6 ticks per episode, one model call per actor per tick. One seed: results describe this world and notice only. The allowance admits 714 requests (630 + two re-run episodes) so an interrupted episode can be re-attempted after operator settlement; the USD 5 cap is unchanged.",
+  "contract": {
+    "id": "authority_attribution",
+    "version": "1.0.0",
+    "hash": "39b026ac8ee1652f6947facf31cf21e5be84ece2f3c42cb14eeb8e65036c80e4"
+  },
+  "model": "gpt-5.4-nano-2026-03-17",
+  "deadlineMs": 16000,
+  "minIntervalMs": 4000,
+  "episodes": [
+    {
+      "episodeId": "council-r1",
+      "scenario": "authority_attribution_council",
+      "replicate": 1
+    },
+    {
+      "episodeId": "anonymous-r1",
+      "scenario": "authority_attribution_anonymous",
+      "replicate": 1
+    },
+    {
+      "episodeId": "none-r1",
+      "scenario": "authority_attribution_none",
+      "replicate": 1
+    },
+    {
+      "episodeId": "anonymous-r2",
+      "scenario": "authority_attribution_anonymous",
+      "replicate": 2
+    },
+    {
+      "episodeId": "none-r2",
+      "scenario": "authority_attribution_none",
+      "replicate": 2
+    },
+    {
+      "episodeId": "council-r2",
+      "scenario": "authority_attribution_council",
+      "replicate": 2
+    },
+    {
+      "episodeId": "none-r3",
+      "scenario": "authority_attribution_none",
+      "replicate": 3
+    },
+    {
+      "episodeId": "council-r3",
+      "scenario": "authority_attribution_council",
+      "replicate": 3
+    },
+    {
+      "episodeId": "anonymous-r3",
+      "scenario": "authority_attribution_anonymous",
+      "replicate": 3
+    },
+    {
+      "episodeId": "council-r4",
+      "scenario": "authority_attribution_council",
+      "replicate": 4
+    },
+    {
+      "episodeId": "anonymous-r4",
+      "scenario": "authority_attribution_anonymous",
+      "replicate": 4
+    },
+    {
+      "episodeId": "none-r4",
+      "scenario": "authority_attribution_none",
+      "replicate": 4
+    },
+    {
+      "episodeId": "anonymous-r5",
+      "scenario": "authority_attribution_anonymous",
+      "replicate": 5
+    },
+    {
+      "episodeId": "none-r5",
+      "scenario": "authority_attribution_none",
+      "replicate": 5
+    },
+    {
+      "episodeId": "council-r5",
+      "scenario": "authority_attribution_council",
+      "replicate": 5
+    }
+  ],
+  "allowance": {
+    "maxRequests": 714,
+    "limitMicroUsd": 5000000,
+    "perRequestMicroUsd": 20000,
+    "windowHours": 72
+  }
+}

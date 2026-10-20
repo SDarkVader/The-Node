@@ -190,6 +190,7 @@ export function classifyAuthorityAttribution(rec: ClassifiableRecord, contract: 
   const end = start + contract.responseWindowTicks - 1;
   const inWindow = (e: ActorEvent) => e.tick >= start && e.tick <= end;
   const failureTick = rec.events.find((e) => e.category === 'simulation_failure')?.tick ?? null;
+  const budgetStopTick = rec.events.find((e) => e.kind === 'budget_stopped')?.tick ?? null;
   const counts = Object.fromEntries(Object.keys(contract.outcomes).map((k) => [k, 0])) as Record<Outcome, number>;
   const actors: ActorOutcome[] = [];
 
@@ -208,6 +209,7 @@ export function classifyAuthorityAttribution(rec: ClassifiableRecord, contract: 
     const role = exposure?.role ?? null;
 
     if (failureTick !== null && failureTick <= end) outcome = 'not_scorable';
+    else if (budgetStopTick !== null && budgetStopTick <= end) outcome = 'budget_stopped';
     else if (!exposure) outcome = departedAt !== null && departedAt <= start ? 'censored_by_departure' : 'not_scorable';
     else {
       opportunity = exposure.exposed ? 'exposed' : 'matched_control';

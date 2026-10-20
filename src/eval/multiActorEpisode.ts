@@ -17,6 +17,7 @@ import { createParticipantState, stepParticipantState, fixtureGenesis, type Part
 import { observe, personBody } from '../server/observer.js';
 import { validateDecision } from '../agent/protocol.js';
 import { buildResponsesRequest, type AuthorizedObservation } from '../agent/responsesRequest.js';
+import { buildEvaluationRequest, type EvaluationRequest } from './evaluationRequest.js';
 import { evidenceHash, digest, newTape, replay, type ReplayTape } from '../agent/replay.js';
 import { DEFAULT_WORLD_CONFIG } from '../world/world.js';
 import { parseAgentOutput, rejectionReasons, type AgentPrompt, type Verdict } from './episode.js';
@@ -42,8 +43,10 @@ export interface MultiActorScenario {
   /** Evaluation-infrastructure fault injection; never a game mechanic. */
   faultAtTick?: number;
 }
-export interface ActorPrompt { actorId: string; prompt: AgentPrompt }
-export type MultiEpisodeStatus = 'running' | 'completed' | 'simulation_failure' | 'all_departed';
+/** `request` is attached only when a model is named (accounted runs); the bridge never asks for it. */
+export interface ActorPrompt { actorId: string; prompt: AgentPrompt; request?: EvaluationRequest }
+export type MultiEpisodeStatus = 'running' | 'completed' | 'simulation_failure' | 'all_departed' | 'budget_stopped' | 'inference_failed';
+export type HaltReason = 'budget_stopped' | 'inference_failed';
 export interface MultiEpisodeRecord {
   schema: typeof MULTI_EPISODE_SCHEMA;
   scenario: MultiActorScenario;
@@ -130,8 +133,9 @@ export class MultiActorEpisode {
 
   #present(): Controlled[] { return this.#actors.filter((a) => a.present); }
 
-  /** One prompt per present actor, each from that actor's own authorized observation. */
-  prompts(): ActorPrompt[] {
+  /** One prompt per present actor, each from that actor's own authorized observation. With a
+   *  model, each also carries the final accounted request built from that same observation. */
+  prompts(options: { model?: string } = {}): ActorPrompt[] {
     if (this.done) throw Error('episode_finished');
     const tick = this.#state.world.tick;
     const notices = this.scenario.notices.filter((n) => n.tick === tick).map((n) => ({ source: n.source, text: n.text }));
@@ -146,7 +150,9 @@ export class MultiActorEpisode {
         this.#record(a.spec.actorId, 'observed', 'opportunity', { role, effect, feasible: validateDecision(effectDecision(effect), observation.context) !== null, exposed: notices.length > 0 });
       }
       const userTask = this.scenario.userTasks[role] ?? this.scenario.userTasks.default!;
-      return { actorId: a.spec.actorId, prompt: { tick, instructions: body.instructions, observation: body.input[0]!.content[0]!.text, schema: body.text.format.schema, userTask, notices } };
+      const prompt = { tick, instructions: body.instructions, observation: body.input[0]!.content[0]!.text, schema: body.text.format.schema, userTask, notices };
+      return options.model === undefined ? { actorId: a.spec.actorId, prompt }
+        : { actorId: a.spec.actorId, prompt, request: buildEvaluationRequest(observation, options.model, { task: userTask, notices }) };
     });
   }
 
@@ -160,8 +166,17 @@ export class MultiActorEpisode {
     };
   }
 
-  /** Submit every present actor's raw text for this tick, then advance the kernel once. */
-  act(outputs: Record<string, string>): Record<string, Verdict> {
+  /** Stop before this tick's kernel step: the accounted runner could not obtain every actor's
+   *  response (allowance exhausted, or an inference/transport failure that keeps its hold). */
+  halt(reason: HaltReason, detail: Record<string, unknown>): void {
+    if (this.done) throw Error('episode_finished');
+    this.#status = reason;
+    this.#record(null, reason === 'budget_stopped' ? 'observed' : 'simulation_failure', reason, detail);
+  }
+
+  /** Submit every present actor's raw text for this tick, then advance the kernel once.
+   *  `receipts` (accounted runs) links each proposal to its reservation and usage receipt. */
+  act(outputs: Record<string, string>, receipts?: Record<string, unknown>): Record<string, Verdict> {
     if (this.done) throw Error('episode_finished');
     const tick = this.#state.world.tick;
     const present = this.#present();
@@ -174,6 +189,7 @@ export class MultiActorEpisode {
     for (const a of present) {
       const text = outputs[a.spec.actorId]!;
       const context = this.#observation(a.person).context;
+      if (receipts) this.#record(a.spec.actorId, 'observed', 'inference_receipt', receipts[a.spec.actorId] ?? null);
       this.#record(a.spec.actorId, 'observed', 'proposal', { text });
       const parsed = parseAgentOutput(text);
       let verdict: Verdict;

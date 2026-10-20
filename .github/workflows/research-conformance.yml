@@ -1,4 +1,4 @@
-name: Research conformance (G1/G2)
+name: Research conformance (G1-G3)
 # Linux companion to main-integration.yml (Windows). Runs on every push, including task branches
 # that have no pull request yet, so gate evidence exists before review. Offline only: no model
 # provider, credential, ledger or network inference is configured or reachable from this job.
@@ -49,6 +49,8 @@ jobs:
       - name: G2 - authority-attribution construct contract, two runs, export re-classification
         working-directory: evals
         run: python -m inspect_node.constructs --out results/ci/authority-attribution
+      - name: G3 - rehearse the accounted study procedure (real scripts, TEST-ONLY fake transport, no network)
+        run: PYTHON=python test/cli/rehearse-accounted-study.sh
       - if: always()
         uses: actions/upload-artifact@v4
         with:
