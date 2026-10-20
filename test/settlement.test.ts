@@ -68,6 +68,10 @@ describe('settlement ledger — the flow-balance invariant holds every tick', ()
     runChecking(createWorld(5, config), 800, expectBalanced);
   });
 
+  it('in legacy settlement mode too', () => {
+    runChecking(createWorld(2, { ...DEFAULT_WORLD_CONFIG, settlement: 'legacy' }), 1000, expectBalanced);
+  });
+
   it('every issuance line is non-negative, and the totals actually move', () => {
     let issuedEver = 0;
     runChecking(createWorld(6), 300, (w) => {
@@ -86,9 +90,9 @@ describe('settlement ledger — nothing is destroyed', () => {
     });
   });
 
-  it('balances a refill would have wiped land in the dock instead, and the dock only ever grows by forfeits in a single shard', () => {
+  it('legacy: balances a refill would have wiped land in the dock instead, and the dock only ever grows by forfeits in a single shard', () => {
     let forfeitedTotal = 0;
-    const end = runChecking(createWorld(8, { ...DEFAULT_WORLD_CONFIG, pMonthly: 0.6 }), 1000, (w) => {
+    const end = runChecking(createWorld(8, { ...DEFAULT_WORLD_CONFIG, settlement: 'legacy', pMonthly: 0.6 }), 1000, (w) => {
       forfeitedTotal += w.lastSettlement.forfeitedToDock;
     });
     expect(forfeitedTotal).toBeGreaterThan(0);
@@ -102,6 +106,89 @@ describe('settlement ledger — nothing is destroyed', () => {
       emigrants += w.lastEmigrants;
     });
     expect(emigrants).toBeGreaterThan(0);
+  });
+});
+
+describe('funded settlement — wealth follows the person, the dock pays for nodules, upkeep is the sink', () => {
+  const HIGH_CHURN: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, rCourier: 2, rInvestigator: 4, pMonthly: 0.9, conscriptionDelay: 3 };
+
+  it('no balance is ever left behind at a role change: nothing is forfeited, even under heavy churn', () => {
+    // Every departure (churn, conscription, sabotage, consolidation, emigration) takes the
+    // balance with the person, so a slot is always empty when it's refilled — a new occupant
+    // never inherits anyone else's balance, and nobody's savings vanish on taking a role.
+    for (const seed of [1, 2, 3]) {
+      runChecking(createWorld(seed, HIGH_CHURN), 800, (w) => {
+        expect(w.lastSettlement.forfeitedToDock).toBe(0);
+        expectBalanced(w);
+      });
+    }
+  });
+
+  it('a grifter who takes a role keeps their savings', () => {
+    let checked = false;
+    let w = createWorld(5, HIGH_CHURN);
+    for (let i = 0; i < 400 && !checked; i++) {
+      const before = w;
+      w = stepWorld(w);
+      const leftIds = before.grifters.filter((g) => !w.grifters.some((x) => x.id === g.id));
+      const savings = leftIds.reduce((s, g) => s + g.wealth, 0);
+      if (leftIds.length > 0 && savings > 1 && w.lastEmigrants === 0) {
+        // Their savings are still in the shard: holdings + accounts moved only by what the
+        // ledger says, and nothing went to the dock as a forfeit.
+        expect(w.lastSettlement.forfeitedToDock).toBe(0);
+        expectBalanced(w);
+        checked = true;
+      }
+    }
+    expect(checked).toBe(true);
+  });
+
+  it('upkeep never pushes anyone below zero, and the dock actually pays for nodules', () => {
+    let drained = 0;
+    runChecking(createWorld(6), 1000, (w) => {
+      for (const s of [...w.millers, ...w.bakers, ...w.couriers, ...w.investigators, ...w.importExporters, ...w.grifters]) {
+        expect(s.wealth).toBeGreaterThanOrEqual(0);
+      }
+      expect(w.lastSettlement.upkeepToDock).toBeGreaterThanOrEqual(0);
+      drained += w.lastSettlement.dockToNodules;
+    });
+    expect(drained).toBeGreaterThan(0);
+  });
+
+  it('new money falls far below legacy once the loop is running', () => {
+    const steadyIssuance = (config: WorldConfig) => {
+      let w = createWorld(3, config);
+      let total = 0;
+      for (let i = 0; i < 1500; i++) {
+        w = stepWorld(w);
+        if (i >= 500) total += totalIssued(w.lastSettlement.issued);
+      }
+      return total / 1000;
+    };
+    const funded = steadyIssuance(DEFAULT_WORLD_CONFIG);
+    const legacy = steadyIssuance({ ...DEFAULT_WORLD_CONFIG, settlement: 'legacy' });
+    expect(funded).toBeLessThan(legacy * 0.25);
+  });
+
+  it('when the pool is starved, the grifter floor is still paid in full — the shortfall is named, never skipped', () => {
+    // One Import/Export slot: nodule value can't cover the wage bill, so wages pro-rate.
+    const starved: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rImportExport: 1 };
+    let sawProRating = false;
+    runChecking(createWorld(4, starved), 600, (w) => {
+      const s = w.lastSettlement;
+      expect(s.wageScale).toBeLessThanOrEqual(1);
+      if (s.wageScale < 1) sawProRating = true;
+      // The floor is paid in full every tick; any part the pool couldn't cover is issued
+      // as floorShortfall, which can never exceed the floor itself.
+      expect(s.issued.floorShortfall).toBeGreaterThanOrEqual(0);
+      expect(s.issued.floorShortfall).toBeLessThanOrEqual(s.paid.grifterFloor + 1e-9);
+      expectBalanced(w);
+    });
+    expect(sawProRating).toBe(true);
+  });
+
+  it('the Oracle pool is swept to the dock every tick, so it never accumulates', () => {
+    runChecking(createWorld(7), 500, (w) => expect(w.settlement.oraclePool).toBe(0));
   });
 });
 

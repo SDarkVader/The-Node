@@ -16,6 +16,10 @@ import { courierDailyPay, courierRouteDistance } from '../src/engine/courierPay.
 import { DEFAULT_SHARD_CONFIG, type ShardLayoutConfig } from '../src/engine/space.js';
 import { ORACLE_ENTRY_COST, ORACLE_WEALTH_PRIZE_AMOUNT } from '../src/engine/oracle.js';
 
+/** The pre-settlement economy (engine/settlement.ts). Tests that pin its exact wealth semantics
+ *  run against it explicitly; the 'funded' default's versions live in test/settlement.test.ts. */
+const LEGACY: WorldConfig = { ...DEFAULT_WORLD_CONFIG, settlement: 'legacy' };
+
 /** Test-only helper: real district-for-a-building lookup, same shape world.ts builds internally. */
 function districtIdForBuilding(world: World, buildingId: string): string {
   for (const d of world.shard.districts) if (d.buildings.some((b) => b.id === buildingId)) return d.id;
@@ -104,6 +108,15 @@ describe('stepWorld — tick order is pinned (golden-value characterization test
     // deliberate, reviewed change to stepWorld's logic or order is made.
     const snapshot = scalarSnapshot(world);
     expect(snapshot).toMatchSnapshot();
+  });
+
+  // 'legacy' settlement (engine/settlement.ts, 2026-10-20) must reproduce the pre-settlement
+  // trajectory exactly. This snapshot was captured once and checked value-for-value against
+  // the pre-settlement golden entry before the default switched to 'funded'.
+  it('legacy settlement reproduces the pre-settlement trajectory at tick 25 for seed 99', () => {
+    let world = createWorld(99, LEGACY);
+    for (let i = 0; i < 25; i++) world = stepWorld(world);
+    expect(scalarSnapshot(world)).toMatchSnapshot();
   });
 });
 
@@ -373,8 +386,8 @@ describe('wealth tracking — the new stock variable on top of the market\'s exi
     expect(checkedFreeze).toBe(true);
   });
 
-  it('a new occupant starts at zero wealth, not inheriting the previous occupant\'s balance', () => {
-    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rMiller: 2, rBaker: 2, conscriptionDelay: 3, pMonthly: 0.9 };
+  it('a new occupant starts at zero wealth, not inheriting the previous occupant\'s balance (legacy settlement)', () => {
+    const config: WorldConfig = { ...LEGACY, rMiller: 2, rBaker: 2, conscriptionDelay: 3, pMonthly: 0.9 };
     let world = createWorld(5, config);
     let checkedReset = false;
     for (let i = 0; i < 400; i++) {
@@ -600,12 +613,12 @@ describe('stepWorld — population conservation across ticks (5 roles + grifter 
 });
 
 describe('stepWorld — grifter income floor and daysAsGrifter wait-time tracking', () => {
-  it('every grifter accrues GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER per day they remain roleless, plus/minus at most one real Oracle entry/prize (2026-08-18)', () => {
+  it('every grifter accrues GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER per day they remain roleless, plus/minus at most one real Oracle entry/prize (2026-08-18; legacy settlement — funded adds upkeep, see test/settlement.test.ts)', () => {
     // The Oracle (engine/oracle.ts) now also touches grifter wealth once per tick — a real,
     // deliberate interaction, not drift. The flat-income floor itself stays exact; a grifter
     // who entered the Oracle that day may also be ORACLE_ENTRY_COST poorer or
     // ORACLE_WEALTH_PRIZE_AMOUNT richer on top of it.
-    let world = createWorld(1);
+    let world = createWorld(1, LEGACY);
     const before = new Map(world.grifters.map((g) => [g.id, g.wealth]));
     world = stepWorld(world);
     for (const g of world.grifters) {
@@ -642,14 +655,14 @@ describe('stepWorld — grifter income floor and daysAsGrifter wait-time trackin
 });
 
 describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () => {
-  it('a FILLED support-role slot accrues SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day, plus a completion bonus when it clears the friction bar, plus/minus at most one real Oracle entry/prize (2026-08-18)', () => {
+  it('a FILLED support-role slot accrues SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER per day, plus a completion bonus when it clears the friction bar, plus/minus at most one real Oracle entry/prize (2026-08-18; legacy settlement)', () => {
     // A freshly created world has every district ACTIVE (friction === 1), which always
     // clears roleCompletion.ts's SUPPORT_TASK_FRICTION_BAR (0.9) — so on day 1 the
     // completion bonus is not just possible but deterministic, and belongs in the exact
     // expected total rather than a tolerance (Design Addendum item 4, 2026-08-11). The
     // Oracle (engine/oracle.ts) now also touches wealth once per tick for every FILLED
     // slot — a real, deliberate interaction, bounded rather than exact.
-    let world = createWorld(1);
+    let world = createWorld(1, LEGACY);
     const before = { c: world.couriers.map((c) => c.wealth), i: world.investigators.map((inv) => inv.wealth) };
     world = stepWorld(world);
     world.couriers.forEach((c, i) => {
@@ -673,8 +686,8 @@ describe('stepWorld — support-role wage (Courier/Journalist/Detective)', () =>
     });
   });
 
-  it('a new support-role occupant starts at 0 wealth, not inheriting the previous occupant\'s balance', () => {
-    const config: WorldConfig = { ...DEFAULT_WORLD_CONFIG, rCourier: 2, conscriptionDelay: 3, pMonthly: 0.9 };
+  it('a new support-role occupant starts at 0 wealth, not inheriting the previous occupant\'s balance (legacy settlement)', () => {
+    const config: WorldConfig = { ...LEGACY, rCourier: 2, conscriptionDelay: 3, pMonthly: 0.9 };
     let world = createWorld(5, config);
     let checkedReset = false;
     for (let i = 0; i < 400; i++) {

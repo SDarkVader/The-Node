@@ -142,10 +142,17 @@ import {
   emptySettlementAccounts,
   emptySettlementTick,
   emptyIssuance,
+  emptyPaid,
   accountsTotal,
   totalHoldings,
   totalIssued,
+  WEALTH_PER_NODULE,
+  UPKEEP_RATE,
+  DISTRICT_POOL_RESERVE_DAYS,
+  SETTLEMENT_MODE_DEFAULT,
+  type PayLine,
   type SettlementAccounts,
+  type SettlementMode,
   type SettlementTick,
 } from '../engine/settlement.js';
 import { importExportWindowEvents, type ImportExportWindowEvent } from '../engine/dayCycle.js';
@@ -278,6 +285,10 @@ export interface WorldConfig {
   /** Minimum Import/Export slots that are never VACANT (`importExport.ts`'s
    *  `applyStandingBerths`). Defaults to `STANDING_BERTHS_DEFAULT` (1); 0 disables. */
   standingBerths?: number;
+  /** `engine/settlement.ts`: 'funded' (default) — wealth follows the person, nodules paid for
+   *  out of the dock, wages out of the district pool, upkeep as the sink. 'legacy' — the
+   *  pre-settlement economy, byte-identical, kept for before/after measurement. */
+  settlement?: SettlementMode;
 }
 
 // Six-role split, from a JOINT grid search over allocation x district layout
@@ -1253,6 +1264,39 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const forfeitJustFilled = (arr: readonly { buildingId: string; wealth: number }[], justFilled: ReadonlySet<string>) => {
     for (const s of arr) if (justFilled.has(s.buildingId)) forfeit(s.wealth);
   };
+  // 'funded' settlement (settlement.ts): wealth follows the person, wages come out of the
+  // district pool, upkeep is the sink. 'legacy' leaves every line below as it was.
+  const funded = (config.settlement ?? SETTLEMENT_MODE_DEFAULT) === 'funded';
+  const paid = emptyPaid();
+  let wageScale = 1;
+  let dockToNodules = 0;
+  let upkeepToDock = 0;
+  /** An income payment: in 'legacy' mode it is issued; in 'funded' mode the pool already paid it. */
+  const recordPay = (line: PayLine, amount: number) => {
+    paid[line] += amount;
+    if (!funded) issued[line] += amount;
+  };
+  /** 'funded': balances arriving with a person into a slot this tick, by buildingId. Applied
+   *  after the refill resets (support roles below, Miller/Baker in stepCompetitiveLayer). */
+  const incoming = new Map<string, number>();
+  const carryInto = (buildingId: string, amount: number) => incoming.set(buildingId, (incoming.get(buildingId) ?? 0) + amount);
+  /** 'funded': a person leaving a slot takes its balance; the slot is zeroed. That includes
+   *  anything still queued to land there — someone who filled a slot and was conscripted out
+   *  of it in the same tick takes their savings with them, not leave them in the empty slot. */
+  const takeSlotWealth = (role: RoleType, index: number): number => {
+    const take = <T extends { wealth: number; buildingId: string }>(arr: T[]): [T[], number] => {
+      const queued = incoming.get(arr[index]!.buildingId) ?? 0;
+      incoming.delete(arr[index]!.buildingId);
+      return [arr.map((s, i) => (i === index ? { ...s, wealth: 0 } : s)), arr[index]!.wealth + queued];
+    };
+    let amount = 0;
+    if (role === 'miller') [millers, amount] = take(millers);
+    else if (role === 'baker') [bakers, amount] = take(bakers);
+    else if (role === 'courier') [couriers, amount] = take(couriers);
+    else if (role === 'investigator') [investigators, amount] = take(investigators);
+    else [importExporters, amount] = take(importExporters);
+    return amount;
+  };
   // Standing berths (2026-10-20, importExport.ts): Import/Export is never fully dark. Applied
   // after today's role transitions and again after emigration, so both this tick's issuance
   // and the state handed to the next tick satisfy it.
@@ -1273,7 +1317,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // spliced from shard.districts — see districtConsolidation.ts's header).
   if (newlyMergedDistrictIds.length > 0) {
     const isInMergedDistrict = (buildingId: string) => newlyMergedDistrictIds.includes(buildingDistrictId.get(buildingId)!);
-    const evictWithDeadline = <T extends { slot: RoleSlot; buildingId: string }>(arr: T[]): T[] =>
+    const evictWithDeadline = <T extends { slot: RoleSlot; buildingId: string; wealth: number }>(arr: T[]): T[] =>
       arr.map((s) => {
         if (s.slot.state === 'FILLED' && isInMergedDistrict(s.buildingId)) {
           // A same-tick INTERIM value, same as every other grifter's hub default — this
@@ -1288,7 +1332,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
             ...grifters,
             {
               id: `grifter-${nextGrifterId}`,
-              wealth: 0,
+              wealth: funded ? s.wealth : 0, // 'funded': their balance leaves with them
               daysAsGrifter: 0,
               consolidationDeadline: day + CONSOLIDATION_GRACE_DAYS,
               x: evictedFrom?.x ?? world.shard.hubPlot.x,
@@ -1296,6 +1340,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
             },
           ];
           nextGrifterId += 1;
+          if (funded) return { ...s, slot: { state: 'VACANT' as const, vacantSince: day }, wealth: 0 };
           return { ...s, slot: { state: 'VACANT' as const, vacantSince: day } };
         }
         return s;
@@ -1367,7 +1412,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     config.conscriptionDelay,
     rng,
     grifterLevelCounts,
-    participant ? e => indexedEvents.push(e) : undefined,
+    // Always collected (a pure observer): 'funded' settlement needs each event's exact slot
+    // to move a person's balance, not only participant continuity.
+    (e) => indexedEvents.push(e),
   );
   const byRole = new Map(conscriptionResult.roleGroups.map((g) => [g.roleId, g.slots] as const));
 
@@ -1417,8 +1464,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     const indexed = indexedEvents[eventIndex];
     const destination = indexed ? slotArrays[event.roleId as RoleType][indexed.slotIndex]!.buildingId : undefined;
     if (event.type === 'churn') {
-      if (destination) participant!.transition({from: destination, to: `grifter-${nextGrifterId}`, role: null});
-      grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
+      if (destination) participant?.transition({from: destination, to: `grifter-${nextGrifterId}`, role: null});
+      // 'funded': the person leaving takes the slot's balance with them into the pool.
+      const leaving = funded && indexed ? takeSlotWealth(event.roleId as RoleType, indexed.slotIndex) : 0;
+      grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: leaving, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
       nextGrifterId += 1;
     } else if (event.type === 'genuineFill') {
       // Reputation-gated (2026-08-13): pick a real eligible grifter (level >= this role's
@@ -1447,10 +1496,11 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         for (const o of atLowestLevel) if (o.days > longest.days) longest = o;
         if (event.roleId === 'miller') millerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.miller ?? 0);
         else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longest.i]!.shiftsCoveredByRole?.baker ?? 0);
-        if (destination) participant!.transition({from: grifters[longest.i]!.id, to: destination, role: event.roleId as RoleType});
-        // Their savings don't follow them into the slot (it starts at 0) — posted to the dock
-        // rather than vanishing. See settlement.ts on carrying wealth with the person.
-        forfeit(grifters[longest.i]!.wealth);
+        if (destination) participant?.transition({from: grifters[longest.i]!.id, to: destination, role: event.roleId as RoleType});
+        // 'funded': their savings follow them into the slot. 'legacy': the slot starts at 0 and
+        // the savings are posted to the dock rather than vanishing. settlement.ts.
+        if (funded && destination) carryInto(destination, grifters[longest.i]!.wealth);
+        else forfeit(grifters[longest.i]!.wealth);
         grifters = grifters.filter((_, i) => i !== longest.i);
       }
     } else if (event.type === 'conscriptionFromGrifters') {
@@ -1475,14 +1525,16 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         if (longestIdx >= 0) {
           if (event.roleId === 'miller') millerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.miller ?? 0);
           else if (event.roleId === 'baker') bakerFloorQueue.push(grifters[longestIdx]!.shiftsCoveredByRole?.baker ?? 0);
-          if (destination) participant!.transition({from: grifters[longestIdx]!.id, to: destination, role: event.roleId as RoleType});
-          forfeit(grifters[longestIdx]!.wealth);
+          if (destination) participant?.transition({from: grifters[longestIdx]!.id, to: destination, role: event.roleId as RoleType});
+          if (funded && destination) carryInto(destination, grifters[longestIdx]!.wealth);
+          else forfeit(grifters[longestIdx]!.wealth);
         }
         grifters = grifters.filter((_, i) => i !== longestIdx);
       }
     } else if (event.type === 'conscriptionFromOtherRole' && destination && indexed?.fromSlotIndex !== undefined) {
       const source = slotArrays[event.fromRoleId as RoleType][indexed.fromSlotIndex]!.buildingId;
-      participant!.transition({from: source, to: destination, role: event.roleId as RoleType});
+      participant?.transition({from: source, to: destination, role: event.roleId as RoleType});
+      if (funded) carryInto(destination, takeSlotWealth(event.fromRoleId as RoleType, indexed.fromSlotIndex));
     }
     // conscriptionFromOtherRole / backstopFires: no grifter-pool change — that player
     // moves directly between roles, or the slot stays mechanically covered.
@@ -1537,7 +1589,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       participant?.transition({from: grifter.id, to: slotArrays[target.role][target.index]!.buildingId, role: target.role});
       placedGrifterIds.add(grifter.id);
       forfeit({ miller: millers, baker: bakers, courier: couriers, investigator: investigators, importExport: importExporters }[target.role][target.index]!.wealth);
-      forfeit(grifter.wealth);
+      if (funded) carryInto(slotArrays[target.role][target.index]!.buildingId, grifter.wealth);
+      else forfeit(grifter.wealth);
       const fill = { state: 'FILLED' as const, vacantSince: null };
       if (target.role === 'miller') {
         millers = millers.map((m, i) => (i === target.index ? { ...m, slot: fill, value: 0.3 + rng() * 0.2, experience: 0, wealth: 0, ...emptySlotStock(), daysInRole: 0, ...arriveAt(m.buildingId) } : m));
@@ -1599,6 +1652,34 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     bakerExperienceFloor,
     allBuildingsById,
   );
+
+  // 'funded' settlement: every refill reset has now run, so balances that arrived with a
+  // person today land in their new slot.
+  if (incoming.size > 0) {
+    const land = <T extends { buildingId: string; wealth: number }>(s: T): T =>
+      incoming.has(s.buildingId) ? { ...s, wealth: s.wealth + incoming.get(s.buildingId)! } : s;
+    millers = millers.map(land);
+    bakers = bakers.map(land);
+    couriers = couriers.map(land);
+    investigators = investigators.map(land);
+    importExporters = importExporters.map(land);
+  }
+
+  // 'funded' settlement: today's nodules are worth WEALTH_PER_NODULE each to the district
+  // pool, paid for out of the dock first; only the part the dock can't cover is new money.
+  // The grifter floor is then set aside before any other wage (constraint 2).
+  const grifterFloor = GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER;
+  const floorNeed = grifterFloor * grifters.length;
+  let floorReserve = 0;
+  if (funded) {
+    const value = WEALTH_PER_NODULE * nodulesReceived;
+    dockToNodules = Math.min(settlement.dock, value);
+    settlement.dock -= dockToNodules;
+    issued.nodules += value - dockToNodules;
+    settlement.districtPool += value;
+    floorReserve = Math.min(settlement.districtPool, floorNeed);
+    settlement.districtPool -= floorReserve;
+  }
 
   // Participant prices are applied AFTER the normal reaction/RNG and BEFORE demand,
   // profit and completion. The trusted participant hook rechecks person and episode.
@@ -1717,20 +1798,39 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     }
   }
 
-  millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]!, ...stepSlotStock(m) } : m));
-  bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]!, ...stepSlotStock(b) } : b));
-  {
-    // Tax/redistribution is internal to this flow (it conserves the sum), so the posting is
-    // the post-tax total; completion bonuses are split out as their own line.
-    const mbCompletion =
-      millerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.miller : 0), 0) +
-      bakerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.baker : 0), 0);
-    const mbTotal =
-      millers.reduce((s, m, i) => (m.slot.state === 'FILLED' ? s + finalMillerIncomes[i]! : s), 0) +
-      bakers.reduce((s, b, i) => (b.slot.state === 'FILLED' ? s + finalBakerIncomes[i]! : s), 0);
-    issued.completion += mbCompletion;
-    issued.millerBakerIncome += mbTotal - mbCompletion;
+  // Every role income claimed today, computed before any is paid so 'funded' settlement can
+  // pro-rate them together if the district pool can't cover the lot. Support-role claims
+  // depend only on slot state, position and friction, none of which the Miller/Baker
+  // payment below touches.
+  const supportDaily = SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER;
+  // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
+  // — see engine/courierPay.ts's header for the full reasoning, including why a literal
+  // commissioner-debit was measured and deliberately NOT built at this scale.
+  const courierClaims = couriers.map((c) =>
+    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
+  );
+  const wageClaim = (s: SupportRoleSlot) => (s.slot.state === 'FILLED' ? supportDaily * frictionFor(s.buildingId) : 0);
+  const investigatorClaims = investigators.map(wageClaim);
+  const importExportClaims = importExporters.map(wageClaim);
+  const mbCompletion =
+    millerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.miller : 0), 0) +
+    bakerCompleted.reduce((s, c) => s + (c ? COMPLETION_REWARD.baker : 0), 0);
+  // Tax/redistribution is internal to this flow (it conserves the sum), so the claim is the
+  // post-tax total.
+  const mbTotal =
+    millers.reduce((s, m, i) => (m.slot.state === 'FILLED' ? s + finalMillerIncomes[i]! : s), 0) +
+    bakers.reduce((s, b, i) => (b.slot.state === 'FILLED' ? s + finalBakerIncomes[i]! : s), 0);
+  if (funded) {
+    const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
+    const roleClaims = mbTotal + sum(courierClaims) + sum(investigatorClaims) + sum(importExportClaims);
+    wageScale = roleClaims > 0 ? Math.min(1, settlement.districtPool / roleClaims) : 1;
+    settlement.districtPool -= wageScale * roleClaims;
   }
+
+  millers = millers.map((m, i) => (m.slot.state === 'FILLED' ? { ...m, wealth: m.wealth + finalMillerIncomes[i]! * wageScale, ...stepSlotStock(m) } : m));
+  bakers = bakers.map((b, i) => (b.slot.state === 'FILLED' ? { ...b, wealth: b.wealth + finalBakerIncomes[i]! * wageScale, ...stepSlotStock(b) } : b));
+  recordPay('completion', mbCompletion * wageScale);
+  recordPay('millerBakerIncome', (mbTotal - mbCompletion) * wageScale);
 
   if (config.wealthCap !== undefined) {
     const millerFilledIdx = millers.map((m, i) => (m.slot.state === 'FILLED' ? i : -1)).filter((i) => i >= 0);
@@ -1755,26 +1855,24 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // Support-role wage and grifter floor — uncapped, untaxed (see header scoping note).
   // Support wages get the same trade-route friction as Miller/Baker; the grifter floor
   // doesn't (grifters have no fixed position — see frictionFor's own comment above).
-  const supportDaily = SUPPORT_ROLE_DAILY_WAGE * DAILY_ACTIVITY_MULTIPLIER;
-  // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
-  // — see engine/courierPay.ts's header for the full reasoning, including why a literal
-  // commissioner-debit was measured and deliberately NOT built at this scale.
-  couriers = couriers.map((c) => {
+  couriers = couriers.map((c, i) => {
     if (c.slot.state !== 'FILLED') return c;
-    const pay = courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId));
-    issued.courierPay += pay;
+    const pay = courierClaims[i]! * wageScale;
+    recordPay('courierPay', pay);
     return { ...c, wealth: c.wealth + pay, ...stepSlotStock(c), daysInRole: c.daysInRole + 1 };
   });
-  const payWage = <T extends SupportRoleSlot>(s: T): T => {
+  const payWage = (claims: readonly number[]) => <T extends SupportRoleSlot>(s: T, i: number): T => {
     if (s.slot.state !== 'FILLED') return s;
-    const wage = supportDaily * frictionFor(s.buildingId);
-    issued.supportWage += wage;
+    const wage = claims[i]! * wageScale;
+    recordPay('supportWage', wage);
     return { ...s, wealth: s.wealth + wage, ...stepSlotStock(s), daysInRole: s.daysInRole + 1 };
   };
-  investigators = investigators.map(payWage);
-  importExporters = importExporters.map(payWage);
-  const grifterFloor = GRIFTER_DAILY_INCOME * DAILY_ACTIVITY_MULTIPLIER;
-  issued.grifterFloor += grifterFloor * grifters.length;
+  investigators = investigators.map(payWage(investigatorClaims));
+  importExporters = importExporters.map(payWage(importExportClaims));
+  // The floor is always paid in full (constraint 2). 'funded': it was set aside first; any
+  // part the pool couldn't cover is issued as `floorShortfall`, named, never skipped.
+  recordPay('grifterFloor', floorNeed);
+  if (funded) issued.floorShortfall += floorNeed - floorReserve;
   grifters = grifters.map((g) => ({ ...g, wealth: g.wealth + grifterFloor }));
 
   // Shift Cover (2026-08-11 addendum item 7) — every BACKSTOPPED slot across all six roles is
@@ -1821,7 +1919,14 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     // `orderGrifterCandidatesForNotice` doc comment for the full reasoning (2026-08-18,
     // tackles the level-2 reputation gate).
     const grifterOrder = orderGrifterCandidatesForNotice(grifters).slice(0, noticedIdx.length);
-    const payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!.payout));
+    let payouts = noticedIdx.map((idx) => shiftCoverPay(shiftCoverOpportunities[idx]!.payout));
+    if (funded) {
+      // Paid from what the pool has left after role incomes, pro-rata.
+      const claimed = payouts.reduce((a, b) => a + b, 0);
+      const scale = claimed > 0 ? Math.min(1, settlement.districtPool / claimed) : 1;
+      settlement.districtPool -= scale * claimed;
+      payouts = payouts.map((p) => p * scale);
+    }
     grifters = grifters.map((g, i) => {
       const pos = grifterOrder.indexOf(i);
       if (pos < 0) return g;
@@ -1833,7 +1938,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       // can draw an experience head-start from if they later take over that same role.
       const role = shiftCoverOpportunities[noticedIdx[pos]!]!.role;
       const shiftsCoveredByRole = { ...g.shiftsCoveredByRole, [role]: (g.shiftsCoveredByRole?.[role] ?? 0) + 1 };
-      issued.shiftCover += payouts[pos]!;
+      recordPay('shiftCover', payouts[pos]!);
       return { ...g, wealth: g.wealth + payouts[pos]!, reputationProgress: (g.reputationProgress ?? 0) + 1, shiftsCoveredByRole };
     });
   }
@@ -1894,6 +1999,12 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     couriers = couriers.map(rollRole);
     investigators = investigators.map(rollRole);
     importExporters = importExporters.map(rollRole);
+    // 'funded': entries net of prizes return to the dock. Every prize was paid from entries
+    // made before it, so the pool needs no float carried between ticks.
+    if (funded) {
+      settlement.dock += settlement.oraclePool;
+      settlement.oraclePool = 0;
+    }
   }
 
   // Named per-role resource flows (2026-08-11). Miller/Baker figures are the quantities
@@ -1926,10 +2037,24 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     // so — unlike the Miller/Baker half — applying the reward straight to wealth here,
     // rather than folding it into a taxed/capped income flow, is not a hole through
     // anything: there is no bound here for it to poke through.
+    // 'funded': these rewards come out of what the pool has left, pro-rata. Completion here is
+    // a pure function of friction, so the total claim is known before anything is granted.
+    let completionScale = 1;
+    if (funded) {
+      const claimOf = (arr: readonly { slot: RoleSlot; buildingId: string }[], reward: number) =>
+        arr.reduce((s, x) => (x.slot.state === 'FILLED' && supportTaskCompleted(frictionFor(x.buildingId)) ? s + reward : s), 0);
+      const claimed =
+        claimOf(couriers, COMPLETION_REWARD.courier) +
+        claimOf(investigators, COMPLETION_REWARD.investigator) +
+        claimOf(importExporters, COMPLETION_REWARD.importExport);
+      completionScale = claimed > 0 ? Math.min(1, settlement.districtPool / claimed) : 1;
+      settlement.districtPool -= completionScale * claimed;
+    }
     const grantIfTaskCompleted = <T extends { wealth: number }>(slot: T, completed: boolean, reward: number): T => {
       if (!completed) return slot;
-      issued.completion += reward;
-      return { ...slot, wealth: slot.wealth + reward };
+      const amount = reward * completionScale;
+      recordPay('completion', amount);
+      return { ...slot, wealth: slot.wealth + amount };
     };
     const supportRoleCompletion = <T extends { slot: RoleSlot; buildingId: string; wealth: number }>(
       arr: T[],
@@ -1948,6 +2073,24 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     importExporters = supportRoleCompletion(importExporters, importExportJustFilled, COMPLETION_REWARD.importExport);
   }
   const completionStats: Readonly<Record<string, CompletionStats>> = completionStatsWorking;
+
+  // 'funded' settlement — the sink. Everyone pays UPKEEP_RATE of what they hold into the dock,
+  // which pays for tomorrow's nodules. Proportional, so nobody is ever pushed below zero.
+  if (funded) {
+    const upkeep = <T extends { wealth: number }>(s: T): T => {
+      if (s.wealth <= 0) return s;
+      const fee = s.wealth * UPKEEP_RATE;
+      upkeepToDock += fee;
+      return { ...s, wealth: s.wealth - fee };
+    };
+    millers = millers.map(upkeep);
+    bakers = bakers.map(upkeep);
+    couriers = couriers.map(upkeep);
+    investigators = investigators.map(upkeep);
+    importExporters = importExporters.map(upkeep);
+    grifters = grifters.map(upkeep);
+    settlement.dock += upkeepToDock;
+  }
 
   // ---- Stage 4: ecosystem (sabotage -> arrivals -> migration, then health/experience) --
   // Sabotage-before-arrival order matches design/tick_order_check.py's own validated
@@ -2066,7 +2209,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       );
       if (target) {
         participant?.transition({from: target.buildingId, to: `grifter-${nextGrifterId}`, role: null});
-        grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: 0, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
+        // 'funded': the evicted person keeps what they hold.
+        const evictedWealth = funded ? takeSlotWealth(target.role, target.index) : 0;
+        grifters = [...grifters, { id: `grifter-${nextGrifterId}`, wealth: evictedWealth, daysAsGrifter: 0, x: world.shard.hubPlot.x, y: world.shard.hubPlot.y }];
         nextGrifterId += 1;
         const evict = { state: 'BACKSTOPPED' as const, vacantSince: day };
         if (target.role === 'miller') millers = millers.map((m, i) => (i === target.index ? { ...m, slot: evict } : m));
@@ -2184,11 +2329,25 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const totalRoleSlots = totalRoleSlotsFor(config);
   const finalFilledCount = filledEntries({ millers, bakers, couriers, investigators, importExporters }).length;
 
+  // 'funded': the district pool keeps a few days' reserve of nodule value for wages; anything
+  // above it returns to the dock, so value circulates instead of pooling at the town.
+  if (funded) {
+    const reserveCap = DISTRICT_POOL_RESERVE_DAYS * WEALTH_PER_NODULE * nodulesReceived;
+    if (settlement.districtPool > reserveCap) {
+      settlement.dock += settlement.districtPool - reserveCap;
+      settlement.districtPool = reserveCap;
+    }
+  }
+
   // Close the settlement ledger: nothing below this point touches wealth.
   const holdingsAfter = totalHoldings([millers, bakers, couriers, investigators, importExporters, grifters]);
   const accountsAfter = accountsTotal(settlement);
   const lastSettlement: SettlementTick = {
     issued,
+    paid,
+    wageScale,
+    dockToNodules,
+    upkeepToDock,
     emigrantHoldings,
     forfeitedToDock,
     holdingsBefore,

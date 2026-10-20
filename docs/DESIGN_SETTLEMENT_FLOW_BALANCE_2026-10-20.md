@@ -31,20 +31,49 @@ This document is the version that fits.
 - **Trajectories are byte-identical** for everything above except the standing berth, which
   never fired in 20,000 populated-shard ticks. The golden snapshot is unchanged.
 
-**Measured** (`npm run settlement-report`): issuance is 45.79 per tick and implied
-**k ≈ 2.02** wealth per nodule. **82.7% of issuance is forfeited at role transitions.** A
-grifter's savings vanish when they take a role, and a slot's balance vanishes on refill. Today
-that loss is the economy's only real sink; the ledger now routes it to the dock instead of
-deleting it.
+**Measured first** (`npm run settlement-report`, legacy mode): issuance is 45.79 per tick and
+implied **k ≈ 2.02** wealth per nodule. **82.7% of issuance was forfeited at role
+transitions.** A grifter's savings vanished when they took a role, and a slot's balance
+vanished on refill. That loss was the economy's only real sink, and nobody had designed it.
 
-**Not built: decisions waiting on the user.**
-1. **What bounds wealth.** If wealth follows the person (the §2 refill row), the 82.7% sink
-   disappears and holdings grow without limit, unless a designed sink replaces it (upkeep,
-   decay, or the dock draining back as nodules at a funded rate). This is the next real choice.
-2. **Funded issuance (§2, §3):** wages paid from `districtPool` at rate `k`, floor first, with
-   `I_floor` as the named last resort. That depends on 1, since the size of the sink sets what
-   `k` has to be.
-3. **The currency option (§5):** A, B or C.
+**Then built: funded settlement, now the default** (user directive, 2026-10-20: "make wealth
+follow the person through role changes, and drain the dock back as nodules at a funded rate").
+- **Wealth follows the person** through churn, fills, conscription in either direction,
+  sabotage and consolidation evictions, the forced deadline draft, and emigration. That
+  includes the same-tick case: someone who fills a slot and is conscripted out of it carries
+  their savings on.
+- **A correction to my own earlier framing:** draining the dock is the *return* path, not a
+  sink. Something has to move value from people into the dock. The sink is **upkeep**:
+  `UPKEEP_RATE` (0.0073) of holdings per tick, proportional so it never takes anyone below 0.
+  It's calibrated so steady-state holdings match legacy's (4402 vs 4512), keeping the
+  scoreboard's scale.
+- **The dock pays for nodules:** each tick's nodules are worth `WEALTH_PER_NODULE` (2.0) to the
+  district pool. The dock covers that first, and only the remainder is new money.
+- **Wages come out of the pool:** the floor is set aside first (§3; any shortfall is issued as
+  `floorShortfall`), then role incomes pro-rata, then Shift Cover, then support completion.
+  Pool balance above 7 days of nodule value returns to the dock, and the Oracle pool sweeps
+  to the dock each tick.
+- **'legacy' mode is byte-identical** to the pre-settlement trajectory. The whole suite passes
+  with it as the default, and its golden snapshot is character-for-character the original.
+
+**Before → after** (8 seeds × 3000 days):
+- New money: 45.79 → 6.27 per tick. The 6.27 is, in a single shard, what emigrants carry away.
+- Lost at role changes: 37.86 → 0.
+- Income paid: 45.79 → 45.56.
+- Holdings are flat from early to late (4368 → 4492), so nothing runs away.
+- `economicHealth` 0.905 → 0.914; population 62.4 → 63.1.
+- Wages were pro-rated on 5.1% of ticks (mean scale 0.995, worst 0.38). The floor never ran short.
+- **wealthGini 0.68 → 0.32.** Inequality roughly halves. That's a real consequence of the
+  design, not tuned away, and whether it's the intended feel is the user's call.
+- **Multi-shard:** 7 of 8 seeds are equal or higher. Seed 1 ends with 2 shards instead of 3,
+  traced to a pre-existing knife edge in `canOpenNewShard`: a shard can only open while mean
+  population is still at the target, which only holds on day 0–1.
+
+**Still open:**
+1. **The currency option (§5):** A, B or C. Funded settlement adds no player-to-player transfer
+   verb, so nothing here forecloses any of them.
+2. Rule 2 standing-berth sizing (§3.1) isn't built. The floor never ran short with `B_min = 1`,
+   so there's no measured need for it yet.
 
 ---
 

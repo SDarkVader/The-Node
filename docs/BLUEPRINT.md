@@ -178,14 +178,29 @@ PERSONAL_RESOURCE_CAP          5          RESTOCK_INTERVAL_DAYS       3
 STANDING_BERTHS_DEFAULT        1          [Import/Export slots never VACANT; WorldConfig.standingBerths, 0 disables]
 ```
 
-### Settlement (`engine/settlement.ts`, `npm run settlement-report`; 8 seeds × 3000 days, burn-in 500)
+### Settlement (`engine/settlement.ts`)
 ```
-Issuance per tick           45.79   supportWage 18.91  completion 11.18  grifterFloor 8.26
-                                    courierPay 6.25  millerBakerIncome 0.97  shiftCover 0.22
-Nodules per tick            22.66   implied k (issuance / nodule) 2.02
-Forfeited to dock per tick  37.86   (82.7% of issuance — role-transition balances)
-Oracle pool at day 3000     ~20.4k  dock at day 3000 ~109.4k (per shard, mean)
-Standing berth fired        0 / 20000 populated-shard ticks; dormant shard first 10 days 75.6 vs 70.6 nodules
+WorldConfig.settlement       'funded' (default) | 'legacy' (pre-settlement economy, byte-identical)
+WEALTH_PER_NODULE            2.0      [CALIBRATED — legacy issuance / nodules = 2.02]
+UPKEEP_RATE                  0.0073   [CALIBRATED — funded steady holdings match legacy's]
+DISTRICT_POOL_RESERVE_DAYS   7        [ILLUSTRATIVE]
+Funded loop: holdings --upkeep--> dock --pays for nodules--> districtPool --wages--> holdings
+Wage order from districtPool: grifter floor (set aside first; shortfall issued as floorShortfall),
+then role incomes pro-rata, then Shift Cover, then support completion rewards.
+```
+`npm run settlement-report` (8 seeds × 3000 days, burn-in 500), legacy → funded:
+```
+New money per tick       45.79 → 6.27     (funded: nodule value the dock couldn't cover —
+                                            in one shard, what emigrants carry away)
+Income paid per tick     45.79 → 45.56
+Lost at role changes     37.86 → 0
+Upkeep / dock→nodules    0 → 32.42 / 39.73
+Total holdings           4512 → 4402      (flat early→late: 4368 → 4492)
+wealthGini               0.677 → 0.325
+economicHealth           0.905 → 0.914    population 62.36 → 63.06
+Wages pro-rated          5.12% of ticks, mean scale 0.995, min 0.381; floor shortfall 0 ticks
+Standing berth           0 / 20000 populated ticks; dormant first 10 days 75.6 vs 70.6 nodules
+Multi-shard population   7 of 8 seeds equal or higher; seed 1 opens 2 shards not 3 (see §9)
 ```
 
 ### Day cycle (`engine/dayCycle.ts`, 2026-08-24) — [ILLUSTRATIVE hour placement]
@@ -374,6 +389,9 @@ Checked by tests, and load-bearing:
 9. **Settlement flow balance** — per shard per tick, (holdings + accounts) changes by exactly
    Σ issuance − Σ emigrant holdings; nothing is destroyed. Across shards, the total changes by
    Σ issuance only (vouchers arrive or go to the source dock). `test/settlement.test.ts`.
+   Under 'funded' settlement, nothing is forfeited at any role change (a person's balance
+   always moves with them), upkeep never takes anyone below zero, and the grifter floor is
+   always paid in full.
 10. **Import/Export is never fully VACANT** — at least `standingBerths` slots are FILLED or
     BACKSTOPPED at the end of every tick, so nodule issuance is never 0.
 
@@ -387,7 +405,7 @@ npm run typecheck
 npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for the old scenario)
 npm run playtest              terminal renderer, synthetic drivers
 npm run sabotage-campaign-sim / oracle-sim / experience-floor-sim / ... measurement harnesses
-npm run settlement-report     ledger magnitudes, implied k, standing-berth and voucher effects
+npm run settlement-report     legacy vs funded settlement: money, holdings, Gini, health, multi-shard
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
@@ -424,15 +442,17 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
-- **Wealth does not follow a person through a role change.** A grifter's savings, and a slot's
-  balance when its occupant leaves, go to the dock — 82.7% of all issuance. The ledger makes
-  this visible; it does not change it. It is the economy's de facto sink: carrying wealth
-  with the person removes it, and holdings would then grow without bound unless a designed
-  sink replaces it. Open design decision.
-- **Issuance is not yet funded by nodules.** Every income line is still issued by the system,
-  named in the ledger. The dock only accumulates; nothing drains it back as nodules yet.
-  Funding wages from `districtPool` at a per-nodule rate (measured k ≈ 2.02) is the next step,
-  per `DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md`.
+- **Shard opening only happens in the initial transient.** `canOpenNewShard` requires mean
+  population per populated shard ≥ `targetPopulation` (100); shards start at 100 and settle
+  near 62 within days, so a new shard can open only on day 0–1. Whether a seed gets a third
+  shard is a knife edge (legacy seed 1 opens on day 1, the rest on day 0; funded seed 1 misses
+  it and stays at 2 shards for 3000 days). Pre-existing; not caused by settlement.
+- **`wealthGini` roughly halves under funded settlement** (0.68 → 0.32): savings carried
+  through role changes plus proportional upkeep compress inequality. A real consequence of
+  the design, measured, not tuned away — whether it's the intended feel is a design call.
+- **The currency question** (`DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md` §5, options A/B/C)
+  is still open. Funded settlement moves wealth only through system postings — no
+  player-to-player transfer verb exists.
 - **The live server has no real-time wall clock.** `ws.ts`'s `tickIntervalMs` defaults to
   2500ms and every tick advances the whole deterministic economy by one full game-day — no
   anchoring to real UTC hours anywhere on the live path. `NODE_BUILD_SPEC_2026-08-07.md`
