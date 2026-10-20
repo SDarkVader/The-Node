@@ -4,11 +4,22 @@ Updated 2026-10-20. This is the cross-device entry point for a **new ChatGPT, Co
 
 ## Start from GitHub, not a previous chat or PC
 
-Repository: `SDarkVader/The-Node`. Shared development branch: `main`, following PR #22 merge `acb3b2d` on 2026-10-20. Verify the live branch HEAD with Git before work; do not assume a hardcoded commit is the current HEAD. Read `AGENTS.md`, `docs/recovery/CURRENT_SESSION.md`, this file, and the relevant feature evidence. Treat the user's current task as authoritative. Do not require local `.codex/session-recovery/` files, a running PC, prior conversation memory or trusted Codex hooks to understand the GitHub checkout.
+Repository: `SDarkVader/The-Node`. Shared development branch: `main`. It was consolidated by PR #22 (`acb3b2d`), and the latest merge is PR #26 (`9d004e8`), both on 2026-10-20. Verify the live branch HEAD with Git before work; do not assume a hardcoded commit is the current HEAD. Read `AGENTS.md`, `docs/recovery/CURRENT_SESSION.md`, this file, and the relevant feature evidence. Treat the user's current task as authoritative. Do not require local `.codex/session-recovery/` files, a running PC, prior conversation memory or trusted Codex hooks to understand the GitHub checkout.
 
 The local recovery hook is optional convenience for uncommitted work on the *same machine*. It is not the cross-device transport. Only committed/pushed files are shared; ignored local patches, private data, secret bindings, runtime game checkpoints and local account ledgers **do not follow** a GitHub clone. Never infer that they have been transferred.
 
 ## Current code and verification
+
+PR #26 is merged into main at `9d004e8`. Its tree is identical to verified head `c59dd70`, on which hosted
+[Main integration](https://github.com/SDarkVader/The-Node/actions/runs/39513742598) (Windows, 80 native checks) and
+[Research conformance](https://github.com/SDarkVader/The-Node/actions/runs/39513742596) (Linux, G1–G3 including the
+accounted-study rehearsal) passed. It adds:
+
+- the [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md);
+- multi-actor construct contracts;
+- the capped accounted study runner, with its [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md).
+
+The earlier consolidation state follows.
 
 PR #22 is merged into main at `acb3b2d`, whose tracked tree matches verified PR
 head `1b6684a`. Hosted [integration](https://github.com/SDarkVader/The-Node/actions/runs/39456555818)
