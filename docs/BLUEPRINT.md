@@ -200,7 +200,18 @@ wealthGini               0.677 → 0.325
 economicHealth           0.905 → 0.914    population 62.36 → 63.06
 Wages pro-rated          5.12% of ticks, mean scale 0.995, min 0.381; floor shortfall 0 ticks
 Standing berth           0 / 20000 populated ticks; dormant first 10 days 75.6 vs 70.6 nodules
-Multi-shard population   7 of 8 seeds equal or higher; seed 1 opens 2 shards not 3 (see §9)
+Multi-shard population   every seed reaches 3 shards (~252–262 people)
+```
+
+### Shard registry (`engine/shardRegistry.ts`, `sim/multiShardHarness.ts`)
+```
+INITIAL_SHARD_COUNT              2
+SHARD_COUNT_CAP                  3      [ILLUSTRATIVE — 2 initial + 1 alternative]
+SHARD_OPEN_STABILITY_THRESHOLD   0.8    (mean economicHealth of populated shards)
+SHARD_OPEN_COOLDOWN_DAYS         30
+canOpenNewShard: below cap AND someone exists to migrate AND stable AND cooldown passed.
+                 Population size plays no part. Pure; consumes no rng.
+New shards open DORMANT; migration prefers a DORMANT shard; first arrival wakes it ACTIVE.
 ```
 
 ### Day cycle (`engine/dayCycle.ts`, 2026-08-24) — [ILLUSTRATIVE hour placement]
@@ -394,6 +405,9 @@ Checked by tests, and load-bearing:
    always paid in full.
 10. **Import/Export is never fully VACANT** — at least `standingBerths` slots are FILLED or
     BACKSTOPPED at the end of every tick, so nodule issuance is never 0.
+11. **An alternative shard is available regardless of population** — while anyone exists and
+    shards are stable, the registry opens up to `SHARD_COUNT_CAP`, so every shard always has
+    another to migrate to, and the count never exceeds the cap. `test/multiShardHarness.test.ts`.
 
 ---
 
@@ -442,11 +456,11 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
-- **Shard opening only happens in the initial transient.** `canOpenNewShard` requires mean
-  population per populated shard ≥ `targetPopulation` (100); shards start at 100 and settle
-  near 62 within days, so a new shard can open only on day 0–1. Whether a seed gets a third
-  shard is a knife edge (legacy seed 1 opens on day 1, the rest on day 0; funded seed 1 misses
-  it and stays at 2 shards for 3000 days). Pre-existing; not caused by settlement.
+- **The shard count is a fixed cap (`SHARD_COUNT_CAP` = 3), not a growth signal.** Alternative
+  shards no longer depend on population, but the registry never grows past the cap. Every
+  materialised shard runs its own arrival process, so an uncapped opening rule grows simulated
+  population with shard count (measured: 31 shards and ~1,080 people in 1,000 days). Growing
+  the world past 3 shards is a design decision about how many places exist; it is not built.
 - **`wealthGini` roughly halves under funded settlement** (0.68 → 0.32): savings carried
   through role changes plus proportional upkeep compress inequality. A real consequence of
   the design, measured, not tuned away — whether it's the intended feel is a design call.

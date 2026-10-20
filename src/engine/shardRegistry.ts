@@ -12,11 +12,12 @@
  *   marked DORMANT. "Only the shard number increases."
  * - Migration destination choice is always bounded to shards that already exist in the
  *   registry — "can't move to somewhere that doesn't exist."
- * - A new shard can open once total population has grown enough AND the existing ACTIVE
- *   shards are healthy/stable enough — "a stability threshold is reached for a healthy
- *   population." Every shard after that needs the same two-part gate again, plus a
- *   cooldown since the last shard opened — "another shard becomes available after a
- *   cooldown."
+ * - Alternative shards exist to offer migration, different institutional rules, social
+ *   escape and starting again — their availability does NOT depend on population growth
+ *   (2026-10-20, user directive; this replaced an earlier mean-population gate, see
+ *   `canOpenNewShard`). A new shard opens while the registry is below `SHARD_COUNT_CAP`, the
+ *   existing populated shards are healthy/stable enough, and the cooldown since the last
+ *   opening has passed — "another shard becomes available after a cooldown."
  * - A newly opened shard starts DORMANT — no population, "automated economic stability"
  *   (mechanically covered, nobody there) — until a real arrival wakes it to ACTIVE. See
  *   `world.ts`'s `createDormantWorld` for how a DORMANT shard's economy is represented
@@ -49,19 +50,21 @@ export const SHARD_OPEN_COOLDOWN_DAYS = 30;
  *  a new shard is allowed to open — "a healthy population," not merely a large one. */
 export const SHARD_OPEN_STABILITY_THRESHOLD = 0.8;
 /**
- * [ILLUSTRATIVE] Mean population across currently-populated shards must reach at least
- * this fraction of `targetPopulationPerShard` before a new shard opens — "population
- * increases and a stability threshold is reached." Deliberately a per-shard MEAN, not a
- * flat total-population floor: a flat total grows automatically every time a new shard
- * fills up, so it trivially clears itself forever and every shard after the first extra
- * one opens the moment its cooldown expires, regardless of whether there's real pressure.
- * Gating on the mean instead means opening shard N+1 only becomes eligible once existing
- * shards are genuinely full, and immediately raises the bar again as population spreads
- * into the new shard — a self-pacing signal, not a runaway one. Caught via
- * `multi-shard-validation`'s own numbers (an early version reached 102 shards in 3000
- * days on a flat total-population floor) — simulated before trusting, not assumed correct.
+ * [ILLUSTRATIVE] The most shards the registry will hold: the two initial shards plus one
+ * alternative. Population-independent by design (2026-10-20): the previous rule opened a
+ * shard only while mean population per populated shard was >= `targetPopulation` (100).
+ * Shards start at 100 and settle near 85 within days, so that gate could only pass on day 0-1
+ * — after that no alternative shard could ever appear, and whether one existed at all was a
+ * seed-dependent knife edge.
+ *
+ * Why a cap rather than no bound: every materialised shard runs its own arrival process, so
+ * an unbounded opening rule grows simulated population with shard count. Measured, not
+ * assumed (8 seeds): opening whenever no DORMANT shard was on offer reached 31 shards and
+ * ~1,080 people in 1,000 days, against ~250 people in 3 shards today; the original flat
+ * total-population gate once reached 102 shards in 3,000 days. Raising the cap is a design
+ * decision about how many places exist, not about how many people there are.
  */
-export const SHARD_OPEN_SURPLUS_FACTOR = 1.0;
+export const SHARD_COUNT_CAP = 3;
 
 export function createShardRegistry(initialPopulationPerShard: number, day = 0): ShardRegistry {
   const shards: ShardRecord[] = Array.from({ length: INITIAL_SHARD_COUNT }, (_, i) => ({
@@ -74,24 +77,22 @@ export function createShardRegistry(initialPopulationPerShard: number, day = 0):
 }
 
 /**
- * Whether the registry is eligible to open one more shard today. All three gates are
- * independently required — population growth alone, or stability alone, or cooldown
- * alone, is not sufficient. `targetPopulationPerShard` is `WorldConfig.targetPopulation` —
- * passed in rather than imported, keeping this module dependency-free of `world.ts`.
+ * Whether the registry may open one more shard today. Gates, each independently required:
+ * room under `maxShards`, someone exists to migrate (at least one populated shard), the
+ * populated shards are stable, and the cooldown since the last opening has passed. How many
+ * people there are plays no part — an alternative shard's existence must not depend on
+ * population growth (see `SHARD_COUNT_CAP`). Pure; consumes no rng, so replay is unaffected.
  */
 export function canOpenNewShard(
   registry: ShardRegistry,
   meanActiveShardHealth: number,
   day: number,
-  targetPopulationPerShard: number,
+  maxShards: number = SHARD_COUNT_CAP,
   cooldownDays: number = SHARD_OPEN_COOLDOWN_DAYS,
   stabilityThreshold: number = SHARD_OPEN_STABILITY_THRESHOLD,
-  surplusFactor: number = SHARD_OPEN_SURPLUS_FACTOR,
 ): boolean {
-  const populated = registry.shards.filter((s) => s.population > 0);
-  if (populated.length === 0) return false;
-  const meanPopulation = populated.reduce((sum, s) => sum + s.population, 0) / populated.length;
-  if (meanPopulation < targetPopulationPerShard * surplusFactor) return false;
+  if (registry.shards.length >= maxShards) return false;
+  if (!registry.shards.some((s) => s.population > 0)) return false;
   if (meanActiveShardHealth < stabilityThreshold) return false;
   if (registry.lastShardOpenedDay !== null && day - registry.lastShardOpenedDay < cooldownDays) return false;
   return true;

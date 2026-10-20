@@ -115,10 +115,9 @@ const dormantFirstDays = (config: WorldConfig) => {
 console.log('Dormant shard, nodules over its first 10 days with nobody there:');
 console.log(`  standing berth on ${f(dormantFirstDays(DEFAULT_WORLD_CONFIG), 3)}  off ${f(dormantFirstDays({ ...DEFAULT_WORLD_CONFIG, standingBerths: 0 }), 3)}\n`);
 
-// Per seed, not only a mean: whether a third shard opens is decided in the first day or two
-// (canOpenNewShard needs mean population >= target, which only holds before shards settle
-// near ~62), so one seed missing it moves an average a lot without saying anything about
-// the economy.
+// Per seed, not only a mean: a threshold effect in one seed can move an average a lot
+// without saying anything about the economy. (Shard opening used to be one: it depended on
+// mean population, which only cleared on day 0-1. Since 2026-10-20 it doesn't.)
 const multiSeed = (config: WorldConfig, seed: number) => {
   let st = createMultiShardState(seed, config);
   let popSum = 0, n = 0, carried = 0, arrived = 0, toDock = 0;
