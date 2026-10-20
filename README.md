@@ -68,6 +68,16 @@ reserved against a USD 5 allowance before it is sent, and its usage is booked be
 can affect the simulation. It is scheduled for 22 October 2026
 ([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)).
 
+The participants' private diaries now have a written contract
+([A01](docs/research/DIARY_CONTRACT_A01.md)):
+
+- everyone writes one entry a day from fixed menus, and may record faithfully or strategically;
+- an intruder can read the current entries;
+- recognising another person takes repeated dealings, not just overhearing them.
+
+The evaluation already measures diary adherence and grounding. The game-side changes follow the
+first study.
+
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the
 [accounted-agent integration](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md),

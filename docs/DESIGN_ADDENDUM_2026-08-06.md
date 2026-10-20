@@ -281,6 +281,8 @@ No fifth slot for a trust score or numeric valence, deliberately — a number is
 players would optimize around; the READING slot's wording and the player's own memory of
 the sequence carry that weight instead.
 
+> **Superseded 2026-10-20 (owner decision; see [A01 diary contract](research/DIARY_CONTRACT_A01.md)):** the diary is now a daily task: one menu-composed entry per day, measured and never penalised. The paragraph below is kept as history.
+
 **Creation is unprompted-only.** The game never nudges a player to write an entry, even
 off a CONTEXT-worthy event. Writing one is always a deliberate act, never a system
 suggestion — consistent with the diary being personal processing space, not a system
