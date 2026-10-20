@@ -41,8 +41,8 @@ state), **DECIDED** (owner decision, dated), **OPEN** (still needs a decision or
 
 | ID | Status after this work |
 |---|---|
-| A01 Diary contract | **DECIDED, with an open conflict** (D1 below). Not implemented. |
-| A02 Diarised connections | OPEN; depends on A01. |
+| A01 Diary contract | **Contract v1.0.0 written** ([A01](DIARY_CONTRACT_A01.md)). Decisions: daily measured task; Grifters have a diary; everyone has an abode; trespass reveals full entries; recognition model v2 (10–20 days of dealings, interactions not broadcasts). The evaluator classifier is built and tested. The Grifter gate, recognition v2 and rules text v2 land after study 1. |
+| A02 Diarised connections | Split by D1. Game-generated entries are superseded: authors compose them. The "genuine earned recognition" half is now recognition model v2 ([A01](DIARY_CONTRACT_A01.md)), specified and built after study 1 with simulation calibration. |
 | A03 TTL / distortion / no read drift | VERIFIED: `DIARY_RETENTION_DAYS = 2` and `DIARY_DISTORTION_RATE_PER_DAY = 0.2` (`src/engine/diary.ts`); subject and context never distort. QUALIFIED as in I5. |
 | A04 Trespass incomplete | VERIFIED: `src/engine/trespass.ts` implements eligibility only (“not what happens when someone trespasses”). |
 | A05 One Baker insufficient | **Addressed for the anchored study:** a seven-actor driver in one world (D3). Hierarchy and cooperation claims remain unsupported. |

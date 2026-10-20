@@ -493,6 +493,8 @@ the time, not by the engine modeling intent. Journalist/Detective's existing rol
 enforcers (per the fines capture) applies unchanged here — catching a trespass triggers the
 same fine-refunds-the-economy mechanism already specified for the ruleset generally.
 
+> **Superseded 2026-10-20 (owner decision; see [A01 diary contract](research/DIARY_CONTRACT_A01.md)):** a trespasser sees full current entries (subject, observation, reading, context, after drift), and everyone, Grifters included, has an abode. The reveal never grants recognition and is never stored for the trespasser. §7.3 below is kept as history.
+
 ### 7.3 What's actually visible: connections, not content — and the diary's own SUBJECT slot already draws this exact line
 
 The original diary spec (`docs/DESIGN_ADDENDUM_2026-08-06.md`) already has four slots:

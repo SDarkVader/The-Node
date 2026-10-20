@@ -1,3 +1,22 @@
+> 2026-10-20 — A01 diary contract v1.0.0.
+>
+> **Owner decisions:** the diary is a daily measured task; Grifters still have a diary; everyone has an abode; a trespasser sees full entries. Recognition is "not to happen immediately, or meant to be easy": about 10–20 days of dealings, counting proximity conversations, trades and deliveries, and campaign cooperation. Overheard Wall posts get weak partial credit; sharing a district does not count. Grifters hear district Wall posts and speak and hear proximity where they stand.
+>
+> **Found by measuring before writing:**
+> - Recognition is built from heard Wall posts only: `identity.ts`'s stand-in for the intended trade trigger.
+> - Mechanical inhabitants never post, so every encounter comes from controlled actors. With six actors posting daily, the first recognition comes at ticks 6–17 (seeds 103–105).
+> - Grifters can never recognise anyone (outside the hearing graph), and the protected validator forbids them a diary.
+> - Live models are still told "use diary=null".
+>
+> **Built:**
+> - The contract constant and its JSON snapshot.
+> - `classifyDiary`: replays the tape for real eligibility and the author's own evidence.
+> - 12 tests: 179 kernel-confirmed writes and 142 supported rumour claims in the faithful run; a negligent run at 0; a fabricated claim reported unsupported, never called a lie. Two mutations killed.
+> - A study-1 freeze test pinning request bytes, contract and manifest. A one-character rules-text change fails 3 of its 4 tests.
+> - Dated superseded notes in the three earlier documents.
+>
+> **Deliberately not built before study 1:** the Grifter gate (protected core), recognition v2 and rules text v2.
+
 > 2026-10-20 — PR #26 merged at `9d004e8` on the user's instruction, once every check on head `c59dd70` was green: Windows Main integration (run 39513742598, including 80 native checks) and both Linux Research conformance runs. The merged tree is identical to the verified head, and a clean `main` checkout passes tracked recovery. This docs-only follow-up records the merged state in the checkpoint, the continuation guide and the README. It restarts the task branch from `main` and keeps it as the one review branch. It removes the stale PR #23 anchor wording and the "merge once green" step. No code changes.
 
 > 2026-10-20 (PR #26) — hosted CI on the first push and PR caught three things the local runs could not.

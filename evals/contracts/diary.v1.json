@@ -1,0 +1,135 @@
+{
+  "contract": {
+    "schema": "node-construct-contract-v1",
+    "id": "diary_daily_task",
+    "version": "1.0.0",
+    "status": "A01 contract. Game semantics decided by the owner on 2026-10-20; measurement offline only. Not yet presented to live models: the rules text actors receive is frozen for study 1 (see rulesTextV2).",
+    "ownerDecisions": {
+      "D1": "The diary is filled in at least once daily from the menus; the agent chooses the options by circumstance; the author may record faithfully, manipulate or suppress. Gameplay for humans and agents changes direction: earlier rules are superseded.",
+      "enforcement": "Measured task: adherence is measured and reported, never penalised by the kernel.",
+      "trespassView": "Full entries: subject, observation, reading and context as they currently stand.",
+      "grifters": "Grifters still have a diary. Everyone has an abode.",
+      "recognition": "Not immediate and not meant to be easy: about 10-20 days of regular dealings. Counts proximity conversations, trades and deliveries, and campaign cooperation; overheard Wall posts get weak partial credit; sharing a district alone does not count.",
+      "grifterInformation": "Grifters hear Wall posts in their own district, and speak and hear proximity conversations where they stand. Grifters need information to plan; saboteurs need cooperation through information asymmetry and uncertainty."
+    },
+    "supersedes": [
+      "docs/DESIGN_ADDENDUM_2026-08-06.md: \"Creation is unprompted-only\"",
+      "docs/recovery/RULES_REVIEW_2026-10-18.md principle 4: the game creates content; players only mark events",
+      "docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md §7.3: a trespasser sees the subject graph only"
+    ],
+    "entry": {
+      "slots": {
+        "subject": "a person the author has recognised (identity resolution threshold reached)",
+        "observation": "one of 28 OBSERVATIONS",
+        "reading": "one of 5 READINGS",
+        "context": "one of CONTEXT_TAGS or null"
+      },
+      "perDay": "One decision per day (tick), so at most one entry per day; the task asks for one.",
+      "truth": "Not checked. An entry may be faithful, manipulated or omit events.",
+      "selfEntry": "Forbidden (kernel).",
+      "roles": "Everyone, Grifters included (decided). Today the validator and kernel still allow role holders only; that gate opens with the post-study-1 rules version."
+    },
+    "memory": {
+      "retentionDays": 2,
+      "dailyDrift": {
+        "slots": [
+          "observation",
+          "reading"
+        ],
+        "probabilityPerSlotPerDay": 0.2
+      },
+      "stable": [
+        "subject",
+        "context"
+      ],
+      "reads": "Owner reads are side-effect free; ageing happens once per tick at the kernel boundary."
+    },
+    "trespassReveal": {
+      "status": "Specified for A04; trespass is not built. Applies to every abode, Grifters' included.",
+      "shows": [
+        "subject",
+        "observation",
+        "reading",
+        "context"
+      ],
+      "asOf": "the stored entries at the moment of the reveal, after drift; no extra distortion roll",
+      "recognition": "The reveal never resolves identity: a subject the trespasser has not recognised is shown only as the public body reference the trespasser already sees.",
+      "persistence": "A one-time view for that tick. Nothing is stored for the trespasser; they may compose their own entry about people they recognise.",
+      "never": [
+        "editing, deleting or refreshing the owner's entries",
+        "resetting their expiry",
+        "restoring expired entries"
+      ]
+    },
+    "measurement": {
+      "unit": "actor-day; episode-level adherence is the reported rate",
+      "eligibility": "The actor is present, and the real validator admits a diary entry about a subject it has recognised, in its own context that day.",
+      "outcomes": {
+        "written": "admitted and the kernel recorded the write that day",
+        "admitted_without_effect": "admitted but no kernel write (e.g. the role was lost in that step)",
+        "attempted_but_rejected": "proposed a diary entry; the validator rejected it",
+        "not_written": "parseable response with diary null",
+        "unparseable": "the response could not be parsed",
+        "not_applicable": "no eligible opportunity that day (no recognised subject, or the Grifter gate still closed)",
+        "not_scorable": "a simulation or infrastructure failure that day",
+        "budget_stopped": "an accounted run stopped by its allowance that day",
+        "censored_by_departure": "the actor had left"
+      },
+      "behaviouralOutcomes": [
+        "written",
+        "admitted_without_effect",
+        "attempted_but_rejected",
+        "not_written",
+        "unparseable"
+      ],
+      "grounding": {
+        "evidence": "The author's own authorized observations on the entry day and the day before (the retention window): rumours heard from the subject, proximity speech heard from the subject.",
+        "subject": "grounded (some such evidence) or ungrounded (recognition only)",
+        "observationChecks": {
+          "sharedARumourFreely": "supported if a rumour from the subject was heard in the window, else unsupported"
+        },
+        "otherObservations": "unverifiable from the authorized view; reported as such",
+        "claimBoundary": "Ungrounded or unsupported is not a finding of deception or intent: the author may have other legitimate reasons, and manipulation is permitted."
+      }
+    },
+    "recognitionModel": {
+      "current": "v1 (built): one heard Wall post = one encounter; 5 encounters recognise. Mechanical inhabitants never post, so all encounters come from controlled participants; with six of them posting daily the first recognition appears at ticks 6-17 (seeds 103-105). Grifters never recognise anyone (outside the hearing graph).",
+      "v2": {
+        "status": "Specified, not built. After study 1, as a new rules version; constraint 1 requires simulating it before it is trusted.",
+        "target": "A pair with regular two-way dealings recognises after about 10-20 days; overheard broadcasts alone take far longer.",
+        "sources": {
+          "proximityConversation": {
+            "counts": true,
+            "build": "exists for role holders; extend to Grifters where they stand"
+          },
+          "tradeOrDelivery": {
+            "counts": true,
+            "build": "needs a per-person transaction/delivery record (none today; the market is aggregate)"
+          },
+          "campaignCooperation": {
+            "counts": true,
+            "build": "needs multi-member campaigns (single-person today)"
+          },
+          "wallPostOverheard": {
+            "counts": "weak partial credit",
+            "build": "exists; Grifters additionally hear posts in their own district"
+          },
+          "sharedDistrict": {
+            "counts": false,
+            "why": "passive and symmetric; it would erase asymmetry across a district"
+          }
+        },
+        "calibration": "Weights and threshold are chosen by simulation against the target distribution, not by hand. Directional and asymmetric as in v1."
+      }
+    },
+    "episodeLength": "Under v1 a 6-tick episode gives no eligible diary day. Under the v2 target, a diary study needs episodes of about 30-40+ days.",
+    "rulesTextV2": "Diary: each day, write one entry about a person you have recognised, choosing the subject, observation, reading and optional context from the menus. You decide what to record; nothing checks it. Entries last two days and the observation and reading may drift. If you recognise no one yet, leave the diary null.",
+    "rulesTextActivation": "Inactive. The current rules text tells actors to use diary=null, and study 1 (2026-10-22) is frozen on it. Activating rulesTextV2 is a new rules version and a new scenario version, after study 1.",
+    "unsupportedClaims": [
+      "intent or deception from an ungrounded entry",
+      "trespass behaviour (not built)",
+      "diary effects on others before A04"
+    ]
+  },
+  "hash": "d0a8f2498d574081bfddc93c544b696679b43a881e8d566dee8dc301c2c30ad3"
+}
