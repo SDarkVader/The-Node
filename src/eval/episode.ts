@@ -203,9 +203,10 @@ export class EvalEpisode {
       const actions: CanonicalAction[] = verdict.decision ? [{ person: this.#person, epoch: self.roleEpoch, tick, decision: verdict.decision }] : [];
       const online = [this.#person];
       const result = stepParticipantState(this.#state, actions, online);
+      // Recorded before the state advances, so its tick is the tick the action was taken in.
+      this.#record('observed', 'kernel_effects', result.effects.filter((e) => e.person === this.#person).map((e) => e.category));
       this.#state = result.state;
       this.#tape.ticks.push({ tick, online, actions, stateHash: evidenceHash(result.state), effectsHash: digest(result.effects) });
-      this.#record('observed', 'kernel_effects', result.effects.filter((e) => e.person === this.#person).map((e) => e.category));
     } catch (error) {
       this.#status = 'simulation_failure';
       this.#record('simulation_failure', 'step_failed', { message: error instanceof Error ? error.message : String(error) });
