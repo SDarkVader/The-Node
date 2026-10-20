@@ -1,0 +1,12 @@
+{
+  "samples": 29,
+  "equal": 29,
+  "differing": [],
+  "ok": true,
+  "reference": {
+    "path": "evidence/pr21-review-2026-10-20/verification.json",
+    "source_revisions": [
+      "96a431f7cb87cde85c6643576d9a6b4dfe188c24"
+    ]
+  }
+}

@@ -6,6 +6,7 @@ relative imports, so this file imports the package absolutely and re-declares ea
 
 from inspect_ai import Task, task
 
+from inspect_node import constructs as K
 from inspect_node import tasks as T
 
 
@@ -47,3 +48,8 @@ def node_longitudinal(experiment: str = "scripted_fixtures") -> Task:
 @task
 def node_integrity(experiment: str = "scripted_fixtures") -> Task:
     return T.node_integrity(experiment)
+
+
+@task
+def node_authority_attribution(experiment: str = "authority_attribution") -> Task:
+    return K.node_authority_attribution(experiment)

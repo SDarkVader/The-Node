@@ -3,8 +3,11 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "2c8c448675dc723cd7ade9bb4e5e458bbfac935d",
+  "verifiedBaseCommit": "afdf39019ae2472b49b6ea6380bede690cf287a3",
   "completedWork": [
+    "2026-10-20 PR #26 opened (ccr-8d64b59c-a4puhv -> main). Hosted CI found and the branch fixed: research-conformance checked out the PR merge commit detached (recovery:verify correctly refused; now checks out the head branch by name, as main-integration does; 2407e4b); the runner's response deadline counted local journal writes (Windows failure in run 39512361278; now ends at response receipt, with a slow-ledger regression test); reservations stored full decision contexts (~7.8 KB/call, ~5.6 MB per study of the 8 MiB journal) and now store participant identity plus request-bytes hash (~0.9 KB/call, 0.66 MB for 714 calls); a fixture race made a TEST-ONLY 24 h window 24 h + 1 ms (7f7bef9).",
+    "2026-10-20 G3 (owner decisions: capped batch runner, USD 5 first allowance, gpt-5.4-nano-2026-03-17; D1 resolved as a measured daily diary task, with the earlier unprompted-only and marks-only rules superseded and manipulation permitted). Built ExperimentBudget (carries the closed 18 Oct allowance unchanged; operator settlement books unknown outcomes at the full ceiling), buildEvaluationRequest, runAccountedStudy (fail closed, pacing, resume by attempt), study manifest authority_attribution_study_1 (15 episodes, 630 calls, 714 admitted, USD 5), scripts build-study-runtime / prepare-experiment-budget / run-accounted-study / settle-failed-call, analyze_study, and the Thursday runbook docs/research/RUNBOOK_AUTHORITY_STUDY_1.md. No API call made.",
+    "2026-10-20 ground-truth register v0.1 (owner-supplied PDF, tracked at docs/research/): G0 source-verification annex and owner decisions D1/D2/D3/D5 in docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md; G1 reproduced on Linux at afdf390 with 29/29 kernel hashes byte-identical to archived 8281db6/96a431f evidence (docs/research/G1_REPRODUCTION_2026-10-20.md); G2 authority-attribution contract v1.0.0 with a seven-actor MultiActorEpisode (D3), label-only council/anonymous/none arms, validator-derived feasibility, kernel-evidenced effects, pure exported-record classifier, Inspect task node_authority_attribution and python -m inspect_node.constructs; Linux research-conformance workflow on every push. Branch ccr-8d64b59c-a4puhv; no PR opened.",
     "2026-10-20: user asked how to simplify the GitHub ruleset, then explicitly authorized applying the recommendation. Changed verify ruleset 25489816 from all branches to exact main, kept PRs required, set required approvals to 0 for the solo-maintainer workflow, and required offline-verification from GitHub Actions. Deletion, force-push and code-quality rules and bypass actors preserved. This permanent user-approved configuration supersedes the prior temporary 1-to-0-and-back procedure. PR #24 can now receive normal branch updates; intermediary PR #25 is superseded, not needed for merge.",
     "2026-10-20 user refinement: rewrote the README as a connected research description, following purpose -> concrete simulated society and Baker scenarios -> Inspect/framework methodology -> execution and evidence. Removed the branch-cleanup chronology and repeated limitation lists from the overview. Consolidated experimental interpretation, framework integration gaps, simulation/runtime limits and live-accounting boundaries in docs/EVALUATION_SCOPE_AND_LIMITATIONS.md, linked at the bottom. Existing detailed audits remain historical evidence. PR #24 is revised before its authorized merge; no source/runtime changes.",
     "2026-10-20: reframed the root README opening as an independently designed agent evaluation suite and deterministic simulation testbed, following user direction. Described research into agent hierarchies, authority and behaviour; identified native Inspect AI orchestration, adapted AgentDojo/ControlArena patterns and project-defined NIST AI RMF mapping. Kept scripted validation, one controlled participant, disabled live inference and unimplemented hierarchical coordination explicit. No simulation or evaluation code changed.",
@@ -26,6 +29,9 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-20 at 7f7bef9 (Linux): 1227/1227 Vitest across 97 files, TypeScript, 28/28 Python, CLI rehearsal 8/8; accounted-study tests 5/5 repeated runs green. Hosted: research-conformance push run 39512193563 on 8f428d6 passed every step on Ubuntu/Node 24/Python 3.14 (G1 hashes 29/29, G2, G3 rehearsal); the PR-event run and Windows main-integration run 39512361278 failed for the two defects fixed above. Results on the fixed head are reported by CI, not claimed here.",
+    "2026-10-20 at a32f4bc (Linux, Node 22.22.0, Python 3.13.16): 1226/1226 Vitest across 97 files, TypeScript, 28/28 Python; CLI rehearsal 8/8 (real scripts, TEST-ONLY fake transport: normal run, injected HTTP 429, settlement, resume, analysis); 29-sample verify 29/29 hashes identical to archived 8281db6; constructs verify 9 deterministic, 12/12. Mutation dispatch-before-reservation fails 7 tests.",
+    "2026-10-20 at fe4b058 (Linux, Node 22.22.0, Python 3.13.16): 1208/1208 Vitest across 96 files (1189 + 19 new), TypeScript, 25/25 Python (18 + 7), 29-sample verify still 29/29 identical to archived hashes; constructs verify 9 samples deterministic, exported replay + re-classification equal, 12/12 fixture rate checks; mutations M1-M3 killed. G1 at unmodified afdf390: 1189 Vitest, 18 Python, 8 recovery, 29/29/56 Inspect; recovery:verify passes on clean main worktree. 80 native checks not run (no PowerShell).",
     "2026-10-20 README narrative revision: 17 relative links across README and consolidated scope document resolve; checkpoint JSON valid; git diff --check passes. This is documentation verification, not a new behavioural experiment. PR CI must pass on the revised head before merge.",
     "2026-10-20 completed branch cleanup: 23/23 exact-tip and 23/23 ancestry checks passed against main 4da5301. Atomic deletion succeeded for 23 refs after separately authorized temporary deletion-rule change. Remote inventory confirmed exactly 3 unchanged retained heads. Saved deletion protection restored and verified after reload; other rules preserved. 8/8 session-recovery tests, 38 relative documentation links and git diff --check pass. No runtime changes or new full regression run.",
     "2026-10-20 merged-main verification: fresh clean main checkout at acb3b2d passes tracked recovery. Hosted integration run 39456555818 and dependency audit 39456555781 passed on identical-tree 1b6684a: 1189 Vitest, TypeScript, 18 Python, 80 native, 8 recovery and two deterministic 29-sample Inspect runs with exported replay. No full regression rerun is claimed for this post-merge documentation update.",
@@ -46,7 +52,9 @@
     "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
   ],
   "unresolvedIssues": [
-    "Eval harness: live model runs are refused until Inspect's model calls are routed through the accounted broker and budget ledger (not built). ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; one controlled Baker per episode; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
+    "Study 1 not yet run (owner runs it 2026-10-22 on the PC with the credential and private allowance). If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
+    "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
+    "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
     "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; growing past SHARD_COUNT_CAP (3) shards is a design decision, not built.",
     "Codex project hooks require review/trust in /hooks before automatic lifecycle execution; manual recovery commands work independently.",
     "Automatic mechanically generated diary connections and non-editing player event marks are not implemented.",
@@ -55,15 +63,45 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
+    "Merge PR #26 once Main integration verification (offline-verification, required) and Research conformance are green on its head; then run study 1 from main.",
+    "Owner: run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md on 2026-10-22; share study1-analysis/results.json and summary.md.",
+    "A01: write the versioned diary contract from the resolved D1 (measured daily task, menu-constrained, manipulation permitted, not_applicable without a recognised subject).",
+    "G5: add seeds (contract v1.1) and a frozen analysis plan before a larger allowance.",
+    "G3: accounted custom-provider adapter with execution disabled (synthetic ledgers, loopback responses, crash/failure injection), per DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md.",
+    "G5 protocol for authority attribution: held-out seeds, arm-order randomization, exclusions, episode-level uncertainty.",
     "Continue separate review of the Godot sky/navigation branch and Vitest 5 upgrade when directed.",
     "Continue the tracked accounted-agent/framework design only when directed, with execution disabled; maintain README/checkpoint together and preserve private accounting evidence."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "docs/evaluation-suite-overview-2026-10-20"
+  "reviewBranch": "ccr-8d64b59c-a4puhv"
 }
 NODE_SESSION_CHECKPOINT -->
 
 # Current development checkpoint
+
+**Task branch `ccr-8d64b59c-a4puhv` (2026-10-20), from main `afdf390`.** Works through the owner's
+[ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
+
+- **G0:** claims verified against source; owner decisions D1, D2, D3 and D5 recorded.
+- **G1:** reproduced on Linux, with byte-identical kernel hashes ([record](../research/G1_REPRODUCTION_2026-10-20.md)).
+- **G2:** authority-attribution contract v1.0.0 with seven controlled actors and offline reachability.
+
+**G3:** an accounted, capped batch runner for the first live study. The owner runs it on
+2026-10-22 per the [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap,
+`gpt-5.4-nano-2026-03-17`.
+
+D1 is resolved: the diary is a measured daily task, and the earlier unprompted-only and marks-only
+rules are superseded. The checkpoint names this branch as its one `reviewBranch`. No API call has
+been made from this branch, and no existing accounting file was changed.
+
+[PR #26](https://github.com/SDarkVader/The-Node/pull/26) brings this work to `main`. Hosted CI found
+three defects, all fixed on the branch:
+
+- the PR-event checkout was a detached merge commit;
+- the runner's deadline counted local journal writes;
+- the ledger reservations were oversized.
+
+Merge once both workflows are green on the PR head, then run study 1 from `main`.
 
 `main` is the shared development line. The user merged PR #22 at `acb3b2d` on
 2026-10-20. Its tracked tree matches verified PR head `1b6684a`; hosted integration

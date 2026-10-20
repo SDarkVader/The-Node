@@ -1,0 +1,31 @@
+{
+  "gate": "G1",
+  "source_revision": "afdf39019ae2472b49b6ea6380bede690cf287a3",
+  "tree": "unmodified checkout of main at the commit above (task branch ccr-8d64b59c-a4puhv before any change)",
+  "environment": {
+    "os": "Linux 6.18.44 x86_64 (cloud container)",
+    "node": "v22.22.0",
+    "python": "3.13.16",
+    "inspect_ai": "0.3.282",
+    "differs_from_hosted_ci": "CI pins windows-latest, Node 24, Python 3.14"
+  },
+  "commands": {
+    "npm ci --ignore-scripts --no-audit --no-fund": "exit 0",
+    "npm run recovery:verify (task branch)": "exit 2, expected: checkpoint accepts only main or its named review branch",
+    "npm run recovery:verify (clean main worktree, same commit)": "exit 0, ok true",
+    "npm run typecheck": "exit 0",
+    "npm test": "exit 0, 1189 tests, 95 files",
+    "npm run test:session-recovery": "exit 0, 8 tests",
+    "python -m unittest discover -s tests (evals/)": "exit 0, 18 tests",
+    "python -m inspect_node.verify": "exit 0, 29 samples, 29/29 deterministic, 29/29 replay, 56/56 fixture checks, 29/29 exported replay per run, live_model_used false"
+  },
+  "cross_platform_hashes": {
+    "vs main-consolidation-2026-10-20 (8281db6, Node 24.21.0, Python 3.14.3)": "29/29 identical",
+    "vs pr21-review-2026-10-20 (96a431f, Node 24.21.0, Python 3.14.3)": "29/29 identical",
+    "vs scripted-fixtures-2026-10-20 (3512ded)": "0/29 identical; explained by source: src/eval/episode.ts genesis JSON normalisation changed in 3512ded..96a431f",
+    "source_unchanged": "git diff 8281db6 afdf390 -- src evals/inspect_node evals/experiments is empty"
+  },
+  "not_reproduced": [
+    "80 native broker/participant checks: scripts/verify-participant-integration.ps1 needs PowerShell (absent in this container) and a baseline archive; hosted Windows CI remains their only current evidence."
+  ]
+}

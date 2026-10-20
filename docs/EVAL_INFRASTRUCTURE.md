@@ -143,14 +143,55 @@ Tasks: `node_safety_suite`, `node_prompt_injection`, `node_control`, `node_socia
 configuration lives in `evals/experiments/*.json`: model, concurrency, and the (scenario,
 policy) samples. `npm run eval:bridge` starts the bridge by hand.
 
-## Live models (blocked)
+## Construct contracts (gate G2, 2026-10-20)
 
-`solver.agent_model` refuses every model that is not Inspect's offline `mockllm`, with no
-override. A real provider called through Inspect would bypass this repo's accounted broker,
-budget ledger and US$5 cumulative ceiling (`src/agent/accountedBroker.ts`,
-`docs/recovery/EXPERIMENT_EVALS_AND_SAFEGUARDS.md`). Routing Inspect's model calls through
-that accounting, with reservations and settlement, is the prerequisite for any live run. It is
-**not built**.
+The first anchored study (owner decision D2) is **authority attribution**. Its versioned,
+machine-readable contract is `src/eval/constructs/authorityAttribution.ts`, snapshotted in
+`evals/contracts/authority_attribution.v1.json` with its hash. It declares:
+
+- the arms, the label-only treatment and the controlled actors;
+- the legitimate goals, the requested effects and how they conflict;
+- the feasibility, attempt, admission and effect predicates;
+- the blinding, the outcome taxonomy, the stopping rule, the exclusions and the unsupported claims.
+
+- **Arms:** `authority_attribution_{council,anonymous,none}`. They share seed 103 and the genesis, and the notice text is identical in both exposed arms. Only `source` differs.
+- **Actors (owner decision D3):** `MultiActorEpisode` (`src/eval/multiActorEpisode.ts`) controls seven inhabitants in one world: two Bakers, plus one each of Miller, Courier, Investigator, ImportExport and Grifter. Each actor gets its own authorized observation. All admitted actions enter one `stepParticipantState` per tick.
+- **Feasibility** is probed with the real validator in each actor's context. The Grifter's ineligibility is derived this way, not declared.
+- **Outcomes:**
+  - behavioural: `executed`, `admitted_without_effect`, `attempted_but_rejected`, `not_attempted`, `unparseable`;
+  - excluded from rates: `not_applicable`, `not_scorable`, `censored_by_departure`, `budget_stopped`.
+- **The classifier** is a pure function of an exported record plus the contract. The bridge's `classify` command re-derives it in a fresh process, and a contract-hash mismatch is refused.
+- **Commands:** `inspect eval node_tasks.py@node_authority_attribution --model mockllm/model`, and `python -m inspect_node.constructs --out <dir>`. The latter runs two runs, the determinism check, exported replay, exported re-classification and the fixture rate checks.
+
+Reachability evidence and limits are in
+`docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md` §5. That includes the finding that controlled
+actors are coupled through real role transitions, so the statistical unit is the episode × arm.
+
+## Live models
+
+**Through Inspect: still refused.** `solver.agent_model` refuses every model that is not Inspect's
+offline `mockllm`, with no override.
+
+**Through the accounted study runner: built (2026-10-20), not yet run.** Live calls go only through
+TypeScript, where the single accounting authority lives:
+
+- `src/eval/accountedRunner.ts` and `src/agent/experimentBudget.ts`;
+- the scripts `build-study-runtime`, `prepare-experiment-budget`, `run-accounted-study` and `settle-failed-call`.
+
+Each call follows the same order:
+
+1. The request bytes are built with the task and notices inside them (`src/eval/evaluationRequest.ts`).
+2. A durable reservation is made.
+3. The request is dispatched through the existing PowerShell worker.
+4. Usage is booked before the response can affect anything.
+5. Validation, then the kernel step.
+
+Unknown usage keeps its hold and stops the run until the operator settles it at the full ceiling.
+
+Python never calls a provider. It analyses the resulting records (`python -m inspect_node.analyze_study`).
+The owner runs the first study (USD 5 cap, `gpt-5.4-nano-2026-03-17`) on 2026-10-22, following
+`docs/research/RUNBOOK_AUTHORITY_STUDY_1.md`. The production `assertLiveAdmission` gate is unchanged
+and stays closed.
 
 ## Future modules (not implemented)
 
@@ -160,9 +201,8 @@ that accounting, with reservations and settlement, is the prerequisite for any l
 - **Concordia**: optional, for later comparative research; not integrated.
 - **Model-graded scorers and an LLM monitor.** All scorers and the monitor are deterministic
   rules. A model monitor would need the same accounting as any live call.
-- **Multi-agent episodes.** One controlled Baker per episode, with every other inhabitant
-  mechanical. `stepParticipantState` accepts several actions, so N controlled inhabitants is
-  a bridge extension, not a kernel change.
+- **Multi-agent episodes beyond the anchored construct.** Built for the authority-attribution
+  contract only (see “Construct contracts” above). The 29-sample suite still controls one Baker.
 - **Held-out seeds, epochs and statistical treatment** for real-model comparisons.
 - **Other roles' decisions.** The schema exposes a price override only for Bakers, so other
   roles can be evaluated for movement and communication only.

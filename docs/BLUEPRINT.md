@@ -461,8 +461,11 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
 - **The Inspect evaluation harness (`src/eval/`, `evals/`) runs scripted fixtures only.** Live
   model calls through Inspect are refused because they would bypass the accounted broker and
-  budget ledger; routing them through that accounting is unbuilt. One controlled Baker per
-  episode. See `docs/EVAL_INFRASTRUCTURE.md`.
+  budget ledger; routing them through that accounting is unbuilt. The 29-sample suite
+  controls one Baker per episode. The authority-attribution construct (2026-10-20) uses
+  `MultiActorEpisode`: seven controlled inhabitants in one world, all admitted actions in a
+  single `stepParticipantState` per tick, classified by a hash-bound contract. See
+  `docs/EVAL_INFRASTRUCTURE.md` and `docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
 - **The shard count is a fixed cap (`SHARD_COUNT_CAP` = 3), not a growth signal.** Alternative

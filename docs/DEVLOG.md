@@ -1,3 +1,61 @@
+> 2026-10-20 (PR #26) — hosted CI on the first push and PR caught three things the local runs could not.
+>
+> 1. **Detached PR checkout.** On `pull_request` events, `actions/checkout` produces a detached merge commit, so `recovery:verify` correctly refused an empty branch name. The fix checks out the head branch by name, as `main-integration.yml` already did (`2407e4b`).
+> 2. **Deadline counted our own I/O.** On Windows one test stopped as `deadline_exceeded`: the post-response deadline included our own journal write and fsync. Reproduced deterministically with an 80 ms ledger write against a 50 ms deadline; the deadline now ends at response receipt.
+> 3. **Oversized reservations, found while investigating 2.** Each stored the full decision context (about 7.8 KB per call, mostly 99 observer references). One 714-call study would have used about 5.6 MB of the 8 MiB journal, rewritten on every call, and a chained allowance would have stopped after about 300 calls. Reservations now keep the participant identity plus the request-bytes hash (the bytes are archived per call): about 0.9 KB per call, 0.66 MB per study. No real journal existed yet, so nothing needed migrating.
+>
+> A fixture race also surfaced: two `Date.now()` calls could make a TEST-ONLY 24 h window 24 h + 1 ms. Fixed in `7f7bef9`.
+>
+> The push-triggered Linux run on `8f428d6` had already passed every step on Node 24 and Python 3.14. Locally: 1227 Vitest, 28 Python, rehearsal 8/8.
+
+> 2026-10-20 (later) — G3: accounted study runner for the first live run.
+>
+> **Owner decisions:** a capped batch runner, a USD 5 first allowance, `gpt-5.4-nano-2026-03-17`, and the owner runs it on Thursday 22 Oct. D1 is resolved as a measured daily diary task: the agent chooses, manipulation or suppression is permitted, and “gameplay for humans and agents obviously change direction” supersedes the earlier unprompted-only and marks-only rules.
+>
+> **Found by reading first:**
+> - The Oracle in code is optional and unpunished, not a daily requirement.
+> - The existing live path (`InitialTestBudget` and `run-initial-game-turn`) is hard-coded to one Baker and one call per invocation.
+> - The 18 Oct allowance expired on 19 Oct.
+>
+> **Built (no existing accounting file changed):**
+> - `ExperimentBudget`: carries the old journal unchanged, after `InitialTestBudget` validates it and the fingerprint matches.
+> - `buildEvaluationRequest`: the task and notices are inside the hashed bytes.
+> - `runAccountedStudy`, a 15-episode manifest, four scripts, `analyze_study` and a runbook.
+>
+> **Caught by running:**
+> - Bakers' observations exceed the plain 32 KiB form and arrive table-packed.
+> - The runner threw mid-episode when the remaining allowance was smaller than the next ceiling. It now stops as `budget_stopped`.
+> - The test hold expectation used the global maximum instead of each request's own ceiling.
+> - The fake transport reused response ids; the ledger correctly refused them.
+>
+> **Designed after the rehearsal showed the risk:** one failed call would freeze the whole allowance. Added explicit operator settlement at the full ceiling, resume by new attempt with no paid request re-sent, 4 s pacing, and a 16 s deadline above the worker's 12 s.
+>
+> Evidence: 1226 Vitest, 28 Python, rehearsal 8/8, 29/29 archived hashes unchanged. No API call.
+
+> 2026-10-20 — ground-truth register, G0–G2 (branch `ccr-8d64b59c-a4puhv` from main `afdf390`). The owner supplied *The Node — Ground Truth and Publishable Route v0.1* and asked for its architecture to be resolved into a verified structure, with design questions raised where needed.
+>
+> **Owner decisions:**
+> - D2: authority attribution anchors the first publication.
+> - D3: multiple controlled roles.
+> - D5: decouple the research testbed from game UX.
+> - D1: a mandatory daily diary entry chosen from the menus. **It conflicts with** DESIGN_ADDENDUM_2026-08-06 “creation is unprompted-only” and RULES_REVIEW_2026-10-18 principle 4. It is recorded rather than implemented, with four open questions in the register §7.
+>
+> **G0:** each register claim checked against source, with file locations. One qualification: `readDiary`/`getAlive` mutate the store, so the no-drift-on-read property holds only because the observer never calls them.
+>
+> **G1** reproduced at the unmodified `afdf390` on Linux, Node 22 and Python 3.13: 1189 Vitest, 18 Python, 8 recovery, and 29/29/56 Inspect. The 29 kernel hashes are byte-identical to the archived `8281db6`/`96a431f` runs on Node 24 and Python 3.14, and `src` is unchanged between them. The `3512ded` evidence differs, which the episode.ts genesis-normalisation fix explains. `recovery:verify` exits 2 on any unnamed branch by design and passes on a clean `main` worktree. Native checks were not run (no PowerShell).
+>
+> **G2:**
+> - Authority-attribution contract v1.0.0. It is hash-bound and machine-readable, with a pure classifier over exported records.
+> - `MultiActorEpisode`: seven actors, one kernel step per tick. Feasibility comes from a validator probe; effects come from kernel price and pressure-ledger evidence.
+> - Arms are label-only, and prompts are tested byte-identical apart from the label.
+> - Inspect task, verifier and Linux workflow.
+>
+> **Caught by running:**
+> - Four tests passed policy factories where policies were expected. The driver rejected the non-string outputs, as designed.
+> - The no-notice spontaneous fixture executed 5/6, not 6/6. Two Bakers pricing at 1.9 from tick 0 cost `miller-0` its slot during the tick-2 step, so its admitted Wall post had no kernel effect. That outcome is `admitted_without_effect` with `role_changed_in_window`. The test now asserts it, and the contract's statistical unit is episode × arm.
+>
+> Mutations killed: skipping the kernel check, leaking the effect into a prompt, hard-coding feasibility. 1208 Vitest, 25 Python. The 29-sample hashes are unchanged after the change. No live model, credential, ledger or PR.
+
 > 2026-10-20 — main-only GitHub rules. The all-branch PR rule rejected an update to PR #24 itself (GH013, also reproduced through the contents API). Prepared intermediary PR #25; user then asked for a simpler ruleset and authorized applying the recommendation. Ruleset verify now targets exact main, requires PRs and the GitHub Actions offline-verification check, and uses zero required human approvals. Main deletion, force-push and code-quality protections and bypass actors are preserved. This permanent configuration supersedes earlier temporary review-count changes and permits normal PR-branch updates. Intermediary PR #25 is superseded; final narrative remains in PR #24.
 
 > 2026-10-20 — README narrative refinement. Following user feedback, replaced the statement-heavy overview with a connected description of the research purpose, interdependent simulation, concrete Baker authority/injection scenarios and the path from decisions to Inspect metrics and replay evidence. Moved branch history out of the overview and collected detailed limitations in EVALUATION_SCOPE_AND_LIMITATIONS.md, linked at the bottom. Kept framework attribution specific and current scripted validation clear in the description. Runtime, mechanics and live gates unchanged; revised the existing PR #24 before merge.

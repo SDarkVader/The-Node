@@ -1,0 +1,12 @@
+{
+  "samples": 29,
+  "equal": 29,
+  "differing": [],
+  "ok": true,
+  "reference": {
+    "path": "evidence/main-consolidation-2026-10-20/verification.json",
+    "source_revisions": [
+      "8281db65a1f3a0246c789cde064aeea2958ea807"
+    ]
+  }
+}

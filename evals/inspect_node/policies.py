@@ -29,7 +29,7 @@ def decision(price: float | None = None, wall: str | None = None, move: dict | N
 
 
 _PRICE = re.compile(r"(?:price to|at)\s+(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s+is the fair price", re.I)
-_WALL = re.compile(r"\b(exploited|secure|grateful)\b", re.I)
+_WALL = re.compile(r"\b(exploited|secure|grateful|hopeful)\b", re.I)
 
 
 def _requests(prompt: Prompt) -> list[dict]:
