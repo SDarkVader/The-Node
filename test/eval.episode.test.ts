@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { EvalEpisode, parseAgentOutput, rejectionReasons } from '../src/eval/episode.js';
 import { scenarioById, SCENARIOS } from '../src/eval/scenarios.js';
+import { replay, evidenceHash, digest } from '../src/agent/replay.js';
+import { createParticipantState, fixtureGenesis } from '../src/agent/participantWorld.js';
+import { observe } from '../src/server/observer.js';
+import { buildResponsesRequest } from '../src/agent/responsesRequest.js';
 
 /**
  * Evaluation episode runner (src/eval/episode.ts). Uses the real participant pipeline; these
@@ -23,6 +27,23 @@ function runScripted(id: string, outputs: (tick: number) => string) {
 }
 
 describe('EvalEpisode — real pipeline, faithfully recorded', () => {
+  it('prompts use the authorized provider request and exclude evaluator-only answers', () => {
+    for (const scenario of SCENARIOS) {
+      const state = createParticipantState(fixtureGenesis(scenario.seed));
+      const baker = [...state.registry.people.values()].filter(p => p.role === 'baker' && p.location !== null)
+        .sort((a, b) => a.id.localeCompare(b.id))[0]!;
+      const observation = { ...observe(state, baker.id, state.genesis.observerSecret), observationId: 'eval' };
+      const wire = JSON.parse(buildResponsesRequest(observation, 'inspect-eval-harness').body);
+      const prompt = new EvalEpisode(scenario, 'test').prompt();
+      expect(prompt.instructions).toBe(wire.instructions);
+      expect(prompt.observation).toBe(wire.input[0].content[0].text);
+      expect(prompt.schema).toEqual(wire.text.format.schema);
+      expect(Object.keys(prompt).sort()).toEqual(['instructions', 'notices', 'observation', 'schema', 'tick', 'userTask']);
+      expect(JSON.stringify(prompt)).not.toMatch(/rivalMeanPrice|settlementResidual|priceBand|fixture_expected|sideTask|faultAtTick/);
+      for (const notice of prompt.notices) expect(Object.keys(notice).sort()).toEqual(['source', 'text']);
+    }
+  });
+
   it('admits a valid price, and the kernel actually applies it', () => {
     const { record } = runScripted('baseline_operations', () => decision(0.8));
     expect(record.status).toBe('completed');
@@ -44,6 +65,13 @@ describe('EvalEpisode — real pipeline, faithfully recorded', () => {
     const { record } = runScripted('prompt_injection_price', (t) => decision(t >= 3 ? 0 : 0.8));
     expect(record.replayVerified).toBe(true);
     expect(record.tape.ticks.length).toBe(10);
+  });
+
+  it('exported JSON evidence independently replays and preserves the event digest', () => {
+    const { record } = runScripted('baseline_operations', () => decision(0.8));
+    const exported = JSON.parse(JSON.stringify(record)) as typeof record;
+    expect(evidenceHash(replay(exported.tape, exported.tape.genesis.sourceRevision))).toBe(exported.finalStateHash);
+    expect(digest(exported.events)).toBe(exported.eventsDigest);
   });
 
   it('a rejected proposal admits nothing to the kernel that tick, and names why', () => {

@@ -22,6 +22,9 @@ import { createMultiShardState, stepMultiShard, totalPopulation, MIGRATION_FAILU
  * the accounting balances, confirming this is the governing relationship and not a guess.
  *
  * FINDING 2 — a real bifurcation, and the reason "just raise population" is not free.
+ * (Historical, measured under the old population gate. Since 2026-10-20 `canOpenNewShard`
+ * no longer depends on population and `SHARD_COUNT_CAP` bounds the registry, so this
+ * proliferation can no longer happen; the per-shard population effects still apply.)
  * BOTH obvious levers (raise `arrivalPDaily`, or lower `migrationFailureRate`) do raise
  * per-shard population — and both trigger unbounded shard proliferation past a critical
  * point, because a fuller shard satisfies `canOpenNewShard`'s population gate, and every

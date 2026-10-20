@@ -11,7 +11,8 @@
  * given. Errors come back as {"ok":false,"error":"..."} and never crash the process mid-episode.
  */
 import { createInterface } from 'node:readline';
-import { EvalEpisode } from './episode.js';
+import { EvalEpisode, type EpisodeRecord } from './episode.js';
+import { replay, evidenceHash, digest } from '../agent/replay.js';
 import { scenarioById, SCENARIOS } from './scenarios.js';
 
 let episode: EvalEpisode | null = null;
@@ -21,6 +22,11 @@ function handle(line: string): unknown {
   // A leading byte-order mark (some Windows shells add one to piped stdin) is not part of the request.
   const request = JSON.parse(line.replace(/^﻿/, '')) as Record<string, unknown>;
   switch (request.cmd) {
+    case 'replay': {
+      const record = request.record as EpisodeRecord;
+      const state = replay(record.tape, record.tape.genesis.sourceRevision);
+      return { ok: true, finalStateHash: evidenceHash(state), eventsDigest: digest(record.events) };
+    }
     case 'scenarios':
       return { ok: true, scenarios: SCENARIOS };
     case 'start': {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createMultiShardState, stepMultiShard, totalPopulation } from '../src/sim/multiShardHarness.js';
-import { DEFAULT_WORLD_CONFIG, type WorldConfig } from '../src/world/world.js';
-import { INITIAL_SHARD_COUNT } from '../src/engine/shardRegistry.js';
+import { createMultiShardState, stepMultiShard, totalPopulation, type MultiShardState } from '../src/sim/multiShardHarness.js';
+import { DEFAULT_WORLD_CONFIG, receiveMigrants, type WorldConfig } from '../src/world/world.js';
+import { INITIAL_SHARD_COUNT, SHARD_COUNT_CAP, chooseMigrationDestination } from '../src/engine/shardRegistry.js';
+import { mulberry32 } from '../src/sim/rng.js';
 
 /**
  * Regression tests for the multi-shard harness (2026-08-11) — composes shardRegistry.ts
@@ -162,5 +163,93 @@ describe('stepMultiShard — lastMigrationWindows', () => {
       withInspection = stepMultiShard(withInspection);
       expect(totalPopulation(withInspection)).toBe(totalPopulation(withoutInspection));
     }
+  });
+});
+
+/**
+ * Alternative shards exist for migration, different institutional rules, social escape and
+ * starting again; their availability must not depend on population growth (2026-10-20). The
+ * old rule opened a shard only while mean population per shard was >= targetPopulation (100),
+ * which held only on day 0-1, so a missed opening was permanent.
+ */
+describe('stepMultiShard — alternative shard availability does not depend on population', () => {
+  const run = (state: MultiShardState, days: number) => {
+    for (let i = 0; i < days; i++) state = stepMultiShard(state);
+    return state;
+  };
+
+  it('a missing alternative still opens after populations have stabilised below the old threshold', () => {
+    const stable = run(createMultiShardState(2, DEFAULT_WORLD_CONFIG), 200);
+    // Rebuild as if the alternative had never opened during the initial transient — the case
+    // the old gate made permanent: only the two initial shards, every one below the old bar.
+    const initial = (id: number) => id < INITIAL_SHARD_COUNT;
+    let state: MultiShardState = {
+      ...stable,
+      worlds: new Map([...stable.worlds].filter(([id]) => initial(id))),
+      registry: { shards: stable.registry.shards.filter((s) => initial(s.id)), nextShardId: INITIAL_SHARD_COUNT, lastShardOpenedDay: null },
+    };
+    for (const s of state.registry.shards) expect(s.population).toBeLessThan(DEFAULT_WORLD_CONFIG.targetPopulation);
+    state = stepMultiShard(state);
+    expect(state.registry.shards.length).toBe(INITIAL_SHARD_COUNT + 1);
+    expect(state.registry.shards.at(-1)!.state).toBe('DORMANT');
+  });
+
+  it('every shard has somewhere to go, including the seed the old rule left with two shards', () => {
+    const state = run(createMultiShardState(1, DEFAULT_WORLD_CONFIG), 300);
+    expect(state.registry.shards.length).toBe(SHARD_COUNT_CAP);
+    const rng = mulberry32(1);
+    for (const s of state.registry.shards) {
+      expect(s.population).toBeLessThan(DEFAULT_WORLD_CONFIG.targetPopulation);
+      const dest = chooseMigrationDestination(state.registry, s.id, rng);
+      expect(dest).not.toBeNull();
+      expect(dest).not.toBe(s.id);
+    }
+  });
+
+  it('the cap bounds both shard count and simulated population over a long run, deterministically', () => {
+    for (const seed of [1, 2]) {
+      let a = createMultiShardState(seed, DEFAULT_WORLD_CONFIG);
+      let b = createMultiShardState(seed, DEFAULT_WORLD_CONFIG);
+      for (let i = 0; i < 1000; i++) {
+        a = stepMultiShard(a);
+        b = stepMultiShard(b);
+        expect(a.registry.shards.length).toBeLessThanOrEqual(SHARD_COUNT_CAP);
+        expect(totalPopulation(a)).toBeLessThanOrEqual(SHARD_COUNT_CAP * DEFAULT_WORLD_CONFIG.targetPopulation);
+      }
+      expect(a.registry).toEqual(b.registry);
+      expect(totalPopulation(a)).toBe(totalPopulation(b));
+    }
+  });
+
+  it('migration itself is unchanged: attempts, interceptions, arrivals and vouchers all still happen and balance', () => {
+    let state = createMultiShardState(3, DEFAULT_WORLD_CONFIG);
+    let attempted = 0, succeeded = 0;
+    for (let i = 0; i < 600; i++) {
+      state = stepMultiShard(state);
+      for (const w of state.lastMigrationWindows) {
+        attempted += w.attempted;
+        succeeded += w.succeeded;
+      }
+      const v = state.lastVoucherSettlement;
+      expect(v.carried).toBeCloseTo(v.arrived + v.toDock, 9);
+    }
+    expect(attempted).toBeGreaterThan(0);
+    const failureRate = (attempted - succeeded) / attempted;
+    // The route mechanism's emergent rate, calibrated to ~0.15 (importExport.ts).
+    expect(failureRate).toBeGreaterThan(0.05);
+    expect(failureRate).toBeLessThan(0.3);
+  });
+
+  it('an arrival brings only their holdings: no recognition, diary or identity history crosses shards', () => {
+    const state = run(createMultiShardState(4, DEFAULT_WORLD_CONFIG), 50);
+    const dest = state.worlds.get(0)!;
+    const after = receiveMigrants(dest, 1, [7.5]);
+    const arrival = after.grifters.at(-1)!;
+    expect(arrival.wealth).toBe(7.5);
+    // The destination's civic and private memory is untouched: same objects, nothing added.
+    expect(after.identityLedger).toBe(dest.identityLedger);
+    expect(after.diary).toBe(dest.diary);
+    expect(after.identityLedger.has(arrival.id)).toBe(false);
+    for (const counts of after.identityLedger.values()) expect(counts.has(arrival.id)).toBe(false);
   });
 });

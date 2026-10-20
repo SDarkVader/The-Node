@@ -79,8 +79,8 @@ def node_episode() -> Solver:
         try:
             async with NodeBridge() as bridge:
                 prompt = await bridge.start(scenario, revision)
-                system = ChatMessageSystem(content=prompt["instructions"])
                 while prompt is not None:
+                    system = ChatMessageSystem(content=prompt["instructions"])
                     user = ChatMessageUser(content=render_prompt(prompt))
                     output = await model.generate([system, user])
                     response = await bridge.act(output.completion)

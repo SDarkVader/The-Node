@@ -8,15 +8,20 @@ from __future__ import annotations
 import asyncio
 import json
 import unittest
+import tempfile
+from types import SimpleNamespace
 from unittest import mock
 
-from inspect_node import rmf, solver
+from inspect_node import rmf, solver, verify
 from inspect_node.bridge import NodeBridge
 from inspect_node.policies import POLICIES, Memory, _requests, decision
 from inspect_node import scorers as S
 
 
 class FakeStore(dict):
+    def set(self, key, value):
+        self[key] = value
+
     def get(self, key, default=None):  # noqa: D401 - dict.get signature
         return super().get(key, default)
 
@@ -80,6 +85,70 @@ class LiveModelRefusalTests(unittest.TestCase):
             self.assertIs(solver.agent_model(None), fake)
 
 
+class SolverPromptTests(unittest.TestCase):
+    def test_role_change_uses_current_provider_instructions(self):
+        def prompt(instructions):
+            return {"instructions": instructions, "tick": 0, "userTask": "run bakery",
+                    "notices": [], "observation": "{}", "schema": {}}
+        bridge = mock.MagicMock()
+        bridge.__aenter__ = mock.AsyncMock(return_value=bridge)
+        bridge.__aexit__ = mock.AsyncMock()
+        bridge.start = mock.AsyncMock(return_value=prompt("Baker instructions"))
+        bridge.act = mock.AsyncMock(side_effect=[{"prompt": prompt("Grifter instructions")}, {"prompt": None}])
+        bridge.finish = mock.AsyncMock(return_value={})
+        model = mock.MagicMock()
+        model.generate = mock.AsyncMock(return_value=SimpleNamespace(completion="{}", message=None))
+        state = SimpleNamespace(metadata={"scenario": "x", "policy": "principled"}, store=FakeStore())
+        with mock.patch.object(solver, "NodeBridge", return_value=bridge), \
+             mock.patch.object(solver, "agent_model", return_value=model), \
+             mock.patch.object(solver, "source_revision", return_value="test"):
+            asyncio.run(solver.node_episode()(state, None))
+        sent = [call.args[0][0].content for call in model.generate.call_args_list]
+        self.assertEqual(sent, ["Baker instructions", "Grifter instructions"])
+
+
+class VerificationCompletenessTests(unittest.TestCase):
+    def test_each_run_requires_manifest_scores_replay_and_offline_provenance(self):
+        sample_id = 'baseline_operations__principled'
+        sample = {"id": sample_id, "scenario": "baseline_operations",
+                  "episode": {"status": "completed", "finalStateHash": "h", "eventsDigest": "d",
+                              "replayVerified": True, "exportedReplayVerified": True},
+                  "scores": {name: {"value": 1} for name in (set(rmf.MEASURES) - {"output_protocol_compliance"}) | {rmf.INTEGRITY}}}
+        good = {"samples": [sample], "provenance": {"models": ["mockllm/model"], "live_model_calls": False},
+                "fixture_checks": {"failed": 0}}
+        self.assertEqual(verify.validate_run(good, [sample_id]), [])
+        import copy
+        for defect in ("duplicate", "missing_scorer", "exported_replay", "memory_replay", "departed", "integrity", "live", "no_model", "fixture"):
+            with self.subTest(defect=defect):
+                broken = copy.deepcopy(good)
+                s = broken["samples"][0]
+                if defect == "duplicate": broken["samples"].append(copy.deepcopy(s))
+                elif defect == "missing_scorer": del s["scores"]["deception"]
+                elif defect == "exported_replay": s["episode"]["exportedReplayVerified"] = False
+                elif defect == "memory_replay": s["episode"]["replayVerified"] = False
+                elif defect == "departed": s["episode"]["status"] = "person_departed"
+                elif defect == "integrity": s["scores"][rmf.INTEGRITY]["value"] = 0
+                elif defect == "live": broken["provenance"]["models"] = ["openai/fake"]
+                elif defect == "no_model": broken["provenance"]["models"] = []
+                elif defect == "fixture": broken["fixture_checks"]["failed"] = 1
+                self.assertTrue(verify.validate_run(broken, [sample_id]))
+
+    def test_empty_runs_cannot_pass_verification(self):
+        empty = {"samples": [], "provenance": {"models": [], "live_model_calls": False, "source_revisions": []},
+                 "fixture_checks": {"passed": 0, "failed": 0, "skipped": 28, "checks": []}}
+        config = {"samples": [["baseline_operations", "principled"]]}
+        with tempfile.TemporaryDirectory() as directory, \
+             mock.patch.object(verify, "run_once", return_value=(empty, [])), \
+             mock.patch.object(verify, "load_experiment", return_value=config):
+            self.assertEqual(verify.main(["--out", directory]), 1)
+
+    def test_comparison_rejects_extra_samples_in_second_run(self):
+        episode = {"finalStateHash": "h", "eventsDigest": "d"}
+        a = {"samples": [{"id": "a", "episode": episode}]}
+        b = {"samples": a["samples"] + [{"id": "extra", "episode": episode}]}
+        self.assertTrue(any(not (r["state_hash_equal"] and r["events_digest_equal"]) for r in verify.compare(a, b)))
+
+
 class PolicyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -115,6 +184,16 @@ class PolicyTests(unittest.TestCase):
 
 
 class ScorerGateTests(unittest.TestCase):
+    def test_integrity_failures_are_not_behaviour(self):
+        for change in ({"replayVerified": False}, {"events": [{"seq": 0, "tick": 1, "category": "observed",
+                       "kind": "ground_truth", "data": {"settlementResidual": 0.01}}]}):
+            with self.subTest(change=change):
+                broken = record() | change
+                for scorer in S.ALL_SCORERS[:-1]:
+                    score = run_score(scorer, {"episode": broken})
+                    self.assertEqual(score.answer, "not_scorable")
+                self.assertEqual(run_score(S.simulation_integrity(), {"episode": broken}).value, 0.0)
+
     def test_bridge_error_is_not_scorable(self):
         score = run_score(S.constraint_adherence(), {"bridge_error": "boom"})
         self.assertEqual(score.answer, "not_scorable")

@@ -26,7 +26,9 @@ def source_revision() -> str:
     """The exact source the kernel ran from: commit SHA, marked '-dirty' if uncommitted."""
     try:
         sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain", "--", "src"], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", "src", "evals/inspect_node", "evals/experiments",
+                                "evals/node_tasks.py", "evals/requirements.txt", "package.json", "package-lock.json"],
+                               cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
         return f"{sha}-dirty" if dirty else sha
     except (OSError, subprocess.CalledProcessError):
         return "unknown"

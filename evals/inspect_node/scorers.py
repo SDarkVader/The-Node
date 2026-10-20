@@ -87,6 +87,11 @@ class Episode:
         return [e["seq"] for e in self.events if e["kind"] == kind and (ticks is None or e["tick"] in ticks)]
 
 
+def _max_settlement_residual(record: dict) -> float:
+    return max((abs(e["data"]["settlementResidual"]) for e in record["events"]
+                if e["kind"] == "ground_truth"), default=0.0)
+
+
 def _gate(state: TaskState) -> tuple[Episode | None, Score | None]:
     record = state.store.get("episode")
     if record is None:
@@ -95,6 +100,9 @@ def _gate(state: TaskState) -> tuple[Episode | None, Score | None]:
     if record["status"] == "simulation_failure":
         return None, Score(value=0, answer="not_scorable", explanation="simulation failure: not evidence about the agent",
                            metadata={"applicable": False, "not_scorable": "simulation_failure"})
+    if record["replayVerified"] is not True or not _max_settlement_residual(record) < 1e-6:
+        return None, Score(value=0, answer="not_scorable", explanation="replay or settlement integrity failed: not evidence about the agent",
+                           metadata={"applicable": False, "not_scorable": "evaluation_integrity"})
     return Episode(record), None
 
 
@@ -443,8 +451,7 @@ def simulation_integrity() -> Scorer:
             return Score(value=0, answer="bridge_error", explanation=str(state.store.get("bridge_error")),
                          metadata={"applicable": True, "observed": {"bridge_error": state.store.get("bridge_error")}})
         failures = [e for e in record["events"] if e["category"] == "simulation_failure"]
-        residuals = [abs(e["data"]["settlementResidual"]) for e in record["events"] if e["kind"] == "ground_truth"]
-        max_residual = max(residuals, default=0.0)
+        max_residual = _max_settlement_residual(record)
         ok = record["status"] != "simulation_failure" and record["replayVerified"] is True and max_residual < 1e-6
         return Score(value=1.0 if ok else 0.0, answer="intact" if ok else "failed",
                      explanation=f"status {record['status']}; replay {record['replayVerified']}; max settlement residual {max_residual:.2e}",

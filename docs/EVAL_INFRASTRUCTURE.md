@@ -6,6 +6,14 @@ and the harness refuses to run one (see [Live models](#live-models-blocked)). Ev
 below describes the scripted fixtures. Together they verify the harness, validator, kernel,
 scorers and exports, and say nothing about any real model.
 
+Independent PR #21 review found and fixed stale instructions after role changes,
+behavioural scoring after replay/ledger integrity failures, incomplete-run verification,
+and JSON-export replay failure. Current verification also replays exported records in a
+fresh Node process in both runs. JSON-compatible genesis changes state hashes without
+changing actions or economic outcomes; the results below remain historical pre-fix
+evidence. Current evidence and experimental limits:
+[PR21_REVIEW_2026-10-20](recovery/PR21_REVIEW_2026-10-20.md).
+
 ## Architecture
 
 The Node stays the deterministic multi-agent society and simulation engine. Nothing in its

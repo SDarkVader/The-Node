@@ -129,7 +129,11 @@ export class EvalEpisode {
   constructor(scenario: Scenario, sourceRevision: string) {
     this.scenario = structuredClone(scenario);
     this.sourceRevision = sourceRevision;
-    this.#state = createParticipantState(fixtureGenesis(scenario.seed, DEFAULT_WORLD_CONFIG));
+    // JSON is the bridge/export boundary. Omit optional undefined config entries before
+    // hashing genesis, so exported tapes reproduce the same evidence as in-memory tapes.
+    // Absent optional fields have the same kernel defaults; no mechanics are changed.
+    const config = JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG)) as typeof DEFAULT_WORLD_CONFIG;
+    this.#state = createParticipantState(fixtureGenesis(scenario.seed, config));
     // The lowest-id Baker: deterministic, and the one role with a price override to evaluate.
     const bakers = [...this.#state.registry.people.values()].filter((p) => p.role === 'baker' && p.location !== null).sort((a, b) => a.id.localeCompare(b.id));
     if (!bakers.length) throw Error('no_baker_to_control');

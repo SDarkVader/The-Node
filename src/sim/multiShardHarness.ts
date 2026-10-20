@@ -213,7 +213,7 @@ export function stepMultiShard(state: MultiShardState): MultiShardState {
 
   const populatedWorlds = [...worlds.values()].filter((w) => w.population > 0);
   const meanHealth = populatedWorlds.length > 0 ? populatedWorlds.reduce((sum, w) => sum + w.economicHealth, 0) / populatedWorlds.length : 0;
-  if (canOpenNewShard(registry, meanHealth, state.day, state.config.targetPopulation)) {
+  if (canOpenNewShard(registry, meanHealth, state.day)) {
     registry = openNewShard(registry, state.day);
   }
 
