@@ -1,14 +1,34 @@
-# NODE
+# NODE — Agent Evaluation Suite
 
-*Nobody is fully anonymous here. Nobody is fully known either. Everyone knows
-something; nobody knows everything. There's always another shard to run to —
-but what the node did together, it did for good.*
+NODE is an independently designed evaluation suite for studying agent behaviour,
+authority structures and collective outcomes in a persistent, deterministic
+social-economic simulation. The simulation provides the experimental environment:
+interdependent roles, institutional constraints, partial observability, decaying
+personal memory and migration between settlements create repeatable conditions for
+examining decisions and their consequences over time.
 
-NODE is a persistent multiplayer social-economic game. Its deterministic simulation
-combines interdependent roles, uncertain social information, decaying personal memory,
-and migration between settlements. The TypeScript server runs the world; the Godot
-client renders it. The evaluation harness tests agent decisions against the real
-participant pipeline.
+The research scope includes agent hierarchies and authority deference, instruction
+following, prompt injection, sycophancy, cooperation, information asymmetry and
+longitudinal behaviour. Evaluations exercise the actual participant observation,
+action-validation and simulation pipeline. Replayable event traces support metrics
+that distinguish observed actions and effects from behavioural inference and
+outcomes that cannot be scored.
+
+**Inspect AI is the integrated evaluation framework**, providing tasks, solvers,
+scorers and evaluation logs. The suite also adapts **AgentDojo** task/injection
+patterns and **ControlArena** oversight patterns, with project-defined mappings to
+the **NIST AI Risk Management Framework**. These are adapted evaluation designs;
+native AgentDojo and ControlArena integrations are not implemented. See the
+[evaluation infrastructure](docs/EVAL_INFRASTRUCTURE.md) and
+[framework-alignment design](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
+for implementation boundaries and proposed extensions.
+
+Current validation uses scripted offline policies controlling one participant within
+the simulated society. It establishes infrastructure correctness and metric
+behaviour; real-model reasoning, hierarchical agent coordination and broader social
+behaviour remain experimental objectives. Live-agent evaluation is disabled. The
+TypeScript kernel implements the environment, and the Godot client provides its
+visual interface.
 
 ## Current state — 2026-10-20
 
@@ -30,7 +50,7 @@ deletion-rule change; that protection was restored immediately afterward, with
 the other rules preserved. Deleted commits remain reachable from main; pinned tips
 are retained in the [cleanup evidence](docs/recovery/evidence/merged-branches-2026-10-20.json).
 
-- **Game:** five economic roles (Miller, Baker, Courier, Investigator and Import/Export),
+- **Simulation environment:** five economic roles (Miller, Baker, Courier, Investigator and Import/Export),
   roleless inhabitants, vacancies/backstops, conscription, housing, the Oracle, Wall
   posts, proximity communication, rumour and diary decay, and multi-shard migration.
 - **Funded settlement is the default:** wealth follows the person through role changes;
@@ -147,7 +167,7 @@ and long-horizon reasoning need additional experimental coverage; existing fixtu
 cannot supply it by changing labels.
 
 Automatic event-derived personal memory and non-editing event marks, complete restricted
-trespass transactions, and individual abode tracking remain game implementation gaps.
+trespass transactions, and individual abode tracking remain simulation implementation gaps.
 Growing beyond three shards and the intended settlement balance remain design choices.
 
 Live inference stays blocked by `assertLiveAdmission`. Missing private accounting

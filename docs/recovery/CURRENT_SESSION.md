@@ -3,8 +3,10 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "acb3b2d21698871366d4dbb5431f9c2c68ba6c9e",
+  "verifiedBaseCommit": "2c8c448675dc723cd7ade9bb4e5e458bbfac935d",
   "completedWork": [
+    "2026-10-20: reframed the root README opening as an independently designed agent evaluation suite and deterministic simulation testbed, following user direction. Described research into agent hierarchies, authority and behaviour; identified native Inspect AI orchestration, adapted AgentDojo/ControlArena patterns and project-defined NIST AI RMF mapping. Kept scripted validation, one controlled participant, disabled live inference and unimplemented hierarchical coordination explicit. No simulation or evaluation code changed.",
+    "2026-10-20: PR #23 merged at 2c8c448; README and branch-cleanup evidence are on main. Its hosted integration run 39461928204 passed. The user separately authorized a temporary required-review count change from 1 to 0 for that merge; it was immediately restored to 1 and verified after editor reload. Other protections were preserved.",
     "2026-10-20: user approved deleting 23 merged remote branches and separately approved a temporary deletion-rule change after initial GH013 rejection. Fresh fetch verified all 23 exact tips unchanged and ancestors of main 4da5301. Atomic SHA-leased deletion succeeded for all 23; exactly main, Godot sky/navigation and Vitest 5 remain with unchanged tips. Restrict deletions was restored immediately, confirmed saved and checked after editor reload; other rules and bypass actors preserved. All deleted commits remain reachable from main and pinned in the cleanup manifest. Local branches/worktrees preserved. The documentation handover uses the exact named review branch because GitHub requires a PR for main updates; no additional protection is disabled.",
     "2026-10-20: user merged PR #22 into main at acb3b2d. Its tracked tree exactly equals verified PR head 1b6684a. Main is now the shared development line; README and continuation reflect the merge and the obsolete reviewBranch allowance is removed from this checkpoint. Unique Godot sky/navigation and Vitest 5 work remain separate.",
     "2026-10-20 PR #22 is open: https://github.com/SDarkVader/The-Node/pull/22, verified development-to-main consolidation. User explicitly chose to keep unique Godot work separate. First hosted run found a deadline fixture reached correct pre-dispatch expiry before its intended stall; made the test clock deterministic and added a separate early-expiry case, preserving all strict assertions and production code.",
@@ -54,7 +56,7 @@
     "Continue the tracked accounted-agent/framework design only when directed, with execution disabled; maintain README/checkpoint together and preserve private accounting evidence."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "docs/branch-cleanup-handover-2026-10-20"
+  "reviewBranch": "docs/evaluation-suite-overview-2026-10-20"
 }
 NODE_SESSION_CHECKPOINT -->
 
@@ -62,10 +64,9 @@ NODE_SESSION_CHECKPOINT -->
 
 `main` is the shared development line. The user merged PR #22 at `acb3b2d` on
 2026-10-20. Its tracked tree matches verified PR head `1b6684a`; hosted integration
-and dependency checks passed. This checkpoint now anchors at that merge and accepts
-main or the exact docs/branch-cleanup-handover-2026-10-20 review branch. The
-completed consolidation review branch remains removed; this named allowance is
-for the documentation PR required by current GitHub protection.
+and dependency checks passed. This checkpoint anchors at the subsequent PR #23 merge `2c8c448` and accepts
+main or the exact docs/evaluation-suite-overview-2026-10-20 review branch for
+the evaluation-suite README update. Completed review-branch allowances are removed.
 Local ignored snapshots are optional and do not imply private runtime/accounting state.
 
 ## Cross-device continuation
