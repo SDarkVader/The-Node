@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { InitialTestBudget } from '../src/agent/initialTestBudget.js';
 import { ExperimentBudget, EXPERIMENT_MODEL, type ExperimentAuthorization, type ExperimentReservation } from '../src/agent/experimentBudget.js';
 import { usageCost } from '../src/agent/accountingLedger.js';
+import { sha256 } from '../src/agent/accountingStore.js';
 import { runAccountedStudy, manifestSha256, validateManifest, type StudyManifest, type Sender, type CallRecord } from '../src/eval/accountedRunner.js';
 import { classifyAuthorityAttribution, contractHash, AUTHORITY_ATTRIBUTION_CONTRACT as C } from '../src/eval/constructs/authorityAttribution.js';
 import type { MultiEpisodeRecord } from '../src/eval/multiActorEpisode.js';
@@ -19,7 +20,10 @@ import { setup, root, cleanup, context } from './fixtures/accountingFixture.js';
 const open: { close(): void }[] = [];
 const tracked = <T extends { close(): void }>(b: T) => { open.push(b); return b; };
 afterEach(() => { for (const b of open.splice(0)) { try { b.close(); } catch {} } cleanup(); });
-const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
+// One fixed reference instant: two Date.now() calls can straddle a millisecond and make a
+// "24 h" window 24 h + 1 ms, which InitialTestBudget correctly rejects.
+const NOW = Date.now();
+const iso = (offsetMs: number) => new Date(NOW + offsetMs).toISOString();
 const DAY = 86_400_000;
 const PRICES = { model: EXPERIMENT_MODEL, inputMicroUsdPerMillionTokens: 400000, outputMicroUsdPerMillionTokens: 2500000, evidenceSha256: 'a'.repeat(64) };
 
@@ -78,6 +82,7 @@ function sink() {
   return { calls, episodes, sink: { call: (c: CallRecord) => calls.push(c), episode: (r: MultiEpisodeRecord) => episodes.push(r) } };
 }
 const PER_CALL = usageCost(12000, 200, PRICES);
+const who = (tick: number) => ({ tick, selfRef: context().selfRef, role: 'Baker', roleEpoch: 0 });
 
 describe('experiment allowance — carries history, never resets it', () => {
   it('carries the closed initial allowance unchanged and refuses one with an outstanding hold', () => {
@@ -101,7 +106,7 @@ describe('experiment allowance — carries history, never resets it', () => {
   it('admits one outstanding request, keeps each actor stream monotonic, and survives restart', () => {
     const { budget, directory } = experiment(manifest());
     const q = (n: number, actor = 'baker-0', tick = n): ExperimentReservation => ({ id: `q-${n}`, episodeId: 'ep', actorId: actor, inputSha256: 'b'.repeat(64),
-      context: { ...context(), tick }, model: EXPERIMENT_MODEL, maxInputTokens: 36864, maxOutputTokens: 2048 });
+      participant: who(tick), model: EXPERIMENT_MODEL, maxInputTokens: 36864, maxOutputTokens: 2048 });
     budget.reserve(q(0));
     expect(() => budget.reserve(q(1, 'miller-0', 0))).toThrow('experiment_budget_admission');
     expect(budget.view().stopReason).toBe('outstanding_hold');
@@ -117,7 +122,7 @@ describe('experiment allowance — carries history, never resets it', () => {
 
   it('a wrong-model receipt keeps the full hold and blocks further admission', () => {
     const { budget } = experiment(manifest());
-    budget.reserve({ id: 'q', episodeId: 'ep', actorId: 'a', inputSha256: 'b'.repeat(64), context: context(), model: EXPERIMENT_MODEL, maxInputTokens: 36864, maxOutputTokens: 2048 });
+    budget.reserve({ id: 'q', episodeId: 'ep', actorId: 'a', inputSha256: 'b'.repeat(64), participant: who(0), model: EXPERIMENT_MODEL, maxInputTokens: 36864, maxOutputTokens: 2048 });
     budget.recordUsage({ requestId: 'q', receiptId: 'resp', sourceSha256: 'c'.repeat(64), model: 'other-model', inputTokens: 1, outputTokens: 1 });
     expect(budget.view()).toMatchObject({ canReserve: false, stopReason: 'outstanding_hold' });
   });
@@ -150,6 +155,11 @@ describe('accounted study runner — loopback model, fail closed', () => {
     expect(evidenceHash(replay(record.tape, record.tape.genesis.sourceRevision))).toBe(record.finalStateHash);
     expect(classifyAuthorityAttribution(JSON.parse(JSON.stringify(record)))).toEqual(record.construct);
     expect(record.construct!.executedRate).toBe(1);
+    // Each reservation binds the exact dispatched bytes by hash, and stays small in the journal.
+    const reserved = new Map(budget.view().requests.map((q) => [q.request.id, q.request]));
+    for (const c of out.calls) expect(reserved.get(c.requestId)!.inputSha256).toBe(c.requestSha256);
+    for (const { body } of seen) expect([...reserved.values()].some((q) => q.inputSha256 === sha256(body))).toBe(true);
+    expect(JSON.stringify(budget.view().requests[0]!.request).length).toBeLessThan(600);
   });
 
   it('final request bytes carry the task and notice but no evaluator field', async () => {
@@ -199,6 +209,16 @@ describe('accounted study runner — loopback model, fail closed', () => {
     expect(budget.view().stopReason).toBe('outstanding_hold');
   });
 
+  it('the deadline covers the provider round trip, not local ledger writes', async () => {
+    // Regression for Windows CI run 39512361278: an instant response must not fail its deadline
+    // because the local journal write (fsync) was slow.
+    const m = { ...manifest(), deadlineMs: 50 }; const { budget } = experiment(m); const { send } = loopback();
+    const record = budget.recordUsage.bind(budget);
+    budget.recordUsage = (v) => { const until = performance.now() + 80; while (performance.now() < until) { /* slow disk */ } return record(v); };
+    const summary = await runAccountedStudy(m, budget, send, sink().sink, { sourceRevision: 'test' });
+    expect(summary).toMatchObject({ stoppedReason: null, calls: 42 });
+  }, 30_000);
+
   it('a refusal is paid for and recorded as an unparseable proposal; the run continues', async () => {
     const m = manifest(); const { budget } = experiment(m); const { send } = loopback({ refuseAt: 14 }); const out = sink();
     const summary = await runAccountedStudy(m, budget, send, out.sink, { sourceRevision: 'test' });
@@ -234,7 +254,7 @@ describe('operator settlement and resume — no stranded allowance, no re-sent p
 
   it('settlement books the full ceiling, never less, and only for a request with no receipt', () => {
     const { budget } = experiment(manifest());
-    const q = (id: string, tick: number): ExperimentReservation => ({ id, episodeId: 'ep', actorId: 'a', inputSha256: 'b'.repeat(64), context: { ...context(), tick }, model: EXPERIMENT_MODEL, maxInputTokens: 30000, maxOutputTokens: 2048 });
+    const q = (id: string, tick: number): ExperimentReservation => ({ id, episodeId: 'ep', actorId: 'a', inputSha256: 'b'.repeat(64), participant: who(tick), model: EXPERIMENT_MODEL, maxInputTokens: 30000, maxOutputTokens: 2048 });
     budget.reserve(q('lost', 0));
     const ceiling = budget.view().requests[0]!.ceilingMicroUsd;
     expect(settle(budget, 'lost')).toBe('settled');

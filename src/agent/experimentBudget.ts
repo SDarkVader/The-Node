@@ -1,7 +1,6 @@
 import { AccountingStore, sha256, failAccounting as fail, type AccountingStoreOptions } from './accountingStore.js';
 import { usageCost, type AccountingPrices } from './accountingLedger.js';
 import { InitialTestBudget } from './initialTestBudget.js';
-import { policyInput, type DecisionContext } from './protocol.js';
 
 /**
  * Accounted experiment allowance (2026-10-20; docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md).
@@ -15,6 +14,9 @@ import { policyInput, type DecisionContext } from './protocol.js';
  * - prices are the carried authorisation's conservative rates and rate evidence, never new claims;
  * - a reservation is durable before dispatch; one request may be outstanding at a time;
  * - each (episode, actor) has one participant reference and strictly increasing ticks;
+ * - a reservation records the participant identity (tick, observer reference, role, epoch) and
+ *   the sha256 of the exact request bytes; the bytes themselves are kept per call by the runner,
+ *   so the journal stays small enough to carry forward through chained allowances;
  * - unknown usage and wrong-model receipts keep the full hold and block all further admission;
  * - known usage is booked even above its ceiling, and an overrun halts future spending;
  * - nothing is ever refunded, including zero-token or unused responses;
@@ -47,7 +49,10 @@ export interface ExperimentAuthorization {
   scope: 'accounted_experiment_spending_only'; manifestSha256: string; model: typeof EXPERIMENT_MODEL;
   maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number; prices: AccountingPrices;
 }
-export interface ExperimentReservation { id: string; episodeId: string; actorId: string; inputSha256: string; context: DecisionContext; model: string; maxInputTokens: number; maxOutputTokens: number }
+export interface ReservedParticipant { tick: number; selfRef: string; role: string; roleEpoch: number }
+export interface ExperimentReservation { id: string; episodeId: string; actorId: string; inputSha256: string; participant: ReservedParticipant; model: string; maxInputTokens: number; maxOutputTokens: number }
+const participant = (p: unknown): p is ReservedParticipant => object(p) && exact(p, ['tick', 'selfRef', 'role', 'roleEpoch']) && integer(p.tick) &&
+  typeof p.selfRef === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(p.selfRef) && typeof p.role === 'string' && /^[A-Za-z]{1,32}$/.test(p.role) && integer(p.roleEpoch);
 export interface ExperimentUsageReceipt { requestId: string; receiptId: string; sourceSha256: string; model: string; inputTokens: number; outputTokens: number }
 /** Operator disposition of an unknown outcome: the full ceiling is booked as a liability. */
 export interface ExperimentSettlement { requestId: string; operator: string; note: string; settledAt: string; basis: 'book_full_reserved_ceiling' }
@@ -102,15 +107,15 @@ function replay(d: Document) {
       authorization = a;
     } else if (event.kind === 'reservation') {
       const q = event.value, a = authorization;
-      if (!exact(event, ['kind', 'value', 'at']) || !object(q) || !exact(q, ['id', 'episodeId', 'actorId', 'inputSha256', 'context', 'model', 'maxInputTokens', 'maxOutputTokens']) || !a || !iso(event.at) ||
+      if (!exact(event, ['kind', 'value', 'at']) || !object(q) || !exact(q, ['id', 'episodeId', 'actorId', 'inputSha256', 'participant', 'model', 'maxInputTokens', 'maxOutputTokens']) || !a || !iso(event.at) ||
         event.at < a.authorizedAt || event.at >= a.expiresAt || !id(q.id) || requests.has(q.id) || !id(q.episodeId) || !id(q.actorId) || !hash(q.inputSha256) || q.model !== a.model ||
         !integer(q.maxInputTokens) || q.maxInputTokens < 1 || q.maxInputTokens > 36864 || !integer(q.maxOutputTokens) || q.maxOutputTokens < 1 || q.maxOutputTokens > 2048 ||
-        !same(policyInput(q.context), q.context) || overrun || requests.size >= a.maxRequests || [...requests.values()].some(x => x.bookedMicroUsd === null)) return fail('experiment_budget_admission');
+        !participant(q.participant) || overrun || requests.size >= a.maxRequests || [...requests.values()].some(x => x.bookedMicroUsd === null)) return fail('experiment_budget_admission');
       const key = JSON.stringify([q.episodeId, q.actorId]), stream = streams.get(key);
-      if (stream && (stream.selfRef !== q.context.selfRef || stream.tick >= q.context.tick)) return fail('experiment_budget_stream');
+      if (stream && (stream.selfRef !== q.participant.selfRef || stream.tick >= q.participant.tick)) return fail('experiment_budget_stream');
       const ceiling = usageCost(q.maxInputTokens, q.maxOutputTokens, a.prices), t = totals();
       if (ceiling > a.perRequestMicroUsd || t.booked + t.held + BigInt(ceiling) > BigInt(a.limitMicroUsd)) return fail('experiment_budget_cost_limit');
-      streams.set(key, { selfRef: q.context.selfRef, tick: q.context.tick });
+      streams.set(key, { selfRef: q.participant.selfRef, tick: q.participant.tick });
       requests.set(q.id, { request: structuredClone(q), ceilingMicroUsd: ceiling, receipt: null, bookedMicroUsd: null, settlement: null, reservedAt: event.at });
     } else if (event.kind === 'usage') {
       const r = event.value, q = requests.get(r?.requestId);

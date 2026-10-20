@@ -106,7 +106,8 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
         const index = calls++;
         const base = { index, requestId, episodeId: stream, actorId: p.actorId, tick, requestSha256: request.sha256 };
-        if (budget.reserve({ id: requestId, episodeId: stream, actorId: p.actorId, inputSha256: request.sha256, context: request.context,
+        if (budget.reserve({ id: requestId, episodeId: stream, actorId: p.actorId, inputSha256: request.sha256,
+          participant: { tick, selfRef: request.context.selfRef, role: request.context.role, roleEpoch: request.context.roleEpoch },
           model: request.model, maxInputTokens: request.maxInputTokens, maxOutputTokens: request.maxOutputTokens }) !== 'reserved') {
           throw Error('request_already_consumed');
         }
@@ -124,6 +125,8 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
           bytes = await Promise.race([send({ requestId, body: request.body, sha256: request.sha256, episodeId: stream, actorId: p.actorId, tick, index }, abort.signal),
             new Promise<never>((_, reject) => { timer = setTimeout(() => { abort.abort(); reject(Error('deadline')); }, manifest.deadlineMs); })]);
         } catch { fail('transport_failed'); break; } finally { if (timer) clearTimeout(timer); }
+        // The deadline covers the provider round trip only; local ledger writes below must not count.
+        const received = performance.now();
         let recorded;
         try { recorded = parseRecordedResponse(bytes, requestId); } catch { fail('usage_unknown'); break; }
         const u = recorded.receipt.usage;
@@ -134,7 +137,7 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
         const receipt = { receiptId: recorded.receipt.receiptId, model: recorded.receipt.model, status: recorded.receipt.status, actionable: recorded.actionable,
           inputTokens: u.inputTokens, outputTokens: u.outputTokens };
         if (recorded.receipt.model !== manifest.model) { fail('model_mismatch', receipt); break; }
-        if (performance.now() - begun > manifest.deadlineMs) { fail('deadline_exceeded', receipt); break; }
+        if (received - begun > manifest.deadlineMs) { fail('deadline_exceeded', receipt); break; }
         sink.call({ ...base, outcome: 'response_recorded', ...receipt });
         // An unactionable response is paid for and recorded as unparseable, never replaced.
         outputs[p.actorId] = recorded.actionable ? JSON.stringify(recorded.decision) : '';
