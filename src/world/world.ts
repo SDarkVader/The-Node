@@ -911,13 +911,17 @@ export function createDormantWorld(seed: number, config: WorldConfig): World {
   const w = createWorld(seed, config);
   const vacantizeRole = <T extends { slot: RoleSlot }>(arr: T[]): T[] =>
     arr.map((s) => ({ ...s, slot: { state: 'VACANT' as const, vacantSince: 0 } }));
-  const totalRoleSlots = config.rMiller + config.rBaker + config.rCourier + config.rInvestigator;
+  // Import/Export vacated too (2026-10-20): it was missing here — a dormant shard held
+  // rImportExport FILLED slots at population 0, breaking population conservation for dormant
+  // worlds. See test/world.dormant.test.ts.
+  const totalRoleSlots = totalRoleSlotsFor(config);
   return {
     ...w,
     millers: vacantizeRole(w.millers),
     bakers: vacantizeRole(w.bakers),
     couriers: vacantizeRole(w.couriers),
     investigators: vacantizeRole(w.investigators),
+    importExporters: vacantizeRole(w.importExporters),
     grifters: [],
     nextGrifterId: 0,
     population: 0,
