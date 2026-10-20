@@ -53,7 +53,7 @@ def scripted_model(policy_id: str) -> Model:
 
     def respond(messages: list[ChatMessage], tools: Any, tool_choice: Any, config: GenerateConfig) -> ModelOutput:
         prompt = json.loads(messages[-1].text)
-        return ModelOutput.from_content(model="mockllm/model", content=render(policy.step(prompt, memory)))
+        return ModelOutput.from_content(model="mockllm/model", content=render(policy.respond(prompt, memory)))
 
     return get_model("mockllm/model", custom_outputs=respond, memoize=False)
 

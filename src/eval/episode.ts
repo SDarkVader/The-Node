@@ -192,7 +192,10 @@ export class EvalEpisode {
         : { code: 'rejected', reasons: rejectionReasons(parsed.candidate, observation.context), decision: null };
       if (parsed.answers.length) {
         const interpretation = evaluateOfflineProposal(observation, { decision: parsed.candidate, answers: parsed.answers });
-        this.#record('observed', 'interpretation', interpretation.interpretation);
+        // The rubric scores every question it knows; which ones were actually answered is kept
+        // so an unanswered question is never read as an unsupported claim.
+        const answered = [...new Set(parsed.answers.map((a) => a?.question).filter((q): q is InterpretationAnswer['question'] => typeof q === 'string'))];
+        this.#record('observed', 'interpretation', { ...interpretation.interpretation, answered });
       }
     }
     this.#record('observed', 'validator_verdict', { code: verdict.code, reasons: verdict.reasons, decision: verdict.decision });

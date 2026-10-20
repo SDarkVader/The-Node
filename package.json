@@ -24,6 +24,7 @@
     "eviction-protection-sim": "tsx src/sim/evictionProtectionCli.ts",
     "oracle-sim": "tsx src/sim/oracleCli.ts",
     "settlement-report": "tsx src/sim/settlementReport.ts",
+    "eval:bridge": "tsx src/eval/bridge.ts",
     "sabotage-campaign-sim": "tsx src/sim/sabotageCampaignCli.ts",
     "playtest": "tsx src/sim/playtestCli.ts",
     "web-export": "tsx src/sim/webExportCli.ts",
