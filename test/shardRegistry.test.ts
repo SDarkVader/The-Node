@@ -10,6 +10,7 @@ import {
   INITIAL_SHARD_COUNT,
   SHARD_OPEN_COOLDOWN_DAYS,
   SHARD_OPEN_STABILITY_THRESHOLD,
+  SHARD_COUNT_CAP,
 } from '../src/engine/shardRegistry.js';
 
 const TARGET_POPULATION = 65;
@@ -36,46 +37,61 @@ describe('createShardRegistry', () => {
   });
 });
 
-describe('canOpenNewShard — all three gates independently required', () => {
-  it('refuses when mean population per shard is below target, even if "healthy" and cooldown-clear', () => {
-    const registry = createShardRegistry(10); // mean population 10, well under target 65
-    expect(canOpenNewShard(registry, 1.0, 1000, TARGET_POPULATION)).toBe(false);
+describe('canOpenNewShard — availability does not depend on population (2026-10-20)', () => {
+  // A cap above the default, so the cooldown and stability gates can be exercised in isolation.
+  const ROOMY = 10;
+
+  it('opens an alternative for populations stabilised below the old threshold (old rule: mean >= targetPopulation)', () => {
+    // The exact case the old gate blocked: shards settle well below targetPopulation (100).
+    let registry = createShardRegistry(100);
+    registry = setShardPopulation(registry, 0, 62);
+    registry = setShardPopulation(registry, 1, 58);
+    expect(canOpenNewShard(registry, 0.9, 900)).toBe(true);
   });
 
-  it('refuses when population is at target but stability is below threshold', () => {
+  it('even a nearly empty settlement still gets its alternative', () => {
+    let registry = createShardRegistry(100);
+    registry = setShardPopulation(registry, 0, 3);
+    registry = setShardPopulation(registry, 1, 0);
+    expect(canOpenNewShard(registry, 0.9, 900)).toBe(true);
+  });
+
+  it('opening an alternative raises no population bar for later shards — only the cap and cooldown apply', () => {
+    let registry = createShardRegistry(TARGET_POPULATION);
+    registry = openNewShard(registry, 0);
+    registry = markShardActive(registry, 2);
+    registry = setShardPopulation(registry, 2, 5); // a thin new shard: the old rule then refused
+    expect(canOpenNewShard(registry, 1.0, SHARD_OPEN_COOLDOWN_DAYS, ROOMY)).toBe(true);
+  });
+
+  it('refuses at the cap, whatever the population', () => {
+    let registry = createShardRegistry(1000);
+    while (registry.shards.length < SHARD_COUNT_CAP) registry = openNewShard(registry, 0);
+    expect(canOpenNewShard(registry, 1.0, 10_000)).toBe(false);
+  });
+
+  it('refuses when nobody exists anywhere to migrate', () => {
+    let registry = createShardRegistry(0);
+    expect(canOpenNewShard(registry, 1.0, 1000)).toBe(false);
+    registry = setShardPopulation(registry, 0, 1);
+    expect(canOpenNewShard(registry, 1.0, 1000)).toBe(true);
+  });
+
+  it('refuses when stability is below threshold', () => {
     const registry = createShardRegistry(TARGET_POPULATION);
-    expect(canOpenNewShard(registry, SHARD_OPEN_STABILITY_THRESHOLD - 0.1, 1000, TARGET_POPULATION)).toBe(false);
+    expect(canOpenNewShard(registry, SHARD_OPEN_STABILITY_THRESHOLD - 0.1, 1000)).toBe(false);
   });
 
-  it('refuses when population and stability are both fine but the cooldown has not elapsed', () => {
+  it('refuses until the cooldown since the last opening has elapsed, then allows', () => {
     let registry = createShardRegistry(TARGET_POPULATION);
     registry = openNewShard(registry, 100); // lastShardOpenedDay = 100
-    expect(canOpenNewShard(registry, 1.0, 100 + SHARD_OPEN_COOLDOWN_DAYS - 1, TARGET_POPULATION)).toBe(false);
-  });
-
-  it('allows opening once population, stability, and cooldown are all satisfied', () => {
-    let registry = createShardRegistry(TARGET_POPULATION);
-    registry = openNewShard(registry, 100);
-    expect(canOpenNewShard(registry, 1.0, 100 + SHARD_OPEN_COOLDOWN_DAYS, TARGET_POPULATION)).toBe(true);
+    expect(canOpenNewShard(registry, 1.0, 100 + SHARD_OPEN_COOLDOWN_DAYS - 1, ROOMY)).toBe(false);
+    expect(canOpenNewShard(registry, 1.0, 100 + SHARD_OPEN_COOLDOWN_DAYS, ROOMY)).toBe(true);
   });
 
   it('the very first extra shard (no lastShardOpenedDay yet) is not blocked by the cooldown', () => {
     const registry = createShardRegistry(TARGET_POPULATION);
-    expect(canOpenNewShard(registry, 1.0, 0, TARGET_POPULATION)).toBe(true);
-  });
-
-  it('gates on the MEAN population per shard, not the flat total — opening one shard raises the bar for the next', () => {
-    // Regression for the exact bug multi-shard-validation caught: a flat total-population
-    // floor trivially clears itself forever once a couple of shards are healthy. The mean
-    // must come back down once population spreads into a newly opened, still-thin shard.
-    let registry = createShardRegistry(TARGET_POPULATION); // mean = 65
-    registry = openNewShard(registry, 0); // shard 2 DORMANT, population 0 — mean of POPULATED shards still 65
-    expect(canOpenNewShard(registry, 1.0, 0 + SHARD_OPEN_COOLDOWN_DAYS, TARGET_POPULATION)).toBe(true);
-    // Once that shard actually receives population but stays well under target, the mean
-    // across all three POPULATED shards drops below the bar.
-    registry = markShardActive(registry, 2);
-    registry = setShardPopulation(registry, 2, 5);
-    expect(canOpenNewShard(registry, 1.0, 0 + SHARD_OPEN_COOLDOWN_DAYS * 2, TARGET_POPULATION)).toBe(false);
+    expect(canOpenNewShard(registry, 1.0, 0)).toBe(true);
   });
 });
 

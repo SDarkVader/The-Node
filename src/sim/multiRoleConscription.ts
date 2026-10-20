@@ -121,6 +121,9 @@ export type MultiRoleEvent =
   | { type: 'conscriptionFromGrifters'; roleId: string }
   | { type: 'conscriptionFromOtherRole'; roleId: string; fromRoleId: string };
 
+/** Exact indices for participant continuity; optional sink leaves legacy events unchanged. */
+export interface IndexedRoleEvent { event: MultiRoleEvent; slotIndex: number; fromSlotIndex?: number }
+
 export interface MultiRoleConscriptionResult {
   /** Same role groups, same order, same `roleId`/`params` — only `slots` changes. */
   roleGroups: RoleGroupState[];
@@ -180,6 +183,7 @@ export function stepMultiRoleConscriptionDay(
    *  already uses for the aggregate pool) so two gated role groups processed the same day
    *  can never double-book the same real grifter. */
   grifterLevelCounts?: Readonly<Record<number, number>>,
+  indexedEvent?: (event: IndexedRoleEvent) => void,
 ): MultiRoleConscriptionResult {
   const events: MultiRoleEvent[] = [];
   let grifterPoolDelta = 0;
@@ -191,10 +195,11 @@ export function stepMultiRoleConscriptionDay(
   for (let gi = 0; gi < roleGroups.length; gi++) {
     const group = roleGroups[gi]!;
     const params = group.params;
-    working[gi] = working[gi]!.map((slot) => {
+    working[gi] = working[gi]!.map((slot, slotIndex) => {
       if (slot.state === 'FILLED') {
         if (rng() < params.pDaily) {
           events.push({ type: 'churn', roleId: group.roleId });
+          indexedEvent?.({ event: events[events.length - 1]!, slotIndex });
           grifterPoolDelta += 1;
           // A freshly-churned grifter starts at reputation level 0 (world.ts's real
           // GrifterSlot construction never seeds reputationProgress) — reflected here too,
@@ -211,6 +216,7 @@ export function stepMultiRoleConscriptionDay(
       if (slot.state === 'VACANT') {
         if (tau >= params.tHard) {
           events.push({ type: 'backstopFires', roleId: group.roleId });
+          indexedEvent?.({ event: events[events.length - 1]!, slotIndex });
           return { state: 'BACKSTOPPED' as const, vacantSince: slot.vacantSince };
         }
         // fillHazard's willingness math is a pure function of (tau, N, R) — it has no
@@ -229,6 +235,7 @@ export function stepMultiRoleConscriptionDay(
             : grifterPoolSize + grifterPoolDelta > 0;
         if (wouldBeAvailable && rng() < fillHazard(tau, params)) {
           events.push({ type: 'genuineFill', roleId: group.roleId });
+          indexedEvent?.({ event: events[events.length - 1]!, slotIndex });
           grifterPoolDelta -= 1;
           if (runningLevelCounts && minLevel > 0) consumeFromLowestLevel(runningLevelCounts, minLevel);
           return { state: 'FILLED' as const, vacantSince: null };
@@ -277,6 +284,7 @@ export function stepMultiRoleConscriptionDay(
           const fromRoleId = roleGroups[pick.gi]!.roleId;
           working[pick.gi]![pick.si] = { state: 'VACANT', vacantSince: day };
           events.push({ type: 'conscriptionFromOtherRole', roleId: group.roleId, fromRoleId });
+          indexedEvent?.({ event: events[events.length - 1]!, slotIndex, fromSlotIndex: pick.si });
         } else {
           grifterPoolDelta -= 1;
           // Unrestricted (any level, min 0) — conscription bypasses the reputation gate
@@ -286,6 +294,7 @@ export function stepMultiRoleConscriptionDay(
           // consumeFromLowestLevel's own header for the real bug this fixes).
           if (runningLevelCounts) consumeFromLowestLevel(runningLevelCounts, 0);
           events.push({ type: 'conscriptionFromGrifters', roleId: group.roleId });
+          indexedEvent?.({ event: events[events.length - 1]!, slotIndex });
         }
         return { state: 'FILLED' as const, vacantSince: null };
       }

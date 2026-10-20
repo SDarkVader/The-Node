@@ -1,0 +1,46 @@
+{
+  "kind": "deterministic-offline-fixture-evaluation",
+  "providerRequests": 0,
+  "limitation": "Handwritten fixture policies/rubric answers; no measured LLM reasoning improvement, overall game utility or strategic intelligence is claimed.",
+  "memory": {
+    "cases": 8,
+    "currentMemorySuccesses": 8,
+    "ablatedMemorySuccesses": 4,
+    "replayRestoredSuccesses": 8,
+    "realHeardEffects": 8,
+    "replayVerified": 8,
+    "entriesAfterActualExpiry": 0
+  },
+  "rubricSelfCheck": {
+    "total": 8,
+    "scriptedCorrectAndSupported": 8,
+    "supportedWithForbiddenEvidence": 0
+  },
+  "socialWire": {
+    "bytes": 28659,
+    "maxInputTokens": 32755,
+    "encoding": "node-observation-tables-v1",
+    "recognition": 2,
+    "diary": 1
+  },
+  "priceTradeoffs": [
+    {
+      "price": 0,
+      "wealthAfterTick": 0.2,
+      "completions": 1,
+      "salesMarginAtUnitDemand": 0
+    },
+    {
+      "price": 0.7,
+      "wealthAfterTick": 0.2781655308372743,
+      "completions": 0,
+      "salesMarginAtUnitDemand": 0.6499999999999999
+    },
+    {
+      "price": 2,
+      "wealthAfterTick": 0.3443265474107678,
+      "completions": 0,
+      "salesMarginAtUnitDemand": 1.95
+    }
+  ]
+}

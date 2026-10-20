@@ -160,6 +160,42 @@ export function nodulesReceivedToday(
 }
 
 /**
+ * Standing berths (2026-10-20, docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md §3.1; user
+ * directive: "never lose an import export role"). `nodulesReceivedToday` is exactly 0 when
+ * every Import/Export slot is VACANT at once — the up-to-`tHard`-days gap before the ordinary
+ * backstop fires, and the whole first `tHard` days of a dormant shard. Import/Export is the
+ * only source term in the settlement equation, so that gap is the one place the shard's
+ * income can stop entirely.
+ *
+ * Rule: at least `minBerths` Import/Export slots are always FILLED or BACKSTOPPED. When fewer
+ * are, VACANT slots (lowest index first) skip the rest of their wait and go straight to
+ * BACKSTOPPED — the same mechanical state every role already has, with no new behaviour, so
+ * nothing here is an agent (constraint 3). `vacantSince` is kept, so the slot's vacancy and
+ * conscription clocks run exactly as they would for any backstopped slot, and a real player
+ * takes it back through the ordinary recovery hazard. Every slot above `minBerths` keeps its
+ * normal VACANT phase, so Import/Export vacancy still bites — this removes only the
+ * all-dark case. Pure; consumes no rng.
+ */
+export const STANDING_BERTHS_DEFAULT = 1;
+
+export function applyStandingBerths<S extends { state: 'FILLED' | 'VACANT' | 'BACKSTOPPED'; vacantSince: number | null }>(
+  slots: readonly S[],
+  minBerths: number = STANDING_BERTHS_DEFAULT,
+): { slots: S[]; fired: number } {
+  const lit = slots.filter((s) => s.state !== 'VACANT').length;
+  let needed = Math.min(minBerths, slots.length) - lit;
+  if (needed <= 0) return { slots: [...slots], fired: 0 };
+  const out = slots.map((s) => {
+    if (needed > 0 && s.state === 'VACANT') {
+      needed -= 1;
+      return { ...s, state: 'BACKSTOPPED' as const };
+    }
+    return s;
+  });
+  return { slots: out, fired: out.filter((s, i) => s !== slots[i]).length };
+}
+
+/**
  * Grain delivered by the Import/Export layer today — DERIVED from `nodulesReceivedToday`,
  * not computed independently, so "nodules arrive -> Import/Export converts" (item 5) is real
  * code structure, not just prose repeated over an unrelated calculation. Nothing else in

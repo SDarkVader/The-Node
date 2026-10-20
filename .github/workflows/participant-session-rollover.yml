@@ -1,0 +1,41 @@
+name: Participant lifecycle integration verification
+on:
+  push:
+    branches:
+      - participant-session-rollover-2026-10-17
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  participant-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout reconstruction
+        uses: actions/checkout@v4
+        with:
+          path: reconstruction
+      - name: Checkout original main baseline
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: reconstruction/package-lock.json
+      - name: Install local dependencies
+        working-directory: reconstruction
+        run: npm ci --ignore-scripts
+      - name: Verify broker and participant lifecycle against baseline
+        working-directory: reconstruction
+        shell: pwsh
+        run: |
+          ./scripts/verify-participant-integration.ps1 -TypeScriptRoot "$PWD/node_modules" -BaselineRepository "$PWD/../baseline" -BuildDirectory "$PWD/.participant-integration-build"
+      - name: Project typecheck
+        working-directory: reconstruction
+        run: node node_modules/typescript/bin/tsc --noEmit
+      - name: Vitest regression suite
+        working-directory: reconstruction
+        run: node node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=2 --no-file-parallelism

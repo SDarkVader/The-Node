@@ -1,0 +1,27 @@
+name: Broker native recovery verification
+on:
+  push:
+    branches:
+      - broker-native-ci-2026-10-17
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  broker-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify native broker recovery tests against compiled sources
+        shell: pwsh
+        run: |
+          ./scripts/verify-broker-recovery.ps1 -TypeScriptRoot "$PWD/node_modules" -BuildDirectory "$PWD/.broker-native-build"
+      - name: Check entire project types
+        run: node node_modules/typescript/bin/tsc --noEmit
+      - name: Run Vitest regression suite
+        run: node node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=2 --no-file-parallelism

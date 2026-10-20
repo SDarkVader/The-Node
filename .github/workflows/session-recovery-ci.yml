@@ -1,0 +1,45 @@
+name: Session recovery verification
+on:
+  push:
+    branches:
+      - broker-rules-context-2026-10-18
+    paths:
+      - '.github/workflows/session-recovery-ci.yml'
+      - '.codex/hooks.json'
+      - 'AGENTS.md'
+      - 'scripts/session-recovery.mjs'
+      - 'test/sessionRecovery.test.mjs'
+      - 'docs/recovery/CURRENT_SESSION.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-recovery:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # recovery verifies a tracked ancestor commit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies without package scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify tracked fresh-checkout handover
+        run: npm run recovery:verify
+      - name: Execute Windows session-start hook
+        shell: pwsh
+        run: |
+          $root = git rev-parse --show-toplevel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node (Join-Path $root 'scripts/session-recovery.mjs') hook-start
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path '.codex/session-recovery/checkpoint.json')) { throw 'SessionStart failed to create local checkpoint' }
+          npm run recovery:verify
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Execute session recovery tests
+        run: npm run test:session-recovery
+      - name: Typecheck
+        run: npm run typecheck

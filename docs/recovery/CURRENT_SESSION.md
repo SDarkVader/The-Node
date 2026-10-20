@@ -1,0 +1,142 @@
+<!-- NODE_SESSION_CHECKPOINT
+{
+  "format": "the-node-git-session-checkpoint",
+  "version": 1,
+  "branch": "main",
+  "verifiedBaseCommit": "320592efdee5073a16d447f1c2f33eacebb86e24",
+  "completedWork": [
+    "2026-10-20 main consolidation candidate: integrated existing main 1eb6958 and verified development 320592e, preserving both documentation histories and the existing security fixes. Unique Godot sky/navigation and Vitest 5 work remain separate. Canonical destination is main; the explicit reviewBranch permits the same checkpoint to verify before and after merge. See MAIN_CONSOLIDATION_2026-10-20.md.",
+    "2026-10-20 post-merge orientation: PR #21 was merged by GitHub at 2941067; its tracked tree equals independently reviewed 298b636. Root README now has one current overview, source-anchored evidence, current commands, game/evaluation limits and next steps. The accounted-agent/framework design is now tracked in docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md; design only. AGENTS.md and CLAUDE.md require README/checkpoint maintenance together.",
+    "2026-10-20 PR #21 independent review: target 41da84f merged into the evaluation branch; both documentation histories and the shard fix preserved. Fixed evaluation-only stale role instructions, failed-integrity scoring, incomplete verifier success, exported JSON replay and Python-source provenance. See docs/recovery/PR21_REVIEW_2026-10-20.md.",
+    "2026-10-20: shard availability no longer depends on population: canOpenNewShard's mean-population gate replaced by a population-independent SHARD_COUNT_CAP (3); stability, cooldown and every migration path unchanged. Every seed now reaches 3 shards; seed 1 was stranded at 2.",
+    "2026-10-20: funded settlement (default): wealth follows the person through every role change, the dock pays for nodules (WEALTH_PER_NODULE 2.0), wages come from districtPool (floor first), upkeep (0.0073 of holdings) is the sink. 'legacy' mode is byte-identical to the pre-settlement economy.",
+    "2026-10-20: createDormantWorld now vacates Import/Export slots (was leaving 6 FILLED at population 0); test/world.dormant.test.ts.",
+    "2026-10-20: settlement ledger (src/engine/settlement.ts): every stepWorld wealth write is a named issuance line, an account transfer (oraclePool, districtPool, dock) or emigrant holdings; per-tick residual tested. Standing berths keep at least one Import/Export slot non-VACANT. Transit vouchers carry emigrant holdings across shards; failed crossings go to the source dock. Design: docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md.",
+    "Rules-aware agent context derived from the authorized observer and actual game mechanics, including roles, available actions, consequences, information asymmetry, memory decay, and lossless observation packing.",
+    "Offline evaluation for interpretation, evidence support, decision validity, bounded memory ablation, replay continuity, and real kernel price effects.",
+    "Development-session recovery with local staged/unstaged patch and untracked-file snapshots, branch/commit/worktree verification, and Codex lifecycle hooks. A verified clean fresh checkout creates its local exact-state snapshot at SessionStart.",
+    "GitHub-first continuation contract committed at docs/recovery/GITHUB_FIRST_CONTINUATION.md and prioritized in AGENTS.md; PC and local hook are optional for cross-device work.",
+    "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
+  ],
+  "testResults": [
+    "2026-10-20 main consolidation candidate: 1188/1188 Vitest across 95 files, TypeScript, 18/18 Python unit tests, 80/80 native checks and 8/8 recovery tests passed. Two 29-sample Inspect runs match state hashes/event digests, with 56/56 fixture checks and 29/29 in-memory/exported replay each. No live models, paid inference or accounting reset. Hosted main/PR CI added; completion is unclaimed until GitHub reports it.",
+    "2026-10-20 documentation refresh: 7/7 session-recovery tests passed; 25 local documentation links and README npm-script references checked; no runtime/test/dependency changes. At 2941067 a real clean development-branch clone failed recovery with exit 2 because the checkpoint named inspect-safety-evals-2026-10-20; corrected destination metadata. Prior full game/evaluation results below were not rerun by this documentation change.",
+    "2026-10-20 PR #21: 1188/1188 Vitest (95 files), TypeScript, 18/18 Python tests, 7/7 recovery, 80/80 native checks against target 41da84f. Two Inspect runs: 29/29 matching state hashes and event digests; 29/29 in-memory and exported replays in each run; 56/56 fixture checks each; CLI control task 2/2. Scripted infrastructure evidence only; no live models, model APIs, paid inference or real-account resets.",
+    "2026-10-20 shard availability: 1177 Vitest + TypeScript + 7/7 session recovery pass; restoring the old population gate fails 9 of the new/rewritten tests. multi-shard-validation: all 3 seeds reach 3 shards (mean 254.4 people).",
+    "2026-10-20 funded settlement: 1170 Vitest and TypeScript pass. The full suite also passed with legacy as default; the legacy golden matches the original snapshot exactly. settlement-report legacy -> funded: new money 45.79 -> 6.27/tick, role-change losses 37.86 -> 0, Gini 0.68 -> 0.32, health 0.905 -> 0.914; multi-shard 7/8 seeds equal or higher (seed 1 shard-opening knife edge, pre-existing).",
+    "2026-10-20: 1162 Vitest across 94 files and TypeScript pass; golden world snapshot unchanged. The 80 native checks were not run (they need private baseline paths absent from a fresh clone).",
+    "2026-10-20 npm run settlement-report (8 seeds x 3000 days): issuance 45.79/tick, implied k 2.02 per nodule, 82.7% of issuance forfeited at role transitions, standing berth fired 0/20000 populated ticks.",
+    "npm run test:session-recovery: 7 passed, 0 failed, including a clean fresh-checkout test using only the Git-tracked handover.",
+    "npm run typecheck: passed.",
+    "node --check scripts/session-recovery.mjs: passed.",
+    ".codex/hooks.json JSON parse and Windows session-start command: passed.",
+    "Rules-context stage: 1,143 Vitest tests across 92 files, 80 native checks, and TypeScript passed; 26 focused rules/request tests passed after final edits.",
+    "GitHub Actions Windows fresh-checkout recovery workflow passed at run 39141127029 (commit 3b8ccd7); this verifies script behavior, not interactive Codex hook invocation.",
+    "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
+  ],
+  "unresolvedIssues": [
+    "Eval harness: live model runs are refused until Inspect's model calls are routed through the accounted broker and budget ledger (not built). ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; one controlled Baker per episode; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
+    "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; growing past SHARD_COUNT_CAP (3) shards is a design decision, not built.",
+    "Codex project hooks require review/trust in /hooks before automatic lifecycle execution; manual recovery commands work independently.",
+    "Automatic mechanically generated diary connections and non-editing player event marks are not implemented.",
+    "Complete restricted trespass transactions, including key provenance/consumption, authoritative absence, and witness consequences, remain unimplemented.",
+    "Actual model comprehension and held-out live multi-turn strategy remain untested; no paid calls were made.",
+    "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
+  ],
+  "nextSteps": [
+    "Review and approve the main consolidation PR after checks; do not infer it is merged from this candidate checkout.",
+    "Review the 20 historical branches already contained in development and the security branch already in main for later explicit deletion. Preserve unique Godot sky/navigation and Vitest 5 branches.",
+    "Continue only the user-directed evaluation work with execution disabled; maintain README/checkpoint together and preserve accounting evidence."
+  ],
+  "privateCredentialsOrExperimentalInputsIncluded": false,
+  "reviewBranch": "consolidate-main-2026-10-20"
+}
+NODE_SESSION_CHECKPOINT -->
+
+# Current development checkpoint
+
+This checkpoint accompanies the `consolidate-main-2026-10-20` review branch and its
+intended destination, `main`. The explicit reviewBranch field is accepted only for
+that named review branch; unrelated branches still fail verification. The candidate
+includes development `320592e` and main `1eb6958`; it does not claim the PR is merged.
+PR #21 was previously merged into development at `2941067`. Local ignored recovery
+snapshots remain optional and are not private runtime or accounting evidence.
+
+## Cross-device continuation
+
+GitHub is the shared development source; read [GITHUB_FIRST_CONTINUATION.md](GITHUB_FIRST_CONTINUATION.md) first. Local Codex hooks and ignored patch snapshots are optional machine-specific recovery, not prerequisites for phone/cloud continuation. Historical results below are not rerun by this documentation update. Windows CI run 39141127029 passed recovery script, tests and typecheck, but did not prove interactive Codex context injection.
+
+## Completed work
+
+- Rules-aware agent context uses the existing authorized observer projection and
+  actual game mechanics. It covers role duties, permissions, economic relationships,
+  consequences, information asymmetry and memory decay without expanding the view.
+- Offline evaluations cover interpretation, source support, decision validity,
+  narrow legitimate-memory ablation, replay continuity, and actual kernel price
+  effects. Results are deterministic fixtures, not evidence of model intelligence.
+- Session recovery verifies the local branch, commit and working-tree fingerprint;
+  saves staged and unstaged patches and untracked files locally; and provides
+  startup, edit, compaction and handover hooks. It never restores or commits files
+  automatically.
+- The validated broker, deterministic kernel, accounting and replay were preserved.
+  No paid API calls were used.
+
+## Test results
+
+- Recovery mechanism: 7 tests passed, including clean fresh-checkout recovery from the
+  tracked handover alone; repository TypeScript, script syntax, hook JSON
+  parsing, and Windows session-start command passed.
+- Rules-context stage: 1,143 Vitest tests across 92 files, 80 native checks and
+  TypeScript passed; final focused rules/request tests passed 26/26.
+- In the bounded memory fixture, current legitimate diary scored 8/8, ablated diary
+  4/8, and replay-restored diary 8/8. This is not a model intelligence result.
+
+## Settlement work (2026-10-20)
+
+- `createDormantWorld` now vacates Import/Export; `test/world.dormant.test.ts` failed 4/5 before
+  the fix and passes 5/5 after.
+- `src/engine/settlement.ts` makes the flow-balance invariant exact and tested every tick. It
+  adds standing berths (Import/Export is never fully VACANT) and transit vouchers across
+  shards. See `docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md`'s build status and
+  `npm run settlement-report`.
+- 1162 Vitest and TypeScript pass, and the golden snapshot is unchanged. The 80 native checks
+  were not run (private baseline paths needed).
+- Then funded settlement became the default: wealth follows the person, upkeep is the sink,
+  the dock pays for nodules, and wages come from the pool. Before → after: new money 45.79 →
+  6.27 per tick, losses at role changes 37.86 → 0, Gini 0.68 → 0.32. 'legacy' mode stays
+  byte-identical. Open: currency option A/B/C, and whether the lower Gini is intended.
+
+## Evaluation harness (2026-10-20; original evaluation-branch evidence)
+
+- Inspect AI drives one controlled Baker per episode through the unchanged participant
+  pipeline (`src/eval/`, `evals/inspect_node/`). Scripted policies run through Inspect's
+  offline `mockllm`; the solver refuses any other model.
+- `python -m inspect_node.verify` at `3512ded`: 29/29 samples deterministic across two runs,
+  29/29 replays verified, 56/56 fixture agreement checks, no live model. 13/13 Python tests.
+  Evidence: `evals/evidence/scripted-fixtures-2026-10-20/`.
+- Blocker for any real-model result: routing Inspect's model calls through the accounted
+  broker and budget ledger (unbuilt). See `docs/EVAL_INFRASTRUCTURE.md`.
+
+## Unresolved issues
+
+- Project lifecycle hooks must be reviewed and trusted in Codex `/hooks` before they
+  run automatically. Manual `recovery:verify` and `recovery:capture` commands work.
+- Automatic mechanically generated diary connections and non-editing event marks
+  remain unimplemented; the legacy diary action remains.
+- Full restricted trespass transactions, including key provenance/consumption,
+  authoritative absence and witness consequences, remain unimplemented.
+- Live model comprehension and held-out multi-turn strategy have not been tested.
+  No paid call is authorized by this checkpoint.
+
+## Exact next steps
+
+1. Audit `main`, the shared development branch and remaining remote branch tips;
+   preserve unique changes and prepare a consolidation PR into `main`.
+2. Follow the tracked [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
+   for later evaluation work. It is a design, not an enabled live backend.
+3. Update root README and this checkpoint together after meaningful work. Manual
+   recovery commands work independently of optional trusted project hooks.
+
+## PR #21 independent review (2026-10-20)
+
+PR #21, including target `41da84f`, is now merged into the shared development branch at `2941067`. The population-dependent shard-opening defect is resolved; the remaining shard limit is the deliberate cap of three. Both conflict histories are retained. See [PR21_REVIEW_2026-10-20](PR21_REVIEW_2026-10-20.md) for reproduced failures, evaluation-only fixes, command evidence and experimental limitations. Current totals: 1188 Vitest, 18 Python, 7 recovery and 80 native checks; two 29-sample Inspect runs with exported replay. No live inference or accounting reset.

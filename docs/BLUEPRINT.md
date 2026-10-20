@@ -1,3 +1,23 @@
+> Rules context map: rulesAwareContext.ts applies the existing responsesObservation whitelist, then rulesContext.ts adds versioned public mechanic explanations and deductions from current role/signal fields. responsesRequest.ts renders the compact guide; observationTables.ts losslessly packs repeated public arrays only when object form exceeds the existing 32 KiB bound. Final bytes/hash/token reservation remain authoritative. offlineRulesEvaluation.ts scores explicit interpretation/evidence answers and reports core validity separately from intended diary-rule compatibility; it has no provider or history access. test/fixtures/rulesScenario.ts is mechanical test instrumentation using real Wall hearing and legacy diary admission, never shipped world actors or an automatic-memory implementation.
+
+> Current implementation boundary: the diary adapter exposes optional composed diaryEntry slots; the kernel only consumes queued writes. Automatic event-to-connection memory, grounded non-editing event marks, individual abode assignments and a complete restricted trespass transaction are absent from this broker path. Existing participant tick-bound ageing/replay and owner-only current-memory projection do not implement those missing actions. See [rules/code map](recovery/RULES_REVIEW_2026-10-18.md). Test toolchain: Vitest 4.1.11, Vite 8.3.4, Node 20.19/22.12 or 24+; repository CI uses Node 24. The dependency-audit workflow runs all-dependency npm audit on manifest changes; private credentials and provider execution are not part of it.
+
+> Provider integration map: responsesRequest.ts serializes final bounded stateless structured-output JSON from an explicit nested observer whitelist; responsesTransport.ts owns fixed-endpoint verified HTTPS/CONNECT with a shared connection/header/body deadline and no retries; providerCredential.ts is a lazy local reader, not a process-env loader. responsesBroker.ts reserves final-wire evidence before transport and records usage before core validation. isolatedHost.ts/isolatedHostChild.ts host the existing deterministic kernel over bounded private IPC with an OS-only environment allowlist. AccountedBroker supports asynchronous latest-host reads after durable receipts/claims. Production entrypoints call the unchanged unconditional gate before reservation/key/socket. Local fixture transport has a fixed fake bearer and loopback-only endpoints. See [contracts](recovery/PROVIDER_ADAPTER_REBUILD.md).
+
+> Broker accounting map: accountingStore.ts owns accounting.journal.json and exclusive .accounting.* locks; accountingLedger.ts replays pinned documentary origin and append-only evidence/operator/reservation/receipt/cancellation/decision events. Account origin retains 19114 microUSD held, nine combined admissions and unbounded diagnostics. accountedBroker.ts prepares a bounded authorized policy document, commits reserve first and usage before validation, claims each response once and uses unchanged core/host authority. recordedResponse.ts reads local archive bytes only. Actual billing remains null; no automatic financial reconciliation or live transport. See [state/invariants](recovery/BROKER_ACCOUNTING_REBUILD.md).
+
+> Latest, 2026-10-17: syntheticBudget.ts derives cumulative fixture counts/costs/holds from durable events, while budgetedMock.ts orders reservation before in-memory dispatch and settlement before success. This is a strictly synthetic fixture component, with no real-account importer, historical settlement or provider permission. Game evidence and spending fixtures remain separate journals; partial failures preserve costs/holds. See [contract and remaining production boundaries](recovery/SYNTHETIC_ACCOUNTING.md).
+
+> Latest reconstruction, 2026-10-17: broker execution authority now persists alongside game evidence in version-2 checkpoints. Pending work and permanent fixture halts survive restart, same-tick consumed work cannot repeat, and legacy v1 history never implies unused fixture admission. This is not spending accounting. The audited upstream core is unchanged; all 956 checks and TypeScript pass. See [audit](recovery/DEVELOPMENT_BRANCH_AUDIT.md) and [execution-state contract](recovery/DURABLE_FIXTURE_RECOVERY.md).
+
+> Durable trial mode: checkpoint.ts owns exclusive locks, bounded checksummed canonical records and atomic intent/result replacement; durableHost.ts restores through verified replay into OfflineParticipantHost. Status states are running/prepared/closed/halted. Socket reply order is preserved and positive admissions follow completed persistence. No accounting/provider capability. See [invariants and limits](recovery/CHECKPOINT_RECOVERY.md).
+
+> Local participant transport: participantSocket.ts wraps OfflineParticipantHost on 127.0.0.1 only, with authenticate-first sessions, exact Origin/path admission, bounded frames/rate/queues/output, heartbeat, safe per-tick host admission and deterministic cleanup. No remote tick or provider command. See [bounds and verified scope](recovery/LOCAL_TRANSPORT_REVIEW.md).
+
+> Participant mode: optional exact transition hooks in stepWorld; stable person/role-episode registry; HMAC observer references; in-memory lease/tick-bound admission; same-district movement and bounded Baker input before demand; isolated diary aging; ordered complete-state replay. Legacy mode retains its seeded trajectory. See [module map and limits](recovery/OFFLINE_INTEGRATION_STATUS.md).
+
+> Offline broker modules: protocol.ts validates closed four-slot decisions from a trusted minimal context; broker.ts runs fixtures only and denies live admission; httpBody.ts reads bounded streams with pre-destruction error handling. No participant host, live provider, ledger or replay integration. See [scope](recovery/BROKER_RECONSTRUCTION.md).
+
 # NODE — System Blueprint
 
 **A map of the architecture as it exists now.** Constants, state, data flow, invariants. No
@@ -5,12 +25,20 @@ history, no narrative, no dates except where a value's provenance matters.
 
 The reasoning behind these choices — what was tried, measured, and rejected — is in
 `docs/BLUEPRINT_HISTORY.md`. Session-by-session work is in `docs/DEVLOG.md`. Current state and
-next steps are in `docs/HANDOVER.md`. **This file answers "what is it?" and nothing else.**
+next steps are in `docs/recovery/CURRENT_SESSION.md`; `docs/HANDOVER.md` is historical background. **This file answers "what is it?" and nothing else.**
 
 Verified against the code, not memory. If a number here disagrees with the source, the source
 is right and this file is stale — fix it.
 
 ---
+
+**Hosted-inhabitant integration state (2026-10-20):** `src/agent/` now contains the
+participant identity/host, owner-only observer boundary, durable checkpoints, replay,
+accounting and bounded Responses transport. `src/eval/` and `evals/` provide the offline
+Inspect harness merged through PR #21. These implementations do not recover missing
+private account/runtime evidence or enable paid inference; the live gate stays closed.
+See `docs/recovery/CURRENT_SESSION.md`, `docs/recovery/PR21_REVIEW_2026-10-20.md` and
+`docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md`.
 
 ## 1. Shape of the system
 
@@ -66,6 +94,7 @@ The single source of truth. Every field, grouped by what it is for.
 | **Social** | `identityLedger`, `completionStats`, `pressureLedger` |
 | **Sabotage** | `sabotageCampaigns`, `nextCampaignId`, `lastSabotageCampaignEvents`, `lastSabotage` (legacy) |
 | **Oracle** | `lastOracleStats` |
+| **Settlement** | `settlement` (`districtPool`, `oraclePool`, `dock`), `lastSettlement` (per-line issuance, `emigrantHoldings`, `forfeitedToDock`, `residual`), `lastStandingBerthsFired` — `engine/settlement.ts`; withheld from the wire |
 | **Day cycle** | `lastImportExportWindows` (`ImportExportWindowEvent[]`, `engine/dayCycle.ts`) |
 | **Presence** | `currentlyOnline` (live snapshot, caller-set, NOT drained), `presence` (`Record<PlayerId, PresenceRecord>`, `engine/presence.ts`) |
 
@@ -148,6 +177,43 @@ PURCHASE_CYCLE_DAYS            7          THROTTLE_WINDOWS_PER_DAY    2
 COURIER_FEE_PER_DISTANCE_UNIT  0.344      [CALIBRATED — courier-station mean distance 4.357]
 COURIER_MIN_ROUTE_DISTANCE     1          [constraint 2 — a station on the hub must still earn]
 PERSONAL_RESOURCE_CAP          5          RESTOCK_INTERVAL_DAYS       3
+STANDING_BERTHS_DEFAULT        1          [Import/Export slots never VACANT; WorldConfig.standingBerths, 0 disables]
+```
+
+### Settlement (`engine/settlement.ts`)
+```
+WorldConfig.settlement       'funded' (default) | 'legacy' (pre-settlement economy, byte-identical)
+WEALTH_PER_NODULE            2.0      [CALIBRATED — legacy issuance / nodules = 2.02]
+UPKEEP_RATE                  0.0073   [CALIBRATED — funded steady holdings match legacy's]
+DISTRICT_POOL_RESERVE_DAYS   7        [ILLUSTRATIVE]
+Funded loop: holdings --upkeep--> dock --pays for nodules--> districtPool --wages--> holdings
+Wage order from districtPool: grifter floor (set aside first; shortfall issued as floorShortfall),
+then role incomes pro-rata, then Shift Cover, then support completion rewards.
+```
+`npm run settlement-report` (8 seeds × 3000 days, burn-in 500), legacy → funded:
+```
+New money per tick       45.79 → 6.27     (funded: nodule value the dock couldn't cover —
+                                            in one shard, what emigrants carry away)
+Income paid per tick     45.79 → 45.56
+Lost at role changes     37.86 → 0
+Upkeep / dock→nodules    0 → 32.42 / 39.73
+Total holdings           4512 → 4402      (flat early→late: 4368 → 4492)
+wealthGini               0.677 → 0.325
+economicHealth           0.905 → 0.914    population 62.36 → 63.06
+Wages pro-rated          5.12% of ticks, mean scale 0.995, min 0.381; floor shortfall 0 ticks
+Standing berth           0 / 20000 populated ticks; dormant first 10 days 75.6 vs 70.6 nodules
+Multi-shard population   every seed reaches 3 shards (~252–262 people)
+```
+
+### Shard registry (`engine/shardRegistry.ts`, `sim/multiShardHarness.ts`)
+```
+INITIAL_SHARD_COUNT              2
+SHARD_COUNT_CAP                  3      [ILLUSTRATIVE — 2 initial + 1 alternative]
+SHARD_OPEN_STABILITY_THRESHOLD   0.8    (mean economicHealth of populated shards)
+SHARD_OPEN_COOLDOWN_DAYS         30
+canOpenNewShard: below cap AND someone exists to migrate AND stable AND cooldown passed.
+                 Population size plays no part. Pure; consumes no rng.
+New shards open DORMANT; migration prefers a DORMANT shard; first arrival wakes it ACTIVE.
 ```
 
 ### Day cycle (`engine/dayCycle.ts`, 2026-08-24) — [ILLUSTRATIVE hour placement]
@@ -333,6 +399,17 @@ Checked by tests, and load-bearing:
 7. **No private state on the wire** — asserted by searching the serialized payload for real
    values, and mutation-tested to confirm the assertion can fail.
 8. **Import guards** — engine/world/server never import drivers or infra.
+9. **Settlement flow balance** — per shard per tick, (holdings + accounts) changes by exactly
+   Σ issuance − Σ emigrant holdings; nothing is destroyed. Across shards, the total changes by
+   Σ issuance only (vouchers arrive or go to the source dock). `test/settlement.test.ts`.
+   Under 'funded' settlement, nothing is forfeited at any role change (a person's balance
+   always moves with them), upkeep never takes anyone below zero, and the grifter floor is
+   always paid in full.
+10. **Import/Export is never fully VACANT** — at least `standingBerths` slots are FILLED or
+    BACKSTOPPED at the end of every tick, so nodule issuance is never 0.
+11. **An alternative shard is available regardless of population** — while anyone exists and
+    shards are stable, the registry opens up to `SHARD_COUNT_CAP`, so every shard always has
+    another to migrate to, and the count never exceeds the cap. `test/multiShardHarness.test.ts`.
 
 ---
 
@@ -344,6 +421,10 @@ npm run typecheck
 npm run server                real World over WebSocket (NODE_LEGACY_MVP=1 for the old scenario)
 npm run playtest              terminal renderer, synthetic drivers
 npm run sabotage-campaign-sim / oracle-sim / experience-floor-sim / ... measurement harnesses
+npm run settlement-report     legacy vs funded settlement: money, holdings, Gini, health, multi-shard
+npm run eval:bridge           evaluation bridge (JSON lines) the Inspect harness drives
+evals/: python -m inspect_node.verify --out <dir>   Inspect suite twice offline + all checks
+        (see docs/EVAL_INFRASTRUCTURE.md; venv from evals/requirements.txt)
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
@@ -378,8 +459,23 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   housing design doc's own §7.1 claim that this was already representable. This is now the
   concrete shared blocker for both trespass's `targetAtAbode` and arson's
   `targetPresentAtAbode` becoming fully real rather than caller-supplied.
+- **The Inspect evaluation harness (`src/eval/`, `evals/`) runs scripted fixtures only.** Live
+  model calls through Inspect are refused because they would bypass the accounted broker and
+  budget ledger; routing them through that accounting is unbuilt. One controlled Baker per
+  episode. See `docs/EVAL_INFRASTRUCTURE.md`.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
+- **The shard count is a fixed cap (`SHARD_COUNT_CAP` = 3), not a growth signal.** Alternative
+  shards no longer depend on population, but the registry never grows past the cap. Every
+  materialised shard runs its own arrival process, so an uncapped opening rule grows simulated
+  population with shard count (measured: 31 shards and ~1,080 people in 1,000 days). Growing
+  the world past 3 shards is a design decision about how many places exist; it is not built.
+- **`wealthGini` roughly halves under funded settlement** (0.68 → 0.32): savings carried
+  through role changes plus proportional upkeep compress inequality. A real consequence of
+  the design, measured, not tuned away — whether it's the intended feel is a design call.
+- **The currency question** (`DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md` §5, options A/B/C)
+  is still open. Funded settlement moves wealth only through system postings — no
+  player-to-player transfer verb exists.
 - **The live server has no real-time wall clock.** `ws.ts`'s `tickIntervalMs` defaults to
   2500ms and every tick advances the whole deterministic economy by one full game-day — no
   anchoring to real UTC hours anywhere on the live path. `NODE_BUILD_SPEC_2026-08-07.md`
