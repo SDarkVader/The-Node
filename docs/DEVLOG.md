@@ -1,6 +1,6 @@
 > 2026-10-21 (later) — Recognition v2, second pass on the owner's statements: resolution can be lost, role holders must interact with customers, speaking is optional, refusal is a signal, deception is also interpretation.
 >
-> **Grounded first:** four read-only investigators and a critic (21 cited facts spot-checked).
+> **Grounded first:** four read-only investigators and a critic (22 cited facts spot-checked).
 > - Identity (a stable per-observer ref) and resolution (face, `knownSubjects`, the diary gate) are already separate in code.
 > - The 2-day diary is the owner's own "yesterday's mechanical memory".
 > - Bread demand is an aggregate price-share count with no per-person purchase. The 2026-08-11 trigger, "verified trade history", was never buildable on it.
