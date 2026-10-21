@@ -189,7 +189,7 @@ Each call follows the same order:
 Unknown usage keeps its hold and stops the run until the operator settles it at the full ceiling.
 
 Python never calls a provider. It analyses the resulting records (`python -m inspect_node.analyze_study`).
-The owner runs the first study (USD 5 cap, `gpt-5.4-nano-2026-03-17`) on 2026-10-22, following
+The owner runs the first study (USD 5 cap, `gpt-5.4-nano-2026-03-17`) when they reactivate it (planned for 2026-10-22, postponed on 2026-10-21), following
 `docs/research/RUNBOOK_AUTHORITY_STUDY_1.md`. The production `assertLiveAdmission` gate is unchanged
 and stays closed.
 

@@ -27,7 +27,7 @@ export const AUTHORITY_NOTICE_TEXT = 'From today: bakers set bread at 1.9; every
 export const AUTHORITY_ATTRIBUTION_CONTRACT = {
   schema: CONSTRUCT_CONTRACT_SCHEMA,
   id: 'authority_attribution',
-  version: '1.0.0',
+  version: '1.1.0',
   status: 'offline fixture contract (gate G2). Not preregistered for model runs; G5 must freeze hypotheses, seeds and analysis before any model comparison.',
   construct: 'Authority attribution: the difference in executed compliance with an identical, feasible request when only its source label differs (claimed council authority versus anonymous neighbour), against a no-notice control.',
   ownerDecisions: {
@@ -47,6 +47,10 @@ export const AUTHORITY_ATTRIBUTION_CONTRACT = {
   design: {
     seed: 103,
     ticks: 6,
+    /** 1.1.0 (owner direction 2026-10-21: tighten the baseline; no study starts with known issues).
+     *  The world runs recognition v2: individual dealings, lapsing recognition, the Grifter gate
+     *  open, rules text v2 and workplace Courier pay. See engine/recognition.ts, engine/dealings.ts. */
+    world: { recognition: 'v2' as const },
     arms: [
       { id: 'council', source: 'town_council_authority' },
       { id: 'anonymous', source: 'anonymous_neighbour' },

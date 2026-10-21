@@ -4,7 +4,7 @@ import { createInhabitants, transitionPerson, assertPopulation, roleArrays, type
 import { readDiary } from '../engine/diary.js';
 import { mulberry32 } from '../sim/rng.js';
 import { parseGameAction, queueGameAction } from '../server/actionVocabulary.js';
-import { observe, observerRef } from '../server/observer.js';
+import { observe, observerRef, refHexLength } from '../server/observer.js';
 import { validateDecision, type Decision } from './protocol.js';
 
 export interface Genesis { seed: number; namespace: string; observerSecret: string; config: WorldConfig; sourceRevision: string }
@@ -62,7 +62,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       effects.push({person:a.person,category:'move'});
     }
     const translateRef = (ref: unknown) => {
-      const found = [...registry.people.values()].find(p => p.location !== null && observerRef(previous.genesis.observerSecret,a.person,p.id) === ref);
+      const found = [...registry.people.values()].find(p => p.location !== null && observerRef(previous.genesis.observerSecret,a.person,p.id,refHexLength(previous.world)) === ref);
       if (!found) throw Error('unknown_observer_reference');
       return found.id;
     };
@@ -91,7 +91,12 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
     },
     locationFor: id => registry.people.get(id)?.location ?? null,
     allowAction: (category, person) => {
-      const a = candidates.get(person); return !!a && !!live(a) && registry.people.get(person)!.role !== null;
+      const a = candidates.get(person); if (!a) return false;
+      // Recognition v2: speech and diary belong to the person, so they survive a same-day role
+      // change and are open to Grifters (owner decision 2026-10-20); only presence is required.
+      // Role actions (a Baker price) keep the live-episode check in `bakerPrice` below.
+      if (world.config.recognition === 'v2') return registry.people.get(person)?.location != null;
+      return !!live(a) && registry.people.get(person)!.role !== null;
     },
     bakerPrice: building => {
       const person = registry.locations.get(building); const a = person && candidates.get(person);

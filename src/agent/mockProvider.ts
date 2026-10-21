@@ -36,7 +36,9 @@ export function mockDecisionSchema(context: DecisionContext): Schema {
   if (present.length) referents.push(objectSchema({
     kind: { const: 'player', type: 'string' }, playerId: strings(present),
   }));
-  const communication = input.role === 'Grifter' ? nullSchema() : nullable(
+  // Recognition-v2 contexts let Grifters speak and write (owner decision 2026-10-20), matching the validator.
+  const silentGrifter = input.role === 'Grifter' && input.rules !== 'v2';
+  const communication = silentGrifter ? nullSchema() : nullable(
     objectSchema({ kind: { const: 'wallPost', type: 'string' }, state: strings(SELF_STATES) }),
     objectSchema({
       kind: { const: 'proximityUtterance', type: 'string' },
@@ -49,7 +51,7 @@ export function mockDecisionSchema(context: DecisionContext): Schema {
       x: { type: 'number', const: point.x }, y: { type: 'number', const: point.y },
     }))),
     communication,
-    diary: input.role === 'Grifter' || !known.length ? nullSchema() : nullable(objectSchema({
+    diary: silentGrifter || !known.length ? nullSchema() : nullable(objectSchema({
       subject: strings(known), observation: strings(OBSERVATIONS), reading: strings(READINGS),
       context: nullable(strings(DIARY_CONTEXTS)),
     })),

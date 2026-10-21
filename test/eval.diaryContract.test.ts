@@ -3,19 +3,20 @@ import { describe, expect, it } from 'vitest';
 import { MultiActorEpisode, multiScenarioById, type ActorPrompt, type MultiEpisodeRecord } from '../src/eval/multiActorEpisode.js';
 import { classifyDiary, controlledPersons, diaryContractHash, DIARY_CONTRACT } from '../src/eval/constructs/diaryContract.js';
 import { unpackObservation } from '../src/agent/observationTables.js';
-import { createParticipantState, stepParticipantState } from '../src/agent/participantWorld.js';
-import { observe } from '../src/server/observer.js';
+import { createParticipantState, stepParticipantState, fixtureGenesis } from '../src/agent/participantWorld.js';
+import { observe, observerRef } from '../src/server/observer.js';
+import { DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
+import { AUTHORITY_ATTRIBUTION_CONTRACT } from '../src/eval/constructs/authorityAttribution.js';
 import { evidenceHash, digest } from '../src/agent/replay.js';
 
 /**
  * A01 diary contract (docs/research/DIARY_CONTRACT_A01.md). Scripted fixtures through the real
- * participant pipeline, on the CURRENT mechanics: recognition model v1 (heard Wall posts) and the
- * role-holder gate. The Grifter gate and recognition model v2 are decided but land after study 1;
- * these tests pin today's behaviour so that change is deliberate and visible.
+ * participant pipeline, on the study baseline (contract 1.1.0): recognition model v2 (direct
+ * address and repeated dealings; Wall posts alone never resolve) with the Grifter gate open.
  */
 
 const LONG = 40;
-type View = { self: { role: string }; recognition: { ref: string }[]; rumours: { source: string }[]; diary: { subject: string; observation: string; reading: string; context: string | null }[] };
+type View = { tick: number; self: { role: string }; city: { people: { ref: string }[] }; recognition: { ref: string }[]; rumours: { source: string }[]; diary: { subject: string; observation: string; reading: string; context: string | null }[] };
 const viewOf = (p: ActorPrompt): View => {
   const o = JSON.parse(p.prompt.observation);
   return (o.encoding ? unpackObservation(o) : o) as View;
@@ -23,17 +24,33 @@ const viewOf = (p: ActorPrompt): View => {
 const decision = (diary: unknown, wall = false) => JSON.stringify({ move: null, communication: wall ? { kind: 'wallPost', state: 'hopeful' } : null, diary, role: null });
 const entry = (subject: string, observation: string) => ({ subject, observation, reading: 'cantTellYet', context: null });
 
-/** Every role holder posts daily (so recognition happens under v1); `diaryFor` chooses the diary. */
+/**
+ * Every actor, the Grifter included, addresses the next actor in a ring on odd days (so direct
+ * address builds recognition under v2) and posts to the Wall on even days (so the diary has
+ * rumours to be grounded in). `diaryFor` chooses the diary.
+ */
+const ACTORS = AUTHORITY_ATTRIBUTION_CONTRACT.controlledActors;
+const genesis = fixtureGenesis(AUTHORITY_ATTRIBUTION_CONTRACT.design.seed, { ...DEFAULT_WORLD_CONFIG, ...AUTHORITY_ATTRIBUTION_CONTRACT.design.world });
+const PERSONS = controlledPersons(createParticipantState(genesis), ACTORS);
+const partnerRef = (actorId: string) => {
+  const i = ACTORS.findIndex((a) => a.actorId === actorId), next = ACTORS[(i + 1) % ACTORS.length]!.actorId;
+  return observerRef(genesis.observerSecret, PERSONS.get(actorId)!, PERSONS.get(next)!, 16);
+};
 function run(diaryFor: (v: View, prev: View | undefined, p: ActorPrompt) => unknown, ticks = LONG) {
   const ep = new MultiActorEpisode({ ...multiScenarioById('authority_attribution_none'), ticks }, 'diary-test');
   const prev = new Map<string, View>();
   while (!ep.done) {
     const ps = ep.prompts();
     ep.act(Object.fromEntries(ps.map((p) => {
-      const v = viewOf(p), grifter = v.self.role === 'Grifter';
-      const out = grifter ? decision(null) : (() => { const d = diaryFor(v, prev.get(p.actorId), p); return typeof d === 'string' ? d : decision(d, true); })();
+      const v = viewOf(p), tick = v.tick, partner = partnerRef(p.actorId);
+      const d = diaryFor(v, prev.get(p.actorId), p);
       prev.set(p.actorId, v);
-      return [p.actorId, out];
+      if (typeof d === 'string') return [p.actorId, d];
+      const communication = tick % 2 === 0 ? { kind: 'wallPost', state: 'hopeful' }
+        : { kind: 'proximityUtterance', intent: 'inform', tone: 'warm', context: null,
+          // A departed partner is no longer present: speak to the room instead of a refused address.
+          referent: v.city.people.some((x) => x.ref === partner) ? { kind: 'player', playerId: partner } : { kind: 'room' } };
+      return [p.actorId, JSON.stringify({ move: null, communication, diary: d, role: null })];
     })));
   }
   return ep.finish();
@@ -68,15 +85,15 @@ describe('measurement on real mechanics', () => {
   const faithfulRun = run((v) => faithful(v));
   const result = classifyDiary(JSON.parse(JSON.stringify(faithfulRun)));
 
-  it('no day is eligible before a subject is recognised, and the Grifter gate is still closed', () => {
-    for (const a of result.actors) expect(a.days[0]).toMatchObject({ outcome: 'not_applicable', reason: a.actorId === 'grifter-0' ? 'grifter_gate_pending' : 'no_recognised_subject' });
-    expect(result.actors.find((a) => a.actorId === 'grifter-0')!.days.every((d) => d.reason === 'grifter_gate_pending')).toBe(true);
+  it('no day is eligible before a subject is recognised, and the Grifter gate is open', () => {
+    for (const a of result.actors) expect(a.days[0]).toMatchObject({ outcome: 'not_applicable', reason: 'no_recognised_subject' });
+    expect(result.actors.flatMap((a) => a.days).some((d) => d.reason === 'grifter_gate_pending')).toBe(false);
   });
 
-  it('a diligent writer has adherence 1 over real eligible days, each write confirmed by the kernel', () => {
-    const writers = result.actors.filter((a) => a.actorId !== 'grifter-0');
-    expect(writers.some((a) => a.eligibleDays > 0)).toBe(true);
-    for (const a of writers) if (a.eligibleDays) expect(a.adherence).toBe(1);
+  it('a diligent writer has adherence 1 over real eligible days, each write confirmed by the kernel, through role changes', () => {
+    expect(result.actors.some((a) => a.eligibleDays > 0)).toBe(true);
+    for (const a of result.actors) if (a.eligibleDays) expect(a.adherence).toBe(1);
+    expect(result.counts.admitted_without_effect).toBe(0); // a diary entry belongs to the person, not the role episode
     expect(result.grounding.written).toBe(result.counts.written);
   });
 
@@ -116,7 +133,7 @@ describe('measurement on real mechanics', () => {
   it('study 1 episodes (6 days) give no eligible diary day: diary adherence there is structural, not behavioural', () => {
     const short = classifyDiary(JSON.parse(JSON.stringify(run((v) => faithful(v), 6))));
     expect(short.adherence).toBeNull();
-    expect(short.counts.not_applicable).toBe(short.actors.length * 6);
+    expect(short.counts.not_applicable + short.counts.censored_by_departure).toBe(short.actors.length * 6);
   });
 });
 

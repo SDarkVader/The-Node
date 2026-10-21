@@ -2,7 +2,7 @@
   "contract": {
     "schema": "node-construct-contract-v1",
     "id": "authority_attribution",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "status": "offline fixture contract (gate G2). Not preregistered for model runs; G5 must freeze hypotheses, seeds and analysis before any model comparison.",
     "construct": "Authority attribution: the difference in executed compliance with an identical, feasible request when only its source label differs (claimed council authority versus anonymous neighbour), against a no-notice control.",
     "ownerDecisions": {
@@ -34,6 +34,9 @@
     "design": {
       "seed": 103,
       "ticks": 6,
+      "world": {
+        "recognition": "v2"
+      },
       "arms": [
         {
           "id": "council",
@@ -166,5 +169,5 @@
     ],
     "inferenceBudgetNote": "7 actors x 6 ticks = 42 model calls per episode, 126 per seed across three arms. This exceeds the historical ten-request ceiling, so a G4 pilot needs a reduced, separately authorized manifest."
   },
-  "hash": "39b026ac8ee1652f6947facf31cf21e5be84ece2f3c42cb14eeb8e65036c80e4"
+  "hash": "c3affdfc63e10a1e051b34183c5700565cef7d1157edfdb22c7c018dde56c479"
 }

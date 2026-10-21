@@ -1,3 +1,38 @@
+> 2026-10-21 (late night) — Closing the loop on the outstanding problems before the study.
+>
+> **Found and fixed, a study-breaking blocker:** both request builders fail closed above 32,768 bytes even after packing, and v2 requests reached 32,756 bytes in active play. Observer references repeated across the people list and the schema enums were the bulk. v2 now uses 64-bit (16-hex) HMAC references, still unguessable and uncorrelatable per observer; v1 keeps 64 hex. The largest active-play body is now ~26 KB. A regression test holds 10% headroom. Freeze pins moved a second time (bytes only, manifest unchanged), recorded in the test.
+>
+> **Fixed:** `identityResolved` no longer carries the raw player id. Nothing consumes it, and once resolution can lapse it would be an unwithdrawable leak. `identityLapsed` added to the BLUEPRINT wire table.
+>
+> **Verified:** Vitest 1286/1286, Python 28/28, G1 29/29, G2 12/12.
+
+> 2026-10-21 (night) — Study 1 rebased onto the v2 baseline; the remaining v2 data blockers closed. Owner: "We just need a stable system for the behaviour to be measured", "Study 1 will depend on the viable solution", "I don't think it's appropriate to start the study with known issues".
+>
+> **Blockers closed (all v2-only, v1 byte-identical):**
+> - **Grifter gate:** owner-authorised edit of protected `protocol.ts`, via an optional `DecisionContext.rules: 'v2'`. Fingerprint re-recorded in `DEVELOPMENT_BRANCH_AUDIT.md`.
+> - **Schema:** the decision schema forced Grifter speech to null, a hidden second gate.
+> - **Participant layer:** speech and diary now belong to the person and survive a same-day role change. Three faithful diary writes had been silently dropped.
+> - **Rules text:** `node-rules-context-v2` carries the A01 diary wording.
+> - **Courier pay:** follows the workplace route.
+>
+> **Study 1:** authority contract 1.1.0 declares `design.world.recognition = 'v2'`. Contract snapshot and manifest regenerated; freeze pins moved once, deliberately, with the reason in the test. Construct, accounted-study, A01, Python fixture and rehearsal tests were updated to the v2 baseline: all seven actors are now eligible. Admission-not-effect reachability is kept at seed 16.
+>
+> **Verified:** Vitest 1285/1285, Python 28/28, G1 29/29 against archived hashes, G2 12/12 fixture checks, rehearsal 8/8, freeze 4/4. A latent v1 fixture defect (role unread on packed observations) is recorded, not rewritten.
+
+> 2026-10-21 (evening) — Recognition v2 and individual dealings implemented, opt-in (`WorldConfig.recognition = 'v2'`). Study 1 postponed by the owner until reactivated.
+>
+> **Why opt-in:** `canonical()` hashes every key (even `undefined`) and the genesis config, `compare_hashes` checks archived G1 evidence, and the freeze test pins study 1's request bytes. With the flag absent the kernel is byte-identical: G1 29/29 against `main-consolidation-2026-10-20`, freeze 4/4, golden snapshots unchanged.
+>
+> **Built:**
+> - `engine/recognition.ts`: directional integer ledger. Address credits the addressee by intent, refusal included; silence earns the silent person nothing. Dealings credit by time since last dealing, and a first dealing is anonymous/passive. Overheard/room/Wall credit is passive and capped below the threshold. Cap/hysteresis gives a ~60-day lapse with residual familiarity.
+> - `engine/dealings.ts`: individual purchases with repeat custom on the existing inverse-price weights; flour, grain, delivery and evidence attributed to real counterparties from existing flows; `hashUnit` instead of `world.rng`.
+> - Kernel wiring: Grifters in the comms proximity graph and on their district's Wall; diary gate accepts a subject resolved before or after the day's update; pressure exposure from Wall reach.
+> - Observer: v2 `knownSubjects`, own dealings only. Request whitelist: `dealings`. Wire: `identityLapsed` on the same handle, `identityTransitionMessages`.
+>
+> **Verified:** 19 focused tests (anonymous purchases, regulars, silent bystander, refusal, room speech, lapse/recovery with a stable ref, Grifters, counterparties, exact flow conservation, pressure independence, determinism, replay, observer visibility, wire). 10 mutations killed; one test was initially too weak (a pressure skew of 1.0 hits the contribution clamp) and was fixed. Full suite 1279/1279. Over 10 seeds × 300 days, bread is unchanged (paired +2.6, SD 44) and the settlement residual stays about 3e-12. Mean FILLED Baker wealth is +14% (+5.0, paired SD 4.8): regulars follow price changes with a lag.
+>
+> **Not built:** Grifter speech from agents, held by the protected validator (`protocol.ts:54`) pending the owner's go-ahead after study 1. Courier commissions and multi-member campaigns are still absent, so delivery and evidence attribute existing flows rather than commissioned jobs.
+
 > 2026-10-21 (later) — Recognition v2, second pass on the owner's statements: resolution can be lost, role holders must interact with customers, speaking is optional, refusal is a signal, deception is also interpretation.
 >
 > **Grounded first:** four read-only investigators and a critic (22 cited facts spot-checked).

@@ -245,6 +245,25 @@ DETECTION_P_PER_WITNESS         0.05   (legacy one-shot resolver)
 IDENTITY_RESOLUTION_THRESHOLD   5      encounters
 ```
 
+### Recognition v2 and individual dealings (opt-in, `WorldConfig.recognition = 'v2'`, 2026-10-21)
+Absent flag ⇒ v1 above, byte-identical (G1 29/29 against archived hashes). `engine/recognition.ts`:
+```
+RECOGNITION_THRESHOLD 120  LOSE_BELOW 90  CAP 150  DECAY 1/day   ⇒ lapse ≈ 60 days after contact
+CREDIT_ADDRESS 14 (addressee learns speaker, by intent; refusal included; silence earns nothing)
+CREDIT_DEALING min(45, 7 × days since the pair last dealt); first dealing in 30 days = passive
+CREDIT_OVERHEARD 1   CREDIT_WALL 2   PASSIVE_CEILING 60 (passive never resolves alone)
+```
+`engine/dealings.ts`: individual purchases (one per person per purchase cycle on a stable weekday,
+regular Baker kept or redrawn by inverse-price share, switch chance 0.25, cap 12), flour supply
+(Baker ← regular Miller by realised supply share), grain supply (Miller ← regular Import/Export,
+FILLED 1 / BACKSTOPPED 0.4), deliveries (regular Courier per Baker, the Courier's own parcels
+split over its deliveries), evidence (covering Investigator questions the campaign target's
+occupant, its own leads split over inquiries). Mechanical slots provide with `provider: null`.
+State: `world.recognitionV2` (ledger, last-dealt, regulars, Wall reach), `world.lastDealings`
+(evaluator ground truth), `world.lastRecognitionChanges`. Grifters join the comms proximity graph
+(not the witness graph) and hear their district's Wall. Pressure amplification uses Wall exposure
+`1 − Π(1 − daily reach)` over 30 days, never the recognition ledger.
+
 ### Oracle
 ```
 ORACLE_BASE_ODDS_HEALTHY 0.3   ORACLE_HEALTH_REFERENCE 0.96   ORACLE_HEALTH_FLOOR 0.4
@@ -272,7 +291,8 @@ a **privacy boundary** and not a serialization detail.
 |---|---|---|
 | `hello` | once per connection | seed, hub, bounds, districts, buildings (id, x, y, role, isLandmark), plots |
 | `tick` | per simulated day | day, economicHealth, districtTension[], stations[] (buildingId, state, heat), people[] (handle, x, y, role) |
-| `identityResolved` | when an observer resolves a subject | handle, playerId, procedural face. **Built and tested; nothing sends it yet** |
+| `identityResolved` | when an observer resolves a subject | handle, procedural face (no raw player id since 2026-10-21). **Built and tested; nothing sends it yet** |
+| `identityLapsed` | when a resolution lapses (recognition v2) | the same handle; the client drops the face back to a silhouette |
 
 **Inbound** (2026-08-19): `{ type: 'action', action: string, payload: unknown }`. Parsed
 defensively (`parseClientMessage`, total — malformed frames return `null`, never throw), shared
@@ -395,7 +415,7 @@ Checked by tests, and load-bearing:
 4. **`flourRatio <= 1.0`** — the supply chain stays coherent.
 5. **Reputation is grant-only** — no mechanic subtracts from a player's baseline access.
 6. **Grifters are outside the witness graph** — adding them must not silently change sabotage
-   detection.
+   detection. (Recognition v2 adds them to the comms proximity graph only.)
 7. **No private state on the wire** — asserted by searching the serialized payload for real
    values, and mutation-tested to confirm the assertion can fail.
 8. **Import guards** — engine/world/server never import drivers or infra.
@@ -410,6 +430,10 @@ Checked by tests, and load-bearing:
 11. **An alternative shard is available regardless of population** — while anyone exists and
     shards are stable, the registry opens up to `SHARD_COUNT_CAP`, so every shard always has
     another to migrate to, and the count never exceeds the cap. `test/multiShardHarness.test.ts`.
+12. **Recognition v2 reuses flows** — bread, flour and grain dealings sum exactly to
+    `resources.today`; each Courier's deliveries split exactly its own parcels; passive
+    channels never resolve; pressure tension is unchanged by any recognition ledger.
+    `test/world.recognitionV2.test.ts`.
 
 ---
 

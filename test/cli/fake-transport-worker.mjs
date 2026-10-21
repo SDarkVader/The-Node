@@ -16,7 +16,9 @@ const body = readFileSync(join(dir, 'request.json'), 'utf8');
 const user = JSON.parse(JSON.parse(body).input[0].content[0].text);
 const obs = user.observation.encoding ? user.observation.observation : user.observation;
 const role = obs.self.role, council = user.evaluation.notices.some((n) => n.source === 'town_council_authority');
-const decision = { move: null, communication: council && !['Baker', 'Grifter'].includes(role) ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
+// On the recognition-v2 baseline (observation carries `dealings`) a Grifter may post like everyone else.
+const silent = role === 'Baker' || (role === 'Grifter' && !('dealings' in obs));
+const decision = { move: null, communication: council && !silent ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
   role: role === 'Baker' ? { kind: 'bakerPrice', price: council ? 1.9 : 0.8 } : null };
 const n = Math.round(body.length / 2.3);
 writeFileSync(join(dir, 'response.json'), JSON.stringify({ object: 'response', id: 'resp_' + Buffer.from(dir).toString('hex').slice(-48), model: 'gpt-5.4-nano-2026-03-17',

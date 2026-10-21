@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { resolvedSubjects, generateFace } from '../engine/identity.js';
+import { resolvedBy } from '../engine/recognition.js';
 import { roleArrays, type Inhabitant } from '../engine/inhabitants.js';
 import { distance } from '../engine/space.js';
 import { computeEconomicHeat } from '../engine/economicHeat.js';
@@ -7,9 +8,13 @@ import type { ParticipantState } from '../agent/participantWorld.js';
 import type { DecisionContext } from '../agent/protocol.js';
 
 const roles = {miller:'Miller', baker:'Baker', courier:'Courier', investigator:'Investigator', importExport:'ImportExport'} as const;
-export function observerRef(secret: string, observer: string, subject: string): string {
-  return createHmac('sha256', secret).update(JSON.stringify([observer, subject])).digest('hex');
+export function observerRef(secret: string, observer: string, subject: string, hexLength = 64): string {
+  return createHmac('sha256', secret).update(JSON.stringify([observer, subject])).digest('hex').slice(0, hexLength);
 }
+/** Recognition-v2 worlds use 64-bit references (16 hex): still unguessable and uncorrelatable per
+ *  observer, and they keep every request under the 32 KB fail-closed ceiling, where 64-hex
+ *  references repeated across the people list and schema enums did not. v1 keeps 64 hex. */
+export const refHexLength = (world: { config: { recognition?: 'v2' } }) => (world.config.recognition === 'v2' ? 16 : 64);
 export function personBody(s: ParticipantState, p: Inhabitant) {
   if (!p.location) throw Error('departed');
   for (const [role, slots] of roleArrays(s.world)) {
@@ -27,7 +32,7 @@ export function personBody(s: ParticipantState, p: Inhabitant) {
 export function observe(s: ParticipantState, personId: string, secret: string) {
   const self = s.registry.people.get(personId);
   if (!self || self.location === null) throw Error('departed');
-  const ref = (id: string) => observerRef(secret, personId, id);
+  const ref = (id: string) => observerRef(secret, personId, id, refHexLength(s.world));
   const own = personBody(s, self);
   const district = s.world.shard.districts.find(d => d.plots.some(p => p.x === own.x && p.y === own.y));
   const legalMoves = district?.plots.filter(p => distance(own, p) === 1).map(p => ({x:p.x,y:p.y})) ?? [];
@@ -35,9 +40,12 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
     const b = personBody(s, p);
     return {ref:ref(p.id),x:b.x,y:b.y,role:b.role};
   });
-  const known = [...resolvedSubjects(s.world.identityLedger, personId)].filter(id => s.registry.people.get(id)?.location != null);
+  // Recognition v2 when the world runs it; the person reference (ref) never changes either way.
+  const resolved = s.world.recognitionV2 ? resolvedBy(s.world.recognitionV2.recognition.ledger, personId) : resolvedSubjects(s.world.identityLedger, personId);
+  const known = [...resolved].filter(id => s.registry.people.get(id)?.location != null);
   const context: DecisionContext = {tick:s.world.tick,selfRef:ref(personId),role:own.role,roleEpoch:self.roleEpoch,
-    legalMoves,presentRefs:people.filter(p => p.ref !== ref(personId)).map(p => p.ref),knownSubjects:known.map(ref)};
+    legalMoves,presentRefs:people.filter(p => p.ref !== ref(personId)).map(p => p.ref),knownSubjects:known.map(ref),
+    ...(s.world.config.recognition === 'v2' ? {rules:'v2' as const} : {})};
   const diary = (s.world.diary.get(personId) ?? []).filter(e => s.world.tick - e.createdOnDay < 2).map(e => ({
     subject:ref(e.value.subject),observation:e.value.observation,reading:e.value.reading,context:e.value.context ?? null,
   }));
@@ -60,6 +68,27 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
       bounds:{minX:Math.min(...xs),maxX:Math.max(...xs),minY:Math.min(...ys),maxY:Math.max(...ys)},
       districts:s.world.shard.districts.map(d => ({id:d.id,plots:d.plots.map(p => ({x:p.x,y:p.y,kind:p.kind})),
         buildings:d.buildings.map(b => ({id:b.id,x:b.x,y:b.y}))}))},
-    recognition:known.map(id => ({ref:ref(id),face:generateFace(id)})),rumours,proximity,diary,legalMoves};
+    recognition:known.map(id => ({ref:ref(id),face:generateFace(id)})),rumours,proximity,diary,legalMoves,
+    ...(s.world.lastDealings ? {dealings:ownDealings(s, personId, ref)} : {})};
   return structuredClone({context,projection});
+}
+
+/**
+ * Recognition v2: today's dealings this person took part in, and nothing else. The
+ * counterparty is the same per-observer ref used everywhere; a mechanical (unstaffed) slot is
+ * null. Internal quantities of a service (a Courier's parcels, an Investigator's leads) are
+ * shown only to the one providing it, and an inquiry tells the person questioned nothing about
+ * why. Ground truth (`world.lastDealings`) stays evaluator-only.
+ */
+function ownDealings(s: ParticipantState, me: string, ref: (id: string) => string) {
+  const out: {kind:string;as:'provider'|'recipient'|'sender';counterparty:string|null;quantity:number|null;outcome:string}[] = [];
+  const other = (id: string | null | undefined) => (id ? ref(id) : null);
+  const goods = (kind: string) => kind === 'purchase' || kind === 'flourSupply' || kind === 'grainSupply';
+  for (const e of s.world.lastDealings ?? []) {
+    if (e.provider === me) out.push({kind:e.kind,as:'provider',counterparty:other(e.recipient),quantity:e.quantity,outcome:e.outcome});
+    if (e.recipient === me) out.push({kind:e.kind === 'evidence' ? 'inquiry' : e.kind,as:'recipient',counterparty:other(e.provider),
+      quantity:goods(e.kind) ? e.quantity : null,outcome:e.outcome});
+    if (e.kind === 'delivery' && e.sender === me) out.push({kind:e.kind,as:'sender',counterparty:other(e.provider),quantity:null,outcome:e.outcome});
+  }
+  return out;
 }

@@ -105,6 +105,17 @@ import {
 import { localDistrictTension, districtTensionField, stepDistrictWeather } from '../engine/districtWeather.js';
 import { emptyIdentityLedger, recordEncounter, resolvedSubjects, type IdentityLedger } from '../engine/identity.js';
 import {
+  emptyRecognitionState,
+  stepRecognition,
+  resolvedBy,
+  recordWallReach,
+  wallExposure,
+  type Interaction,
+  type RecognitionState,
+  type WallReach,
+} from '../engine/recognition.js';
+import { allocatePurchases, attributeSupply, attributeDeliveries, dealingPairs, hashUnit, type DealingEvent } from '../engine/dealings.js';
+import {
   emptyPressureRecord,
   recordPost,
   pressureContribution,
@@ -136,8 +147,8 @@ import {
   BACKSTOP_PRODUCTIVITY,
   EXPERIENCE_CAP,
 } from '../engine/ecosystem.js';
-import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, type ResourceLedger } from '../engine/resources.js';
-import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor, applyStandingBerths, STANDING_BERTHS_DEFAULT } from '../engine/importExport.js';
+import { emptyLedger, accumulate, stepResourceFlows, GRAIN_PER_FLOUR, FLOUR_PER_BREAD, PARCELS_PER_COURIER_DAY, LEADS_PER_INVESTIGATOR_DAY, type ResourceLedger } from '../engine/resources.js';
+import { grainDeliveredToday, nodulesReceivedToday, millingCapacityFactor, applyStandingBerths, STANDING_BERTHS_DEFAULT, BACKSTOPPED_NODULE_FRACTION } from '../engine/importExport.js';
 import {
   emptySettlementAccounts,
   emptySettlementTick,
@@ -218,6 +229,8 @@ import {
   DAILY_ACTIVITY_MULTIPLIER,
   SUPPORT_ROLE_DAILY_WAGE,
   GRIFTER_DAILY_INCOME,
+  PURCHASE_CYCLE_DAYS,
+  BAKER_MAX_DAILY_CUSTOMERS,
 } from '../engine/wealth.js';
 
 export type RoleType = 'miller' | 'baker' | 'courier' | 'investigator' | 'importExport';
@@ -289,6 +302,12 @@ export interface WorldConfig {
    *  out of the dock, wages out of the district pool, upkeep as the sink. 'legacy' — the
    *  pre-settlement economy, byte-identical, kept for before/after measurement. */
   settlement?: SettlementMode;
+  /** Recognition model (2026-10-21). Absent: v1, heard Wall posts (byte-identical to every
+   *  earlier run). 'v2': directed interaction and individual dealings, lapsing resolution,
+   *  Grifters in the proximity graph, pressure exposure decoupled from recognition. See
+   *  engine/recognition.ts and engine/dealings.ts. Deliberately absent from
+   *  DEFAULT_WORLD_CONFIG: the genesis config is hashed into evidence. */
+  recognition?: 'v2';
 }
 
 // Six-role split, from a JOINT grid search over allocation x district layout
@@ -716,7 +735,28 @@ export interface World {
   /** Everything that happened to a campaign this tick, `opened` included — so the hazard's own
    *  timing stays observable now that opening and resolving are days apart. */
   lastSabotageCampaignEvents: SabotageCampaignEvent[];
+  /** Recognition v2 state (present only when `config.recognition === 'v2'`). */
+  recognitionV2?: RecognitionV2World;
+  /** v2 only: this tick's individual dealings. Evaluator ground truth; each agent sees only
+   *  the dealings it was party to (`server/observer.ts`). */
+  lastDealings?: DealingEvent[];
+  /** v2 only: pairs that gained or lost resolution this tick, `[observer, subject]`. */
+  lastRecognitionChanges?: { gained: Array<[string, string]>; lost: Array<[string, string]> };
 }
+
+export interface RecognitionV2World {
+  recognition: RecognitionState;
+  /** Repeat custom: recipient identity -> regular counterparty (Baker identity, or `site#identity` for supply). */
+  regulars: { baker: ReadonlyMap<string, string>; miller: ReadonlyMap<string, string>; importExport: ReadonlyMap<string, string>; courier: ReadonlyMap<string, string> };
+  /** Wall reach per author, for pressure exposure (never the recognition ledger). */
+  wallReach: WallReach;
+}
+
+const emptyRecognitionV2 = (): RecognitionV2World => ({
+  recognition: emptyRecognitionState(),
+  regulars: { baker: new Map(), miller: new Map(), importExport: new Map(), courier: new Map() },
+  wallReach: new Map(),
+});
 
 /** See `World.lastOracleStats`. `entrants` chose to participate (before affordability is
  *  even checked); `entered` could also afford `ORACLE_ENTRY_COST` and actually paid it —
@@ -930,6 +970,7 @@ export function createWorld(seed: number, config: WorldConfig = DEFAULT_WORLD_CO
     sabotageCampaigns: [],
     nextCampaignId: 0,
     lastSabotageCampaignEvents: [],
+    ...(config.recognition === 'v2' ? { recognitionV2: emptyRecognitionV2(), lastDealings: [], lastRecognitionChanges: { gained: [], lost: [] } } : {}),
   };
 }
 
@@ -1184,6 +1225,12 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
 export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const { rng, config } = world;
   const day = world.tick;
+  // Recognition v2 (opt-in, see WorldConfig.recognition). Everything v2 adds is gated on this,
+  // draws only from `hashUnit`, and is returned only when enabled, so v1 stays byte-identical.
+  const v2 = config.recognition === 'v2' ? (world.recognitionV2 ?? emptyRecognitionV2()) : undefined;
+  const identityOf = (location: string): string => (participant ? participant.identityFor(location) : location);
+  const dealings: DealingEvent[] = [];
+  const regularsNext = v2 ? { ...v2.regulars } : undefined;
 
   // ---- Stage 1: space/occupancy -----------------------------------------------------
   // A pure derivation from current role-slot state, not a stateful process of its own —
@@ -1728,10 +1775,27 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     config.purchaseCycleDays !== undefined
       ? dailyDueCustomers(world.population, config.purchaseCycleDays)
       : dailyDueCustomers(world.population);
-  const servedCustomers = splitBakerDemand(
+  let servedCustomers = splitBakerDemand(
     bakerFilledForDemand.map((i) => bakers[i]!.value),
     dueCustomers,
   );
+  // v2: the same price-weighted demand, made individual. Each located person is due once per
+  // purchase cycle and buys from a regular Baker (kept, or redrawn by the same inverse-price
+  // weights). Served counts replace the fractional split; income and bread use them unchanged.
+  if (v2 && regularsNext) {
+    const filledOf = (arr: { slot: RoleSlot; buildingId: string }[]) => arr.filter((x) => x.slot.state === 'FILLED').map((x) => ({ identity: identityOf(x.buildingId), site: x.buildingId }));
+    const purchases = allocatePurchases({
+      seed: world.seed, day, cycleDays: config.purchaseCycleDays ?? PURCHASE_CYCLE_DAYS, maxPerBaker: BAKER_MAX_DAILY_CUSTOMERS,
+      unitQuantity: DAILY_ACTIVITY_MULTIPLIER, // one served customer = activity x 1 bread, as stepResourceFlows counts it
+      customers: [...filledOf(millers), ...filledOf(bakers), ...filledOf(couriers), ...filledOf(investigators), ...filledOf(importExporters),
+        ...grifters.map((g) => ({ identity: identityOf(g.id), site: g.id }))],
+      bakers: bakerFilledForDemand.map((i) => ({ identity: identityOf(bakers[i]!.buildingId), site: bakers[i]!.buildingId, price: bakers[i]!.value })),
+      regulars: v2.regulars.baker,
+    });
+    servedCustomers = purchases.served;
+    dealings.push(...purchases.events);
+    regularsNext.baker = purchases.regulars;
+  }
   const bakerIncomes = bakers.map((b, i) => {
     const pos = bakerFilledForDemand.indexOf(i);
     if (pos < 0) return 0;
@@ -1806,8 +1870,11 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
   // — see engine/courierPay.ts's header for the full reasoning, including why a literal
   // commissioner-debit was measured and deliberately NOT built at this scale.
+  // v2 pays the workplace-to-hub route, as the rules text and the retained owner decision state
+  // (EXPERIMENT_FIRST_INHABITANT.md); v1 keeps the current-position behaviour it was frozen with.
+  const courierRouteFrom = (c: SupportRoleSlot) => (v2 ? allBuildingsById.get(c.buildingId) ?? c : c);
   const courierClaims = couriers.map((c) =>
-    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
+    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: courierRouteFrom(c).x, y: courierRouteFrom(c).y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
   );
   const wageClaim = (s: SupportRoleSlot) => (s.slot.state === 'FILLED' ? supportDaily * frictionFor(s.buildingId) : 0);
   const investigatorClaims = investigators.map(wageClaim);
@@ -2014,6 +2081,31 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // parcels, the same consequence their income already takes. See engine/resources.ts.
   const supportFriction = (arr: SupportRoleSlot[]) =>
     arr.filter((s2) => s2.slot.state === 'FILLED').map((s2) => frictionFor(s2.buildingId));
+  // v2: attribute the flows recorded just below to real counterparties (see engine/dealings.ts).
+  if (v2 && regularsNext) {
+    const flour = attributeSupply(world.seed, day, 'flourSupply',
+      bakerFilledForDemand.map((i, pos) => ({ identity: identityOf(bakers[i]!.buildingId), site: bakers[i]!.buildingId,
+        quantity: servedCustomers[pos]! * DAILY_ACTIVITY_MULTIPLIER * FLOUR_PER_BREAD })),
+      millers.filter((m) => m.slot.state === 'FILLED' || m.slot.state === 'BACKSTOPPED').map((m) => m.slot.state === 'FILLED'
+        ? { identity: identityOf(m.buildingId), site: m.buildingId, weight: m.value * grainFactor }
+        : { identity: null, site: m.buildingId, weight: BACKSTOP_PRODUCTIVITY * grainFactor }),
+      v2.regulars.miller);
+    const grain = attributeSupply(world.seed, day, 'grainSupply',
+      millers.filter((m) => m.slot.state === 'FILLED').map((m) => ({ identity: identityOf(m.buildingId), site: m.buildingId,
+        quantity: m.value * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR })),
+      importExporters.filter((x) => x.slot.state === 'FILLED' || x.slot.state === 'BACKSTOPPED').map((x) => x.slot.state === 'FILLED'
+        ? { identity: identityOf(x.buildingId), site: x.buildingId, weight: 1 }
+        : { identity: null, site: x.buildingId, weight: BACKSTOPPED_NODULE_FRACTION }),
+      v2.regulars.importExport);
+    const deliveries = attributeDeliveries(world.seed, day, flour.events,
+      couriers.filter((c) => c.slot.state === 'FILLED').map((c) => ({ identity: identityOf(c.buildingId), site: c.buildingId,
+        weight: frictionFor(c.buildingId), parcels: frictionFor(c.buildingId) * PARCELS_PER_COURIER_DAY * DAILY_ACTIVITY_MULTIPLIER })),
+      v2.regulars.courier);
+    dealings.push(...flour.events, ...grain.events, ...deliveries.events);
+    regularsNext.miller = flour.regulars;
+    regularsNext.importExport = grain.regulars;
+    regularsNext.courier = deliveries.regulars;
+  }
   const resources = accumulate(
     world.resources,
     stepResourceFlows(
@@ -2148,6 +2240,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     );
 
     const stillRunning: SabotageCampaign[] = [];
+    const inquiries: { investigator: string; investigatorId: string; target: string; targetId: string }[] = [];
     for (const existing of world.sabotageCampaigns) {
       // ABANDON a campaign whose target already left. Found by watching a real run: a campaign
       // opened on day 2 was still grinding away on day ~45 at a slot whose occupant had churned
@@ -2171,6 +2264,12 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         ...existing,
         investigatedBy: (targetDistrict ? filledInvestigatorByDistrict.get(targetDistrict) : undefined) ?? null,
       };
+      // v2: the covering Investigator questions the target's occupant (identities taken now:
+      // a succeeding campaign evicts the target later in this same iteration).
+      if (v2 && campaign.investigatedBy !== null) {
+        inquiries.push({ investigator: campaign.investigatedBy, investigatorId: identityOf(campaign.investigatedBy),
+          target: campaign.targetBuildingId, targetId: identityOf(campaign.targetBuildingId) });
+      }
 
       const outcome = stepCampaign(campaign, day, witnessesAround(campaign.targetBuildingId), rng);
       if (!outcome) {
@@ -2237,6 +2336,16 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         successfulSaboteurs: 1, // a campaign is one saboteur's work, not a count of attackers
         evicted: target ? 1 : 0,
       };
+    }
+
+    // v2: each Investigator's existing leads for today, split over the inquiries it made.
+    if (v2) {
+      const perInvestigator = new Map<string, number>();
+      for (const q of inquiries) perInvestigator.set(q.investigator, (perInvestigator.get(q.investigator) ?? 0) + 1);
+      for (const q of inquiries) {
+        dealings.push({ tick: day, kind: 'evidence', provider: q.investigatorId, providerSite: q.investigator, recipient: q.targetId, recipientSite: q.target,
+          quantity: (frictionFor(q.investigator) * LEADS_PER_INVESTIGATOR_DAY * DAILY_ACTIVITY_MULTIPLIER) / perInvestigator.get(q.investigator)!, outcome: 'questioned' });
+      }
     }
 
     // OPENING is where the hazard now lives — the same daily 1/cadence roll, and the same
@@ -2382,6 +2491,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     ...occupantsOf(couriers),
     ...occupantsOf(investigators),
     ...occupantsOf(importExporters),
+    // v2: Grifters stand somewhere real, so they hear, are addressed and speak where they stand.
+    ...(v2 ? grifters.map((g) => ({ playerId: g.id, x: g.x, y: g.y })) : []),
   ].map(p => participant ? {...p,playerId:participant.identityFor(p.playerId)} : p);
   const occupantPositionById = new Map(occupants.map((o) => [o.playerId, { x: o.x, y: o.y }]));
   const proximityGraph = buildProximityGraph(occupants, config.commsProximityRange);
@@ -2414,6 +2525,29 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       lastRumourEvents.push({ heardBy: neighborId, heardFrom: post.authorId, state, distorted, clarity: step.nextClarity });
     }
   }
+  // v2: Grifters also hear Wall posts made in their own district (owner decision 2026-10-20),
+  // with the Wall's base success chance, from `hashUnit` rather than `rng`.
+  if (v2) {
+    const districtOfIdentity = new Map<string, string>();
+    for (const [buildingId, districtId] of buildingDistrictId) {
+      const filled = filledEntries({ millers, bakers, couriers, investigators, importExporters }).some((e) => e.buildingId === buildingId);
+      if (filled) districtOfIdentity.set(identityOf(buildingId), districtId);
+    }
+    for (const g of grifters) if (g.districtId) districtOfIdentity.set(identityOf(g.id), g.districtId);
+    for (const post of world.pendingWallPosts) {
+      if (participant && !participant.allowAction('communication', post.authorId)) continue;
+      const home = districtOfIdentity.get(post.authorId);
+      if (home === undefined) continue;
+      for (const g of grifters) {
+        const gid = identityOf(g.id);
+        if (g.districtId !== home || gid === post.authorId) continue;
+        if (lastRumourEvents.some((e) => e.heardBy === gid && e.heardFrom === post.authorId)) continue;
+        if (hashUnit(world.seed, day, 'grifter-wall', post.id, gid) < 0.6) {
+          lastRumourEvents.push({ heardBy: gid, heardFrom: post.authorId, state: post.state, distorted: false, clarity: 0.7 });
+        }
+      }
+    }
+  }
 
   // Proximity conversation (`comms/proximityConversation.ts`, wired 2026-08-18). Unprompted-
   // only per `pendingWallPosts`/`pendingDiaryEntries`'s own convention — never generated by
@@ -2428,6 +2562,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // `lastRumourEvents`.
   const lastProximityConversations: ProximityConversationHeardEvent[] = [];
   const lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }> = [];
+  const talkInteractions: Interaction[] = [];
   for (const pending of world.pendingProximityUtterances) {
     if (participant && !participant.allowAction('communication', pending.speakerId)) continue;
     const neighbors = proximityGraph.neighbors(pending.speakerId);
@@ -2448,7 +2583,12 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
         if (!speakerPos || !listenerPos) continue; // defensive only — every neighbor came from occupantPositionById's own keys
         const distanceToListener = Math.abs(speakerPos.x - listenerPos.x) + Math.abs(speakerPos.y - listenerPos.y);
         const heard = degradeForListener(utterance, distanceToListener, config.commsProximityRange, [...presentPlayerIds], rng);
-        if (heard) lastProximityConversations.push({ listenerId, heard });
+        if (heard) {
+          lastProximityConversations.push({ listenerId, heard });
+          // v2: direct address is judged by the speaker's intent; anyone else only overheard.
+          if (v2) talkInteractions.push({ observer: listenerId, subject: pending.speakerId,
+            kind: pending.referent.kind === 'player' && pending.referent.playerId === listenerId ? 'address' : 'overheard' });
+        }
       }
     } catch (err) {
       lastProximityRejections.push({ speakerId: pending.speakerId, reason: err instanceof Error ? err.message : String(err) });
@@ -2461,9 +2601,22 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // ledger is untouched by this — see identity.ts's header for why this signal, and why it's
   // asymmetric by construction rather than by extra bookkeeping.
   let identityLedger = world.identityLedger;
-  for (const event of lastRumourEvents) {
+  if (!v2) for (const event of lastRumourEvents) {
     identityLedger = recordEncounter(identityLedger, event.heardBy, event.heardFrom);
   }
+  // v2: one recognition step from today's real interactions — dealings (both parties), direct
+  // address (addressee learns speaker), overheard talk and heard Wall posts (passive only).
+  const recognitionTick = v2
+    ? stepRecognition(v2.recognition, day, [
+      ...dealings.flatMap((e) => dealingPairs(e).map(([observer, subject]) => ({ observer, subject, kind: 'dealing' as const }))),
+      ...talkInteractions,
+      ...lastRumourEvents.map((e) => ({ observer: e.heardBy, subject: e.heardFrom, kind: 'wall' as const })),
+    ])
+    : undefined;
+  // A diary subject the validator admitted against yesterday's view stays writable today.
+  const knownForDiary = (author: string) => (v2 && recognitionTick
+    ? new Set([...resolvedBy(v2.recognition.ledger, author), ...resolvedBy(recognitionTick.state.ledger, author)])
+    : resolvedSubjects(identityLedger, author));
 
   // Diary writes (wired 2026-08-13, retention model corrected the same day). Unprompted-only
   // per diary.ts's own rule — this only ever processes what a real player queued via
@@ -2477,7 +2630,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   for (const entry of world.pendingDiaryEntries) {
     if (participant && !participant.allowAction('diary', entry.authorId)) continue;
     try {
-      writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, resolvedSubjects(identityLedger, entry.authorId), entry.context);
+      writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, knownForDiary(entry.authorId), entry.context);
       lastDiaryWrites.push(entry.authorId);
     } catch (err) {
       lastDiaryRejections.push({ authorId: entry.authorId, reason: err instanceof Error ? err.message : String(err) });
@@ -2507,11 +2660,23 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // `world.shard` below, which Stage 1's own comment describes as "static geography... Phase
   // B doesn't move anyone" — weather is the one thing that now changes on it every tick.
   const sabotagedDistrictId = lastSabotage ? buildingDistrictId.get(lastSabotage.targetBuildingId) : undefined;
+  let wallReachNext: WallReach | undefined;
+  if (v2) {
+    const reachToday = new Map<string, number>();
+    for (const post of world.pendingWallPosts) {
+      if (participant && !participant.allowAction('communication', post.authorId)) continue;
+      const hearers = new Set(lastRumourEvents.filter((e) => e.heardFrom === post.authorId).map((e) => e.heardBy));
+      reachToday.set(post.authorId, occupants.length > 1 ? hearers.size / (occupants.length - 1) : 0);
+    }
+    wallReachNext = recordWallReach(v2.wallReach, day, reachToday);
+  }
   const pressureContributionByDistrict: Record<string, number> = {};
   for (const [authorId, record] of Object.entries(pressureLedger)) {
     const districtId = buildingDistrictId.get(participant?.locationFor(authorId) ?? authorId);
     if (!districtId) continue; // grifters and anyone without a building have no district to register in
-    const contribution = pressureContribution(record, knownFraction(identityLedger, authorId));
+    // v2: amplified by how widely the author's posts have been heard (observable exposure),
+    // never by who has come to recognise them.
+    const contribution = pressureContribution(record, wallReachNext ? wallExposure(wallReachNext, authorId) : knownFraction(identityLedger, authorId));
     if (contribution > (pressureContributionByDistrict[districtId] ?? 0)) {
       pressureContributionByDistrict[districtId] = contribution;
     }
@@ -2659,5 +2824,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     sabotageCampaigns,
     nextCampaignId,
     lastSabotageCampaignEvents: sabotageEvents,
+    ...(v2 && recognitionTick && regularsNext && wallReachNext
+      ? { recognitionV2: { recognition: recognitionTick.state, regulars: regularsNext, wallReach: wallReachNext }, lastDealings: dealings,
+        lastRecognitionChanges: { gained: recognitionTick.gained, lost: recognitionTick.lost } }
+      : {}),
   };
 }

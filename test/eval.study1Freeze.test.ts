@@ -6,29 +6,35 @@ import { contractHash } from '../src/eval/constructs/authorityAttribution.js';
 import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.js';
 
 /**
- * Study 1 freeze (owner runs it 2026-10-22; docs/research/RUNBOOK_AUTHORITY_STUDY_1.md).
+ * Study 1 freeze (run postponed on 2026-10-21 until the owner reactivates it; docs/research/RUNBOOK_AUTHORITY_STUDY_1.md).
  * The research object must not change mid-study: these pins hold the exact request bytes the
  * live model receives, the contract and the manifest. A failure here means a change would alter
- * what study 1 measures. Do not re-pin to make it pass: ship the change as a new rules/scenario
- * version after study 1, then move these pins to a new study's freeze test.
+ * what study 1 measures.
+ *
+ * Pins moved deliberately, before any study, by owner direction on 2026-10-21 ("no study starts
+ * with known issues"; study 1 depends on the viable solution):
+ *   1. contract 1.1.0 runs on the tightened recognition-v2 baseline (v1 manifest was cb172eea...);
+ *   2. v2 observer references shortened to 64 bits, because v2 requests reached 32,756 of the
+ *      32,768-byte fail-closed ceiling (now about 26 KB at most). The manifest is unchanged by 2.
+ * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
 const MODEL = 'gpt-5.4-nano-2026-03-17';
 const NULL_DECISION = JSON.stringify({ move: null, communication: null, diary: null, role: null });
 const TICK0 = {
-  'baker-0': '733d6cbc6973840301539144b344e2417266158a7306c7203affce95e78e12d3',
-  'baker-1': 'ab5a5e7bd5f171efdde9c563e15f3c702b1d2ff814a95dc23d89cde7f16ec37d',
-  'miller-0': '09031619cc1cf2de8014fc0e61ac3e11ca7a85a059bd999a562059c4a223dd00',
-  'courier-0': 'a088ec3f11b7dfe43b44ad1b99981d743f7ad2f63f369062df930c79790bf94c',
-  'investigator-0': 'ac4c7a888f1e64b07dfd522a761c087736e46e4221696d11ab47a6e439d5678b',
-  'importexport-0': 'cd556208368532c81f78e0736def64b4e05cb09738bd14f1931153dc8063c6ba',
-  'grifter-0': 'aebbb29134aa5496c52dc1c412befb7e775596ad18e3e230792a1a18d53f3c01',
+  'baker-0': 'c2ae5ef869b0c7a4a1f0a540728430f09fb7e2c7bfff88a3524bfe2ca78cf944',
+  'baker-1': '8bb540e8f68be992a5b39bf7c71e28d04f6fe7982eea69c0f9adc952f546ef35',
+  'miller-0': 'ad587fe9d4711cadc31ef4f3dcb7ad5f963303d296a4b2ee62af9f59affadf75',
+  'courier-0': '2043d726bdac79e5632abe4e8852a30f4c9d11bb9fbb2e5417ade744c2f86b57',
+  'investigator-0': '28145e3eea26227bbadd631979706a3608a778d6234e850371b69593dfe2d92b',
+  'importexport-0': 'a60b461b19fc6042d10a35bbfe20daf7238429aca8fc17bee9ac433c4689b720',
+  'grifter-0': '190723b50be271b0ad621221a16a774ddd30981ec51f6ef00ac67864613765e5',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '4701d1ad6fda4349232d014a3a16c89496c805f1041784cce3ae65f9f84eaeb6', 'miller-0': '76c701da78ac9a080bfa3a70bb02f10006fa9ce3f4a8820847caf0695c641618', 'grifter-0': '070dba9bf9d1a76f32537ff0bbd7882fa351ff1531a572d177eb021fc0264c7c' },
-  anonymous: { 'baker-0': 'e64ff21cec7ce309e91afee5e7ffe29b6c131f8cc6c77498cd251ee75381acda', 'miller-0': '3dd07bfa39392c3100f150975b062228ef834d97e4075f0eea014cbc1bcc75a0', 'grifter-0': '58c0270ecab2f6dfc863568b46250f2df449c78671d76c555e4e30614ac9d13e' },
-  none: { 'baker-0': 'c9661f5169d124aaac9b2a5b5298db86e98499ae59504eec5f5d95fabc68de42', 'miller-0': '082a83faf3f832a89c0f916cf26e94d98c110fef18c6b76b6f75b3c6d0547b51', 'grifter-0': '34593ee90c8da37cb6a29d49d3336a8287d59a6700b2c3ba056027a15048be15' },
+  council: { 'baker-0': '41926678a858d84201d902a12734c34f6f4b36b98489bd5159247a52869b728e', 'miller-0': 'b0bdfb4535d5ca45f2a7c82e9eb22f1e544c69ff7d4c88f90dfc6adc20d82d76', 'grifter-0': '5cdab81630ee39aeed3c38defc4807f43d67d7d426f9f695379185e85ace739a' },
+  anonymous: { 'baker-0': '535056a829c6ed4006f4b5a0d7b94b0cf51129dae024967b556fdd9064eacdcd', 'miller-0': '6048eae720ff89100ed5ce237ce114f76fcb0c0735839ed6e07acb1ce8f8c1f9', 'grifter-0': '7838fcc35fb8267f7c45e6d54eab67dff7f4966a5974430ccfa850baba714850' },
+  none: { 'baker-0': 'fd4df1d98a937dd742bf8122ef32499b0ec73b4de3def7d63330a780775de8d5', 'miller-0': 'fa40629be21c00c144c8b3b3b741473bd3e6090d2100c25d24cf719416bc81e3', 'grifter-0': 'cba7e88d91d3cdd2dd04d0ceb9c27f73f30290a46d1c982bfec2e79948f02f15' },
 };
 
 describe('study 1 is frozen until it has run', () => {
@@ -54,4 +60,4 @@ describe('study 1 is frozen until it has run', () => {
   });
 });
 
-const MANIFEST_SHA256 = 'cb172eea5cc387c3a41bc92efe44c249b8f5ca82622610f70c8510b8b8883166';
+const MANIFEST_SHA256 = 'c875f610a9c2b3df1077c7db5ebcbacccea1e8282910f576bfca7b36c162d0d5';

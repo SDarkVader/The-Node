@@ -3,8 +3,11 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "90b4954468e431fe4d1ea5408816e76e38917bdf",
+  "verifiedBaseCommit": "a7591824f467759d227835c50a00691d9539501a",
   "completedWork": [
+    "2026-10-21 (late night): PR #31 opened. Fixed a study-breaking request-size blocker (v2 requests at 32,756 of the 32,768-byte fail-closed ceiling) with 64-bit v2 observer references (max ~26 KB now; headroom regression test); freeze pins moved a second time (bytes only). identityResolved no longer sends the raw player id. Cheaper-model research running; owner has an RTX 4070 Ti Super (16 GB), 64 GB RAM, Ryzen 7 7800X3D for local models.",
+    "2026-10-21 (night): owner directed that study 1 depends on the viable solution and must not start with known issues. Closed the v2 data blockers (protected protocol.ts Grifter gate via DecisionContext.rules 'v2', owner-authorised; decision schema; person-owned speech/diary across role changes; rules text v2; workplace Courier pay) and rebased study 1 onto authority contract 1.1.0 (design.world.recognition 'v2'): contract snapshot, manifest and freeze pins moved once, deliberately. Tests updated to the v2 baseline; G1 history untouched.",
+    "2026-10-21 (evening): recognition v2 and individual dealings implemented as an opt-in rules version (WorldConfig.recognition = 'v2'; engine/recognition.ts, engine/dealings.ts; world.ts, observer.ts, responsesRequest.ts, worldProtocol.ts). Default v1 is byte-identical. Owner postponed study 1 until reactivated; runbook, README, register, A01, EVAL_INFRASTRUCTURE and this checkpoint updated. PR #30 merged at a759182.",
     "2026-10-21: user merged PR #29 (recognition v2 first and second pass) at 90b4954; tree identical to reviewed head b8c46bd. Post-merge review (the automated review workflow stopped on a session limit before any reviewer finished, so checks were run directly): corrected three overstated or stale claims in the simulation note and DEVLOG (6-9 Bakers in post, not 'roughly 9'; 22 spot-checked facts, not 21; 17 tests and 16 killed mutations, not 11 and 6). No relative link broken; no number in the evidence report changed.",
     "2026-10-21 (later): recognition v2 second pass on the owner's statements (resolution can be lost; role holders must interact with customers; speaking is optional; refusal is a signal; deception is also interpretation). Grounded by read-only investigators. Harness extended with a capped, hysteretic ledger, perceived refusal, a modelled customer channel and intended/heard intent; first-pass report reproduced byte for byte. Results and open questions Q1-Q5 in RECOGNITION_V2_SIMULATION_2026-10-21.md. Dated notes on the superseded design passages; A01 records the decisions. Found: courier pay follows current position, contrary to the live rules text and the binding decision; recorded as a study-1 limitation in the runbook.",
     "2026-10-21: recognition v2 run in simulation before building (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md; src/sim/recognitionV2Harness.ts; npm run recognition-v2-sim). Shadow ledger over real kernel hearings; nothing written back, study 1 unaffected. Found: the literal spec credits silent bystanders (one utterance reaches a median 39 listeners), address must be judged by intent, a permanent ledger saturates, pressure amplification would collapse unless decoupled, and Grifter churn is high. Recommended rule I1D pending owner decisions R1-R5. PR #28 (A01) merged by the user at e2ff353.",
@@ -34,6 +37,9 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-21 (late night, Linux): Vitest 1286/1286; Python 28/28; G1 29/29; G2 12/12; freeze 4/4 at the re-pinned bytes.",
+    "2026-10-21 (night, Linux): Vitest 1285/1285; Python 28/28; G1 29/29 vs main-consolidation-2026-10-20; G2 constructs 12/12 fixture checks, 9 deterministic; accounted-study rehearsal 8/8 on the v2 manifest; study-1 freeze 4/4 at the new pins.",
+    "2026-10-21 (evening, Linux): full Vitest 1279/1279, TypeScript, Python 28/28; G1 verify 29 deterministic and replay-verified, compare_hashes 29/29 equal to main-consolidation-2026-10-20; G2 constructs deterministic; study-1 freeze 4/4. test/world.recognitionV2.test.ts 19/19 with 10 kernel mutations killed. v1 vs v2 over 10 seeds x 300 days: bread unchanged (paired +2.6, SD 44), settlement residual ~3e-12 both, mean FILLED Baker wealth +5.0 (+14%, paired SD 4.8), Gini -0.019 (n.s.).",
     "2026-10-21 (later): recognition-v2 tests 17/17; 10 further mutations (cap, hysteresis, refusal answer/direction/window, custom credit, baker-side purchase, customer RNG isolation, heard intent, loyal weekly cycle) each fail at least 1 test. Courier probe: 5-day courier earnings 0.71 staying, 2.61 walking away from the hub.",
     "2026-10-21 on top of e2ff353 (Linux): recognition-v2 tests 11/11; mutations (ignore intent, widen exchange window, drop decay, drop address requirement, Grifter hears rejected talk, drop modelled Grifter speech) each fail at least 1 test. Shadow v1 vs kernel: 694 pairs, 0 mismatches. Full-suite and freeze-test results for this head are recorded in the commit/PR, not claimed here.",
     "2026-10-20 A01 on top of 022c0bf (Linux): diary contract tests 12/12 (179 kernel-confirmed writes, 142 supported rumour claims in the faithful run; mutations forcing eligibility and inverting grounding fail 3 and 2 tests); study-1 freeze 4/4, and a one-character rules-text change fails 3 of them.",
@@ -61,9 +67,8 @@
     "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
   ],
   "unresolvedIssues": [
-    "After study 1, as a new rules version: recognition model v2, the Grifter diary gate in the protected validator and kernel, Grifter proximity speech/hearing and district Wall hearing, and rules text v2 for the diary. Owner statements of 2026-10-21 settle R1-R3; R4, R5 and Q1-Q5 (refusal credit, per-person purchases and their economic re-simulation, silent customers, lapse timescale, other roles' customers) in docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md come before constants. Per-person trade/delivery records and multi-member campaigns do not exist yet; the client wire cannot withdraw identityResolved.",
-    "Courier pay follows the courier's current position (world.ts courierClaims reads slot x/y, which moves write), contradicting rulesContext.ts's live text and EXPERIMENT_FIRST_INHABITANT.md:32. Not fixed before study 1 (frozen); fix the kernel after study 1 and re-run G1 hashes.",
-    "Study 1 not yet run (owner runs it 2026-10-22 on the PC with the credential and private allowance). If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
+    "Study-path design choices still open: a proximity address to someone out of range is admitted by the validator and dropped by the kernel (documented to agents; not a measured effect in study 1); study 1's 6-tick episodes cannot show recognition-dependent behaviour (first resolution takes ~10+ days); Courier commissions and multi-member campaigns do not exist (delivery/evidence attribute existing flows). Repeat custom raises mean Baker wealth ~14%.",
+    "Study 1 not yet run: postponed on 2026-10-21 (it was planned for 2026-10-22) until the owner reactivates it; it runs on the PC with the credential and private allowance and stays frozen until then. If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
     "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
     "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
     "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; growing past SHARD_COUNT_CAP (3) shards is a design decision, not built.",
@@ -74,8 +79,8 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Owner: run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md on 2026-10-22; share study1-analysis/results.json and summary.md.",
-    "After study 1: owner answers R4, R5 and Q1-Q5 (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md); fix courier pay to the workplace route; then implement recognition v2 and the Grifter gate per docs/research/DIARY_CONTRACT_A01.md, re-running npm run recognition-v2-sim on the chosen constants before trusting; move the freeze test to the next study.",
+    "Owner: when reactivated, run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (postponed on 2026-10-21); share study1-analysis/results.json and summary.md.",
+    "When the owner reactivates study 1: run it per the runbook on contract 1.1.0 (recognition-v2 baseline). Before a diary/recognition study: decide episode length (recognition needs ~10-20 days of dealings) and its allowance.",
     "G5: add seeds (contract v1.1) and a frozen analysis plan before a larger allowance.",
     "G3: accounted custom-provider adapter with execution disabled (synthetic ledgers, loopback responses, crash/failure injection), per DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md.",
     "G5 protocol for authority attribution: held-out seeds, arm-order randomization, exclusions, episode-level uncertainty.",
@@ -94,8 +99,8 @@ at `9d004e8` on 2026-10-20, after its hosted checks passed on head `c59dd70`. Th
 Windows Main integration, including the 80 native checks, and both Linux Research conformance
 runs. The merged tree is identical to that head, and a clean `main` checkout passes tracked
 recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`
-and PR #29 (recognition v2 simulation) at `90b4954`. This checkpoint anchors at `90b4954` and accepts `main` or the exact task branch
-`ccr-8d64b59c-a4puhv`, which carries post-merge review corrections.
+and PR #29 (recognition v2 simulation) at `90b4954`, and PR #30 at `a759182`. This checkpoint anchors at `a759182` and accepts `main` or the exact task branch
+`ccr-8d64b59c-a4puhv`, which carries recognition v2 and study 1 rebased onto it (contract 1.1.0).
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -112,7 +117,7 @@ bytes until then. Recognition v2 has been run in simulation
 owner's 2026-10-21 statements settle R1–R3, with R4, R5 and Q1–Q5 still open. A courier-pay defect is
 recorded as a study-1 limitation in the runbook.
 
-**Next:** the owner runs study 1 from `main` on 2026-10-22 per the
+**Next:** study 1 is postponed (2026-10-21) until the owner reactivates it; it then runs from `main` per the
 [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `gpt-5.4-nano-2026-03-17`.
 
 D1 is resolved: the diary is a measured daily task, and the earlier unprompted-only and marks-only

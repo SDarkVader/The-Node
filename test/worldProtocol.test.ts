@@ -157,8 +157,9 @@ describe('identityResolvedMessages', () => {
 
     expect(msg).toBeDefined();
     expect(tick.people.some((p) => p.handle === msg!.handle)).toBe(true);
-    expect(msg!.playerId).toBe(filled.buildingId);
     expect(msg!.face).toBeDefined();
+    expect(Object.hasOwn(msg!, 'playerId')).toBe(false); // the raw id never reaches the wire
+    expect(JSON.stringify(msg)).not.toContain(filled.buildingId);
   });
 
   it('sends nothing when an observer has resolved nobody — silence is the default', () => {

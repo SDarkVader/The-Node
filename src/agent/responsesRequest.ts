@@ -55,6 +55,8 @@ export function responsesObservation(observation: AuthorizedObservation) {
     }),
     diary: array(p.diary).map(x => pick(x, ['subject', 'observation', 'reading', 'context'])),
     legalMoves: c.legalMoves.map(point => ({ ...point })),
+    // Recognition v2 worlds only: the observer's own dealings. Absent otherwise, so v1 request bytes are unchanged.
+    ...('dealings' in p ? { dealings: array(p.dealings).map(x => pick(x, ['kind', 'as', 'counterparty', 'quantity', 'outcome'])) } : {}),
   };
   if (projection.tick !== c.tick || projection.self.ref !== c.selfRef || projection.self.role !== c.role || projection.self.roleEpoch !== c.roleEpoch ||
     JSON.stringify(p.legalMoves) !== JSON.stringify(c.legalMoves) ||

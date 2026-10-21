@@ -61,13 +61,13 @@ passages.
 | Two-day retention; observation and reading drift at 0.2/day; subject and context never drift | Built | `test/eval.diaryContract.test.ts` kernel-invariant tests |
 | Owner-only reads; reading is side-effect free; ageing happens at the kernel boundary | Built | same tests (state hash unchanged by reads; no other actor sees the entry) |
 | Unrecognised subject or self-entry rejected | Built | `attempted_but_rejected` reachability test |
-| **Grifters may write** | **Not yet.** The validator (`src/agent/protocol.ts`, a protected core file) and the kernel's role-holder gate still refuse Grifters. | classifier reports `grifter_gate_pending` |
-| **Recognition model v2** | **Not yet.** Today one heard Wall post is one encounter, and 5 encounters recognise. | see the next section |
+| **Grifters may write** | **Built on the v2 baseline** (2026-10-21, owner-authorised edit of `src/agent/protocol.ts`): a `rules: 'v2'` context lets Grifters speak and write; v1 contexts still refuse. | `test/world.recognitionV2.test.ts`; classifier reports `grifter_gate_pending` only without the marker |
+| **Recognition model v2** | **Built, opt-in** (`WorldConfig.recognition = 'v2'`, 2026-10-21): direct address and repeated dealings, ~60-day lapse, Grifters in the proximity graph. v1 stays the default until study 1 has run. | `test/world.recognitionV2.test.ts` |
 | Trespass reveal of full entries | Specified for A04; trespass is not built | — |
-| Rules text that tells live models the diary is a daily task | **Inactive.** Live models are still told "use diary=null". | `test/eval.study1Freeze.test.ts` |
+| Rules text that tells live models the diary is a daily task | **Active on the v2 baseline** (`node-rules-context-v2`, the `rulesTextV2` wording). v1 requests still say "use diary=null". | `test/world.recognitionV2.test.ts`, `test/eval.study1Freeze.test.ts` |
 
 **Why the changes wait.** The Grifter gate, recognition v2 and the new rules text all change what
-actors may do, see or be told. Study 1 runs on 2026-10-22 on the rehearsed code. So these changes
+actors may do, see or be told. Study 1 runs on the rehearsed code (planned for 2026-10-22, postponed on 2026-10-21 until the owner reactivates it). So these changes
 land afterwards, as a new rules version and a new scenario version. Until then,
 `test/eval.study1Freeze.test.ts` pins study 1's exact request bytes, its contract and its manifest.
 

@@ -3,6 +3,9 @@
 2026-10-21. A follow-up to the [A01 diary contract](DIARY_CONTRACT_A01.md). Constraint 1 says to
 simulate before trusting, so v2 was run in simulation before anything is built.
 
+> **Implemented 2026-10-21 (opt-in):** `src/engine/recognition.ts`, `src/engine/dealings.ts`,
+> `WorldConfig.recognition = 'v2'`; tests in `test/world.recognitionV2.test.ts`.
+>
 > **Second pass, same day.** The owner's statements of 2026-10-21 answered R3 and changed R2. They
 > also added customers, refusal and interpretation; these are simulated in
 > [§ Second pass](#second-pass-the-owners-statements-of-2026-10-21).
@@ -283,3 +286,10 @@ on the client wire (`identityResolved` cannot be withdrawn today).
 - Study 1's courier is measured on a Wall post, so its primary measure is unaffected. Read courier
   wealth in study 1 with this in mind, and fix the defect after study 1, since the kernel is
   frozen until then.
+
+**Latent fixture defect found while rebasing study 1 (2026-10-21).** The Python fixture policies
+(`evals/inspect_node/policies.py`) read `self.role` from the observation as received. On an
+observation in the packed table form they therefore never saw their role: a Baker's price was
+blanked and a Grifter was not silenced. This affected only scripted fixture behaviour, never the
+kernel. v2 observations are now unwrapped. v1 reading is left exactly as archived, because G1 must
+reproduce the archived v1 hashes (29/29), and those hashes include that behaviour.
