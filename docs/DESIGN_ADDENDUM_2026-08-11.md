@@ -37,6 +37,8 @@ gives it one.
   trade history between the two players (a threshold number of completed transactions), or
   an established relationship already recorded in existing state. Never a timer, never a
   purchase, never a manual toggle.
+> **Note 2026-10-21 (owner: resolution can be lost; see [recognition v2 simulation](research/RECOGNITION_V2_SIMULATION_2026-10-21.md)):** "never a timer" governs how resolution is *gained*. Recognition v2 also lets it lapse when real events stop, which is decay through the absence of events. It is not built yet.
+
 - Resolution is per-pair and asymmetric-capable: A resolving B does not imply B has resolved
   A. Do not collapse this to a global "known" flag.
 - Faces are deterministic procedural generation seeded from the player id. The same player

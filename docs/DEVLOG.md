@@ -1,3 +1,21 @@
+> 2026-10-21 (later) — Recognition v2, second pass on the owner's statements: resolution can be lost, role holders must interact with customers, speaking is optional, refusal is a signal, deception is also interpretation.
+>
+> **Grounded first:** four read-only investigators and a critic (21 cited facts spot-checked).
+> - Identity (a stable per-observer ref) and resolution (face, `knownSubjects`, the diary gate) are already separate in code.
+> - The 2-day diary is the owner's own "yesterday's mechanical memory".
+> - Bread demand is an aggregate price-share count with no per-person purchase. The 2026-08-11 trigger, "verified trade history", was never buildable on it.
+>
+> **Simulated** (harness extended; the first-pass report is reproduced byte for byte):
+> - A capped ledger with hysteresis lapses on a bounded clock: 61 days for cap 150 and lose-below 90. If contact resumes, re-resolution takes 7 days against 10 the first time.
+> - Silent refusal, credited at half an address, lets the addresser recognise the silent person in 21 days. A spoken `refuse` is a full exchange (10 days).
+> - The addressee mishears a `refuse` 16% of the time, as deflect or needle.
+> - Customers recognise their Baker only with regulars: 19 days at a purchase worth 3 addresses, and 84% of the population is known by someone. With the kernel's per-day price share, almost nobody is.
+> - 17 tests; 10 mutations killed.
+>
+> **Found on the way:** courier pay follows the courier's current position, contradicting the live rules text and the retained binding user decision in `EXPERIMENT_FIRST_INHABITANT.md`. It was confirmed on the kernel (0.71 rising to 2.61 by walking). It does not affect study 1's primary measure; recorded in the runbook and fixed after study 1.
+>
+> **Docs:** dated notes on the "reliable once earned", ephemerality, "never a timer" and silent-grinder passages. A01 records the decisions.
+
 > 2026-10-21 — Recognition v2 run in simulation before building it (constraint 1).
 >
 > **How:** real participant-kernel episodes with scripted policies; each day's real hearings replayed through ten candidate rules into a shadow ledger. Nothing is written back, so study 1 is unaffected. Rule v1 on kernel hearings reproduces the kernel's ledger exactly (694 pairs, 0 mismatches). Grifter channels are modelled and flagged; trades, deliveries and campaigns have no record and are not credited.

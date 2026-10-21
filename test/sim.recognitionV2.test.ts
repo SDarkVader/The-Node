@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runEpisode, resolve, daysTo, SCENARIOS, CANDIDATE_RULES, type Episode, type Hearing, type Rule } from '../src/sim/recognitionV2Harness.js';
+import { runEpisode, resolve, runLedger, daysTo, SCENARIOS, CANDIDATE_RULES, OWNER_RULES, type Episode, type Hearing, type Rule } from '../src/sim/recognitionV2Harness.js';
 
 /**
  * Recognition v2 pre-build simulation (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md).
@@ -8,12 +8,12 @@ import { runEpisode, resolve, daysTo, SCENARIOS, CANDIDATE_RULES, type Episode, 
  * rests on.
  */
 
-const rule = (id: string) => CANDIDATE_RULES.find((r) => r.id === id)!;
+const rule = (id: string) => [...CANDIDATE_RULES, ...OWNER_RULES].find((r) => r.id === id)!;
 const talk = (day: number, hearer: string, source: string, addressed = true): Hearing =>
   ({ day, channel: 'talk', hearer, source, closeness: 0.5, addressed, addressedIntended: addressed, modelled: false });
 const synthetic = (days: number, hearings: Hearing[]): Episode => ({
   seed: 0, days, persons: new Map([['a', 'A'], ['b', 'B'], ['c', 'C']]), hearings, population: ['A', 'B', 'C'],
-  departedOn: new Map(), kernelV1: new Map(), talkAudience: [], trace: new Map(),
+  departedOn: new Map(), kernelV1: new Map(), talkAudience: [], trace: new Map(), customers: 'none',
 });
 const daily = (days: number, f: (d: number) => Hearing[]) => Array.from({ length: days }, (_, d) => f(d)).flat();
 
@@ -107,5 +107,71 @@ describe('real kernel episodes', () => {
     expect(new Set(keys).size).toBe(keys.length); // one utterance is heard at most once by each listener
     const roleOnly = ep.hearings.filter((h) => !h.modelled);
     expect(roleOnly.every((h) => h.hearer !== G && h.source !== G)).toBe(true);
+  });
+});
+
+describe('owner statements of 2026-10-21 (synthetic hearings)', () => {
+  it('resolution is lost after the bounded lapse, and the trace left makes re-resolution faster', () => {
+    // O-short: threshold 120, talk 14, decay 1, cap 150, lose below 90. Contact days 0-19, then 140-159.
+    const ep = synthetic(160, daily(160, (d) => (d < 20 || d >= 140 ? [talk(d, 'A', 'B')] : [])));
+    const run = runLedger(ep, rule('O-short'));
+    expect(run.intervals.get('A>B')).toEqual([[9, 80], [146, null]]); // 14+13d >= 120 at d=9; 150-61 < 90 at d=80; 29+14+13*6 at d=146
+    expect(run.first.get('A>B')).toBe(9);
+    // Without the cap, 20 days of dealings build 261 units, which outlast the 120-day gap entirely.
+    const uncapped = runLedger(ep, { ...rule('O-short'), cap: undefined });
+    expect(uncapped.intervals.get('A>B')).toEqual([[9, null]]);
+  });
+
+  it('a silent addressee is remembered by the addresser as a refusal; an answer within a day is not a refusal', () => {
+    const silent = synthetic(30, daily(30, (d) => [talk(d, 'B', 'A')])); // A addresses B daily, B never answers
+    expect(daysTo(resolve(silent, rule('O')), silent, 'a', 'b')).toBeNull();
+    expect(daysTo(resolve(silent, rule('O-R14')), silent, 'a', 'b')).toBe(11);
+    expect(daysTo(resolve(silent, rule('O-R14')), silent, 'b', 'a')).toBe(10);
+    const nextDay = synthetic(30, daily(30, (d) => (d % 2 ? [talk(d, 'A', 'B')] : [talk(d, 'B', 'A')])));
+    expect(runLedger(nextDay, rule('O-R14')).credit).toEqual(runLedger(nextDay, rule('O')).credit);
+  });
+
+  it('a purchase credits customer and Baker alike and nobody else', () => {
+    const custom = (day: number, h: string, s: string): Hearing => ({ day, channel: 'custom', hearer: h, source: s, closeness: 1, addressed: false, addressedIntended: false, modelled: true });
+    const ep = synthetic(30, daily(30, (d) => (d % 7 === 0 ? [custom(d, 'A', 'B'), custom(d, 'B', 'A')] : [])));
+    const run = runLedger(ep, rule('O-C45'));
+    expect(run.first.get('A>B')).toBe(14); // 45, 38+45, 76+45 = 121 on the third weekly visit
+    expect(run.first.get('B>A')).toBe(14);
+    expect(runLedger(ep, rule('O')).first.size).toBe(0); // the base rule ignores purchases
+  });
+});
+
+describe('owner statements of 2026-10-21 (real kernel)', () => {
+  it('the customer channel adds only modelled, mirrored purchase hearings and leaves every other hearing unchanged', () => {
+    const plain = runEpisode(103, 15, SCENARIOS.mixed!.policy);
+    for (const customers of ['mixed', 'nearest'] as const) {
+      expect(runEpisode(103, 15, SCENARIOS.mixed!.policy, { customers }).hearings.filter((h) => h.channel !== 'custom'), customers).toEqual(plain.hearings);
+    }
+    const shopping = runEpisode(103, 15, SCENARIOS.mixed!.policy, { customers: 'loyal' });
+    expect(shopping.hearings.filter((h) => h.channel !== 'custom')).toEqual(plain.hearings);
+    const purchases = shopping.hearings.filter((h) => h.channel === 'custom');
+    expect(purchases.length).toBeGreaterThan(0);
+    expect(purchases.every((h) => h.modelled)).toBe(true);
+    for (let i = 0; i < purchases.length; i += 2) {
+      expect(purchases[i + 1]).toMatchObject({ day: purchases[i]!.day, hearer: purchases[i]!.source, source: purchases[i]!.hearer });
+    }
+  });
+
+  it('customers keep the kernel purchase cycle: about one purchase per person per week', () => {
+    for (const customers of ['mixed', 'loyal'] as const) {
+      const ep = runEpisode(104, 28, SCENARIOS.quiet!.policy, { customers });
+      const perPersonDay = ep.hearings.filter((h) => h.channel === 'custom').length / 2 / (ep.population.length * 28);
+      expect(perPersonDay, customers).toBeGreaterThan(0.11);
+      expect(perPersonDay, customers).toBeLessThan(0.16);
+    }
+  });
+
+  it('records what was meant and what was heard: a refusal can be heard as its kernel neighbours only', () => {
+    const ep = runEpisode(103, 8, SCENARIOS.refuse_reply!.policy);
+    const B = ep.persons.get('importexport-0')!;
+    const fromB = ep.hearings.filter((h) => h.channel === 'talk' && !h.modelled && h.source === B);
+    expect(fromB.length).toBeGreaterThan(0);
+    expect(fromB.every((h) => h.intent === 'refuse' && ['refuse', 'deflect', 'needle'].includes(h.heardIntent!))).toBe(true);
+    expect(fromB.some((h) => h.heardIntent !== 'refuse')).toBe(true);
   });
 });

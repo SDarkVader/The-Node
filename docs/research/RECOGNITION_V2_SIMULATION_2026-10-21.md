@@ -3,6 +3,10 @@
 2026-10-21. A follow-up to the [A01 diary contract](DIARY_CONTRACT_A01.md). Constraint 1 says to
 simulate before trusting, so v2 was run in simulation before anything is built.
 
+> **Second pass, same day.** The owner's statements of 2026-10-21 answered R3 and changed R2. They
+> also added customers, refusal and interpretation; these are simulated in
+> [§ Second pass](#second-pass-the-owners-statements-of-2026-10-21).
+
 **Bottom line.** Study 1 is not affected; nothing here touches the kernel. v2 *as worded* fails:
 "proximity conversations count" and "sharing a district does not count" contradict each other in
 the kernel as built. A rule that credits only **direct address**, judged by the **speaker's
@@ -157,3 +161,125 @@ With R1–R3 as recommended (rule **I1D**), the measured outcomes are:
   cases. Those are my readings of the owner's wording, not the owner's.
 
 Constants should be set only after R1–R5 are decided, then re-run here before the kernel changes.
+
+## Second pass: the owner's statements of 2026-10-21
+
+> "We don't always lose identity, but we do lose identity resolution. Although memory of an
+> identity interaction remains in the diary and degrades. Those in a role must interact with
+> customers. Those who don't wish to communicate outside needn't communicate unless they choose
+> to. Refusal is also a signal to be remembered. Deception is also about interpretation."
+
+Before simulating, four read-only investigators and a critic mapped these against the code and
+the design docs (21 cited facts spot-checked). What they established:
+
+- **Identity and resolution are already separate in code.** Every person keeps one stable
+  per-observer reference for the whole game. Resolution only adds the face, membership of
+  `knownSubjects`, and permission to write a diary entry about them. So losing resolution means
+  dropping back to silhouette plus role icon while the identity remains, which is exactly the
+  owner's distinction. The 2026-08-06 addendum also expects "the player's own persistent memory
+  of a person" to outlast the system's record.
+- **The diary timescale is deliberate.** The owner's 2026-08-13 wording was "only yesterday's
+  mechanical memory of interaction". So the 2-day drifting diary and a recognition ledger lasting
+  months are two layers by design, not a mismatch.
+- **Customers have no per-person record.**
+  - Bread demand is `population / 7` per day, split across Bakers by inverse price. Nothing
+    records who bought from whom.
+  - Millers, Import/Export and Couriers have no counterparties at all.
+  - The original 2026-08-11 trigger for resolution was "verified trade history between the two
+    players". The customer statement restores that intent, but it needs new state.
+- **Refusal has two forms.** An explicit `refuse` intent addressed to someone already exists.
+  Silence leaves no kernel event, but the tape shows it: an address was heard and not answered.
+
+The harness gained a capped, hysteretic ledger (`cap`, `loseBelow`), a perceived-refusal credit,
+a modelled customer channel (`mixed`, `loyal`, `nearest`; harness-owned RNG, flagged `modelled`)
+and the intended and heard intent on every kernel talk hearing. The first-pass report is
+reproduced byte for byte. All second-pass rules build on I1D (address by intent, leaky).
+
+### Losing resolution, keeping a trace
+
+A and B address each other daily for 20 days, stop for 120 days, then resume (10 seeds):
+
+| Rule | First resolved | Lapses after contact stops | Re-resolved after resuming |
+|---|---|---|---|
+| O (cap 240, lose below 60) | day 10 | not within 120 days (window 180) | never lapsed |
+| O-short (cap 150, lose below 90) | day 10 | 61 days | 7 days (first time: 10) |
+
+- The cap bounds the lapse, at (cap − loseBelow) / decay days, whatever the length of the
+  history. Without the cap, 20 days of dealings outlast a 120-day gap entirely.
+- The credit left below `loseBelow` is the trace that makes re-resolution faster than the first
+  time ("we don't always lose identity"), until it too decays to zero.
+
+### Refusal
+
+20 seeds. In *one_way*, A addresses B daily and B is silent. In *refuse_reply*, B answers A
+daily with `refuse`.
+
+| Rule | one_way: A knows B | one_way: B knows A | refuse_reply, both ways | bystander |
+|---|---|---|---|---|
+| O | never | 10 days | 10 days | never |
+| O-R7 (silence worth half an address) | 21 days | 10 days | 10 days | never |
+| O-R14 (silence worth an address) | 11 days | 10 days | 10 days | never |
+
+- **A spoken refusal is already a full exchange** under direct address: both parties learn each
+  other in 10 days.
+- **Silence becomes a signal only with refusal credit.** The addresser perceives silence as
+  refusal whatever its cause: one communication a day, out of range, or offline. That is
+  interpretation, not proof of intent.
+- **Bystanders never learn either party.**
+
+**Interpretation, measured on real kernel hearings.** The addressee hears B's `refuse` correctly
+84% of the time. Otherwise it hears `deflect` (8.8%) or `needle` (7.3%). Far bystanders
+(closeness below 0.5) mishear it 23% of the time. So the same act reads as evasion or provocation
+to some listeners, and recognition credits the fact of the interaction (by intent) while each
+party keeps its own reading.
+
+### Customers (modelled; nobody speaks; 60 days, 10 seeds)
+
+| Model / purchase credit | People who know baker-0 | Days for a customer to know baker-0 | Population known by anyone |
+|---|---|---|---|
+| mixed (kernel price share, no loyalty), 45 | 3 | 39 [12–59] | 24% |
+| loyal (regular chosen by price share), 45 | 14 | 19 [11–57] | 84% |
+| nearest (nearest Baker), 45 | 16 | 19 [8–60] | 83% |
+| any model, 14 (a purchase worth one address) | 0 | 42 when it happens at all (rare) | 0–2% |
+
+- **Recognition through custom needs regulars.** Taken per person, the kernel's own demand split
+  (`mixed`) spreads each customer over roughly 9 Bakers. Visits to any one of them are too rare
+  to survive decay.
+- **Purchases are weekly**, because of the kernel's 7-day cycle. For a regular to know their Baker
+  in 10–20 days, one purchase has to be worth about three conversations. At that rate, the
+  controlled Grifter knows its Baker in about 18 days without ever speaking.
+- **A silent customer is still known to their Baker.** Under a regular-customer model, 84% of
+  the population is known by someone by day 60. This answers the constraint-2 worry that silent
+  players are never known, but it means silence protects no one from their Baker.
+
+### What this settles, and what is still the owner's
+
+**Settled.**
+- **R3:** resolution is lost through a leaky, capped ledger with a trace. The diary keeps its
+  2-day role.
+- **R1** stands by intent. The fact of an interaction is credited, and interpretation stays with
+  each listener (statement 5).
+- **R2:** being addressed counts for the listener (I1).
+
+**Still open:**
+
+| # | Question | Recommendation |
+|---|---|---|
+| Q1 | Does an unanswered address count toward the addresser recognising the silent person, and how strongly? | Half an address (O-R7: about 21 days). It is remembered, but weaker than an exchange, so some asymmetry is kept |
+| Q2 | Build per-person purchases? Which model? | Regulars drawn by price share (`loyal`), matching kernel demand in expectation. But loyalty changes price competition, so baker incomes and the Gini must be re-simulated first |
+| Q3 | Should silent customers (Grifters included) become known to their regular Baker? | Yes, as statement (2) implies. It also gives Grifters a path to being known without speaking |
+| Q4 | How long until resolution lapses after contact stops? | 60 days (O-short), with faster re-resolution if contact resumes within about four months |
+| Q5 | Who are the customers of Millers, Import/Export, Couriers and Investigators? | Define them before any of them count; none exist in code |
+
+R4 (room talk) and R5 (decouple pressure detection) are unchanged. Also unchanged, and still to
+be built, are the Grifter gate, putting Grifters in the proximity graph, and a downgrade message
+on the client wire (`identityResolved` cannot be withdrawn today).
+
+**Unrelated defect found on the way (study 1 context).**
+- The courier's wage follows its **current position**, not its workplace. The live rules text
+  says the opposite, and so does the binding decision in `EXPERIMENT_FIRST_INHABITANT.md:32`.
+- Measured on the kernel: walking away from the hub raised a courier's 5-day earnings from 0.71
+  to 2.61.
+- Study 1's courier is measured on a Wall post, so its primary measure is unaffected. Read courier
+  wealth in study 1 with this in mind, and fix the defect after study 1, since the kernel is
+  frozen until then.

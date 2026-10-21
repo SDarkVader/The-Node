@@ -26,6 +26,27 @@ says so, and it says when it will be built.
   - Simply sharing a district does not count.
 - **Grifters need information.** They hear Wall posts in their own district, and they speak and hear proximity conversations where they stand. Saboteurs need cooperation through information asymmetry and uncertainty.
 
+## Decisions (owner, 2026-10-21)
+
+> "We don't always lose identity, but we do lose identity resolution. Although memory of an
+> identity interaction remains in the diary and degrades. Those in a role must interact with
+> customers. Those who don't wish to communicate outside needn't communicate unless they choose
+> to. Refusal is also a signal to be remembered. Deception is also about interpretation."
+
+- **Resolution can lapse; identity remains.** Without contact, a resolved person returns to a
+  silhouette plus role icon. Their stable identity remains, and so does the diary's short,
+  drifting memory of the interaction.
+- **Role duties are dealings.** Role holders must interact with customers, which needs
+  per-person trade (not built).
+- **Speaking beyond the role is optional, and refusal is a remembered signal.**
+- **Recognition credits the fact of an interaction.** What each party heard and how they read it
+  is their own interpretation.
+
+What these imply, and the remaining questions Q1–Q5, are in the
+[second pass of the recognition v2 simulation](RECOGNITION_V2_SIMULATION_2026-10-21.md#second-pass-the-owners-statements-of-2026-10-21).
+Dated notes now also mark the earlier "reliable once earned", ephemerality and silent-grinder
+passages.
+
 **Superseded** (the originals keep a dated note):
 
 - `DESIGN_ADDENDUM_2026-08-06.md`: "creation is unprompted-only".
@@ -118,7 +139,8 @@ Mutations killed: forcing eligibility (3 tests fail) and inverting grounding (2 
 
 1. Recognition model v2: implement, simulate and calibrate to 10–20 days; evidence before trusting.
    The pre-build simulation is done ([results](RECOGNITION_V2_SIMULATION_2026-10-21.md)). The spec as
-   worded fails (bystanders would be credited), and five owner decisions (R1–R5) come before constants.
+   worded fails (bystanders would be credited). The 2026-10-21 statements settle R1–R3; R4, R5 and Q1–Q5
+   come before constants.
 2. Open the Grifter gate: validator and kernel, with Grifter proximity speech and hearing, and district Wall hearing.
 3. Activate rules text v2 as a new rules version, with a new freeze test for the next study.
 4. A04 trespass, built to reveal full entries under this contract.
