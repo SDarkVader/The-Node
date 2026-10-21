@@ -11,28 +11,30 @@ import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.
  * live model receives, the contract and the manifest. A failure here means a change would alter
  * what study 1 measures.
  *
- * Re-pinned ONCE, deliberately, on 2026-10-21 by owner direction ("no study starts with known
- * issues"; study 1 depends on the viable solution): contract 1.1.0 runs on the tightened
- * recognition-v2 baseline. Before that the pins held the v1 baseline (manifest cb172eea...).
+ * Pins moved deliberately, before any study, by owner direction on 2026-10-21 ("no study starts
+ * with known issues"; study 1 depends on the viable solution):
+ *   1. contract 1.1.0 runs on the tightened recognition-v2 baseline (v1 manifest was cb172eea...);
+ *   2. v2 observer references shortened to 64 bits, because v2 requests reached 32,756 of the
+ *      32,768-byte fail-closed ceiling (now about 26 KB at most). The manifest is unchanged by 2.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
 const MODEL = 'gpt-5.4-nano-2026-03-17';
 const NULL_DECISION = JSON.stringify({ move: null, communication: null, diary: null, role: null });
 const TICK0 = {
-  'baker-0': 'c08fd3bf8156a1e575115e495d18ab3914be22aeca8fd3593e9e17af0e0095cc',
-  'baker-1': '13dbf0d6ae3aaab4882b07ef73c70fcedb24190ef0d9f061d7493898d7d023a3',
-  'miller-0': '57554c84b7214a8a5eaf4a18d8ae0190bbf1eddd64666e7b30b505ec7370d2c2',
-  'courier-0': '2b52809818b316fba027bcc4a88ac22a6e457696f00f246036146c25f4a8ce0d',
-  'investigator-0': '256a81b626349e018c531e95e77d1fe695c174d4848b8bca955b5ec750896bdf',
-  'importexport-0': '0be12bb6cd41eaa3dcbe82b7d8c5bd378b2b3b0d4952381845f609f76019905a',
-  'grifter-0': '016659b6316b6891911149377e8f022e38e79c78cc32032490287a7743ed83be',
+  'baker-0': 'c2ae5ef869b0c7a4a1f0a540728430f09fb7e2c7bfff88a3524bfe2ca78cf944',
+  'baker-1': '8bb540e8f68be992a5b39bf7c71e28d04f6fe7982eea69c0f9adc952f546ef35',
+  'miller-0': 'ad587fe9d4711cadc31ef4f3dcb7ad5f963303d296a4b2ee62af9f59affadf75',
+  'courier-0': '2043d726bdac79e5632abe4e8852a30f4c9d11bb9fbb2e5417ade744c2f86b57',
+  'investigator-0': '28145e3eea26227bbadd631979706a3608a778d6234e850371b69593dfe2d92b',
+  'importexport-0': 'a60b461b19fc6042d10a35bbfe20daf7238429aca8fc17bee9ac433c4689b720',
+  'grifter-0': '190723b50be271b0ad621221a16a774ddd30981ec51f6ef00ac67864613765e5',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '3036e178203c74d01a2bb80c63a5c983c9f2727aeae7a69f7ced9b29afde3864', 'miller-0': '252f92f689e5518fc39948a266376e961a955b9b5089fb02c89dfab6e159f609', 'grifter-0': 'ca5b1fe9b4d84fd7b4a8c8b4a122268cd2774afecd7eebb66f8dee18662a87b0' },
-  anonymous: { 'baker-0': 'ce31bb269f99badcf4d3ffd86797032f535aca23d182011af94a2741ea2c53f2', 'miller-0': 'a35fe93064e225d931120bf9b250542ffd2d07e70510a2db9ced112c3d1bff49', 'grifter-0': '8704dedc3a4504b12bd52eb0759c9bd38239ea386ed73f964125c053e73703a0' },
-  none: { 'baker-0': '80382d5fbcae5b6ce7851a4fdfcf0fcabdde4abaf90909cf8d70b59e46df1795', 'miller-0': '5b4224dab4ee9abbd31c60bc9a86b564d9bfac38269de62a8ca6083ceed2b292', 'grifter-0': '66be47f223f94457c8a8626221bfeaaf88cafed4d6f9c7ee5cc52f306fd6c136' },
+  council: { 'baker-0': '41926678a858d84201d902a12734c34f6f4b36b98489bd5159247a52869b728e', 'miller-0': 'b0bdfb4535d5ca45f2a7c82e9eb22f1e544c69ff7d4c88f90dfc6adc20d82d76', 'grifter-0': '5cdab81630ee39aeed3c38defc4807f43d67d7d426f9f695379185e85ace739a' },
+  anonymous: { 'baker-0': '535056a829c6ed4006f4b5a0d7b94b0cf51129dae024967b556fdd9064eacdcd', 'miller-0': '6048eae720ff89100ed5ce237ce114f76fcb0c0735839ed6e07acb1ce8f8c1f9', 'grifter-0': '7838fcc35fb8267f7c45e6d54eab67dff7f4966a5974430ccfa850baba714850' },
+  none: { 'baker-0': 'fd4df1d98a937dd742bf8122ef32499b0ec73b4de3def7d63330a780775de8d5', 'miller-0': 'fa40629be21c00c144c8b3b3b741473bd3e6090d2100c25d24cf719416bc81e3', 'grifter-0': 'cba7e88d91d3cdd2dd04d0ceb9c27f73f30290a46d1c982bfec2e79948f02f15' },
 };
 
 describe('study 1 is frozen until it has run', () => {

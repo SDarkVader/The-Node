@@ -34,7 +34,7 @@ const genesis = fixtureGenesis(AUTHORITY_ATTRIBUTION_CONTRACT.design.seed, { ...
 const PERSONS = controlledPersons(createParticipantState(genesis), ACTORS);
 const partnerRef = (actorId: string) => {
   const i = ACTORS.findIndex((a) => a.actorId === actorId), next = ACTORS[(i + 1) % ACTORS.length]!.actorId;
-  return observerRef(genesis.observerSecret, PERSONS.get(actorId)!, PERSONS.get(next)!);
+  return observerRef(genesis.observerSecret, PERSONS.get(actorId)!, PERSONS.get(next)!, 16);
 };
 function run(diaryFor: (v: View, prev: View | undefined, p: ActorPrompt) => unknown, ticks = LONG) {
   const ep = new MultiActorEpisode({ ...multiScenarioById('authority_attribution_none'), ticks }, 'diary-test');

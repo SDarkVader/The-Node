@@ -1,3 +1,11 @@
+> 2026-10-21 (late night) — Closing the loop on the outstanding problems before the study.
+>
+> **Found and fixed, a study-breaking blocker:** both request builders fail closed above 32,768 bytes even after packing, and v2 requests reached 32,756 bytes in active play. Observer references repeated across the people list and the schema enums were the bulk. v2 now uses 64-bit (16-hex) HMAC references, still unguessable and uncorrelatable per observer; v1 keeps 64 hex. The largest active-play body is now ~26 KB. A regression test holds 10% headroom. Freeze pins moved a second time (bytes only, manifest unchanged), recorded in the test.
+>
+> **Fixed:** `identityResolved` no longer carries the raw player id. Nothing consumes it, and once resolution can lapse it would be an unwithdrawable leak. `identityLapsed` added to the BLUEPRINT wire table.
+>
+> **Verified:** Vitest 1286/1286, Python 28/28, G1 29/29, G2 12/12.
+
 > 2026-10-21 (night) — Study 1 rebased onto the v2 baseline; the remaining v2 data blockers closed. Owner: "We just need a stable system for the behaviour to be measured", "Study 1 will depend on the viable solution", "I don't think it's appropriate to start the study with known issues".
 >
 > **Blockers closed (all v2-only, v1 byte-identical):**

@@ -4,7 +4,7 @@ import { createInhabitants, transitionPerson, assertPopulation, roleArrays, type
 import { readDiary } from '../engine/diary.js';
 import { mulberry32 } from '../sim/rng.js';
 import { parseGameAction, queueGameAction } from '../server/actionVocabulary.js';
-import { observe, observerRef } from '../server/observer.js';
+import { observe, observerRef, refHexLength } from '../server/observer.js';
 import { validateDecision, type Decision } from './protocol.js';
 
 export interface Genesis { seed: number; namespace: string; observerSecret: string; config: WorldConfig; sourceRevision: string }
@@ -62,7 +62,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       effects.push({person:a.person,category:'move'});
     }
     const translateRef = (ref: unknown) => {
-      const found = [...registry.people.values()].find(p => p.location !== null && observerRef(previous.genesis.observerSecret,a.person,p.id) === ref);
+      const found = [...registry.people.values()].find(p => p.location !== null && observerRef(previous.genesis.observerSecret,a.person,p.id,refHexLength(previous.world)) === ref);
       if (!found) throw Error('unknown_observer_reference');
       return found.id;
     };

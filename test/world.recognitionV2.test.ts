@@ -401,3 +401,28 @@ describe('v2 data blockers closed: Grifter gate, rules text, courier pay', () =>
     expect(wealthAfter(true)).toBeCloseTo(wealthAfter(false), 9);
   });
 });
+
+describe('v2 requests stay well under the 32 KB fail-closed ceiling', () => {
+  it('active play (speech, posts, diary, dealings) keeps at least 10% headroom; references are 64-bit in v2 only', async () => {
+    const { MultiActorEpisode, multiScenarioById } = await import('../src/eval/multiActorEpisode.js');
+    const { unpackObservation } = await import('../src/agent/observationTables.js');
+    const ep = new MultiActorEpisode({ ...multiScenarioById('authority_attribution_council'), ticks: 20 }, 'size-guard');
+    let max = 0;
+    while (!ep.done) {
+      const ps = ep.prompts({ model: 'gpt-5.4-nano-2026-03-17' });
+      for (const p of ps) max = Math.max(max, Buffer.byteLength(p.request!.body, 'utf8'));
+      ep.act(Object.fromEntries(ps.map((p) => {
+        const o = JSON.parse(p.prompt.observation); const v = (o.encoding ? unpackObservation(o) : o) as { tick: number; self: { role: string }; city: { people: { ref: string }[] }; recognition: { ref: string }[] };
+        const other = v.city.people.find((x) => x.ref !== (v as unknown as { self: { ref: string } }).self.ref)!.ref;
+        const communication = v.tick % 2 ? { kind: 'proximityUtterance', intent: 'inform', tone: 'warm', referent: { kind: 'player', playerId: other }, context: null } : { kind: 'wallPost', state: 'hopeful' };
+        const diary = v.recognition.length ? { subject: v.recognition[0]!.ref, observation: 'soughtMeOut', reading: 'cantTellYet', context: null } : null;
+        return [p.actorId, JSON.stringify({ move: null, communication, diary, role: v.self.role === 'Baker' ? { kind: 'bakerPrice', price: 0.9 } : null })];
+      })));
+    }
+    expect(max).toBeLessThan(32_768 * 0.9);
+    const st = createParticipantState(fixtureGenesis(103, V2)), v1 = createParticipantState(fixtureGenesis(103, DEFAULT_WORLD_CONFIG));
+    const someone = [...st.registry.people.keys()][0]!;
+    expect(observe(st, someone, 'offline-fixture-observer-secret').context.presentRefs[0]).toMatch(/^[0-9a-f]{16}$/);
+    expect(observe(v1, someone, 'offline-fixture-observer-secret').context.presentRefs[0]).toMatch(/^[0-9a-f]{64}$/);
+  });
+});

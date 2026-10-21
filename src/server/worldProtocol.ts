@@ -130,7 +130,8 @@ export interface WorldTickMessage {
 export interface IdentityResolvedMessage {
   type: 'identityResolved';
   handle: string;
-  playerId: string;
+  /** No raw player id (2026-10-21): resolution can now lapse, and a raw id once sent could never
+   *  be withdrawn. The handle is the client's stable reference; the face is what resolution adds. */
   face: ProceduralFace;
 }
 
@@ -276,7 +277,6 @@ export function identityResolvedMessages(
   return resolvedIds.map((playerId) => ({
     type: 'identityResolved',
     handle: personHandle(connectionSecret, playerId),
-    playerId,
     face: generateFace(playerId),
   }));
 }

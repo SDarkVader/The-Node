@@ -291,7 +291,8 @@ a **privacy boundary** and not a serialization detail.
 |---|---|---|
 | `hello` | once per connection | seed, hub, bounds, districts, buildings (id, x, y, role, isLandmark), plots |
 | `tick` | per simulated day | day, economicHealth, districtTension[], stations[] (buildingId, state, heat), people[] (handle, x, y, role) |
-| `identityResolved` | when an observer resolves a subject | handle, playerId, procedural face. **Built and tested; nothing sends it yet** |
+| `identityResolved` | when an observer resolves a subject | handle, procedural face (no raw player id since 2026-10-21). **Built and tested; nothing sends it yet** |
+| `identityLapsed` | when a resolution lapses (recognition v2) | the same handle; the client drops the face back to a silhouette |
 
 **Inbound** (2026-08-19): `{ type: 'action', action: string, payload: unknown }`. Parsed
 defensively (`parseClientMessage`, total — malformed frames return `null`, never throw), shared

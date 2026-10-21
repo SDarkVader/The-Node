@@ -8,9 +8,13 @@ import type { ParticipantState } from '../agent/participantWorld.js';
 import type { DecisionContext } from '../agent/protocol.js';
 
 const roles = {miller:'Miller', baker:'Baker', courier:'Courier', investigator:'Investigator', importExport:'ImportExport'} as const;
-export function observerRef(secret: string, observer: string, subject: string): string {
-  return createHmac('sha256', secret).update(JSON.stringify([observer, subject])).digest('hex');
+export function observerRef(secret: string, observer: string, subject: string, hexLength = 64): string {
+  return createHmac('sha256', secret).update(JSON.stringify([observer, subject])).digest('hex').slice(0, hexLength);
 }
+/** Recognition-v2 worlds use 64-bit references (16 hex): still unguessable and uncorrelatable per
+ *  observer, and they keep every request under the 32 KB fail-closed ceiling, where 64-hex
+ *  references repeated across the people list and schema enums did not. v1 keeps 64 hex. */
+export const refHexLength = (world: { config: { recognition?: 'v2' } }) => (world.config.recognition === 'v2' ? 16 : 64);
 export function personBody(s: ParticipantState, p: Inhabitant) {
   if (!p.location) throw Error('departed');
   for (const [role, slots] of roleArrays(s.world)) {
@@ -28,7 +32,7 @@ export function personBody(s: ParticipantState, p: Inhabitant) {
 export function observe(s: ParticipantState, personId: string, secret: string) {
   const self = s.registry.people.get(personId);
   if (!self || self.location === null) throw Error('departed');
-  const ref = (id: string) => observerRef(secret, personId, id);
+  const ref = (id: string) => observerRef(secret, personId, id, refHexLength(s.world));
   const own = personBody(s, self);
   const district = s.world.shard.districts.find(d => d.plots.some(p => p.x === own.x && p.y === own.y));
   const legalMoves = district?.plots.filter(p => distance(own, p) === 1).map(p => ({x:p.x,y:p.y})) ?? [];
