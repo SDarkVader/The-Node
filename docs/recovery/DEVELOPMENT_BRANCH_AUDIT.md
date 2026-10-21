@@ -36,6 +36,12 @@ The remote branch had already changed three of the four previously protected fil
 | `src/agent/httpBody.ts` | `AC9A053B1A5EDE9A2102CF68EEC561CEA5CD8C64E36F17562E12392A23782645` |
 | `test/brokerRecovery.test.mjs` | `4FBA5ACBB920298CBAC56599AB7B413D61452739A144F1D564D40074461A7E8C` |
 
+> **Changed 2026-10-21 (owner-authorised: Grifters speak and keep a diary, decided 2026-10-20; "resolve the blockers", 2026-10-21):**
+> `src/agent/protocol.ts` is now `53BB78C9528344BED3582DE325043E075F69C21230B0316B20D88351E7B3C56F`. It adds an optional
+> `DecisionContext.rules: 'v2'`, present only in recognition-v2 worlds, under which a Grifter may communicate and write
+> the diary; a Grifter role action stays refused, and contexts without the marker validate exactly as before. The other
+> three files, including `test/brokerRecovery.test.mjs` (whose v1 Grifter refusal still holds), are unchanged.
+
 ## Final local verification
 
 - Repository-wide `tsc --noEmit`: passed.

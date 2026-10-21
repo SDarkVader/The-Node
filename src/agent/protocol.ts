@@ -11,6 +11,9 @@ export interface DecisionContext {
   legalMoves: readonly { x: number; y: number }[];
   presentRefs: readonly string[];
   knownSubjects: readonly string[];
+  /** Rules version marker, present only in recognition-v2 worlds (owner decision 2026-10-20:
+   *  Grifters speak and keep a diary). Absent means the original rules, unchanged. */
+  rules?: 'v2';
 }
 export type JsonObject = Record<string, unknown>;
 export interface Decision {
@@ -30,7 +33,8 @@ export function validateContext(c: DecisionContext): void {
       typeof c.selfRef !== 'string' || !c.selfRef || typeof c.role !== 'string' || !c.role ||
       !Array.isArray(c.legalMoves) || !c.legalMoves.every(p => object(p) && exact(p, ['x', 'y']) && coordinate(p.x) && coordinate(p.y)) ||
       !Array.isArray(c.presentRefs) || !c.presentRefs.every(r => typeof r === 'string' && r.length > 0) ||
-      !Array.isArray(c.knownSubjects) || !c.knownSubjects.every(r => typeof r === 'string' && r.length > 0)) {
+      !Array.isArray(c.knownSubjects) || !c.knownSubjects.every(r => typeof r === 'string' && r.length > 0) ||
+      (Object.hasOwn(c, 'rules') && c.rules !== 'v2')) {
     throw new Error('invalid_context');
   }
 }
@@ -42,6 +46,7 @@ export function policyInput(c: DecisionContext): DecisionContext {
     tick: c.tick, selfRef: c.selfRef, role: c.role, roleEpoch: c.roleEpoch,
     legalMoves: c.legalMoves.map(p => ({ x: p.x, y: p.y })),
     presentRefs: [...c.presentRefs], knownSubjects: [...c.knownSubjects],
+    ...(c.rules === 'v2' ? { rules: c.rules } : {}),
   };
 }
 
@@ -51,7 +56,7 @@ export function validateDecision(value: unknown, c: DecisionContext): Decision |
   const { move, communication, diary, role } = value;
   if (move !== null && (!object(move) || !exact(move, ['x', 'y']) || !coordinate(move.x) || !coordinate(move.y) ||
       !c.legalMoves.some(p => p.x === move.x && p.y === move.y))) return null;
-  if (c.role === 'Grifter' && (communication !== null || diary !== null || role !== null)) return null;
+  if (c.role === 'Grifter' && (role !== null || (c.rules !== 'v2' && (communication !== null || diary !== null)))) return null;
   if (communication !== null) {
     if (!object(communication)) return null;
     if (communication.kind === 'wallPost') {

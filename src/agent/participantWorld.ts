@@ -91,7 +91,8 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
     },
     locationFor: id => registry.people.get(id)?.location ?? null,
     allowAction: (category, person) => {
-      const a = candidates.get(person); return !!a && !!live(a) && registry.people.get(person)!.role !== null;
+      // Recognition v2: Grifters may speak and write (owner decision 2026-10-20); otherwise role holders only.
+      const a = candidates.get(person); return !!a && !!live(a) && (registry.people.get(person)!.role !== null || world.config.recognition === 'v2');
     },
     bakerPrice: building => {
       const person = registry.locations.get(building); const a = person && candidates.get(person);

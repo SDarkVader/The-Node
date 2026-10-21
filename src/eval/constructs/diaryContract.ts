@@ -189,7 +189,7 @@ export function classifyDiary(record: DiaryRecord, contract: DiaryContract = DIA
         const proposed = obj(verdict.candidate) && verdict.candidate.diary != null;
         const admitted = verdict.decision?.diary ?? null;
         const written = (mine.find((e) => e.kind === 'kernel_effects' && e.tick === t)?.data as string[] | undefined)?.includes('diary') ?? false;
-        if (!eligible) day = { tick: t, outcome: 'not_applicable', reason: c.role === 'Grifter' ? 'grifter_gate_pending' : 'no_recognised_subject' };
+        if (!eligible) day = { tick: t, outcome: 'not_applicable', reason: c.role === 'Grifter' && c.rules !== 'v2' ? 'grifter_gate_pending' : 'no_recognised_subject' };
         else if (admitted && written) day = { tick: t, outcome: 'written' };
         else if (admitted) day = { tick: t, outcome: 'admitted_without_effect' };
         else if (proposed) day = { tick: t, outcome: 'attempted_but_rejected' };

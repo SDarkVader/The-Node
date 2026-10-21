@@ -317,3 +317,70 @@ describe('participant mode: stable persons, own dealings only, gain and loss on 
     expect(back[0]).toMatchObject({ type: 'identityResolved', handle: personHandle('secret', subject) });
   });
 });
+
+describe('v2 data blockers closed: Grifter gate, rules text, courier pay', () => {
+  it('the validator lets a Grifter speak and write only under the v2 rules marker; never a role action', async () => {
+    const { validateDecision, policyInput, validateContext } = await import('../src/agent/protocol.js');
+    const base = { tick: 1, selfRef: 'me', role: 'Grifter', roleEpoch: 0, legalMoves: [], presentRefs: ['you'], knownSubjects: ['you'] };
+    const say = { move: null, communication: { kind: 'wallPost', state: 'hopeful' }, diary: null, role: null };
+    const write = { move: null, communication: null, diary: { subject: 'you', observation: 'soughtMeOut', reading: 'cantTellYet', context: null }, role: null };
+    expect(validateDecision(say, base)).toBeNull();
+    expect(validateDecision(write, base)).toBeNull();
+    expect(validateDecision(say, { ...base, rules: 'v2' })).not.toBeNull();
+    expect(validateDecision(write, { ...base, rules: 'v2' })).not.toBeNull();
+    expect(validateDecision({ ...say, communication: null, role: { kind: 'bakerPrice', price: 1 } }, { ...base, rules: 'v2' })).toBeNull();
+    expect(Object.hasOwn(policyInput(base), 'rules')).toBe(false); // v1 request bytes unchanged
+    expect(policyInput({ ...base, rules: 'v2' }).rules).toBe('v2');
+    expect(() => validateContext({ ...base, rules: 'v3' as 'v2' })).toThrow('invalid_context');
+  });
+
+  it('a Grifter agent speaks through the participant pipeline in a v2 world and is heard', () => {
+    const genesis = fixtureGenesis(103, V2);
+    let s = createParticipantState(genesis);
+    for (let d = 0; d < 3; d++) s = stepParticipantState(s, [], []).state; // housing places Grifters
+    const grifter = [...s.registry.people.values()].find((p) => p.location !== null && p.role === null)!;
+    const ctx = observe(s, grifter.id, genesis.observerSecret).context;
+    expect(ctx.rules).toBe('v2');
+    const decision = { move: null, communication: { kind: 'proximityUtterance', intent: 'inform', tone: 'warm', referent: { kind: 'room' }, context: null }, diary: null, role: null };
+    const r = stepParticipantState(s, [{ person: grifter.id, epoch: grifter.roleEpoch, tick: s.world.tick, decision }], [grifter.id]);
+    expect(r.state.world.lastProximityRejections).toEqual([]);
+    expect(r.effects).toContainEqual({ person: grifter.id, category: 'proximityHeard' });
+  });
+
+  it('the v2 rules text replaces the v1 diary, recognition and Grifter lines, and matches the A01 contract text', async () => {
+    const { buildResponsesRequest } = await import('../src/agent/responsesRequest.js');
+    const { DIARY_RULES_TEXT_V2, RULES_CONTEXT_VERSION_V2 } = await import('../src/agent/rulesContext.js');
+    const { DIARY_CONTRACT } = await import('../src/eval/constructs/diaryContract.js');
+    expect(DIARY_RULES_TEXT_V2).toBe(DIARY_CONTRACT.rulesTextV2);
+    const request = (cfg: typeof DEFAULT_WORLD_CONFIG) => {
+      const g = fixtureGenesis(103, cfg);
+      const st = createParticipantState(g);
+      const baker = [...st.registry.people.values()].find((p) => p.role === 'baker')!;
+      return buildResponsesRequest({ observationId: 'rules-text-test', ...observe(st, baker.id, g.observerSecret) }, 'gpt-5.4-nano-2026-03-17').body;
+    };
+    const v2 = request(V2), v1 = request(DEFAULT_WORLD_CONFIG);
+    expect(v2).toContain(RULES_CONTEXT_VERSION_V2);
+    expect(v2).toContain(DIARY_RULES_TEXT_V2.slice(0, 60));
+    expect(v2).not.toContain('Use diary=null');
+    expect(v2).not.toMatch(/credit|threshold|lose below|ledger/i); // no hidden mechanics
+    expect(v1).toContain('Use diary=null');
+    expect(v1).not.toContain(RULES_CONTEXT_VERSION_V2);
+  });
+
+  it('a v2 Courier is paid by its workplace route, whether it walks or not', () => {
+    const genesis = fixtureGenesis(103, V2);
+    const wealthAfter = (walk: boolean) => {
+      let s = createParticipantState(genesis);
+      const courier = [...s.registry.people.values()].find((p) => p.role === 'courier')!;
+      for (let d = 0; d < 5; d++) {
+        const o = observe(s, courier.id, genesis.observerSecret);
+        const hub = s.world.shard.hubPlot;
+        const away = [...o.context.legalMoves].sort((a, b) => (Math.abs(b.x - hub.x) + Math.abs(b.y - hub.y)) - (Math.abs(a.x - hub.x) + Math.abs(a.y - hub.y)))[0];
+        const decision = { move: walk && away ? away : null, communication: null, diary: null, role: null };
+        s = stepParticipantState(s, [{ person: courier.id, epoch: courier.roleEpoch, tick: s.world.tick, decision }], [courier.id]).state;
+      }
+      return s.world.couriers.find((c) => c.buildingId === s.registry.people.get(courier.id)!.location)!.wealth;
+    };
+    expect(wealthAfter(true)).toBeCloseTo(wealthAfter(false), 9);
+  });
+});

@@ -40,7 +40,8 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
   const resolved = s.world.recognitionV2 ? resolvedBy(s.world.recognitionV2.recognition.ledger, personId) : resolvedSubjects(s.world.identityLedger, personId);
   const known = [...resolved].filter(id => s.registry.people.get(id)?.location != null);
   const context: DecisionContext = {tick:s.world.tick,selfRef:ref(personId),role:own.role,roleEpoch:self.roleEpoch,
-    legalMoves,presentRefs:people.filter(p => p.ref !== ref(personId)).map(p => p.ref),knownSubjects:known.map(ref)};
+    legalMoves,presentRefs:people.filter(p => p.ref !== ref(personId)).map(p => p.ref),knownSubjects:known.map(ref),
+    ...(s.world.config.recognition === 'v2' ? {rules:'v2' as const} : {})};
   const diary = (s.world.diary.get(personId) ?? []).filter(e => s.world.tick - e.createdOnDay < 2).map(e => ({
     subject:ref(e.value.subject),observation:e.value.observation,reading:e.value.reading,context:e.value.context ?? null,
   }));

@@ -1870,8 +1870,11 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // Courier pay (2026-08-11 addendum item 6) is distance-indexed, not the flat support wage
   // — see engine/courierPay.ts's header for the full reasoning, including why a literal
   // commissioner-debit was measured and deliberately NOT built at this scale.
+  // v2 pays the workplace-to-hub route, as the rules text and the retained owner decision state
+  // (EXPERIMENT_FIRST_INHABITANT.md); v1 keeps the current-position behaviour it was frozen with.
+  const courierRouteFrom = (c: SupportRoleSlot) => (v2 ? allBuildingsById.get(c.buildingId) ?? c : c);
   const courierClaims = couriers.map((c) =>
-    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: c.x, y: c.y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
+    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: courierRouteFrom(c).x, y: courierRouteFrom(c).y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
   );
   const wageClaim = (s: SupportRoleSlot) => (s.slot.state === 'FILLED' ? supportDaily * frictionFor(s.buildingId) : 0);
   const investigatorClaims = investigators.map(wageClaim);
