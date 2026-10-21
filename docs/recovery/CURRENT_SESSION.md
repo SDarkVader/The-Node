@@ -3,8 +3,10 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "022c0bf0f679a10d7022a8698197dc9769fec45a",
+  "verifiedBaseCommit": "e2ff3534f29e5f85ca00f2b818a2c819cd67aa9b",
   "completedWork": [
+    "2026-10-21 (later): recognition v2 second pass on the owner's statements (resolution can be lost; role holders must interact with customers; speaking is optional; refusal is a signal; deception is also interpretation). Grounded by read-only investigators. Harness extended with a capped, hysteretic ledger, perceived refusal, a modelled customer channel and intended/heard intent; first-pass report reproduced byte for byte. Results and open questions Q1-Q5 in RECOGNITION_V2_SIMULATION_2026-10-21.md. Dated notes on the superseded design passages; A01 records the decisions. Found: courier pay follows current position, contrary to the live rules text and the binding decision; recorded as a study-1 limitation in the runbook.",
+    "2026-10-21: recognition v2 run in simulation before building (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md; src/sim/recognitionV2Harness.ts; npm run recognition-v2-sim). Shadow ledger over real kernel hearings; nothing written back, study 1 unaffected. Found: the literal spec credits silent bystanders (one utterance reaches a median 39 listeners), address must be judged by intent, a permanent ledger saturates, pressure amplification would collapse unless decoupled, and Grifter churn is high. Recommended rule I1D pending owner decisions R1-R5. PR #28 (A01) merged by the user at e2ff353.",
     "2026-10-20: PR #27 merged at 022c0bf. A01 diary contract v1.0.0 (docs/research/DIARY_CONTRACT_A01.md, src/eval/constructs/diaryContract.ts, evals/contracts/diary.v1.json). Owner decisions: the diary is a daily measured task; Grifters have a diary; everyone has an abode; trespass reveals full entries; recognition is not immediate or easy (10-20 days of dealings: proximity conversations, trades/deliveries, campaign cooperation; weak partial credit for overheard Wall posts; shared district does not count); Grifters hear district Wall posts and speak/hear proximity where they stand. Evaluator classifier built. Study-1 freeze test pins request bytes, contract and manifest. Superseded notes added to the 2026-08-06 addendum, the 2026-10-18 rules review and housing section 7.3.",
     "2026-10-20: user merged PR #26 into main at 9d004e8 (merge commit). Its tracked tree is identical to verified head c59dd70 (tree fed816c); a clean main checkout passes tracked recovery. This follow-up docs change uses the same task branch, restarted from main, as its one reviewBranch.",
     "2026-10-20 PR #26 opened (ccr-8d64b59c-a4puhv -> main). Hosted CI found and the branch fixed: research-conformance checked out the PR merge commit detached (recovery:verify correctly refused; now checks out the head branch by name, as main-integration does; 2407e4b); the runner's response deadline counted local journal writes (Windows failure in run 39512361278; now ends at response receipt, with a slow-ledger regression test); reservations stored full decision contexts (~7.8 KB/call, ~5.6 MB per study of the 8 MiB journal) and now store participant identity plus request-bytes hash (~0.9 KB/call, 0.66 MB for 714 calls); a fixture race made a TEST-ONLY 24 h window 24 h + 1 ms (7f7bef9).",
@@ -31,6 +33,8 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-21 (later): recognition-v2 tests 17/17; 10 further mutations (cap, hysteresis, refusal answer/direction/window, custom credit, baker-side purchase, customer RNG isolation, heard intent, loyal weekly cycle) each fail at least 1 test. Courier probe: 5-day courier earnings 0.71 staying, 2.61 walking away from the hub.",
+    "2026-10-21 on top of e2ff353 (Linux): recognition-v2 tests 11/11; mutations (ignore intent, widen exchange window, drop decay, drop address requirement, Grifter hears rejected talk, drop modelled Grifter speech) each fail at least 1 test. Shadow v1 vs kernel: 694 pairs, 0 mismatches. Full-suite and freeze-test results for this head are recorded in the commit/PR, not claimed here.",
     "2026-10-20 A01 on top of 022c0bf (Linux): diary contract tests 12/12 (179 kernel-confirmed writes, 142 supported rumour claims in the faithful run; mutations forcing eligibility and inverting grounding fail 3 and 2 tests); study-1 freeze 4/4, and a one-character rules-text change fails 3 of them.",
     "2026-10-20 post-merge: Hosted CI on the merged head c59dd70: Main integration verification run 39513742598 (Windows, required offline-verification, including 80 native broker/participant checks) and Research conformance runs 39513742596 (PR) and 39513736363 (push) all passed. Fresh clean main checkout at 9d004e8: recovery:verify ok. No full regression rerun is claimed for this documentation-only follow-up.",
     "2026-10-20 at 7f7bef9 (Linux): 1227/1227 Vitest across 97 files, TypeScript, 28/28 Python, CLI rehearsal 8/8; accounted-study tests 5/5 repeated runs green. Hosted: research-conformance push run 39512193563 on 8f428d6 passed every step on Ubuntu/Node 24/Python 3.14 (G1 hashes 29/29, G2, G3 rehearsal); the PR-event run and Windows main-integration run 39512361278 failed for the two defects fixed above. Results on the fixed head are reported by CI, not claimed here.",
@@ -56,7 +60,8 @@
     "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
   ],
   "unresolvedIssues": [
-    "After study 1, as a new rules version: recognition model v2 (built and simulation-calibrated to 10-20 days), the Grifter diary gate in the protected validator and kernel, Grifter proximity speech/hearing and district Wall hearing, and rules text v2 for the diary. Per-person trade/delivery records and multi-member campaigns do not exist yet.",
+    "After study 1, as a new rules version: recognition model v2, the Grifter diary gate in the protected validator and kernel, Grifter proximity speech/hearing and district Wall hearing, and rules text v2 for the diary. Owner statements of 2026-10-21 settle R1-R3; R4, R5 and Q1-Q5 (refusal credit, per-person purchases and their economic re-simulation, silent customers, lapse timescale, other roles' customers) in docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md come before constants. Per-person trade/delivery records and multi-member campaigns do not exist yet; the client wire cannot withdraw identityResolved.",
+    "Courier pay follows the courier's current position (world.ts courierClaims reads slot x/y, which moves write), contradicting rulesContext.ts's live text and EXPERIMENT_FIRST_INHABITANT.md:32. Not fixed before study 1 (frozen); fix the kernel after study 1 and re-run G1 hashes.",
     "Study 1 not yet run (owner runs it 2026-10-22 on the PC with the credential and private allowance). If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
     "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
     "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
@@ -69,7 +74,7 @@
   ],
   "nextSteps": [
     "Owner: run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md on 2026-10-22; share study1-analysis/results.json and summary.md.",
-    "After study 1: implement recognition model v2 and the Grifter gate per docs/research/DIARY_CONTRACT_A01.md; simulate and calibrate before trusting; move the freeze test to the next study.",
+    "After study 1: owner answers R4, R5 and Q1-Q5 (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md); fix courier pay to the workplace route; then implement recognition v2 and the Grifter gate per docs/research/DIARY_CONTRACT_A01.md, re-running npm run recognition-v2-sim on the chosen constants before trusting; move the freeze test to the next study.",
     "G5: add seeds (contract v1.1) and a frozen analysis plan before a larger allowance.",
     "G3: accounted custom-provider adapter with execution disabled (synthetic ledgers, loopback responses, crash/failure injection), per DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md.",
     "G5 protocol for authority attribution: held-out seeds, arm-order randomization, exclusions, episode-level uncertainty.",
@@ -87,8 +92,9 @@ NODE_SESSION_CHECKPOINT -->
 at `9d004e8` on 2026-10-20, after its hosted checks passed on head `c59dd70`. Those checks were
 Windows Main integration, including the 80 native checks, and both Linux Research conformance
 runs. The merged tree is identical to that head, and a clean `main` checkout passes tracked
-recovery. PR #27 merged the follow-up at `022c0bf`. This checkpoint anchors at `022c0bf` and accepts `main` or the exact task branch
-`ccr-8d64b59c-a4puhv`, which carries the A01 work.
+recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`.
+This checkpoint anchors at `e2ff353` and accepts `main` or the exact task branch
+`ccr-8d64b59c-a4puhv`, which carries the recognition v2 simulation.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -100,7 +106,10 @@ PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRU
 **A01** ([diary contract](../research/DIARY_CONTRACT_A01.md)) records the owner's diary, abode,
 trespass and recognition decisions. Its evaluator is built. The Grifter gate, recognition model v2
 and the new rules text land after study 1; `test/eval.study1Freeze.test.ts` holds study 1's request
-bytes until then.
+bytes until then. Recognition v2 has been run in simulation
+([results](../research/RECOGNITION_V2_SIMULATION_2026-10-21.md)): the spec as worded fails, and the
+owner's 2026-10-21 statements settle R1–R3, with R4, R5 and Q1–Q5 still open. A courier-pay defect is
+recorded as a study-1 limitation in the runbook.
 
 **Next:** the owner runs study 1 from `main` on 2026-10-22 per the
 [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `gpt-5.4-nano-2026-03-17`.

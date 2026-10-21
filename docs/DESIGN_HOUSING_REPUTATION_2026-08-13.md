@@ -535,6 +535,8 @@ That changes what this section needs, and simplifies it:
   storage already drifts day to day now; a second distortion pass on top of it would just be
   redundant noise, not an extra safeguard. A trespasser sees the SUBJECT graph *as it currently
   stands* — no additional roll applied at read time.
+> **Clarified 2026-10-21 (owner; see [recognition v2 simulation](research/RECOGNITION_V2_SIMULATION_2026-10-21.md)):** "reliable once earned" below means a held SUBJECT is never a wrong person. Resolution itself can lapse without contact (recognition v2, not built yet).
+
 - **SUBJECT itself still never distorts, in the store or the view.** The rewritten retention
   section is explicit that SUBJECT (and CONTEXT) are exempt from the daily distortion pass —
   only OBSERVATION and READING drift. Identity resolution is the one thing constraint 4 says

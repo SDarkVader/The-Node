@@ -363,6 +363,8 @@ you become someone's target.
 
 ### 9.1 Silent accumulation
 
+> **Superseded in intent 2026-10-21 (owner: "those in a role must interact with customers"; see [recognition v2 simulation](research/RECOGNITION_V2_SIMULATION_2026-10-21.md)):** a role holder who stays silent will still become known to regular customers once per-person trade is built. Today the market is aggregate, so this section still describes the shipped code.
+
 Per shipped `engine/identity.ts`, `isKnown()` triggers only on rumour-hearing events, not
 economic activity. A silent grinder generates no rumours and stays genuinely unknown.
 

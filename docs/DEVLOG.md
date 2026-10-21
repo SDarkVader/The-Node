@@ -1,3 +1,34 @@
+> 2026-10-21 (later) — Recognition v2, second pass on the owner's statements: resolution can be lost, role holders must interact with customers, speaking is optional, refusal is a signal, deception is also interpretation.
+>
+> **Grounded first:** four read-only investigators and a critic (21 cited facts spot-checked).
+> - Identity (a stable per-observer ref) and resolution (face, `knownSubjects`, the diary gate) are already separate in code.
+> - The 2-day diary is the owner's own "yesterday's mechanical memory".
+> - Bread demand is an aggregate price-share count with no per-person purchase. The 2026-08-11 trigger, "verified trade history", was never buildable on it.
+>
+> **Simulated** (harness extended; the first-pass report is reproduced byte for byte):
+> - A capped ledger with hysteresis lapses on a bounded clock: 61 days for cap 150 and lose-below 90. If contact resumes, re-resolution takes 7 days against 10 the first time.
+> - Silent refusal, credited at half an address, lets the addresser recognise the silent person in 21 days. A spoken `refuse` is a full exchange (10 days).
+> - The addressee mishears a `refuse` 16% of the time, as deflect or needle.
+> - Customers recognise their Baker only with regulars: 19 days at a purchase worth 3 addresses, and 84% of the population is known by someone. With the kernel's per-day price share, almost nobody is.
+> - 17 tests; 10 mutations killed.
+>
+> **Found on the way:** courier pay follows the courier's current position, contradicting the live rules text and the retained binding user decision in `EXPERIMENT_FIRST_INHABITANT.md`. It was confirmed on the kernel (0.71 rising to 2.61 by walking). It does not affect study 1's primary measure; recorded in the runbook and fixed after study 1.
+>
+> **Docs:** dated notes on the "reliable once earned", ephemerality, "never a timer" and silent-grinder passages. A01 records the decisions.
+
+> 2026-10-21 — Recognition v2 run in simulation before building it (constraint 1).
+>
+> **How:** real participant-kernel episodes with scripted policies; each day's real hearings replayed through ten candidate rules into a shadow ledger. Nothing is written back, so study 1 is unaffected. Rule v1 on kernel hearings reproduces the kernel's ledger exactly (694 pairs, 0 mismatches). Grifter channels are modelled and flagged; trades, deliveries and campaigns have no record and are not credited.
+>
+> **Failures found:**
+> - "Proximity conversations count" and "shared district does not count" contradict each other: one utterance is heard by a median of 39 people (range 10 spans most of the core). The literal rule recognises a silent bystander on the same day as the partner, and 79% of the population knows a conversing player within 60 days. Closeness weighting does not fix it.
+> - Address judged as heard (the kernel corrupts the referent with distance) pushes daily dealings to 21 days and alternate ones to 29; judged by the speaker's intent, they take exactly 10 and 19.
+> - A permanent ledger saturates: without decay, bystanders recognise at about day 101 and Wall-only posters at day 156. Only a leaky ledger keeps both at zero.
+> - Pressure amplification (`1 + 1.5 × knownFraction`) would fall from about 2.2 to about 1.0 under any addressed rule.
+> - Churn: the controlled Grifter left in 16 of 20 seeds within 60 days (median day 29).
+>
+> **Built:** `src/sim/recognitionV2Harness.ts`, `src/sim/recognitionV2Report.ts` (`npm run recognition-v2-sim`), 11 tests (6 mutations killed), evidence in `docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md`. Recommendation: rule I1D (direct address by intent, leaky), pending owner decisions R1–R5. No kernel, validator or rules text changed.
+
 > 2026-10-20 — A01 diary contract v1.0.0.
 >
 > **Owner decisions:** the diary is a daily measured task; Grifters still have a diary; everyone has an abode; a trespasser sees full entries. Recognition is "not to happen immediately, or meant to be easy": about 10–20 days of dealings, counting proximity conversations, trades and deliveries, and campaign cooperation. Overheard Wall posts get weak partial credit; sharing a district does not count. Grifters hear district Wall posts and speak and hear proximity where they stand.

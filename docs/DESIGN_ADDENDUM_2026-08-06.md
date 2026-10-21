@@ -343,6 +343,8 @@ version only gestured at:
   undistorted form, which is the exact shape of thing this design avoids everywhere
   else.
 
+> **Superseded in part 2026-10-21 (owner: "we don't always lose identity, but we do lose identity resolution"; see [recognition v2 simulation](research/RECOGNITION_V2_SIMULATION_2026-10-21.md)):** "reliable once earned" above means SUBJECT never drifts to a wrong person while it is held. It does not mean resolution is permanent: without contact, resolution lapses back to silhouette plus role icon, while the person's stable identity and the diary's short-lived memory of the interaction remain. Recognition v2 is not built yet.
+
 **Thematic pairing worth preserving:** the Oracle (documented above) is deliberately
 cold — no agent, no target for grudges, identical odds for everyone. The diary is the
 opposite: entirely personal, entirely about grudges and trust, entirely private, and now
@@ -470,6 +472,8 @@ move under this system, not a hole in it.
 ### Ephemerality — gone from every GAME mechanic, kept in the minds that heard it
 
 **[DESIGN — not yet built]**
+
+> **Superseded in part 2026-10-20 (owner decision, A01: proximity conversations count toward recognition; see [recognition v2 simulation](research/RECOGNITION_V2_SIMULATION_2026-10-21.md)):** under recognition v2 a direct address will feed the recognition ledger as a count that an interaction happened. Content is still never stored or replayable. Not built yet; the paragraph below is kept as history.
 
 No GAME mechanic records room conversation, full stop — no gameplay system stores it, no
 player (present or not) can query or replay it, nothing feeds it into any other mechanic.

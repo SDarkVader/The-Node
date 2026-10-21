@@ -131,3 +131,11 @@ repaired. It then writes `results.json` and `summary.md` containing:
   - anything about formal hierarchy.
 
   Five replicates per arm give wide intervals. If the contrast looks interesting, the next allowance should add seeds (contract v1.1) rather than more replicates of one seed.
+
+**Known limitation found 2026-10-21 (not fixed: study 1 is frozen).** The rules text tells live
+models that the courier's "wage follows workplace-to-hub distance, not current avatar walking
+distance". The kernel actually pays by the courier's *current* position. In an offline check,
+walking away from the hub raised a courier's 5-day earnings from 0.71 to 2.61. The courier's
+measured effect in this study is a Wall post, so the primary measure is unaffected. Do not read
+courier wealth or movement as a response to the notice. See the
+[recognition v2 simulation note](RECOGNITION_V2_SIMULATION_2026-10-21.md).
