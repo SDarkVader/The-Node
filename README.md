@@ -83,7 +83,8 @@ one utterance reaches about 40 listeners. Crediting only direct address, with fa
 the 10–20 day target. A second pass, on the owner's further decisions, adds lapsing recognition,
 refusal and a modelled customer channel. It shows that customers recognise their Baker only if
 they are regulars. Recognition v2 and individual dealings are now implemented as an opt-in rules
-version (`WorldConfig.recognition = 'v2'`); the default stays v1 until study 1 has run.
+version (`WorldConfig.recognition = 'v2'`). Study 1 runs on it (authority-attribution contract 1.1.0);
+the kernel default stays v1 so the archived reproductions still hold.
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the

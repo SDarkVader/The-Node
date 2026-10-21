@@ -49,7 +49,7 @@ state), **DECIDED** (owner decision, dated), **OPEN** (still needs a decision or
 | A06 Shard cap | VERIFIED: `SHARD_COUNT_CAP = 3` (`src/engine/shardRegistry.ts:67`). Not relevant to the anchored study (D4 not triggered). |
 | A07 Settlement tuning | OPEN; not relevant to the anchored study's validity (D4 not triggered). |
 | A08 Live adapter | OPEN by design; gate stays closed. Reservation identity is `sha256([accountId, selfRef, tick])` (`responsesBroker.ts:15`, `accountedBroker.ts:31`), as the accounted design states. Multi-actor runs need distinct `selfRef`s, which per-actor observer references already provide. |
-| A09 Construct contract | **Done for authority attribution v1.0.0** (§5). |
+| A09 Construct contract | **Done for authority attribution v1.0.0** (§5); **v1.1.0** (2026-10-21) runs it on the recognition-v2 baseline. |
 | A10 Focused audit | Partly done: role verbs (validator), and the coupling of role transitions to actions (§5.3). Wall-clock sessions, persistent server state and cross-shard identity were not audited. |
 
 ## 4. Owner decisions (register §10)

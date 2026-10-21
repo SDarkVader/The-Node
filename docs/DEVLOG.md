@@ -1,3 +1,16 @@
+> 2026-10-21 (night) — Study 1 rebased onto the v2 baseline; the remaining v2 data blockers closed. Owner: "We just need a stable system for the behaviour to be measured", "Study 1 will depend on the viable solution", "I don't think it's appropriate to start the study with known issues".
+>
+> **Blockers closed (all v2-only, v1 byte-identical):**
+> - **Grifter gate:** owner-authorised edit of protected `protocol.ts`, via an optional `DecisionContext.rules: 'v2'`. Fingerprint re-recorded in `DEVELOPMENT_BRANCH_AUDIT.md`.
+> - **Schema:** the decision schema forced Grifter speech to null, a hidden second gate.
+> - **Participant layer:** speech and diary now belong to the person and survive a same-day role change. Three faithful diary writes had been silently dropped.
+> - **Rules text:** `node-rules-context-v2` carries the A01 diary wording.
+> - **Courier pay:** follows the workplace route.
+>
+> **Study 1:** authority contract 1.1.0 declares `design.world.recognition = 'v2'`. Contract snapshot and manifest regenerated; freeze pins moved once, deliberately, with the reason in the test. Construct, accounted-study, A01, Python fixture and rehearsal tests were updated to the v2 baseline: all seven actors are now eligible. Admission-not-effect reachability is kept at seed 16.
+>
+> **Verified:** Vitest 1285/1285, Python 28/28, G1 29/29 against archived hashes, G2 12/12 fixture checks, rehearsal 8/8, freeze 4/4. A latent v1 fixture defect (role unread on packed observations) is recorded, not rewritten.
+
 > 2026-10-21 (evening) — Recognition v2 and individual dealings implemented, opt-in (`WorldConfig.recognition = 'v2'`). Study 1 postponed by the owner until reactivated.
 >
 > **Why opt-in:** `canonical()` hashes every key (even `undefined`) and the genesis config, `compare_hashes` checks archived G1 evidence, and the freeze test pins study 1's request bytes. With the flag absent the kernel is byte-identical: G1 29/29 against `main-consolidation-2026-10-20`, freeze 4/4, golden snapshots unchanged.

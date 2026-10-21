@@ -1,6 +1,12 @@
 # Runbook: authority-attribution study 1 (first accounted run)
 
-> **Postponed 2026-10-21 (owner):** the run planned for 2026-10-22 waits until the owner reactivates it. Study 1 stays frozen (`test/eval.study1Freeze.test.ts`) until it has run.
+> **Postponed 2026-10-21 (owner):** the run planned for 2026-10-22 waits until the owner reactivates it.
+>
+> **Baseline tightened 2026-10-21 (owner: "no study starts with known issues"):** study 1 now runs on
+> authority-attribution contract **1.1.0**, whose world is the recognition-v2 baseline: individual
+> dealings, lapsing recognition, the Grifter gate open (all seven actors are eligible), rules text v2
+> and workplace Courier pay. The procedure below is unchanged; the manifest and the freeze test's pins
+> moved once, deliberately, to the new baseline and stay frozen until the study has run.
 
 Prepared 2026-10-20 for the owner's run on **Thursday 2026-10-22**, on the Windows PC that holds the
 credential and the private allowance. Everything here was rehearsed end to end with the real
@@ -134,10 +140,6 @@ repaired. It then writes `results.json` and `summary.md` containing:
 
   Five replicates per arm give wide intervals. If the contrast looks interesting, the next allowance should add seeds (contract v1.1) rather than more replicates of one seed.
 
-**Known limitation found 2026-10-21 (not fixed: study 1 is frozen).** The rules text tells live
-models that the courier's "wage follows workplace-to-hub distance, not current avatar walking
-distance". The kernel actually pays by the courier's *current* position. In an offline check,
-walking away from the hub raised a courier's 5-day earnings from 0.71 to 2.61. The courier's
-measured effect in this study is a Wall post, so the primary measure is unaffected. Do not read
-courier wealth or movement as a response to the notice. See the
-[recognition v2 simulation note](RECOGNITION_V2_SIMULATION_2026-10-21.md).
+**Resolved 2026-10-21 on the study baseline.** The courier wage used to follow the courier's
+current position, contradicting the rules text. Study 1 now runs on contract 1.1.0 (recognition
+v2), where the wage follows the workplace route as the rules text says. No action needed.

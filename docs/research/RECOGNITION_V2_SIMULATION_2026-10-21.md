@@ -286,3 +286,10 @@ on the client wire (`identityResolved` cannot be withdrawn today).
 - Study 1's courier is measured on a Wall post, so its primary measure is unaffected. Read courier
   wealth in study 1 with this in mind, and fix the defect after study 1, since the kernel is
   frozen until then.
+
+**Latent fixture defect found while rebasing study 1 (2026-10-21).** The Python fixture policies
+(`evals/inspect_node/policies.py`) read `self.role` from the observation as received. On an
+observation in the packed table form they therefore never saw their role: a Baker's price was
+blanked and a Grifter was not silenced. This affected only scripted fixture behaviour, never the
+kernel. v2 observations are now unwrapped. v1 reading is left exactly as archived, because G1 must
+reproduce the archived v1 hashes (29/29), and those hashes include that behaviour.
