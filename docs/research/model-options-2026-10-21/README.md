@@ -1,6 +1,6 @@
 # Model options for the accounted studies (2026-10-21) — research in progress
 
-**Status: UNVERIFIED.** These are researchers' outputs, saved so that a lost session or container
+**Status: UNVERIFIED except OpenAI** (`verification-partial.json`, verifier `verify:openai`: the study-1 model's deprecation, gpt-6-luna's prices, and the `const` gap are confirmed). These are researchers' outputs, saved so that a lost session or container
 does not force a re-run. They were the first attempt's research stage, cut off by a session
 limit at verification, then rerun. Independent verifiers were still checking them when this was
 written. Do not act on a number here until the verified file (`verified.json`, to be added beside
