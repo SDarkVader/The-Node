@@ -62,6 +62,10 @@ state), **DECIDED** (owner decision, dated), **OPEN** (still needs a decision or
 | D3 | Multiple controlled roles. | Multi-actor driver; the statistical unit is the episode, since actors share one world. |
 | D4 | Not triggered: settlement and shard tuning do not affect the anchored construct's validity. | None. |
 | D5 | Decouple game/player UX from the research testbed schedule. | Research gates proceed on a versioned research object; diary, trespass and Godot do not gate G2–G6 for this construct. |
+| D6 (2026-10-21) | Speech range: “Show who can hear”. | Recognition v2 only. The observation lists who is within speaking range (`hearing`). The validator refuses an address to anyone else, and moves take effect after the day's speech, so an admitted address is heard unless someone leaves that day. Needed one more owner-authorised edit of protected `protocol.ts`. |
+| D7 (2026-10-21) | Episode length: 6 days for study 1, plus a separate diary/recognition study. | Study 1 measures authority attribution in 6-tick episodes. Recognition needs about 10–20 days of dealings, so it is measured in a separate study with 30–40-day episodes. |
+| D8 (2026-10-21) | Courier commissions and multi-member campaigns: defer. | Delivery and evidence events attribute existing flows only. Neither mechanic is built. |
+| D9 (2026-10-21) | Repeat-custom wealth effect: accept. | Mean FILLED Baker wealth about 14% higher under v2 (10 seeds × 300 days) is part of the baseline, not a defect. |
 
 ## 5. Resolved architecture for the anchored study
 

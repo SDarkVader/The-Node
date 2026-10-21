@@ -1,0 +1,132 @@
+{
+ "status": "UNVERIFIED researcher output; an independent verifier had not yet checked it when this file was written",
+ "family": "google",
+ "read": "2026-10-21",
+ "producedBy": "workflow cheaper-model-research, run wf_c1105733-775, agent research:google",
+ "result": {
+  "models": [
+   {
+    "provider": "Google Gemini API (Developer API, generativelanguage.googleapis.com)",
+    "model": "gemini-3.1-flash-lite",
+    "inputUsdPerM": 0.25,
+    "outputUsdPerM": 1.5,
+    "cachedInputUsdPerM": 0.025,
+    "contextTokens": 1048576,
+    "cheaperTiers": "Batch: $0.125 input / $0.75 output / $0.0125 cached, cache storage $0.50 per 1M tokens per hour. Batch is 50% off and asynchronous with a 24-hour target turnaround, and it works only through generateContent. Flex has the same prices as Batch and is synchronous, but its latency target is 1-15 minutes and capacity is best-effort, so it does not meet the ~16 s requirement. Priority costs $0.45 input / $2.70 output / $0.045 cached, cache storage $1.80 per 1M tokens per hour; its latency is 'Low (Seconds)'. Standard latency is listed only as 'Seconds to minutes'. Standard cache storage is $1.00 per 1M tokens per hour (explicit caching only). Prices are for text/image/video; audio costs more.",
+    "deprecation": "Stable. Released 2026-05-07. Earliest shutdown is 2027-05-07, and Google names gemini-3.5-flash-lite as the replacement. This is a date Google may still move ('earliest possible'), but it falls after both studies would plausibly run.",
+    "reasoningControl": "thinking_level (generateContent: generationConfig.thinkingConfig.thinkingLevel). The OpenAI-compat mapping table lists minimal/low/medium/high for 3.1 Flash-Lite. The API reference describes MINIMAL as 'Little to no thinking'. The compat page says reasoning cannot be turned off for Gemini 3 models. Thinking tokens are billed at the output price.",
+    "strictJsonSchema": "Partial. The schema goes in generationConfig.responseFormat.text.schema with mimeType APPLICATION_JSON; responseJsonSchema and responseSchema are now marked deprecated. It is enforced by constrained decoding for the documented subset: type (nullable is written as a type array such as [\"string\",\"null\"]); enum for strings and numbers; anyOf; oneOf, treated as anyOf; $ref/$defs/$id/$anchor; properties; required; additionalProperties; items; prefixItems; minItems/maxItems, which are enforced; minimum/maximum; format; title; description; and propertyOrdering. The legacy OpenAPI Schema object also has a nullable boolean. Some keywords are stripped and ignored: minLength, maxLength, minProperties, maxProperties, uniqueItems, contains, minContains and maxContains. `const` is NOT in the supported list. Google says only that output is 'syntactically correct JSON' and that values should be validated in your app. Large schemas can be rejected with a 400 INVALID_ARGUMENT ('too many states or too much branching'). The listed causes include 'very long ... enum names, enums with many values ... anyOf with many alternatives', which matches the 64-hex and 16-hex enum lists directly.",
+    "sources": [
+     "https://ai.google.dev/gemini-api/docs/pricing (read 2026-10-21; page last updated 2026-10-19)",
+     "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite (read 2026-10-21; last updated 2026-07-21)",
+     "https://ai.google.dev/gemini-api/docs/deprecations (read 2026-10-21; last updated 2026-10-20)",
+     "https://ai.google.dev/gemini-api/docs/structured-output (read 2026-10-21; last updated 2026-10-21)",
+     "https://ai.google.dev/api/generate-content (GenerationConfig, Schema, ThinkingConfig, ServiceTier; read 2026-10-21; last updated 2026-10-13)",
+     "https://ai.google.dev/gemini-api/docs/openai (read 2026-10-21; last updated 2026-10-14)",
+     "https://ai.google.dev/gemini-api/docs/flex-inference (read 2026-10-21; last updated 2026-10-13)",
+     "https://ai.google.dev/gemini-api/docs/batch-mode (read 2026-10-21; last updated 2026-09-17)",
+     "https://ai.google.dev/gemini-api/docs/rate-limits (read 2026-10-21; last updated 2026-10-15)"
+    ],
+    "unverified": [
+     "Tier 1 RPM/TPM/RPD for this model: the docs do not publish them and say to view them in AI Studio. What is documented is a Tier 1 spend limit of $10 per rolling 10 minutes, a Tier 1 billing cap of $250, and 10,000,000 Batch enqueued tokens at Tier 1.",
+     "Default thinking level: gemini-3.1-flash-lite is missing from the default-level table on the thinking page.",
+     "Implicit caching minimum prefix length: Flash-Lite models are not listed in the caching table, so it is unknown whether a ~2.6k-token rules+schema prefix would ever get cache hits.",
+     "Whether `const` is rejected with an error or silently ignored. A single-value enum is the documented substitute.",
+     "Whether the project's schema, with many long 64-hex enum values, fits within the serving complexity limit. This has to be tested with a real request.",
+     "Whether OpenAI-compat `response_format` json_schema with `strict: true` is honoured the same way as the native schema.",
+     "Actual p50/p95 latency on the Standard tier. No official figure exists."
+    ]
+   },
+   {
+    "provider": "Google Gemini API (Developer API, generativelanguage.googleapis.com)",
+    "model": "gemini-3.5-flash-lite",
+    "inputUsdPerM": 0.3,
+    "outputUsdPerM": 2.5,
+    "cachedInputUsdPerM": 0.03,
+    "contextTokens": 1048576,
+    "cheaperTiers": "Batch: $0.15 input / $1.25 output / $0.02 cached, cache storage $1.00 per 1M tokens per hour. Batch is 50% off and asynchronous with a 24-hour target, and it works only through generateContent. Flex has the same prices as Batch, but its latency target is 1-15 minutes and capacity is best-effort, so it does not meet ~16 s. Priority costs $0.54 input / $4.50 output / $0.05 cached; its latency is 'Low (Seconds)'. Standard cache storage is $1.00 per 1M tokens per hour.",
+    "deprecation": "Stable. Released 2026-07-21. No shutdown date has been announced. Google recommends this model, together with 3.8 Flash, for new projects.",
+    "reasoningControl": "thinking_level minimal/low/medium/high. The default is minimal, according to the thinking page table. Thinking cannot be fully disabled for Gemini 3 models (OpenAI-compat page). Thinking tokens are billed at the output price.",
+    "strictJsonSchema": "Partial. It uses the same structured-output machinery and limits as gemini-3.1-flash-lite: enum (strings and numbers), anyOf, oneOf→anyOf, $ref/$defs, nullable through a type array, required, additionalProperties, items/prefixItems, and min/maxItems are documented. `const` is not listed. Length, count and uniqueness constraints are stripped. Large or long enums and wide anyOf can cause a 400 'too many states' rejection. The model page says 'Structured outputs: Supported'.",
+    "sources": [
+     "https://ai.google.dev/gemini-api/docs/pricing (read 2026-10-21; page last updated 2026-10-19)",
+     "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite (read 2026-10-21; last updated 2026-07-30)",
+     "https://ai.google.dev/gemini-api/docs/thinking (read 2026-10-21; last updated 2026-10-14)",
+     "https://ai.google.dev/gemini-api/docs/deprecations (read 2026-10-21; last updated 2026-10-20)",
+     "https://ai.google.dev/gemini-api/docs/structured-output (read 2026-10-21; last updated 2026-10-21)",
+     "https://ai.google.dev/api/generate-content (read 2026-10-21; last updated 2026-10-13)",
+     "https://ai.google.dev/gemini-api/docs/rate-limits (read 2026-10-21; last updated 2026-10-15)"
+    ],
+    "unverified": [
+     "Tier 1 RPM/TPM/RPD: not published in the docs (shown only in AI Studio). Tier 1 Batch enqueued tokens are documented at 10,000,000.",
+     "The implicit caching minimum token count for this model is not listed.",
+     "Whether `const` is rejected or ignored, and whether 64-hex enum lists pass the complexity check.",
+     "Real Standard-tier latency against the ~16 s requirement."
+    ]
+   },
+   {
+    "provider": "Google Gemini API (Developer API, generativelanguage.googleapis.com)",
+    "model": "gemini-2.5-flash-lite",
+    "inputUsdPerM": 0.1,
+    "outputUsdPerM": 0.4,
+    "cachedInputUsdPerM": 0.01,
+    "contextTokens": 1048576,
+    "cheaperTiers": "Batch: $0.05 input / $0.20 output / $0.01 cached. Batch is 50% off and asynchronous with a 24-hour target, through generateContent only. Flex has the same prices as Batch, with a 1-15 minute latency target. Priority costs $0.18 input / $0.72 output / $0.018 cached, cache storage $1.80 per 1M tokens per hour. Standard cache storage is $1.00 per 1M tokens per hour.",
+    "deprecation": "Stable. Released 2025-07-22. No shutdown date has been announced. However, the models and deprecations pages say Google is 'limiting access to the 2.5 models to users who have actively used them in the past' and directs new projects to 3.5 Flash-Lite or 3.8 Flash. Knowledge cutoff is January 2025.",
+    "reasoningControl": "Thinking is off by default (thinking page). Control it with thinkingBudget, an integer, in generateContent. The API reference says thinkingLevel on pre-Gemini-3 models returns an error. The OpenAI-compat layer maps reasoning_effort to budgets of 1,024/1,024/8,192/24,576, and 'none' disables thinking for 2.5 models.",
+    "strictJsonSchema": "Partial. It uses the same documented subset and limits as the Gemini 3 Flash-Lite models: enum, anyOf, oneOf→anyOf, $ref, nullable through a type array or the legacy `nullable`, and min/maxItems are enforced. `const` is not listed. Length, count and uniqueness keywords are ignored. A complexity 400 is possible with long or many enum values.",
+    "sources": [
+     "https://ai.google.dev/gemini-api/docs/pricing (read 2026-10-21; page last updated 2026-10-19)",
+     "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite (read 2026-10-21; last updated 2026-09-22)",
+     "https://ai.google.dev/gemini-api/docs/models (read 2026-10-21; last updated 2026-10-21)",
+     "https://ai.google.dev/gemini-api/docs/deprecations (read 2026-10-21; last updated 2026-10-20)",
+     "https://ai.google.dev/gemini-api/docs/thinking (read 2026-10-21; last updated 2026-10-14)",
+     "https://ai.google.dev/gemini-api/docs/openai (read 2026-10-21; last updated 2026-10-14)",
+     "https://ai.google.dev/api/generate-content (read 2026-10-21; last updated 2026-10-13)"
+    ],
+    "unverified": [
+     "Whether this account or project can still call 2.5 models. Access is limited to past active users, so a new project may be refused.",
+     "Tier 1 RPM/TPM/RPD: not published. Tier 1 Batch enqueued tokens are documented at 10,000,000.",
+     "The implicit caching minimum for 2.5 Flash-Lite is not listed; only 2.5 Flash appears, at 2,048.",
+     "Instruction-following quality on a 5-9k-token agent observation compared with gpt-5.4-nano. No official benchmark was checked."
+    ]
+   },
+   {
+    "provider": "Google Gemini API (Developer API, generativelanguage.googleapis.com)",
+    "model": "gemini-3.8-flash",
+    "inputUsdPerM": 0.75,
+    "outputUsdPerM": 3.75,
+    "cachedInputUsdPerM": 0.075,
+    "contextTokens": 1048576,
+    "cheaperTiers": "All prices DOUBLE from 2027-01-01, to $1.50 input / $7.50 output / $0.15 cached. Batch: $0.375 input / $1.875 output / $0.0375 cached through 2026-12-31, then $0.75 / $3.75 / $0.075. Batch is asynchronous with a 24-hour target. Flex has the same prices as Batch, with a 1-15 minute latency target. Priority costs $1.35 input / $6.75 output through 2026-12-31. Cache storage is $0.50 per 1M tokens per hour, rising to $1.00 in 2027. gemini-3.6-flash, the previous generation, has identical prices.",
+    "deprecation": "Stable. Released 2026-09-02. No shutdown date has been announced.",
+    "reasoningControl": "thinking_level low/medium/high only. The default is medium, and there is no 'minimal' level. Thinking tokens are billed at the output price.",
+    "strictJsonSchema": "Partial. It uses the same documented subset and limits as above. The Google structured-output examples, including anyOf with enums and recursive $ref, are written against this model.",
+    "sources": [
+     "https://ai.google.dev/gemini-api/docs/pricing (read 2026-10-21; page last updated 2026-10-19)",
+     "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash (read 2026-10-21; last updated 2026-09-02)",
+     "https://ai.google.dev/gemini-api/docs/thinking (read 2026-10-21; last updated 2026-10-14)",
+     "https://ai.google.dev/gemini-api/docs/caching (read 2026-10-21; last updated 2026-10-13)",
+     "https://ai.google.dev/gemini-api/docs/structured-output (read 2026-10-21; last updated 2026-10-21)",
+     "https://ai.google.dev/gemini-api/docs/rate-limits (read 2026-10-21; last updated 2026-10-15)"
+    ],
+    "unverified": [
+     "Tier 1 RPM/TPM/RPD: not published. Tier 1 Batch enqueued tokens are documented at 3,000,000.",
+     "Real Standard-tier latency at thinking_level=low against the ~16 s requirement."
+    ]
+   }
+  ],
+  "notes": [
+   "All numbers come from official ai.google.dev pages read on 2026-10-21, using a raw HTML download rather than a summariser. Prices are USD per 1M tokens on the paid tier, for text input. Output prices include thinking tokens. None of these models has a dated snapshot ID; Google calls the plain IDs (for example gemini-3.5-flash-lite) the 'Stable' version.",
+   "Estimated cost per call at list Standard prices, excluding thinking tokens, for 5k-9k input and 100-300 output tokens: gemini-2.5-flash-lite $0.00054-$0.00102; gemini-3.1-flash-lite $0.0014-$0.0027; gemini-3.5-flash-lite $0.00175-$0.00345; gemini-3.8-flash $0.0041-$0.0079 (twice that from 2027-01-01). For study 1 (630 calls) that comes to roughly $0.34-0.64, $0.88-1.70, $1.10-2.17 and $2.60-4.96 respectively; double these for the project's 2x booking. These figures are my arithmetic on the cited prices, not quoted figures.",
+   "Two other Flash models were not entered as rows. gemini-3-flash-preview costs $0.50/$3.00 and is described as 'Our legacy Flash model'; it is a preview with default thinking 'high' and no shutdown date announced. gemini-2.5-flash costs $0.30/$2.50, the same as 3.5 Flash-Lite, and has the same restricted 2.5 access. Neither is cheaper than 3.1 Flash-Lite.",
+   "TRANSPORT: the Gemini OpenAI-compatibility layer documents only Chat Completions (base_url https://generativelanguage.googleapis.com/v1beta/openai/). No OpenAI Responses API endpoint is documented. Either way a new adapter is needed: Chat Completions compat, native generateContent (responseFormat.text.schema), or the newer Interactions API. Batch and explicit caching are available only through generateContent. Google describes OpenAI-library support as 'still in beta'.",
+   "SCHEMA RISK specific to this workload: the Limitations section of the structured-output page says schemas can be rejected with 400 INVALID_ARGUMENT for 'very long property or enum names, enums with many values ... anyOf with many alternatives'. That is exactly the shape of the 64-hex and 16-hex reference enums. `const` is not in the supported keyword list (replace it with a one-value enum). Nullable is written as {\"type\":[\"X\",\"null\"]}. Google calls the output 'syntactically correct JSON' and tells callers to validate values, so the existing post-validation must stay. Recommendation: send one real request with the actual ~2,000-token schema to each candidate model before committing.",
+   "LATENCY vs the ~16 s synchronous requirement: Google's tier table lists Standard as 'Seconds to minutes', Priority as 'Low (Seconds)' at 75-100% more than Standard, Flex as 'Minutes (1-15 min target)', and Batch as 'Up to 24 hours'. Only Standard or Priority fit synchronous per-tick calls, so the 50% Batch/Flex discount does not apply to the current loop design. Batch could work only by submitting each tick across all 15 episodes as one job (105 calls) and waiting, which is up to 24 hours per tick and 6 sequential ticks.",
+   "RATE LIMITS: Google no longer publishes per-model RPM/TPM/RPD tables on the docs page; it says to view them in AI Studio. Documented facts are: Tier 1 qualifies once an active billing account is linked; the Tier 1 billing cap is $250; Tier 1 has a spend-based limit of $10 per rolling 10 minutes (429 when exceeded); limits are per project; RPD resets at midnight Pacific; Priority limits are 0.3x Standard; Batch allows 100 concurrent requests. At about $0.003 per call, the $10 per 10 minutes limit allows thousands of calls, so it does not constrain a 7-call tick.",
+   "Caching: cached-input prices are 10% of input on all four models. Implicit caching is on by default for 2.5 and newer. The published minimum prefix is 4,096 tokens for 3.8/3.6 Flash and 2,048 for 2.5 Flash; Flash-Lite minimums are not published. The stable prefix here (rules ~650 tokens plus a schema ~2,000 tokens, if the schema is constant) may fall below the threshold, so assume no cache savings until usage metadata shows hits.",
+   "Paid-tier data is marked 'Used to improve our products: No'. The free tier is marked 'Yes'.",
+   "Bottom line for the user's 'cheaper models' question, within Gemini: gemini-3.1-flash-lite is the cheapest model that is clearly open to new projects, at $0.25/$1.50, but its earliest shutdown is 2027-05-07. gemini-3.5-flash-lite is Google's recommended current Flash-Lite, at $0.30/$2.50 with minimal thinking by default. gemini-2.5-flash-lite is cheapest on paper at $0.10/$0.40 but may be unavailable to a new project. The comparison against gpt-5.4-nano's price was not part of this task, and I did not verify that price here."
+  ]
+ }
+}
