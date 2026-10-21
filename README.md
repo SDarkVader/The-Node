@@ -65,7 +65,7 @@ before anything is scored. The requirements and decisions behind it are tracked 
 
 A capped, accounted runner now exists for the first live run of that study. Every model call is
 reserved against a USD 5 allowance before it is sent, and its usage is booked before the response
-can affect the simulation. It is scheduled for 22 October 2026
+can affect the simulation. Its run, planned for 22 October 2026, is postponed until the owner reactivates it
 ([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)).
 
 The participants' private diaries now have a written contract
@@ -82,7 +82,8 @@ heard conversation would let silent bystanders recognise people as fast as their
 one utterance reaches about 40 listeners. Crediting only direct address, with fading memory, meets
 the 10–20 day target. A second pass, on the owner's further decisions, adds lapsing recognition,
 refusal and a modelled customer channel. It shows that customers recognise their Baker only if
-they are regulars.
+they are regulars. Recognition v2 and individual dealings are now implemented as an opt-in rules
+version (`WorldConfig.recognition = 'v2'`); the default stays v1 until study 1 has run.
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the

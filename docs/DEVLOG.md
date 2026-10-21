@@ -1,3 +1,17 @@
+> 2026-10-21 (evening) — Recognition v2 and individual dealings implemented, opt-in (`WorldConfig.recognition = 'v2'`). Study 1 postponed by the owner until reactivated.
+>
+> **Why opt-in:** `canonical()` hashes every key (even `undefined`) and the genesis config, `compare_hashes` checks archived G1 evidence, and the freeze test pins study 1's request bytes. With the flag absent the kernel is byte-identical: G1 29/29 against `main-consolidation-2026-10-20`, freeze 4/4, golden snapshots unchanged.
+>
+> **Built:**
+> - `engine/recognition.ts`: directional integer ledger. Address credits the addressee by intent, refusal included; silence earns the silent person nothing. Dealings credit by time since last dealing, and a first dealing is anonymous/passive. Overheard/room/Wall credit is passive and capped below the threshold. Cap/hysteresis gives a ~60-day lapse with residual familiarity.
+> - `engine/dealings.ts`: individual purchases with repeat custom on the existing inverse-price weights; flour, grain, delivery and evidence attributed to real counterparties from existing flows; `hashUnit` instead of `world.rng`.
+> - Kernel wiring: Grifters in the comms proximity graph and on their district's Wall; diary gate accepts a subject resolved before or after the day's update; pressure exposure from Wall reach.
+> - Observer: v2 `knownSubjects`, own dealings only. Request whitelist: `dealings`. Wire: `identityLapsed` on the same handle, `identityTransitionMessages`.
+>
+> **Verified:** 19 focused tests (anonymous purchases, regulars, silent bystander, refusal, room speech, lapse/recovery with a stable ref, Grifters, counterparties, exact flow conservation, pressure independence, determinism, replay, observer visibility, wire). 10 mutations killed; one test was initially too weak (a pressure skew of 1.0 hits the contribution clamp) and was fixed. Full suite 1279/1279. Over 10 seeds × 300 days, bread is unchanged (paired +2.6, SD 44) and the settlement residual stays about 3e-12. Mean FILLED Baker wealth is +14% (+5.0, paired SD 4.8): regulars follow price changes with a lag.
+>
+> **Not built:** Grifter speech from agents, held by the protected validator (`protocol.ts:54`) pending the owner's go-ahead after study 1. Courier commissions and multi-member campaigns are still absent, so delivery and evidence attribute existing flows rather than commissioned jobs.
+
 > 2026-10-21 (later) — Recognition v2, second pass on the owner's statements: resolution can be lost, role holders must interact with customers, speaking is optional, refusal is a signal, deception is also interpretation.
 >
 > **Grounded first:** four read-only investigators and a critic (22 cited facts spot-checked).

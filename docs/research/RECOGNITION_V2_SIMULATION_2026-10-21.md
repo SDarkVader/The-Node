@@ -3,6 +3,9 @@
 2026-10-21. A follow-up to the [A01 diary contract](DIARY_CONTRACT_A01.md). Constraint 1 says to
 simulate before trusting, so v2 was run in simulation before anything is built.
 
+> **Implemented 2026-10-21 (opt-in):** `src/engine/recognition.ts`, `src/engine/dealings.ts`,
+> `WorldConfig.recognition = 'v2'`; tests in `test/world.recognitionV2.test.ts`.
+>
 > **Second pass, same day.** The owner's statements of 2026-10-21 answered R3 and changed R2. They
 > also added customers, refusal and interpretation; these are simulated in
 > [§ Second pass](#second-pass-the-owners-statements-of-2026-10-21).

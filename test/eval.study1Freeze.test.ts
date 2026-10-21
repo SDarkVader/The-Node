@@ -6,7 +6,7 @@ import { contractHash } from '../src/eval/constructs/authorityAttribution.js';
 import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.js';
 
 /**
- * Study 1 freeze (owner runs it 2026-10-22; docs/research/RUNBOOK_AUTHORITY_STUDY_1.md).
+ * Study 1 freeze (run postponed on 2026-10-21 until the owner reactivates it; docs/research/RUNBOOK_AUTHORITY_STUDY_1.md).
  * The research object must not change mid-study: these pins hold the exact request bytes the
  * live model receives, the contract and the manifest. A failure here means a change would alter
  * what study 1 measures. Do not re-pin to make it pass: ship the change as a new rules/scenario

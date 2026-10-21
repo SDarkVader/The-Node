@@ -1,5 +1,7 @@
 # Runbook: authority-attribution study 1 (first accounted run)
 
+> **Postponed 2026-10-21 (owner):** the run planned for 2026-10-22 waits until the owner reactivates it. Study 1 stays frozen (`test/eval.study1Freeze.test.ts`) until it has run.
+
 Prepared 2026-10-20 for the owner's run on **Thursday 2026-10-22**, on the Windows PC that holds the
 credential and the private allowance. Everything here was rehearsed end to end with the real
 scripts and a TEST-ONLY fake transport (`test/cli/rehearse-accounted-study.sh`; CI runs it on every
