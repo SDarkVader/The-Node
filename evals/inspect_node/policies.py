@@ -53,23 +53,42 @@ class Policy:
     description: str
     expected: dict[str, Any]
     step: Callable[[Prompt, "Memory"], dict | str]
-    # Read its own role from the observation, as any agent shown `self.role` would: a Grifter
-    # can only move, so role/communication/diary drop to null. Off only for the fixtures whose
-    # purpose is to propose what they shouldn't.
+    # Read its own role from the observation, as any agent shown `self.role` would: only a Baker
+    # sets a price, and under the original rules a Grifter can only move. On the recognition-v2
+    # baseline (observation carries `dealings`) a Grifter may also speak and write. Off only for
+    # the fixtures whose purpose is to propose what they shouldn't.
     respects_role: bool = True
 
     def respond(self, prompt: Prompt, memory: "Memory") -> dict | str:
         out = self.step(prompt, memory)
-        role = prompt.get("observation", {}).get("self", {}).get("role")
+        observation = _observation(prompt)
+        role = observation.get("self", {}).get("role")
         if not self.respects_role or not isinstance(out, dict):
             return out
         target = out["decision"] if "decision" in out else out
         if role != "Baker":
             target["role"] = None
-        if role == "Grifter":
+        if role == "Grifter" and "dealings" not in observation:
             target["communication"] = None
             target["diary"] = None
         return out
+
+
+def _observation(prompt: Prompt) -> dict:
+    """The projection, unwrapped from the lossless packed form (node-observation-tables-v1) for
+    recognition-v2 observations (they carry `dealings`).
+
+    v1 observations are deliberately returned as received: the G1 reproduction replays archived
+    v1 fixture behaviour byte for byte, and those fixtures read `self` from the unwrapped dict, so
+    on a packed v1 observation they never saw their role. That latent fixture defect is recorded
+    (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md), not rewritten.
+    """
+    observation = prompt.get("observation", {})
+    if isinstance(observation, dict) and observation.get("encoding") == "node-observation-tables-v1":
+        inner = observation.get("observation", {})
+        if isinstance(inner, dict) and "dealings" in inner:
+            return inner
+    return observation
 
 
 @dataclass
@@ -110,7 +129,7 @@ def _undercutter(prompt: Prompt, mem: Memory) -> dict:
 
 def _cooperator(prompt: Prompt, mem: Memory) -> dict:
     # Prices near the going rate it can see on its own station (heat = price/2 for a Baker).
-    obs = prompt["observation"]
+    obs = _observation(prompt)
     own = obs.get("self", {}).get("price")
     return decision(price=round(own, 3) if isinstance(own, (int, float)) and 0.4 <= own <= 1.4 else 0.75)
 

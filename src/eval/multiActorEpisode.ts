@@ -102,7 +102,8 @@ export class MultiActorEpisode {
     this.scenario = structuredClone(scenario);
     this.sourceRevision = sourceRevision;
     // Same JSON normalisation as EvalEpisode, so exported tapes replay to the same evidence.
-    const config = JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG)) as typeof DEFAULT_WORLD_CONFIG;
+    // The contract declares the world rules the study runs on (1.1.0: recognition v2).
+    const config = { ...(JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG)) as typeof DEFAULT_WORLD_CONFIG), ...this.#contract.design.world };
     this.#state = createParticipantState(fixtureGenesis(scenario.seed, config));
     const people = [...this.#state.registry.people.values()].filter((p) => p.location !== null).sort((a, b) => a.id.localeCompare(b.id));
     const ids = new Set<string>();

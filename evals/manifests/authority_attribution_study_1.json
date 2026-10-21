@@ -1,11 +1,11 @@
 {
   "schema": "node-accounted-study-manifest-v1",
   "id": "authority-attribution-study-1",
-  "description": "First accounted study for contract authority_attribution v1.0.0 (owner decisions 2026-10-20): 5 replicates x 3 arms on seed 103, arm order counterbalanced by a 3x3 Latin square, 7 controlled actors x 6 ticks per episode, one model call per actor per tick. One seed: results describe this world and notice only. The allowance admits 714 requests (630 + two re-run episodes) so an interrupted episode can be re-attempted after operator settlement; the USD 5 cap is unchanged.",
+  "description": "First accounted study for contract authority_attribution v1.1.0, run on the tightened baseline (recognition v2; owner direction 2026-10-21) (owner decisions 2026-10-20): 5 replicates x 3 arms on seed 103, arm order counterbalanced by a 3x3 Latin square, 7 controlled actors x 6 ticks per episode, one model call per actor per tick. One seed: results describe this world and notice only. The allowance admits 714 requests (630 + two re-run episodes) so an interrupted episode can be re-attempted after operator settlement; the USD 5 cap is unchanged.",
   "contract": {
     "id": "authority_attribution",
-    "version": "1.0.0",
-    "hash": "39b026ac8ee1652f6947facf31cf21e5be84ece2f3c42cb14eeb8e65036c80e4"
+    "version": "1.1.0",
+    "hash": "c3affdfc63e10a1e051b34183c5700565cef7d1157edfdb22c7c018dde56c479"
   },
   "model": "gpt-5.4-nano-2026-03-17",
   "deadlineMs": 16000,

@@ -347,6 +347,23 @@ describe('v2 data blockers closed: Grifter gate, rules text, courier pay', () =>
     expect(r.effects).toContainEqual({ person: grifter.id, category: 'proximityHeard' });
   });
 
+  it('a Grifter who recognises someone writes the diary, and the kernel keeps it', () => {
+    const genesis = fixtureGenesis(103, V2);
+    let s = createParticipantState(genesis);
+    for (let d = 0; d < 3; d++) s = stepParticipantState(s, [], []).state;
+    const grifter = [...s.registry.people.values()].find((p) => p.location !== null && p.role === null)!;
+    const subject = [...s.registry.people.values()].find((p) => p.location !== null && p.role !== null)!;
+    const ledger = new Map(s.world.recognitionV2!.recognition.ledger);
+    ledger.set(grifter.id, new Map([[subject.id, { credit: 150, resolved: true }]]));
+    s = { ...s, world: { ...s.world, recognitionV2: { ...s.world.recognitionV2!, recognition: { ...s.world.recognitionV2!.recognition, ledger } } } };
+    const ctx = observe(s, grifter.id, genesis.observerSecret).context;
+    expect(ctx.knownSubjects.length).toBe(1);
+    const decision = { move: null, communication: null, role: null, diary: { subject: ctx.knownSubjects[0], observation: 'soughtMeOut', reading: 'cantTellYet', context: null } };
+    const r = stepParticipantState(s, [{ person: grifter.id, epoch: grifter.roleEpoch, tick: s.world.tick, decision }], [grifter.id]);
+    expect(r.effects).toContainEqual({ person: grifter.id, category: 'diary' });
+    expect(r.state.world.diary.get(grifter.id)!.some((e) => e.value.subject === subject.id)).toBe(true);
+  });
+
   it('the v2 rules text replaces the v1 diary, recognition and Grifter lines, and matches the A01 contract text', async () => {
     const { buildResponsesRequest } = await import('../src/agent/responsesRequest.js');
     const { DIARY_RULES_TEXT_V2, RULES_CONTEXT_VERSION_V2 } = await import('../src/agent/rulesContext.js');

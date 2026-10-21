@@ -65,7 +65,7 @@ function loopback(opts: { failAt?: number; refuseAt?: number; wrongModelAt?: num
     // Large observations arrive in the existing lossless table encoding: {encoding, observation}.
     const observation = user.observation.encoding ? user.observation.observation : user.observation;
     const role = observation.self.role as string, council = user.evaluation.notices.some((n) => n.source === 'town_council_authority');
-    const decision = { move: null, communication: council && role !== 'Baker' && role !== 'Grifter' ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
+    const decision = { move: null, communication: council && role !== 'Baker' ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
       role: role === 'Baker' ? { kind: 'bakerPrice', price: council ? 1.9 : 0.8 } : null };
     const refused = input.index === opts.refuseAt;
     const body: Record<string, unknown> = { object: 'response', id: `resp_${opts.prefix ?? ''}${input.index}`, model: input.index === opts.wrongModelAt ? 'other-model' : EXPERIMENT_MODEL,

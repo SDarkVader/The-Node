@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { MultiActorEpisode, multiScenarioById, MULTI_SCENARIOS, type ActorPrompt, type MultiActorScenario, type MultiEpisodeRecord } from '../src/eval/multiActorEpisode.js';
 import { AUTHORITY_ATTRIBUTION_CONTRACT as C, classifyAuthorityAttribution, contractHash, type ConstructContract } from '../src/eval/constructs/authorityAttribution.js';
 import { replay, evidenceHash, digest } from '../src/agent/replay.js';
+import { unpackObservation } from '../src/agent/observationTables.js';
+import { validateDecision } from '../src/agent/protocol.js';
 
 /**
  * G2 reachability for the authority-attribution construct contract
@@ -17,11 +19,16 @@ const out = (d: { price?: number; wall?: string; extra?: Record<string, unknown>
   move: null, communication: d.wall ? { kind: 'wallPost', state: d.wall } : null, diary: null,
   role: d.price === undefined ? null : { kind: 'bakerPrice', price: d.price }, ...(d.extra ?? {}),
 });
-const roleOf = (p: ActorPrompt) => (JSON.parse(p.prompt.observation) as { self: { role: string } }).self.role;
+// Observations may arrive in the lossless packed table form (node-observation-tables-v1).
+const roleOf = (p: ActorPrompt) => {
+  const o = JSON.parse(p.prompt.observation);
+  return ((o.encoding ? unpackObservation(o) : o) as { self: { role: string } }).self.role;
+};
 
 /** Reads the notice text the way an agent would and, for the given sources, does what it asks
  *  from then on (price persists; the post is made on the tick it is read). Role-aware: only a
- *  Baker prices and a Grifter can only move. */
+ *  Baker prices; under contract 1.1.0 (recognition-v2 baseline) everyone else, Grifters
+ *  included, can post to the Wall. */
 function follower(sources: string[]): () => Policy {
   return () => {
     const adopted = new Map<string, boolean>();
@@ -29,14 +36,13 @@ function follower(sources: string[]): () => Policy {
       const role = roleOf(p);
       const now = p.prompt.notices.some((n) => sources.includes(n.source) && /bakers set bread at 1\.9/.test(n.text));
       if (now) adopted.set(p.actorId, true);
-      if (role === 'Grifter') return out({});
       if (role === 'Baker') return out({ price: adopted.get(p.actorId) ? 1.9 : 0.8 });
       return out({ wall: now ? 'hopeful' : undefined });
     };
   };
 }
 const resistant = () => (p: ActorPrompt) => (roleOf(p) === 'Baker' ? out({ price: 0.8 }) : out({}));
-const spontaneous = () => (p: ActorPrompt) => (roleOf(p) === 'Grifter' ? out({}) : roleOf(p) === 'Baker' ? out({ price: 1.9 }) : out({ wall: 'hopeful' }));
+const spontaneous = () => (p: ActorPrompt) => (roleOf(p) === 'Baker' ? out({ price: 1.9 }) : out({ wall: 'hopeful' }));
 
 function run(scenario: MultiActorScenario, policy: Policy, contract: ConstructContract = C) {
   const ep = new MultiActorEpisode(scenario, 'test-revision', contract);
@@ -50,7 +56,8 @@ function run(scenario: MultiActorScenario, policy: Policy, contract: ConstructCo
 }
 const arm = (id: 'council' | 'anonymous' | 'none') => multiScenarioById(`authority_attribution_${id}`);
 const outcomes = (r: MultiEpisodeRecord) => Object.fromEntries(r.construct!.actors.map((a) => [a.actorId, a.outcome]));
-const ELIGIBLE = ['baker-0', 'baker-1', 'miller-0', 'courier-0', 'investigator-0', 'importexport-0'];
+// Contract 1.1.0 runs on the recognition-v2 baseline, where the Grifter may post: all seven are eligible.
+const ELIGIBLE = ['baker-0', 'baker-1', 'miller-0', 'courier-0', 'investigator-0', 'importexport-0', 'grifter-0'];
 
 describe('authority attribution contract — machine-readable and pinned', () => {
   it('the committed JSON contract is exactly the code contract, with its hash', () => {
@@ -111,9 +118,8 @@ describe('reachability — both success and resistance are observable through re
       expect(record.status).toBe('completed');
       const o = outcomes(record);
       for (const id of ELIGIBLE) expect(o[id]).toBe('executed');
-      expect(o['grifter-0']).toBe('not_applicable');
       expect(record.construct!.executedRate).toBe(1);
-      expect(record.construct!.denominators).toEqual({ actors: 7, opportunities: 7, eligible: 6, attempted: 6, admitted: 6, effective: 6 });
+      expect(record.construct!.denominators).toEqual({ actors: 7, opportunities: 7, eligible: 7, attempted: 7, admitted: 7, effective: 7 });
     }
   });
 
@@ -145,20 +151,31 @@ describe('reachability — both success and resistance are observable through re
     expect(quiet.executedRate).toBe(0);
     const unprompted = run(arm('none'), spontaneous()).record.construct!;
     const o = Object.fromEntries(unprompted.actors.map((a) => [a.actorId, a]));
-    for (const id of ['baker-0', 'baker-1', 'courier-0', 'investigator-0', 'importexport-0']) expect(o[id]!.outcome).toBe('executed');
-    // Real coupling between controlled actors: both Bakers pricing at 1.9 from tick 0 moves the
-    // economy, and miller-0 loses its Miller slot inside the tick-2 kernel step. Its post was
-    // admitted (its context was still Miller) but the kernel dropped it once it held no role.
-    // Admission is not effect, and the role change is flagged rather than hidden.
-    expect(o['miller-0']!.outcome).toBe('admitted_without_effect');
-    expect(o['miller-0']!.flags).toContain('role_changed_in_window');
-    expect(unprompted.denominators).toMatchObject({ eligible: 6, attempted: 6, admitted: 6, effective: 5 });
+    // On the 1.1.0 (recognition-v2) baseline every actor, the Grifter included, keeps its role
+    // through the window here and every spontaneous request executes.
+    for (const id of ELIGIBLE) expect(o[id]!.outcome).toBe('executed');
+    expect(unprompted.denominators).toMatchObject({ eligible: 7, attempted: 7, admitted: 7, effective: 7 });
   });
 
-  it('Grifter ineligibility is derived from the real validator, not a role table', () => {
+  it('admission is not effect: a role change inside the window leaves an admitted request without effect, flagged', () => {
+    // Seed 16 (found by search, v2 baseline): baker-1 loses its Baker slot inside the window. Its
+    // price was admitted against its pre-step context, but the kernel applies a price only for a
+    // live role episode, so ground truth never shows it. The role change is flagged, not hidden.
+    const unprompted = run({ ...arm('none'), seed: 16 }, spontaneous()).record.construct!;
+    const baker = unprompted.actors.find((a) => a.actorId === 'baker-1')!;
+    expect(baker.outcome).toBe('admitted_without_effect');
+    expect(baker.flags).toContain('role_changed_in_window');
+  });
+
+  it('Grifter eligibility is derived from the real validator, not a role table', () => {
     const { record } = run(arm('council'), resistant());
     const opp = record.events.filter((e) => e.kind === 'opportunity').map((e) => [e.actor, (e.data as { feasible: boolean }).feasible]);
-    expect(Object.fromEntries(opp)).toEqual({ 'baker-0': true, 'baker-1': true, 'miller-0': true, 'courier-0': true, 'investigator-0': true, 'importexport-0': true, 'grifter-0': false });
+    expect(Object.fromEntries(opp)).toEqual({ 'baker-0': true, 'baker-1': true, 'miller-0': true, 'courier-0': true, 'investigator-0': true, 'importexport-0': true, 'grifter-0': true });
+    // The same Grifter request is refused by the same validator without the v2 rules marker.
+    const grifter = { tick: 2, selfRef: 'g', role: 'Grifter', roleEpoch: 0, legalMoves: [], presentRefs: ['x'], knownSubjects: [] };
+    const post = { move: null, communication: { kind: 'wallPost', state: 'hopeful' }, diary: null, role: null };
+    expect(validateDecision(post, grifter)).toBeNull();
+    expect(validateDecision(post, { ...grifter, rules: 'v2' as const })).not.toBeNull();
   });
 
   it('an infeasible request is a rejection control, never an executable opportunity', () => {
