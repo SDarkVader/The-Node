@@ -3,8 +3,9 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "e2ff3534f29e5f85ca00f2b818a2c819cd67aa9b",
+  "verifiedBaseCommit": "90b4954468e431fe4d1ea5408816e76e38917bdf",
   "completedWork": [
+    "2026-10-21: user merged PR #29 (recognition v2 first and second pass) at 90b4954; tree identical to reviewed head b8c46bd. Post-merge review (the automated review workflow stopped on a session limit before any reviewer finished, so checks were run directly): corrected three overstated or stale claims in the simulation note and DEVLOG (6-9 Bakers in post, not 'roughly 9'; 22 spot-checked facts, not 21; 17 tests and 16 killed mutations, not 11 and 6). No relative link broken; no number in the evidence report changed.",
     "2026-10-21 (later): recognition v2 second pass on the owner's statements (resolution can be lost; role holders must interact with customers; speaking is optional; refusal is a signal; deception is also interpretation). Grounded by read-only investigators. Harness extended with a capped, hysteretic ledger, perceived refusal, a modelled customer channel and intended/heard intent; first-pass report reproduced byte for byte. Results and open questions Q1-Q5 in RECOGNITION_V2_SIMULATION_2026-10-21.md. Dated notes on the superseded design passages; A01 records the decisions. Found: courier pay follows current position, contrary to the live rules text and the binding decision; recorded as a study-1 limitation in the runbook.",
     "2026-10-21: recognition v2 run in simulation before building (docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md; src/sim/recognitionV2Harness.ts; npm run recognition-v2-sim). Shadow ledger over real kernel hearings; nothing written back, study 1 unaffected. Found: the literal spec credits silent bystanders (one utterance reaches a median 39 listeners), address must be judged by intent, a permanent ledger saturates, pressure amplification would collapse unless decoupled, and Grifter churn is high. Recommended rule I1D pending owner decisions R1-R5. PR #28 (A01) merged by the user at e2ff353.",
     "2026-10-20: PR #27 merged at 022c0bf. A01 diary contract v1.0.0 (docs/research/DIARY_CONTRACT_A01.md, src/eval/constructs/diaryContract.ts, evals/contracts/diary.v1.json). Owner decisions: the diary is a daily measured task; Grifters have a diary; everyone has an abode; trespass reveals full entries; recognition is not immediate or easy (10-20 days of dealings: proximity conversations, trades/deliveries, campaign cooperation; weak partial credit for overheard Wall posts; shared district does not count); Grifters hear district Wall posts and speak/hear proximity where they stand. Evaluator classifier built. Study-1 freeze test pins request bytes, contract and manifest. Superseded notes added to the 2026-08-06 addendum, the 2026-10-18 rules review and housing section 7.3.",
@@ -92,9 +93,9 @@ NODE_SESSION_CHECKPOINT -->
 at `9d004e8` on 2026-10-20, after its hosted checks passed on head `c59dd70`. Those checks were
 Windows Main integration, including the 80 native checks, and both Linux Research conformance
 runs. The merged tree is identical to that head, and a clean `main` checkout passes tracked
-recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`.
-This checkpoint anchors at `e2ff353` and accepts `main` or the exact task branch
-`ccr-8d64b59c-a4puhv`, which carries the recognition v2 simulation.
+recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`
+and PR #29 (recognition v2 simulation) at `90b4954`. This checkpoint anchors at `90b4954` and accepts `main` or the exact task branch
+`ccr-8d64b59c-a4puhv`, which carries post-merge review corrections.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 

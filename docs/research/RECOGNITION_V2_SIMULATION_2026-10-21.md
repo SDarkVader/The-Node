@@ -30,8 +30,8 @@ saturates over a long game, so the owner has four decisions to make (below).
   rule credits them.
 - **Reproduce:** `npm run recognition-v2-sim` (about 4 minutes, deterministic). Raw output:
   [`evals/evidence/recognition-v2-simulation-2026-10-21/report.txt`](../../evals/evidence/recognition-v2-simulation-2026-10-21/report.txt).
-  Tests: `test/sim.recognitionV2.test.ts` (11 tests; 6 mutations of the rule engine and Grifter
-  model all killed).
+  Tests: `test/sim.recognitionV2.test.ts` (17 tests; 16 mutations of the rule engine, Grifter model
+  and second-pass mechanics, all killed).
 
 **Candidate rules** (integer credit units):
 
@@ -170,7 +170,7 @@ Constants should be set only after R1–R5 are decided, then re-run here before 
 > to. Refusal is also a signal to be remembered. Deception is also about interpretation."
 
 Before simulating, four read-only investigators and a critic mapped these against the code and
-the design docs (21 cited facts spot-checked). What they established:
+the design docs (22 cited facts spot-checked). What they established:
 
 - **Identity and resolution are already separate in code.** Every person keeps one stable
   per-observer reference for the whole game. Resolution only adds the face, membership of
@@ -243,7 +243,7 @@ party keeps its own reading.
 | any model, 14 (a purchase worth one address) | 0 | 42 when it happens at all (rare) | 0–2% |
 
 - **Recognition through custom needs regulars.** Taken per person, the kernel's own demand split
-  (`mixed`) spreads each customer over roughly 9 Bakers. Visits to any one of them are too rare
+  (`mixed`) spreads each customer over the 6–9 Bakers in post (9 slots). Visits to any one of them are too rare
   to survive decay.
 - **Purchases are weekly**, because of the kernel's 7-day cycle. For a regular to know their Baker
   in 10–20 days, one purchase has to be worth about three conversations. At that rate, the
