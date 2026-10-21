@@ -1,0 +1,48 @@
+# Recognition v2 pre-build simulation
+- v1: kernel today: heard Wall post = 1, threshold 5
+- L: literal: every heard utterance counts
+- C: literal, weighted by closeness
+- XR: co-speaking exchange, no address needed
+- A1: addressed as heard, one-way
+- A2: addressed as heard, two-way within 2 days
+- I1: addressed by intent, one-way
+- I2: addressed by intent, two-way within 2 days
+- I1D: I1 with a leaky ledger (1 unit/day)
+- I2D: I2 with a leaky ledger (1 unit/day)
+## Shadow-ledger check: rule v1 replayed on kernel hearings vs the kernel's own ledger, 5 seeds x 40 days: 694 recognised pairs, 0 mismatches
+
+## 60 days, seeds 101-120: days until recognition, median [min-max], ∅n = never in n seeds
+scenario / pair                             v1               L                C                XR               A1               A2               I1               I2               I1D              I2D              
+pair_daily: A knows B                       — ∅20            10 [10-46] ∅1    13 [6-50] ∅2     10 [10-46] ∅1    17 [10-46] ∅2    21 [10-55] ∅2    10 [10-46] ∅1    10 [10-46] ∅1    10 [10-46] ∅1    10 [10-46] ∅1    
+pair_daily: B knows A                       — ∅20            10 [10-46] ∅1    13 [6-50] ∅2     10 [10-46] ∅1    17 [10-46] ∅2    19 [10-55] ∅2    10 [10-46] ∅1    10 [10-46] ∅1    10 [10-46] ∅1    10 [10-46] ∅1    
+pair_daily: silent bystander C knows A      — ∅20            10 [10-10] ∅3    17 [7-51] ∅4     — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            
+pair_alternate: A knows B                   — ∅20            19 [19-21] ∅3    19 [11-51] ∅6    19 [19-21] ∅3    27 [19-59] ∅3    29 [19-55] ∅7    19 [19-21] ∅3    19 [19-21] ∅3    19 [19-21] ∅3    19 [19-21] ∅3    
+one_way: listener B knows speaker A         — ∅20            10 [10-46] ∅2    9 [6-47] ∅4      — ∅20            13 [10-46] ∅3    — ∅20            10 [10-46] ∅2    — ∅20            10 [10-46] ∅2    — ∅20            
+one_way: speaker A knows B                  — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            
+broadcast: A knows B                        13 [7-52] ∅6     — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            
+room: A knows B                             — ∅20            10 [10-43] ∅1    12 [6-50] ∅3     10 [10-43] ∅1    — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            
+grifter_pair: Grifter knows A               — ∅20            10 [10-55] ∅1    9 [6-56] ∅5      10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-56] ∅1    10 [10-56] ∅1    
+grifter_pair: A knows Grifter               — ∅20            10 [10-55] ∅1    9 [6-56] ∅5      10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-55] ∅1    10 [10-56] ∅1    10 [10-56] ∅1    
+mixed: A knows B                            18 [12-54] ∅7    19 [17-45]       15 [11-49] ∅2    19 [17-45]       25 [17-55] ∅1    27 [19-59] ∅3    19 [17-45]       19 [17-45]       19 [17-45]       19 [17-45]       
+mixed: C knows A                            20 [14-60] ∅7    19 [17-45] ∅2    23 [11-47] ∅4    — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            — ∅20            
+pair_daily: share of population knowing A   0.00             0.79             0.68             0.01             0.01             0.01             0.01             0.01             0.01             0.01             
+broadcast: share of population knowing A    0.81             0.00             0.00             0.00             0.00             0.00             0.00             0.00             0.00             0.00             
+room: share of population knowing A         0.00             0.84             0.74             0.05             0.00             0.00             0.00             0.00             0.00             0.00             
+mixed: share of population knowing A        0.63             0.76             0.66             0.01             0.01             0.01             0.01             0.01             0.01             0.01             
+listeners per role-holder utterance (pair_daily): median 39, range 0-82
+departure day (pair_daily): grifter-0 29 [5-59] ∅4; baker-0 28 [12-32] ∅17; importexport-0 51 [51-51] ∅19
+role holders who became Grifters (of 20): baker-0 5, importexport-0 6
+
+## 200 days, seeds 101-110: days until recognition, median [min-max], ∅n = never in n seeds
+scenario / pair                             v1               L                C                XR               A1               A2               I1               I2               I1D              I2D              
+pair_daily: A knows B                       — ∅10            10 [10-77]       25 [6-77]        10 [10-77]       19 [11-77]       25 [11-77]       10 [10-77]       10 [10-77]       10 [10-77]       10 [10-77]       
+pair_daily: B knows A                       — ∅10            10 [10-77]       25 [6-77]        10 [10-77]       19 [10-77]       20 [10-77]       10 [10-77]       10 [10-77]       10 [10-77]       10 [10-77]       
+pair_daily: silent bystander C knows A      — ∅10            10 [10-169]      22 [7-168]       101 [100-167] ∅4 101 [92-167] ∅4  101 [100-167] ∅4 101 [100-167] ∅4 101 [100-167] ∅4 — ∅10            — ∅10            
+one_way: listener B knows speaker A         — ∅10            11 [10-77]       25 [6-77]        101 [100-166] ∅5 19 [10-77]       101 [100-166] ∅5 11 [10-77]       101 [100-166] ∅5 11 [10-77]       — ∅10            
+one_way: speaker A knows B                  — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            — ∅10            
+broadcast: A knows B                        22 [9-52] ∅2     156 [113-193] ∅7 156 [113-193] ∅7 156 [113-193] ∅7 156 [113-193] ∅7 156 [113-193] ∅7 156 [113-193] ∅7 156 [113-193] ∅7 — ∅10            — ∅10            
+pair_daily: share of population knowing A   0.00             0.84             0.77             0.39             0.39             0.39             0.39             0.39             0.01             0.01             
+broadcast: share of population knowing A    0.84             0.17             0.17             0.17             0.17             0.17             0.17             0.17             0.00             0.00             
+listeners per role-holder utterance (pair_daily): median 41, range 0-82
+departure day (pair_daily): grifter-0 29 [15-164]; baker-0 120 [32-141] ∅6; importexport-0 130 [51-130] ∅8
+role holders who became Grifters (of 10): baker-0 9, importexport-0 7

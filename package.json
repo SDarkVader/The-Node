@@ -33,6 +33,7 @@
     "world-sim": "tsx src/sim/worldCli.ts",
     "role-ratio-sweep": "tsx src/sim/roleRatioSweep.ts",
     "district-role-sweep": "tsx src/sim/districtRoleSweep.ts",
+    "recognition-v2-sim": "tsx src/sim/recognitionV2Report.ts",
     "multi-shard-role-district-sweep": "tsx src/sim/multiShardRoleDistrictSweep.ts",
     "wealth-inequality-report": "tsx src/sim/wealthInequalityReport.ts",
     "shard-identity-report": "tsx src/sim/shardIdentityReport.ts",

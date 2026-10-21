@@ -117,6 +117,8 @@ Mutations killed: forcing eligibility (3 tests fail) and inverting grounding (2 
 ## Next steps (after study 1)
 
 1. Recognition model v2: implement, simulate and calibrate to 10–20 days; evidence before trusting.
+   The pre-build simulation is done ([results](RECOGNITION_V2_SIMULATION_2026-10-21.md)). The spec as
+   worded fails (bystanders would be credited), and five owner decisions (R1–R5) come before constants.
 2. Open the Grifter gate: validator and kernel, with Grifter proximity speech and hearing, and district Wall hearing.
 3. Activate rules text v2 as a new rules version, with a new freeze test for the next study.
 4. A04 trespass, built to reveal full entries under this contract.

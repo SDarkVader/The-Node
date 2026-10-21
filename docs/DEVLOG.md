@@ -1,3 +1,16 @@
+> 2026-10-21 — Recognition v2 run in simulation before building it (constraint 1).
+>
+> **How:** real participant-kernel episodes with scripted policies; each day's real hearings replayed through ten candidate rules into a shadow ledger. Nothing is written back, so study 1 is unaffected. Rule v1 on kernel hearings reproduces the kernel's ledger exactly (694 pairs, 0 mismatches). Grifter channels are modelled and flagged; trades, deliveries and campaigns have no record and are not credited.
+>
+> **Failures found:**
+> - "Proximity conversations count" and "shared district does not count" contradict each other: one utterance is heard by a median of 39 people (range 10 spans most of the core). The literal rule recognises a silent bystander on the same day as the partner, and 79% of the population knows a conversing player within 60 days. Closeness weighting does not fix it.
+> - Address judged as heard (the kernel corrupts the referent with distance) pushes daily dealings to 21 days and alternate ones to 29; judged by the speaker's intent, they take exactly 10 and 19.
+> - A permanent ledger saturates: without decay, bystanders recognise at about day 101 and Wall-only posters at day 156. Only a leaky ledger keeps both at zero.
+> - Pressure amplification (`1 + 1.5 × knownFraction`) would fall from about 2.2 to about 1.0 under any addressed rule.
+> - Churn: the controlled Grifter left in 16 of 20 seeds within 60 days (median day 29).
+>
+> **Built:** `src/sim/recognitionV2Harness.ts`, `src/sim/recognitionV2Report.ts` (`npm run recognition-v2-sim`), 11 tests (6 mutations killed), evidence in `docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md`. Recommendation: rule I1D (direct address by intent, leaky), pending owner decisions R1–R5. No kernel, validator or rules text changed.
+
 > 2026-10-20 — A01 diary contract v1.0.0.
 >
 > **Owner decisions:** the diary is a daily measured task; Grifters still have a diary; everyone has an abode; a trespasser sees full entries. Recognition is "not to happen immediately, or meant to be easy": about 10–20 days of dealings, counting proximity conversations, trades and deliveries, and campaign cooperation. Overheard Wall posts get weak partial credit; sharing a district does not count. Grifters hear district Wall posts and speak and hear proximity where they stand.

@@ -76,7 +76,11 @@ The participants' private diaries now have a written contract
 - recognising another person takes repeated dealings, not just overhearing them.
 
 The evaluation already measures diary adherence and grounding. The game-side changes follow the
-first study.
+first study. A pre-build simulation of the new recognition rules
+([results](docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md)) found that crediting every
+heard conversation would let silent bystanders recognise people as fast as their partners, because
+one utterance reaches about 40 listeners. Crediting only direct address, with fading memory, meets
+the 10–20 day target. The remaining choices are the owner's.
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the
