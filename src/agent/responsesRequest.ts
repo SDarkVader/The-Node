@@ -57,11 +57,14 @@ export function responsesObservation(observation: AuthorizedObservation) {
     legalMoves: c.legalMoves.map(point => ({ ...point })),
     // Recognition v2 worlds only: the observer's own dealings. Absent otherwise, so v1 request bytes are unchanged.
     ...('dealings' in p ? { dealings: array(p.dealings).map(x => pick(x, ['kind', 'as', 'counterparty', 'quantity', 'outcome'])) } : {}),
+    // Recognition v2 worlds only: who can hear this observer speak now (= context.hearingRefs, checked below).
+    ...('hearing' in p ? { hearing: array(p.hearing).map(x => typeof x === 'string' && x.length <= 512 ? x : fail('responses_observation_invalid')) } : {}),
   };
   if (projection.tick !== c.tick || projection.self.ref !== c.selfRef || projection.self.role !== c.role || projection.self.roleEpoch !== c.roleEpoch ||
     JSON.stringify(p.legalMoves) !== JSON.stringify(c.legalMoves) ||
     JSON.stringify(projection.city.people.filter(x => x.ref !== c.selfRef).map(x => x.ref)) !== JSON.stringify(c.presentRefs) ||
-    JSON.stringify(projection.recognition.map(x => x.ref)) !== JSON.stringify(c.knownSubjects)) return fail('responses_observation_mismatch');
+    JSON.stringify(projection.recognition.map(x => x.ref)) !== JSON.stringify(c.knownSubjects) ||
+    JSON.stringify(projection.hearing) !== JSON.stringify(c.hearingRefs) || ('dealings' in projection) !== (c.rules === 'v2')) return fail('responses_observation_mismatch');
   return projection;
 }
 

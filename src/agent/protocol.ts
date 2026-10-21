@@ -14,6 +14,10 @@ export interface DecisionContext {
   /** Rules version marker, present only in recognition-v2 worlds (owner decision 2026-10-20:
    *  Grifters speak and keep a diary). Absent means the original rules, unchanged. */
   rules?: 'v2';
+  /** Recognition v2 only, and required there: the present people within speaking range of self
+   *  right now. A proximity utterance may address only them, so every admitted address is heard
+   *  (owner decision 2026-10-21, "show who can hear"). A subset of presentRefs. */
+  hearingRefs?: readonly string[];
 }
 export type JsonObject = Record<string, unknown>;
 export interface Decision {
@@ -34,7 +38,10 @@ export function validateContext(c: DecisionContext): void {
       !Array.isArray(c.legalMoves) || !c.legalMoves.every(p => object(p) && exact(p, ['x', 'y']) && coordinate(p.x) && coordinate(p.y)) ||
       !Array.isArray(c.presentRefs) || !c.presentRefs.every(r => typeof r === 'string' && r.length > 0) ||
       !Array.isArray(c.knownSubjects) || !c.knownSubjects.every(r => typeof r === 'string' && r.length > 0) ||
-      (Object.hasOwn(c, 'rules') && c.rules !== 'v2')) {
+      (Object.hasOwn(c, 'rules') && c.rules !== 'v2') ||
+      (c.rules === 'v2') !== Object.hasOwn(c, 'hearingRefs') ||
+      (Object.hasOwn(c, 'hearingRefs') && (!Array.isArray(c.hearingRefs) || new Set(c.hearingRefs).size !== c.hearingRefs.length ||
+        !c.hearingRefs.every(r => typeof r === 'string' && r !== c.selfRef && c.presentRefs.includes(r))))) {
     throw new Error('invalid_context');
   }
 }
@@ -46,7 +53,7 @@ export function policyInput(c: DecisionContext): DecisionContext {
     tick: c.tick, selfRef: c.selfRef, role: c.role, roleEpoch: c.roleEpoch,
     legalMoves: c.legalMoves.map(p => ({ x: p.x, y: p.y })),
     presentRefs: [...c.presentRefs], knownSubjects: [...c.knownSubjects],
-    ...(c.rules === 'v2' ? { rules: c.rules } : {}),
+    ...(c.rules === 'v2' ? { rules: c.rules, hearingRefs: [...c.hearingRefs!] } : {}),
   };
 }
 
@@ -69,7 +76,7 @@ export function validateDecision(value: unknown, c: DecisionContext): Decision |
       if (!object(r)) return null;
       if (r.kind === 'room') { if (!exact(r, ['kind'])) return null; }
       else if (r.kind === 'player') {
-        if (!exact(r, ['kind', 'playerId']) || r.playerId === c.selfRef || !member(r.playerId, c.presentRefs)) return null;
+        if (!exact(r, ['kind', 'playerId']) || r.playerId === c.selfRef || !member(r.playerId, c.hearingRefs ?? c.presentRefs)) return null;
       } else return null;
     } else return null;
   }

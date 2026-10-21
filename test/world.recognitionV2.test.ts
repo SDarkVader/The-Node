@@ -326,12 +326,14 @@ describe('v2 data blockers closed: Grifter gate, rules text, courier pay', () =>
     const write = { move: null, communication: null, diary: { subject: 'you', observation: 'soughtMeOut', reading: 'cantTellYet', context: null }, role: null };
     expect(validateDecision(say, base)).toBeNull();
     expect(validateDecision(write, base)).toBeNull();
-    expect(validateDecision(say, { ...base, rules: 'v2' })).not.toBeNull();
-    expect(validateDecision(write, { ...base, rules: 'v2' })).not.toBeNull();
-    expect(validateDecision({ ...say, communication: null, role: { kind: 'bakerPrice', price: 1 } }, { ...base, rules: 'v2' })).toBeNull();
+    const v2 = { ...base, rules: 'v2' as const, hearingRefs: ['you'] };
+    expect(validateDecision(say, v2)).not.toBeNull();
+    expect(validateDecision(write, v2)).not.toBeNull();
+    expect(validateDecision({ ...say, communication: null, role: { kind: 'bakerPrice', price: 1 } }, v2)).toBeNull();
     expect(Object.hasOwn(policyInput(base), 'rules')).toBe(false); // v1 request bytes unchanged
-    expect(policyInput({ ...base, rules: 'v2' }).rules).toBe('v2');
-    expect(() => validateContext({ ...base, rules: 'v3' as 'v2' })).toThrow('invalid_context');
+    expect(Object.hasOwn(policyInput(base), 'hearingRefs')).toBe(false);
+    expect(policyInput(v2).rules).toBe('v2');
+    expect(() => validateContext({ ...v2, rules: 'v3' as 'v2' })).toThrow('invalid_context');
   });
 
   it('a Grifter agent speaks through the participant pipeline in a v2 world and is heard', () => {
@@ -412,9 +414,9 @@ describe('v2 requests stay well under the 32 KB fail-closed ceiling', () => {
       const ps = ep.prompts({ model: 'gpt-5.4-nano-2026-03-17' });
       for (const p of ps) max = Math.max(max, Buffer.byteLength(p.request!.body, 'utf8'));
       ep.act(Object.fromEntries(ps.map((p) => {
-        const o = JSON.parse(p.prompt.observation); const v = (o.encoding ? unpackObservation(o) : o) as { tick: number; self: { role: string }; city: { people: { ref: string }[] }; recognition: { ref: string }[] };
-        const other = v.city.people.find((x) => x.ref !== (v as unknown as { self: { ref: string } }).self.ref)!.ref;
-        const communication = v.tick % 2 ? { kind: 'proximityUtterance', intent: 'inform', tone: 'warm', referent: { kind: 'player', playerId: other }, context: null } : { kind: 'wallPost', state: 'hopeful' };
+        const o = JSON.parse(p.prompt.observation); const v = (o.encoding ? unpackObservation(o) : o) as { tick: number; self: { role: string }; hearing: string[]; recognition: { ref: string }[] };
+        const referent = v.hearing.length ? { kind: 'player', playerId: v.hearing[0] } : { kind: 'room' };
+        const communication = v.tick % 2 ? { kind: 'proximityUtterance', intent: 'inform', tone: 'warm', referent, context: null } : { kind: 'wallPost', state: 'hopeful' };
         const diary = v.recognition.length ? { subject: v.recognition[0]!.ref, observation: 'soughtMeOut', reading: 'cantTellYet', context: null } : null;
         return [p.actorId, JSON.stringify({ move: null, communication, diary, role: v.self.role === 'Baker' ? { kind: 'bakerPrice', price: 0.9 } : null })];
       })));

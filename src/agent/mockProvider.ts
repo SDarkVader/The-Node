@@ -30,7 +30,8 @@ function freezeTree<T>(value: T): T {
 /** Contract schema for in-memory fixtures. Not an assertion of provider API compatibility. */
 export function mockDecisionSchema(context: DecisionContext): Schema {
   const input = policyInput(context);
-  const present = input.presentRefs.filter(ref => ref !== input.selfRef);
+  // Recognition v2: only those who can hear you now may be addressed (the validator's rule).
+  const present = (input.hearingRefs ?? input.presentRefs).filter(ref => ref !== input.selfRef);
   const known = input.knownSubjects.filter(ref => ref !== input.selfRef);
   const referents = [objectSchema({ kind: { const: 'room', type: 'string' } })];
   if (present.length) referents.push(objectSchema({
