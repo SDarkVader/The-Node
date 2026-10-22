@@ -16,19 +16,25 @@ advanced.
 
 ## Run it (Windows, PowerShell 7)
 
+Set `$key` to your credential file and `$work` to a folder for the check, both outside the
+checkout. (The paths first shown here were invented examples; corrected 2026-10-22.)
+
 1. Update and install: `git pull` on `main`, then `npm ci`.
-2. Build the runtime from the committed source, into a new directory outside the checkout:
-   `node scripts/build-study-runtime.mjs D:\node-runtime\haiku-check`
+2. Build the runtime from the committed source, into a new directory:
+   `node scripts/build-study-runtime.mjs "$work\runtime"`
 3. Put the key in a file outside the checkout, containing one line:
    `ANTHROPIC_API_KEY=sk-ant-...`
    The key is read only by `scripts/anthropic-request.ps1`. It never enters Node, the command line
    or any written file.
 4. Count only (free):
-   `node scripts/check-anthropic-connection.mjs D:\node-runtime\haiku-check D:\node-artifacts\haiku-1 D:\secrets\anthropic.env`
+   `node scripts/check-anthropic-connection.mjs "$work\runtime" "$work\count-1" $key`
 5. One real message (about $0.001):
-   `node scripts/check-anthropic-connection.mjs D:\node-runtime\haiku-check D:\node-artifacts\haiku-2 D:\secrets\anthropic.env --send-one`
+   `node scripts/check-anthropic-connection.mjs "$work\runtime" "$work\send-1" $key --send-one`
 6. Share `report.json` from the artifact directory. It holds no key. The per-call folders hold the
    request and response bytes, which are study-1 fixture data, not private game state.
+
+Both steps first check for PowerShell 7 and stop with `pwsh_not_found_install_powershell_7`
+before any call if it is missing.
 
 ## What the report answers
 
@@ -56,7 +62,9 @@ advanced.
 ## Result — owner's PC, 2026-10-22 (runtime 973ed24)
 
 First attempt: all seven calls returned `httpStatus: null` because PowerShell 7 (`pwsh`) was not
-installed. The report did not name that cause, which is a known gap in the script. After installing it:
+installed. The report did not name that cause, which was a gap in the script. (Fixed 2026-10-22,
+D11: the check and the study runner now test for PowerShell 7 before any call, and a worker that
+never ran is reported as `local_worker_did_not_run`.) After installing it:
 
 - **Free counts (`count_tokens`, schema excluded):** 10,592–10,803 input tokens per study-1
   tick-0 request, for all seven actors, all HTTP 200.
@@ -71,6 +79,9 @@ installed. The report did not name that cause, which is a known gap in the scrip
 - **Implied study-1 cost on Haiku 5.5:** about 630 × $0.0014 ≈ **$0.90** list, $1.80 booked at 2×.
   This uses one call's measured size and is not a forecast of output length. For comparison,
   gpt-5.4-nano at its 18 Oct size (about 12.9k in) comes to about $1.8 list.
+- **Not yet confirmed:** the response's `model` field. The study runner requires it to equal
+  `claude-haiku-5-5` exactly. The saved response answers this for free (runbook step 0.3); the
+  check now prints it as `sent.responseModel`.
 
 ## Study-1 cost: gpt-5.4-nano vs Haiku 5.5 (2026-10-22, owner asked)
 

@@ -1,3 +1,36 @@
+> 2026-10-22 (evening) — Study 1 moves to `claude-haiku-5-5` (owner decision D11), with a PowerShell 7 preflight.
+>
+> **Owner's connection check (their PC, runtime `973ed24`):**
+> - The first attempt failed: all seven counts returned `httpStatus: null`. PowerShell 7 was not installed, and the report did not say so.
+> - After installing it:
+>   - free counts were 10,592–10,803 tokens;
+>   - `--send-one` returned HTTP 200 and `end_turn`, with the schema accepted, in 3,797 ms;
+>   - usage was 14,089 in / 42 out, costing $0.0014299;
+>   - the validator accepted the decision, with no enum case mismatches.
+> - Cost comparison at measured sizes: study 1 costs about $0.9 list / $1.8 booked on Haiku, against $1.6–1.9 / $3.2–3.7 on nano.
+>
+> **D11:** “use haiku and make the fix please”.
+>
+> **Built:**
+> - **`src/agent/modelPricing.ts`.** Reviewed rates for a model other than the carried one. Haiku 5.5 books at 2× list: 200,000 / 1,000,000 micro-USD per million tokens. The rates are backed by a verbatim excerpt of Anthropic's pricing page, hashed over LF text (`docs/research/model-options-2026-10-21/evidence/`). `.gitattributes` keeps that excerpt byte-exact on Windows. `ExperimentBudget` refuses carried, altered or typed-in rates and unpriced models; `Object.hasOwn` keeps prototype keys out.
+> - **`accountedRunner.ts`.** Routes by model id. The reservation hash, the token ceiling, the forbidden-substring check and the call record all bind the Anthropic wire bytes actually sent. The freeze test pins those bytes (the fifth pin move) and the new manifest hash; the contract is unchanged.
+> - **`--min-interval-ms`.** An operator flag that only slows pacing, for a lower Anthropic tier. It never goes below the manifest's 4 s and never above 10 minutes.
+> - **`prepare-experiment-budget.mjs`.** Takes the manifest model's authorised rates. **Defect found while building this:** it copied the carried nano rates for any model, so a Haiku allowance would have been refused at step 2 of the runbook. The rehearsal now asserts the Haiku rates.
+> - **`scripts/pwsh-preflight.mjs` (“the fix”).** The connection check and the study runner check for PowerShell 7 before any reservation or call, and stop with `pwsh_not_found_install_powershell_7`, `pwsh_version_below_7` or `pwsh_preflight_failed`. The check also names a worker that never ran (`local_worker_did_not_run`) and reports `sent.responseModel`.
+> - **`analyze_study`.** Prices each call at its own model's list price, and gives no estimate when a call names an unpriced model.
+> - **Runbook.** Rewritten for Haiku: PowerShell 7, a free model-echo check, the Rate limits page (`platform.claude.com/usage/limits`, verified against Anthropic's rate-limit docs today) and its pacing formula, and the user's own paths as variables rather than invented ones. The invented `D:\` paths in `HAIKU_CONNECTION_CHECK.md` are corrected.
+>
+> **Verified (Linux, offline):**
+> - tsc and Vitest. New tests cover Haiku allowance rules, an Anthropic-envelope runner episode, a model mismatch, a paid refusal, pacing, the price evidence and the PowerShell 7 failure paths.
+> - Python 29/29; G1 29/29 hashes equal; G2 ok.
+> - Rehearsal 10/10: Haiku rates in the allowance; Anthropic bodies through the Anthropic worker after the PowerShell 7 check; a 429, settlement, resume and analysis.
+> - No API call made from the cloud.
+>
+> **Open before the run:**
+> - The owner confirms, free, that the saved response names `claude-haiku-5-5` exactly. Any other value stops the run at the first call and cannot be settled.
+> - The owner reads their tier on the Rate limits page.
+> - Local open-model testing is deferred by the owner.
+
 > 2026-10-22 (later) — Anthropic adapter and an owner-run Haiku connection check; owner decision D10.
 >
 > **D10:** the owner prefers local, free models where they are suitable, and paid models elsewhere, possibly mixed within one study. This is recorded in the register. Building mixed per-actor sourcing and accounting waits for evidence on which models qualify.
