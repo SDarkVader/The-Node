@@ -1,6 +1,6 @@
 # Model options for the accounted studies (2026-10-21) — research in progress
 
-**Status: UNVERIFIED except OpenAI** (`verification-partial.json`, verifier `verify:openai`: the study-1 model's deprecation, gpt-6-luna's prices, and the `const` gap are confirmed). These are researchers' outputs, saved so that a lost session or container
+**Status: UNVERIFIED except OpenAI and Google** (`verification-partial.json`). `verify:openai` confirmed the study-1 model's deprecation, gpt-6-luna's prices and the `const` gap. `verify:google` confirmed the Gemini prices and that `const` is not supported, and rated every Gemini model needs_rewrite: `const` becomes a one-value `enum`, and a standalone `{type:'null'}` anyOf branch is undocumented. The Anthropic, open-weight and local verifiers and the synthesis stopped on a session limit. These are researchers' outputs, saved so that a lost session or container
 does not force a re-run. They were the first attempt's research stage, cut off by a session
 limit at verification, then rerun. Independent verifiers were still checking them when this was
 written. Do not act on a number here until the verified file (`verified.json`, to be added beside
