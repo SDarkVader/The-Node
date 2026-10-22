@@ -12,6 +12,10 @@ import type { AccountingPrices } from './accountingLedger.js';
  * `evidenceSha256` is the sha256 of the committed excerpt below, with line endings normalised to
  * LF (a Windows checkout may convert them). `test/modelPricing.test.ts` holds the hash, the
  * quoted list prices and the 2x rule together.
+ *
+ * Never edit an entry once an allowance may use it: every open of the allowance re-checks its
+ * rates against this entry, so a changed entry refuses that allowance (fail closed). New prices
+ * mean a new reviewed entry for a new model id.
  */
 export const PRICE_EVIDENCE_FILES: Readonly<Record<string, string>> = {
   'claude-haiku-5-5': 'docs/research/model-options-2026-10-21/evidence/anthropic-pricing-haiku-5-5-2026-10-22.md',
