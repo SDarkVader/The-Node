@@ -1,3 +1,21 @@
+> 2026-10-22 (later) — Anthropic adapter and an owner-run Haiku connection check; owner decision D10.
+>
+> **D10:** the owner prefers local, free models where they are suitable, and paid models elsewhere, possibly mixed within one study. This is recorded in the register. Building mixed per-actor sourcing and accounting waits for evidence on which models qualify.
+>
+> **Built:** `src/agent/anthropicRequest.ts` translates the final study request bytes into the Messages envelope:
+> - the instructions become `system`; the observation becomes one user text block;
+> - `output_config.format` json_schema, with `effort: 'low'` and `thinking: {type:'disabled'}`;
+> - `minimum`/`maximum` are removed, because Anthropic returns a 400 for them; the validator still enforces the price bounds.
+>
+> **Also built:**
+> - `anthropicResponse.ts` reads the message envelope into the booked receipt. Only `end_turn` with one text block is actionable; refusals and truncations are booked, never acted on; cache tokens count as input.
+> - `src/eval/anthropicConnectionCheck.ts`, `scripts/check-anthropic-connection.mjs` and `scripts/anthropic-request.ps1` (the key stays in PowerShell). The check counts the seven study-1 tick-0 requests for free, then sends one Baker message only with `--send-one`, capped at $0.01.
+>
+> **Verified:**
+> - 10 offline tests: translation fidelity across 4 ticks × 7 actors; schema-validator equivalence, where only out-of-range prices differ and the validator still rejects them; the response reader; and the check's send discipline.
+> - An end-to-end run of the script with a TEST-ONLY fake `pwsh`.
+> - No API call made.
+
 > 2026-10-22 — Who can hear; no `const` in the schema; the study-1 model is deprecated.
 >
 > **Owner decisions (2026-10-21):**
