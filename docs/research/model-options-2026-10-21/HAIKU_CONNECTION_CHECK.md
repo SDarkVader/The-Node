@@ -52,3 +52,22 @@ advanced.
 - **Not sent:** temperature, top_p, top_k or an assistant prefill. Each returns a 400 on Haiku 5.5.
 - **Model id:** `claude-haiku-5-5` is itself a pinned snapshot, with retirement no sooner than
   2027-10-07.
+
+## Result — owner's PC, 2026-10-22 (runtime 973ed24)
+
+First attempt: all seven calls returned `httpStatus: null` because PowerShell 7 (`pwsh`) was not
+installed. The report did not name that cause, which is a known gap in the script. After installing it:
+
+- **Free counts (`count_tokens`, schema excluded):** 10,592–10,803 input tokens per study-1
+  tick-0 request, for all seven actors, all HTTP 200.
+- **One message (`baker-0`, `--send-one`):**
+  - HTTP 200, `stop_reason: end_turn`, **schema accepted**;
+  - **3,797 ms**, within the 12,000 ms study deadline;
+  - billed **14,089 input / 42 output** tokens, so the schema adds about 3,300 input tokens over
+    the count;
+  - cost **$0.00143**;
+  - decision `{move:null, communication:null, diary:null, role:{bakerPrice, 0.5}}`;
+  - **validator accepts**, with no enum case mismatches.
+- **Implied study-1 cost on Haiku 5.5:** about 630 × $0.0014 ≈ **$0.90** list, $1.80 booked at 2×.
+  This uses one call's measured size and is not a forecast of output length. For comparison,
+  gpt-5.4-nano at its 18 Oct size (about 12.9k in) comes to about $1.8 list.
