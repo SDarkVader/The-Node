@@ -1,3 +1,19 @@
+> 2026-10-22 (late night) — Two owner-directed fixes to Study 1: the Grifter role line, and reasoning evidence.
+>
+> **Owner direction.** The design is the owner's; fix clear issues and avoid scope creep. The documents are a working record, not explicit rules. "Reasoning was always part of the design. Just not yet selected as implementation was developing." Answers: reasoning goes "Into Study 1", at "Medium" effort.
+>
+> - **Grifter role line (`5e09cb1`).** Under v2 it said the broker permits movement and observation only, while the validator and the v2 action line let a Grifter speak and keep the diary. It now reads "May move, speak and keep the diary; has no role input." The v1 text is unchanged. Only `grifter-0`'s request bytes moved (sixth pin move); a new test holds both texts.
+> - **Reasoning evidence (`906ea9d`).**
+>   - Request: `thinking: {type:'adaptive', display:'summarized'}` at effort `medium`, replacing thinking disabled at `low`.
+>   - Reader: thinking and redacted-thinking blocks may come before the single text answer. Each summary is kept verbatim, in order, with a hash of its signature. Status is `summary_returned`, `summary_empty`, `redacted_only` or `not_returned`, and absent reasoning is recorded as absent.
+>   - Call records state the settings read back from the bytes sent and what came back, linked to the tape by `requestId`. Reasoning never reaches the game: a test shows the episode is identical with or without it.
+>   - The manifest records the setting, and `validateManifest` refuses a Claude manifest that differs from what the builder sends. The manifest hash moved to `8237ceeb…` and every actor's pins moved (seventh pin move).
+>   - The connection check now reports reasoning and output tokens against the cap.
+> - **Kept on purpose:** the 2,048 output-token cap (thinking counts toward it), the per-request ceiling, the USD 5 cap, the contract and the analysis. At the full cap, 630 calls would book about 3.1 USD.
+> - **Not yet known:** how much Haiku thinks at medium effort on these requests, and whether it skips thinking. Runbook step 0.5 measures this with one message on the owner's PC.
+> - **Verification:** tsc clean; Vitest 1316/1316; Python 29/29.
+> - **Docs:** runbook, connection-check guide, README, BLUEPRINT_HISTORY D12–D13, checkpoint, and the nine Claude Docs.
+
 > 2026-10-22 (night) — Research documentation in Claude Docs; two findings; the 18 October journal checked.
 >
 > - **Documents.** At the owner's request, nine documents now live outside the repository, in Claude Docs: the programme, Study 1, evaluation and metrics, rules and actions, world design, models and accounting, the operator runbook, decisions and open questions, and a results-interface stub. They were drafted from the verified repository records and the owner's own account of purpose and history. Links are in the checkpoint. The repository governs implementation; discrepancies are recorded, not rewritten.

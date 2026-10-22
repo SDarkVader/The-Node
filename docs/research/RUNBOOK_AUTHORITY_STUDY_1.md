@@ -16,6 +16,17 @@
 >
 > Both changed the request bytes, so the freeze pins moved a third and a fourth time.
 >
+> **Two more on 2026-10-22, after the move to Haiku (owner-directed):**
+> - **Grifter role line:** under v2 it said the Grifter may only move and observe, while the
+>   validator and the action line let it speak and keep the diary. It now says so. Only
+>   `grifter-0`'s bytes changed (sixth pin move).
+> - **Reasoning evidence** (owner: "Reasoning was always part of the design"): every request asks
+>   for adaptive thinking with summarized display at **medium** effort. Haiku returns a
+>   provider-written summary of its reasoning, never the raw chain of thought, and may skip
+>   thinking on a simple call. Each call record keeps the summaries verbatim, states what was
+>   requested and marks absent reasoning as absent. The manifest records the setting, so its hash
+>   and every actor's pins moved a seventh time. The contract and the analysis are unchanged.
+>
 > **Model: `claude-haiku-5-5` (owner decision D11, 2026-10-22, "use haiku").** The 22 Oct
 > connection check on the owner's PC accepted the real study-1 schema and returned a valid decision
 > in 3.8 s (`docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md`). Each final request
@@ -53,6 +64,11 @@ include speech.
 | Duration at the default pacing (one call per 4 s) | about 45–55 minutes |
 
 These are estimates, not invoices. The Claude Console's usage page is the billing record.
+
+**With reasoning on (2026-10-22), output will be larger, by an amount not yet measured.** Thinking is
+billed as output and counts toward the 2,048-token cap per call. The cap bounds it: even if every
+call used all 2,048 output tokens, 630 calls would cost about **$1.5** list and book about
+**$3.1**, inside the USD 5 cap. Step 0.5 measures the real figure before the run.
 
 ## 0. Before you start
 
@@ -92,6 +108,19 @@ $carried = '<the closed 18 Oct allowance folder>'       # initial-test-budget-20
 
    The flag can only slow the run, never below the manifest's 4 s. It is not part of the manifest
    hash, so it needs no commit.
+5. **Re-run the connection check with reasoning on (about $0.002).** The 22 Oct check ran with
+   thinking off. Build a runtime from the current commit and send one message:
+   ```powershell
+   node scripts/build-study-runtime.mjs "$work\check-runtime-2"
+   node scripts/check-anthropic-connection.mjs "$work\check-runtime-2" "$work\send-2" $key --send-one
+   ```
+   In `report.json` under `sent`, read:
+   - `reasoning.status`: `summary_returned`, `summary_empty`, `redacted_only` or `not_returned`
+     (the model skipped thinking), and `reasoning.summaries`;
+   - `outputTokensOfCap`: output tokens used out of 2,048. If thinking comes close to the cap,
+     or `stopReason` is `max_tokens`, **stop and tell Claude** before the run;
+   - `elapsedMs`: must stay well inside the runner's 16,000 ms deadline;
+   - `responseModel` (still exactly `claude-haiku-5-5`) and `validatorAccepts`.
 
    **Done 2026-10-22:** the owner's page shows 10,000 requests, 10,000,000 input tokens and
    2,000,000 output tokens per minute for Claude Haiku 5.5. Those are the documented Scale-tier
@@ -190,7 +219,8 @@ repaired. It then writes `results.json` and `summary.md` containing:
 - **Share** (and commit, if you want them published): `study1-analysis\results.json` and `summary.md`. They contain aggregates and provenance only.
 - **Keep private:**
   - the allowance directory;
-  - the run directories (request and response bytes, records);
+  - the run directories (request and response bytes, records, and the reasoning summaries in
+    `calls.jsonl`);
   - the credential file;
   - the instruction file if you consider it private.
 
@@ -200,7 +230,9 @@ repaired. It then writes `results.json` and `summary.md` containing:
 
 - **It can say:** for this world (seed 103), this notice text and this model (`claude-haiku-5-5`), how often eligible actors executed the identical request under each label. Every attempt, admission, effect and exclusion is counted.
 - **It cannot say:**
-  - anything about motive or intent;
+  - anything about motive or intent. The reasoning summaries are evidence of what the provider
+    chose to report about each decision, written by the provider, not the model's internal state;
+    the frozen analysis does not score them;
   - anything about other models, seeds or wordings;
   - anything about formal hierarchy.
 
