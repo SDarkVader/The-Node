@@ -5,6 +5,7 @@ import { observe, observerRef, personBody } from '../src/server/observer.js';
 import { validateContext, validateDecision, type Decision, type DecisionContext } from '../src/agent/protocol.js';
 import { mockDecisionSchema } from '../src/agent/mockProvider.js';
 import { rejectionReasons } from '../src/eval/episode.js';
+import { buildResponsesRequest, type AuthorizedObservation } from '../src/agent/responsesRequest.js';
 
 /**
  * "Show who can hear" (owner decision 2026-10-21, recognition v2 only). The observation lists who
@@ -155,6 +156,23 @@ describe('who can hear (v2)', () => {
     // The next observation's hearing list is computed from the new position.
     const next = observe(r.state, id, SECRET).context.hearingRefs!.map((ref) => idOf(r.state, id, ref)!).sort();
     expect(next).toEqual(found!.heardAfter);
+  });
+
+  it('the request the model reads carries the same hearing list the validator enforces, or is refused', () => {
+    const s = warm(103);
+    const speaker = located(s).find((p) => observe(s, p.id, SECRET).context.hearingRefs!.length > 1)!;
+    const honest = observe(s, speaker.id, SECRET) as unknown as AuthorizedObservation;
+    const body = JSON.parse(buildResponsesRequest(honest, 'archived-test-model').body) as { input: { content: { text: string }[] }[] };
+    const sent = JSON.parse(body.input[0]!.content[0]!.text) as { hearing?: string[]; observation?: { hearing: string[] } };
+    expect(sent.hearing ?? sent.observation!.hearing).toEqual(honest.context.hearingRefs);
+    const tampered = (edit: (o: { context: { hearingRefs?: string[] }; projection: { hearing?: string[] } }) => void) => {
+      const o = structuredClone(honest) as unknown as { context: { hearingRefs?: string[] }; projection: { hearing?: string[] } };
+      edit(o); return () => buildResponsesRequest(o as unknown as AuthorizedObservation, 'archived-test-model');
+    };
+    expect(tampered((o) => { o.projection.hearing = o.projection.hearing!.slice(1); })).toThrow('responses_observation_mismatch');
+    expect(tampered((o) => { o.projection.hearing = [...o.projection.hearing!].reverse(); })).toThrow('responses_observation_mismatch');
+    expect(tampered((o) => { delete o.projection.hearing; })).toThrow('responses_observation_mismatch');
+    expect(tampered((o) => { o.context.hearingRefs = o.context.hearingRefs!.slice(1); })).toThrow('responses_observation_mismatch');
   });
 
   it('the context contract: v2 requires a unique hearing list drawn from those present, never self; v1 never carries one', () => {
