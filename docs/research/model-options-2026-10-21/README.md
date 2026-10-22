@@ -1,56 +1,107 @@
-# Model options for the accounted studies (2026-10-21) — research in progress
+# Model options for the accounted studies — verified synthesis (2026-10-22)
 
-**Status: UNVERIFIED except OpenAI and Google** (`verification-partial.json`). `verify:openai` confirmed the study-1 model's deprecation, gpt-6-luna's prices and the `const` gap. `verify:google` confirmed the Gemini prices and that `const` is not supported, and rated every Gemini model needs_rewrite: `const` becomes a one-value `enum`, and a standalone `{type:'null'}` anyOf branch is undocumented. The Anthropic, open-weight and local verifiers and the synthesis stopped on a session limit. These are researchers' outputs, saved so that a lost session or container
-does not force a re-run. They were the first attempt's research stage, cut off by a session
-limit at verification, then rerun. Independent verifiers were still checking them when this was
-written. Do not act on a number here until the verified file (`verified.json`, to be added beside
-this one) confirms it.
+**Status: every family verified.** The researchers worked on 2026-10-21. Independent verifiers
+checked every claim against its cited source on 2026-10-21/22 (Anthropic, open-weight and local in a
+verification-only rerun, at the owner's direction). This synthesis was written without an agent,
+from the verified files only:
 
-## What was asked
-
-The owner asked for cheaper models that would serve the studies (2026-10-21), and mentioned local
-open-source models on their own PC: RTX 4070 Ti Super (16 GB), 64 GB RAM, Ryzen 7 7800X3D.
-
-Workload: one inhabitant decision per call, with about 5–9k input tokens, a strict JSON schema and
-a ~16 s synchronous deadline. Study 1 is 630 calls; a diary study would be about 3,500.
-
-## Files
-
-| File | Family | Producer |
+| Family | Researcher output | Verification |
 |---|---|---|
-| `research-openai.unverified.json` | OpenAI | workflow `cheaper-model-research`, run `wf_c1105733-775` |
-| `research-google.unverified.json` | Google Gemini | same |
-| `research-anthropic.unverified.json` | Anthropic Claude | same |
-| `research-open-weight.unverified.json` | hosted open-weight (Groq, Fireworks, Together, OpenRouter, DeepSeek, Mistral, Alibaba) | same |
-| `research-local.unverified.json` | local runtimes and models for the owner's GPU | same |
-| `cheaper-model-research.workflow.js` | the workflow script (research → adversarial verify → synthesis) | rerun with the Workflow tool's `scriptPath` |
+| OpenAI | `research-openai.unverified.json` | `verification-partial.json` → `verify:openai` |
+| Google | `research-google.unverified.json` | `verification-partial.json` → `verify:google` |
+| Anthropic | `research-anthropic.unverified.json` | `verify-anthropic.json` |
+| Hosted open-weight | `research-open-weight.unverified.json` | `verify-open-weight.json` |
+| Local | `research-local.unverified.json` | `verify-local.json` → **[LOCAL_REQUIREMENTS.md](LOCAL_REQUIREMENTS.md)** |
 
-## Claims that would matter most if verified
+Workflow scripts: `cheaper-model-research.workflow.js` (research + verify) and
+`verify-saved.workflow.js` (verify only, 3 agents).
 
-- **The study-1 model may be deprecated.** OpenAI reportedly deprecated `gpt-5.4-nano-2026-03-17` on
-  2026-10-01, with removal on 2027-04-01, and named `gpt-6-luna` as the replacement (about half
-  the list price, but no dated snapshot).
-- **No provider has accepted our schema in a real request.** The only live call (2026-10-16)
-  returned HTTP 401. Our schema uses numeric and string `const`, nested `anyOf` with null,
-  `minimum`/`maximum`, and enums that change on every call. Several providers do not document
-  `const` (OpenAI, Google, Groq).
-- **Local, with the existing transport:** Ollama v0.40.7 reportedly serves `/v1/responses`. It maps
-  `text.format` json_schema to a llama.cpp grammar that enforces const, enum and nested anyOf. It
-  ignores `minimum`/`maximum` on numbers (our price is still checked by our validator) and cannot
-  disable prompt caching.
-- **Local, most controllable:** llama-server reportedly *ignores* `text.format` on its
-  `/v1/responses`. It would need a Chat Completions adapter (`response_format`).
-- **Repo blockers for any non-OpenAI endpoint:** the transport hard-codes
-  `https://api.openai.com/v1/responses`, and the model-id check rejects `/` (needed for
-  `openai/gpt-oss-120b`).
-- **Hosted open-weight:** Groq documents constrained decoding for `strict:true` on gpt-oss-20b and
-  gpt-oss-120b, but not `const` or `minimum`/`maximum`.
-- **Changing the model changes the subject.** Behaviour is model-specific, so a different model
-  is a new study condition, not a cost saving.
+## Two corrections to what the researchers and verifiers were told
 
-## Next
+1. **The schema form has been accepted live.** The researchers and verifiers were told that no
+   live call had produced a decision. That was wrong. On 2026-10-18 two calls to
+   `gpt-5.4-nano-2026-03-17` returned HTTP 200 and valid decisions
+   (`docs/recovery/INITIAL_GAME_TURN.md`), with this strict schema form:
+   - string and numeric `const`;
+   - `minimum`/`maximum`;
+   - nested `anyOf` with a `{type:'null'}` branch.
 
-1. The verifiers' results and the synthesis go into `verified.json` and a short decision note.
-2. The owner chooses: keep the study-1 model while it is available, move to a verified cheaper
-   hosted model, or run locally.
-3. Before any study call, send a first request with the real schema to the chosen model or runtime.
+   OpenAI therefore accepts what it does not document. The schema has since dropped `const` in
+   favour of one-value enums (2026-10-22), the form every provider documents.
+2. **The per-call deadline is 12,000 ms, not about 16 s.** It is enforced in `broker.ts` and
+   `httpBody.ts` (found by the local verifier and checked in code).
+
+## Verified facts that drive the choice
+
+- **The study-1 model is deprecated.** `gpt-5.4-nano-2026-03-17` was deprecated on 2026-10-01 and
+  will be removed from the API on 2027-04-01. Study 1 can still run on it now, and it is the only
+  model with live evidence for our schema. A later 30–40-day diary study, or a replication after
+  April 2027, cannot use it.
+- **Pinnability.** Only these options can be pinned:
+  - `gpt-5.4-nano-2026-03-17`, a dated snapshot, until its removal;
+  - `claude-haiku-5-5`, which is itself a pinned snapshot, with retirement no sooner than
+    2027-10-07;
+  - local GGUF files, pinned by sha256 for as long as the file is kept.
+
+  `gpt-6-luna`, `gpt-5.6-luna` and the Groq gpt-oss models are aliases and can change under the
+  same id.
+- **Schema documentation.**
+  - OpenAI and Google document the current form, apart from `{type:'null'}` as a standalone anyOf
+    branch. Google does not document that branch; OpenAI does.
+  - Anthropic rejects `minimum`/`maximum` with HTTP 400. Those keywords would have to be dropped
+    for Anthropic only; `validateDecision` already enforces price ∈ [0, 2].
+  - Local llama.cpp grammars enforce everything except number `minimum`/`maximum`, which are
+    silently ignored; the validator catches those.
+- **Transport changes for any non-OpenAI path.**
+  - `responsesTransport.ts` hard-codes `https://api.openai.com/v1/responses`.
+  - The model-id check rejects `/`.
+  - Groq's gpt-oss always returns a plaintext reasoning item, which `recordedResponse.ts` rejects.
+  - Anthropic needs its native Messages API.
+  - Google needs `generateContent` or Chat Completions.
+
+## Cost at verified list prices (no cache hits: the schema changes on every call)
+
+7,000 input tokens per call. The range is 250–500 output tokens, including reasoning. Booked =
+the project's 2× conservative booking, set against the USD 5 study-1 allowance.
+
+| Model | USD per M in / out | Study 1, 630 calls | Booked 2× | Diary study, 3,500 calls | Code change needed |
+|---|---|---|---|---|---|
+| gpt-5.4-nano-2026-03-17 (current; deprecated) | 0.20 / 1.25 | 1.08 – 1.28 | 2.55 | 5.99 – 7.09 | none |
+| gpt-6-luna (alias) | 0.10 / 0.50 | 0.52 – 0.60 | 1.20 | 2.89 – 3.33 | none (set the cache mode to explicit) |
+| claude-haiku-5-5 (pinned) | 0.10 / 0.50 | 0.52 – 0.60* | 1.20* | 2.89 – 3.33* | Messages adapter; drop min/max |
+| gemini-3.1-flash-lite | 0.25 / 1.50 | 1.34 – 1.57 | 3.15 | 7.44 – 8.75 | new adapter |
+| gemini-2.5-flash-lite (access restricted) | 0.10 / 0.40 | 0.50 – 0.57 | 1.13 | 2.80 – 3.15 | new adapter |
+| gpt-oss-120b on Groq (alias) | 0.15 / 0.60 | 0.76 – 0.85 | 1.70 | 4.20 – 4.72 | endpoint, id, reasoning item |
+| gpt-oss-20b on Groq (alias) | 0.075 / 0.30 | 0.38 – 0.43 | 0.85 | 2.10 – 2.36 | endpoint, id, reasoning item |
+| Local GGUF (owner's GPU) | — | electricity | — | electricity | see LOCAL_REQUIREMENTS.md |
+
+\* Claude's tokenizer count for our requests is unmeasured. The free `count_tokens` endpoint
+gives it before any spending.
+
+Dropped after verification:
+- Fireworks gpt-oss-120b: serverless removal on 2026-11-07.
+- DeepSeek: no documented enforcement, and the alias cannot be pinned.
+- Mistral and Together: enforcement undocumented, and Chat Completions only.
+- Alibaba open-weight Qwen: no JSON Schema mode.
+- Haiku 4.5: ten times the price of Haiku 5.5.
+- gpt-5-nano: shutdown on 2026-12-11.
+- gpt-4o-mini: shutdown on 2027-01-14.
+- gpt-4.1-nano: shutdown on 2026-10-23.
+
+## Recommendation (the owner decides)
+
+- **Study 1: keep `gpt-5.4-nano-2026-03-17`.** It is the only option with live evidence for our
+  schema and transport, and it needs no code change. It is a dated snapshot, it costs about $1.1–1.3
+  at list ($2.55 booked, within the USD 5 cap), and it stays available until 2027-04-01. Switching
+  later is a new study condition, not a cost saving.
+- **The 30–40-day diary study:** decide between local and `claude-haiku-5-5` before that study
+  is built.
+  - Local is free per call and pinned by file hash forever, but it needs measurement and two small
+    transport changes (see [LOCAL_REQUIREMENTS.md](LOCAL_REQUIREMENTS.md)).
+  - Haiku 5.5 is pinned and costs half as much as nano, but it needs a Messages adapter and a
+    schema variant without min/max.
+  - Running study 1's arms on a second model would also test whether its behaviour is
+    model-specific. That is a design question, not a cost one.
+- **Before the first call on any new model:** send one request with the real v2 schema, check
+  acceptance, the token count and the latency against 12 s, and re-read the provider's
+  deprecations page.

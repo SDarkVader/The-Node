@@ -5,6 +5,7 @@
   "branch": "main",
   "verifiedBaseCommit": "f855241172514c1869fcd284cbb11ac44cc05eb9",
   "completedWork": [
+    "2026-10-22: model research VERIFIED for all five families (verification-only rerun, 3 agents, owner's limit) and synthesised without an agent: docs/research/model-options-2026-10-21/README.md (costs, survivors, pinnability, recommendation: keep gpt-5.4-nano-2026-03-17 for study 1; decide local vs claude-haiku-5-5 for the diary study) and LOCAL_REQUIREMENTS.md (runtime pins, flags, GGUF hashes, code changes, measurement protocol). Corrections recorded: two live calls on 2026-10-18 DID succeed with the const/min/max/nested-anyOf schema (my earlier 'no live call reached a model' was wrong); the per-call deadline is 12,000 ms, not ~16 s. Mutation testing by script: 13/13 killed after one new test (hearing cross-check).",
     "2026-10-22: owner approved the schema const fix; done at 168987d (fixed values are one-value typed enums; equivalence test passes; new no-const test; freeze re-pinned a fourth time, contract and manifest unchanged). Docs updated (BLUEPRINT v2 'who can hear' + schema note, BLUEPRINT_HISTORY D6-D9, DEVLOG, runbook, README). Owner: no fixed local model setup yet; will implement once the import (integration) requirements are known. Owner: research reruns must use limited agents, verification only, on already aggregated data.",
     "2026-10-21 (late night, after PR #31): owner merged PR #31 at f855241 (merge commit; head edc32e9 was green on all three hosted checks). Task branch restarted from main. Owner decisions (answered 2026-10-21): show who can hear; study 1 stays 6 days plus a separate 30-40 day diary/recognition study; Courier commissions and multi-member campaigns deferred; the repeat-custom Baker wealth effect is accepted. 'Show who can hear' implemented and pushed as da8c325 (v2 only): observation 'hearing' + context hearingRefs (kernel range rule), protected protocol.ts requires hearingRefs under rules 'v2' and refuses an out-of-range address (owner-authorised; fingerprint 7A0B3EEC... recorded in DEVELOPMENT_BRANCH_AUDIT.md), schema addressee enum = hearing, v2 moves apply after the day's speech, rules text v2, rejection reason proximity_referent_out_of_range, freeze re-pinned a third time (contract and manifest unchanged). 40-day run: 3,323 of 3,378 admitted addresses heard; all 55 misses had the speaker or addressee change place that day; 1,090 of 1,106 moves applied, 16 dropped for the same reason. Model research saved (unverified) under docs/research/model-options-2026-10-21/.",
     "2026-10-21 (late night): PR #31 opened. Fixed a study-breaking request-size blocker (v2 requests at 32,756 of the 32,768-byte fail-closed ceiling) with 64-bit v2 observer references (max ~26 KB now; headroom regression test); freeze pins moved a second time (bytes only). identityResolved no longer sends the raw player id. Cheaper-model research running; owner has an RTX 4070 Ti Super (16 GB), 64 GB RAM, Ryzen 7 7800X3D for local models.",
@@ -83,11 +84,11 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "IN FLIGHT (2026-10-22): verification-only workflow (3 agents, owner's limit) for the saved anthropic/open-weight/local research; script docs/research/model-options-2026-10-21/verify-saved.workflow.js; agents also write verify-<family>.json beside the inputs. Then write the synthesis WITHOUT an agent (costs per study, survivors, risks) into docs/research/model-options-2026-10-21/, plus a local 'import requirements' checklist (runtime + version, endpoint, model file + sha256, context/caching settings, adapter changes: transport base URL, model-id regex) for the owner to implement.",
-    "IN FLIGHT (2026-10-22): mutation testing of the who-can-hear change by script (no agents) in an external worktree; fix any surviving mutation with a test. The 4-lens agent review failed on a session limit; per the owner's credit limit, do not rerun it as a fan-out.",
+    "Open a PR (ccr-8d64b59c-a4puhv -> main) for da8c325..HEAD (who can hear, const fix, tests, docs, verified model research), watch CI, merge when green.",
+    "Owner decisions pending: model for study 1 (recommendation: keep gpt-5.4-nano-2026-03-17); for the diary study, local vs claude-haiku-5-5; local accounting mode. When the owner is ready for local: implement LOCAL_REQUIREMENTS.md 'Changes our code needs' (transport local endpoint, request builder temperature/effort/chat-completions variant, parser, accounting profile, provenance).",
     "Then open a PR (ccr-8d64b59c-a4puhv -> main) for da8c325..HEAD, watch CI, merge when green.",
     "VERIFIED 2026-10-21 (docs/research/model-options-2026-10-21/verification-partial.json): gpt-5.4-nano-2026-03-17 deprecated (announced 2026-10-01, removal 2027-04-01; replacement gpt-6-luna $0.10/$0.01/$0.50, alias only). const unsupported by OpenAI and Google docs (fixed at 168987d). Google also does not document a standalone {type:'null'} anyOf branch (still used; test with a first live request). Model choice for study 1 is the owner's.",
-    "Before any study call on any model: one real request with the actual v2 schema (numeric const, nested anyOf, per-call enums) - no provider has yet accepted it (the only live call, 2026-10-16, was HTTP 401).",
+    "Before any study call on a model other than gpt-5.4-nano-2026-03-17: one real request with the actual v2 schema. Only gpt-5.4-nano has accepted the schema form live (2026-10-18, two HTTP 200 calls with const, min/max, nested anyOf; docs/recovery/INITIAL_GAME_TURN.md). Correction 2026-10-22: earlier checkpoint text said the only live call was the 2026-10-16 HTTP 401; that was wrong.",
     "Owner: when reactivated, run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (postponed on 2026-10-21); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
@@ -125,10 +126,12 @@ recorded as a study-1 limitation in the runbook.
 **Next:** study 1 is postponed (2026-10-21) until the owner reactivates it; it then runs from `main` per the
 [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `gpt-5.4-nano-2026-03-17`.
 
-**In flight (2026-10-21, late):** an adversarial review of `da8c325`, and verification of the model research
-([unverified outputs and the workflow script](../research/model-options-2026-10-21/README.md)). The research
-reports that the study-1 model was deprecated on 2026-10-01 (removal 2027-04-01); this is not yet verified.
-The checkpoint JSON's `nextSteps` lists exactly what to resume.
+**Done (2026-10-22):** mutation testing of `da8c325` (13/13 killed), and verification of the model research
+([unverified outputs and the workflow script](../research/model-options-2026-10-21/README.md)). Verified
+2026-10-22: the study-1 model is deprecated (removal 2027-04-01); see the
+[verified synthesis](../research/model-options-2026-10-21/README.md) and the
+[local requirements](../research/model-options-2026-10-21/LOCAL_REQUIREMENTS.md). The checkpoint JSON's
+`nextSteps` lists exactly what to resume.
 
 D1 is resolved: the diary is a measured daily task, and the earlier unprompted-only and marks-only
 rules are superseded. No API call has been made, and no existing accounting file was changed.

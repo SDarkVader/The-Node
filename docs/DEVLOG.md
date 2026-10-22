@@ -16,7 +16,9 @@
 >
 > **A failure in my own test, recorded so it is not repeated:** `world.rng` is one mutable lineage, so stepping one saved state once per speaker gives each speaker a different day. The listener comparison has to rebuild an identical state from genesis for each speaker.
 >
-> **Verified, then fixed (owner-approved 2026-10-22):** independent checks of OpenAI's and Google's documentation found that neither documents `const` for strict structured output, and strict mode rejects an unsupported keyword. Our schema used `const` for every fixed value, so the first live call could have failed. Fixed values are now one-value typed enums. The exhaustive schema-vs-validator equivalence test passes, and a new test forbids `const`. The freeze was re-pinned a third and a fourth time (request bytes only).
+> **Verified, then fixed (owner-approved 2026-10-22):** independent checks of the documentation found that Google does not support `const` and OpenAI does not document it. Fixed values are now one-value typed enums, the form both document.
+>
+> **Correction (same day):** I first wrote that no live call had ever reached a model, so the first one "could have failed". That was wrong. I took the 2026-10-16 HTTP 401 as the whole record. On 2026-10-18 two live calls to `gpt-5.4-nano-2026-03-17` returned HTTP 200 and valid decisions (`docs/recovery/INITIAL_GAME_TURN.md`), with this same strict schema: string and numeric `const`, `minimum`/`maximum` and nested `anyOf`. So OpenAI accepts the old form in practice. The change is needed for Google, and it is the documented form for both. It was not a rescue for OpenAI. The exhaustive schema-vs-validator equivalence test passes, and a new test forbids `const`. The freeze was re-pinned a third and a fourth time (request bytes only).
 >
 > **Verified:** `gpt-5.4-nano-2026-03-17` is deprecated, announced 2026-10-01, with removal on 2027-04-01. The replacement, `gpt-6-luna`, costs $0.10/$0.50 per M and has no dated snapshot. The model choice is open.
 >

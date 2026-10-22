@@ -20,10 +20,10 @@ import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.
  *      speaking range (`hearing`), the rules text says so, the schema's addressee enum is that list
  *      and moves take effect after the day's speech. Request bytes change; the contract and the
  *      manifest do not.
- *   4. schema `const` written as one-value typed enums (owner approved 2026-10-22): verified on
- *      2026-10-21 that neither OpenAI's nor Google's structured-output subset documents `const`,
- *      and strict mode rejects an unsupported keyword, so the first live call could have failed.
- *      Same constraint; request bytes change, the contract and the manifest do not.
+ *   4. schema `const` written as one-value typed enums (owner approved 2026-10-22): Google does not
+ *      support `const` and OpenAI does not document it (it accepted it in the two live calls of
+ *      2026-10-18). Same constraint, in the form every provider documents; request bytes change,
+ *      the contract and the manifest do not.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 

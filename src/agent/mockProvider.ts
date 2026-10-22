@@ -12,9 +12,10 @@ const objectSchema = (properties: Record<string, Schema>): Schema => ({
   type: 'object', properties, required: Object.keys(properties), additionalProperties: false,
 });
 const strings = (values: readonly string[]): Schema => ({ type: 'string', enum: [...new Set(values)] });
-/** One fixed value. Written as a one-value `enum`, never `const`: verified 2026-10-21 that neither
- *  OpenAI's nor Google's structured-output subset documents `const` (strict mode rejects an
- *  unsupported keyword), while both document typed string and number enums. Same constraint. */
+/** One fixed value. Written as a one-value `enum`, never `const`: verified 2026-10-21 that Google's
+ *  structured output does not support `const` and OpenAI's subset does not document it (OpenAI did
+ *  accept it in the two live calls of 2026-10-18), while both document typed string and number
+ *  enums. Same constraint, in the form every provider documents. */
 const fixed = (value: string | number): Schema => ({ type: typeof value === 'string' ? 'string' : 'number', enum: [value] });
 const nullable = (...alternatives: Schema[]): Schema => alternatives.length
   ? { anyOf: [nullSchema(), ...alternatives] } : nullSchema();
