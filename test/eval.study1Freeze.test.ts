@@ -28,6 +28,9 @@ import { manifestSha256, wireRequest, type StudyManifest } from '../src/eval/acc
  *   5. study 1 runs on claude-haiku-5-5 (owner decision D11, 2026-10-22: "use haiku"). The model
  *      receives the Anthropic Messages translation of each final request, so the pins now hold
  *      those bytes; the manifest's model changes (manifest pin moves), the contract does not.
+ *   6. v2 Grifter role line (owner direction 2026-10-22, "fix them"): it said movement/observation
+ *      only, contradicting the v2 action line and the validator, which let the Grifter speak and keep
+ *      the diary. Only grifter-0's bytes change; the other actors, the contract and the manifest do not.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
@@ -40,13 +43,13 @@ const TICK0 = {
   'courier-0': '21b69f0475123023ce858ff40580eeb57b035d9b99f7ff91c5da485505a021d2',
   'investigator-0': 'fa0dbdf2752a6ee601d1adcb5f3d3a8cd81be023931fe5d8c3f20f0c1f4eb3c5',
   'importexport-0': '6a492121006a0115c28c0b6939bc2b95351bcb2a61e305c1285635ec3cec9d48',
-  'grifter-0': 'f37f80f466390cb0b6e8b776bf4c8cd03753fc4581ffb6136483329b4b8ffb43',
+  'grifter-0': '28c90dd1e8d24dfa2a30bfe9dbac650e7597170c5275d4a483372b049b605bef',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '4975c8a83bbef48485e4bc377f2c7850c5ca2331c3ce8927ebabdec4f4435e3e', 'miller-0': 'e58d12db50160aced8607fdea1242de04a0afc4be833f047d759ef490b322414', 'grifter-0': '1d9206340a9ce2f7718036abf4289b40be74e755de01a5999fbdbe539c38e34d' },
-  anonymous: { 'baker-0': 'a9a495e5f2162ed9e8f5852502fe1a9fd60e4abdfe102b91e8e22f4a1ca07606', 'miller-0': '0f7fd47f2d95e49c0eb4cc48b605de23c6acb1030e7871288eb339975c92b402', 'grifter-0': '4a37b41c526970c4905bac30b835a4f8ec9e7182b0d61fe8bf1734c26dfe0fea' },
-  none: { 'baker-0': '1dc5ac1d3294fa31dbbbe614f8849245dce638e3e5b5f3f97bd9095beda509d2', 'miller-0': '4aa9a9589beaaa4a15fb6e9255aebc062edee9d02a957e2dad98ab10d95d5cf7', 'grifter-0': '309d39d8f17009cf52cdf9ca882b8c143e3dbcf2c66b31f18d0618a413ba061a' },
+  council: { 'baker-0': '4975c8a83bbef48485e4bc377f2c7850c5ca2331c3ce8927ebabdec4f4435e3e', 'miller-0': 'e58d12db50160aced8607fdea1242de04a0afc4be833f047d759ef490b322414', 'grifter-0': '88f1eb975a48b02641ffededfd80e17d70e3f63be3eaeb5f7f5a411f3f02d551' },
+  anonymous: { 'baker-0': 'a9a495e5f2162ed9e8f5852502fe1a9fd60e4abdfe102b91e8e22f4a1ca07606', 'miller-0': '0f7fd47f2d95e49c0eb4cc48b605de23c6acb1030e7871288eb339975c92b402', 'grifter-0': 'ff54beb9d2aedb9099966695fa24cd7c7a8b7aa70c5cca5140343bb27cac7eba' },
+  none: { 'baker-0': '1dc5ac1d3294fa31dbbbe614f8849245dce638e3e5b5f3f97bd9095beda509d2', 'miller-0': '4aa9a9589beaaa4a15fb6e9255aebc062edee9d02a957e2dad98ab10d95d5cf7', 'grifter-0': '6a0696063fec56f36ffbdffa27d7637cc662dd5379e1af51e1679d3df7f3e536' },
 };
 
 describe('study 1 is frozen until it has run', () => {

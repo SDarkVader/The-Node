@@ -31,6 +31,9 @@ const ROLES = {
   ImportExport: { resource: 'grain', duty: 'Converts incoming nodules into the grain supply upstream of Miller and Baker. Current completion is district-friction based. Routing, resource transfers and ticket creation are not broker actions.' },
   Grifter: { resource: null, duty: 'Roleless resident with a mechanical survival floor and opportunity progress. Shift Cover, draft and neutral recovery are world mechanisms, not choose-role commands. This broker currently permits movement/observation only.' },
 } as const;
+/** v2 lets the Grifter speak and keep the diary (`validateDecision`), so its v1 duty line, which
+ * says movement/observation only, would contradict the v2 action line. Corrected 2026-10-22. */
+const ROLES_V2 = { ...ROLES, Grifter: { resource: null, duty: 'Roleless resident with a mechanical survival floor and opportunity progress. Shift Cover, draft and neutral recovery are world mechanisms, not choose-role commands. May move, speak and keep the diary; has no role input.' } } as const;
 
 function freeze<T>(value: T): T {
   if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
@@ -41,10 +44,10 @@ function freeze<T>(value: T): T {
  * Never accepts World, config, replay, accounting, credentials or earlier observations.
  */
 export function describeRulesContext(p: Projection) {
-  const role = String(p.self.role), definition = ROLES[role as keyof typeof ROLES];
-  if (!definition || !Object.hasOwn(ROLES, role)) throw Error('rules_role_unsupported');
+  const v2 = 'dealings' in p, roles = v2 ? ROLES_V2 : ROLES;
+  const role = String(p.self.role), definition = roles[role as keyof typeof roles];
+  if (!definition || !Object.hasOwn(roles, role)) throw Error('rules_role_unsupported');
   const employed = role !== 'Grifter' && !!definition;
-  const v2 = 'dealings' in p;
   const speaks = employed || v2;
   const ownStation = p.city.stations.find(s => s.buildingId === p.self.workplace);
   const heatMeaning = role === 'Baker' ? 'current_price_divided_by_two' : role === 'Miller' ? 'current_quantity_normalized_to_one'
@@ -52,7 +55,7 @@ export function describeRulesContext(p: Projection) {
   return freeze({
     version: v2 ? RULES_CONTEXT_VERSION_V2 : RULES_CONTEXT_VERSION,
     purpose: 'Information, social exposure, role activity and earned opportunities matter. Wealth is a scoreboard, not a universal currency or proof of good play. Do not invent a general reputation score.',
-    relationships: { supplyChain: 'Nodules -> ImportExport grain -> Miller flour -> Baker bread -> customer demand. Essential production stays mechanical.', roles: ROLES },
+    relationships: { supplyChain: 'Nodules -> ImportExport grain -> Miller flour -> Baker bread -> customer demand. Essential production stays mechanical.', roles },
     role: { name: role, resource: definition?.resource ?? null, duty: definition?.duty ?? 'Unknown role: do not infer a role-specific permission.',
       priceOverride: role === 'Baker', stock: 'Own capped role reserve; not an authorized transferable commodity balance.',
       progress: p.self.progress === null ? 'not_exposed_for_current_role' : 'own_opportunity_progress_not_general_reputation' },
