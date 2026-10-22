@@ -5,6 +5,7 @@
   "branch": "main",
   "verifiedBaseCommit": "acfff4ea6e8b442fb215f899bdfc18f5c5df07b9",
   "completedWork": [
+    "2026-10-22 concurrent merge reconciled: PR 36 was merged into main at 413cefc with the preflight and original approved test records (head 8990c97). The later diagnostic correction acfff4e and cost documentation are now on the separate codex/diagnostic-cost-ceiling-2026-10-22 follow-up branch, merged with that reviewed main. Source, scripts, manifest, contract and dependency tree match the verified acfff4e runtime exactly. Earlier branch history is retained; no reset, force push or paid request.",
     "2026-10-22 diagnostic ceiling corrected offline at acfff4e after the owner asked to resolve the token cap and explain costs. The output cap remains 2,048 (315 used by the real test); only the unsafe diagnostic count-plus-25% input estimate changed. It now uses the study request input bound (30,538 for the frozen Baker request) and full output cap, ceiling USD 0.0040778 under the unchanged USD 0.01 diagnostic limit. Reports expose ceiling basis, input/output bounds and maxUsd; a count above the request bound refuses before any paid dispatch. Two fake-sender tests failed against old code and passed after correction. TypeScript and 45 targeted tests (adapter, study freeze, pricing, accounted study) passed; a new runtime built offline at acfff4e. No paid repeat, protected broker/kernel/accounting change, price/cap/pin/manifest change or new allowance. Cost projections at fixed observed input: 630 calls at observed 315 output about USD 0.986895 list / 1.97379 booked; at full 2,048 output USD 1.53279 list / 3.06558 booked. A 4,096-output illustration is not enabled.",
     "2026-10-22 owner explicitly directed the paid test call. PC runtime b1a1646 sent seven free token counts (all HTTP 200) and exactly one paid Baker message, no retry: HTTP 200, schema accepted, response model claude-haiku-5-5, end_turn, completed/actionable, 5,493 ms, 14,090 input / 315 output tokens (272 reported thinking tokens), USD 0.0015665 at configured list rates, one 208-character provider summary returned and no redacted blocks. Output cap use 315/2,048 (15.38%). Decision: bakerPrice 0.5, other components null; validator accepts, no enum case mismatches. The saved request matches the committed freeze pin. No episode advanced, allowance prepared/reset or 72-hour window started; original October 18 journal hash unchanged. Raw reports, response, summaries and credential paths stay private. Found a diagnostic-only input-estimate limitation: counted input plus 25% gives 13,499 below billed 14,090; actual cost remains below estimated ceiling USD 0.0023739 and limit USD 0.01. The study uses a separate 30,538-token input ceiling for this request. No code, caps, rates or pins changed.",
     "2026-10-22 PC preflight after PR #35: fast-forwarded the clean local main checkout to b1a1646. npm ci completed; TypeScript passed; 105 Vitest files passed (1,315 tests passed, one intentionally skipped POSIX-shell fixture on Windows); all eight session-recovery tests passed; tracked recovery matched clean main. PowerShell 7.6.5 and the real worker preflight passed. Built an offline connection-check runtime from b1a1646. Confirmed the original 18 October journal hash matches the handover, validated only a scratch copy (2 requests, 11,418 micro-USD booked, 0 held, nano model, expiry 2026-10-19T13:21:24.584Z), deleted the copy, and re-hashed the unchanged original; no lock was created in the original folder. No provider endpoint was contacted and no allowance was created, extended or reset. The medium-effort reasoning check remains unmeasured; Study 1 remains paused.",
@@ -99,7 +100,7 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Handover tasks A-C are complete. The diagnostic input ceiling defect is fixed offline at acfff4e on PR 36; no paid repeat is needed to verify this admission guard, and the output cap remains 2,048. Review/merge the task-branch changes through the PR; do not push directly to main. Task D remains paused until the owner explicitly reactivates Study 1 and authorizes its new allowance. A new offline runtime is prepared privately for any future owner-directed check.",
+    "Handover tasks A-C are complete. The diagnostic input ceiling defect is fixed offline at acfff4e on the codex/diagnostic-cost-ceiling-2026-10-22 follow-up branch; no paid repeat is needed to verify this admission guard, and the output cap remains 2,048. Review/merge the follow-up task-branch changes through its PR; do not push directly to main. Task D remains paused until the owner explicitly reactivates Study 1 and authorizes its new allowance. A new offline runtime is prepared privately for any future owner-directed check.",
     "Keep the nine Claude Docs in step with the repo after each merge (links in completedWork); record discrepancies rather than rewriting either source.",
     "Pre-run checks are recorded: expected Haiku model echo, Scale-tier limits, PC offline verification, unchanged closed October 18 allowance and the single successful reasoning-enabled message. The credential path is confirmed privately. No new allowance or 72-hour window exists.",
     "Deferred by the owner: local open-model testing ('well do open model testing later') and D10 mixed per-actor sourcing/accounting (manifest per-actor model, per-model price profiles with local at zero, provider routing). For local: LOCAL_REQUIREMENTS.md 'Changes our code needs'. For the diary study: local vs claude-haiku-5-5.",
@@ -108,7 +109,7 @@
     "Owner: when reactivated, run study 1 on claude-haiku-5-5 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (about $0.9 list, $1.8 booked, 45-55 min at 4 s pacing); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/pr35-pc-preflight-2026-10-22"
+  "reviewBranch": "codex/diagnostic-cost-ceiling-2026-10-22"
 }
 NODE_SESSION_CHECKPOINT -->
 
@@ -124,9 +125,10 @@ individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`, PR #
 schema, verified model options) at `b06548b`, PR #33 (Anthropic adapter and Haiku connection check) at
 `973ed24`, and PR #34 (study 1 on `claude-haiku-5-5`, owner decision D11, and the PowerShell 7
 preflight) at `8d3e39d`. PR #35 (Grifter role line, reasoning evidence and PC handover) merged
-at `b1a1646`. The diagnostic correction `acfff4e` is on the exact review branch below; main
-remains at the reviewed merge until PR #36 is merged. This checkpoint anchors at `acfff4e` and
-accepts the exact task branch `codex/pr35-pc-preflight-2026-10-22`, or `main` after integration.
+at `b1a1646`. PR #36 merged the PC preflight and approved connection-check record at `413cefc`.
+The later diagnostic correction `acfff4e` is on a separate follow-up review branch; main remains
+at its reviewed merge until that follow-up is integrated. This checkpoint anchors at `acfff4e`
+and accepts `codex/diagnostic-cost-ceiling-2026-10-22`, or `main` after integration.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
