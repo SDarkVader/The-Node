@@ -7,6 +7,17 @@
 > dealings, lapsing recognition, the Grifter gate open (all seven actors are eligible), rules text v2
 > and workplace Courier pay. The procedure below is unchanged; the manifest and the freeze test's pins
 > moved once, deliberately, to the new baseline and stay frozen until the study has run.
+>
+> **Two further pre-study changes (owner-approved):**
+> - **2026-10-21, "show who can hear":** each observation lists who is within speaking range. An
+>   address to anyone else is refused, and moves take effect after the day's speech.
+> - **2026-10-22, no `const` in the response schema:** fixed values are written as one-value
+>   enums, because neither OpenAI nor Google documents `const` in strict structured outputs.
+>
+> Both changed the request bytes, so the freeze pins moved a third and a fourth time. The
+> contract and the manifest are unchanged. The model choice is open: verification on 2026-10-21
+> confirmed that `gpt-5.4-nano-2026-03-17` is deprecated, with removal on 2027-04-01 (see
+> `docs/research/model-options-2026-10-21/`).
 
 Prepared 2026-10-20 for the owner's run on **Thursday 2026-10-22**, on the Windows PC that holds the
 credential and the private allowance. Everything here was rehearsed end to end with the real

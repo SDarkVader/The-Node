@@ -84,7 +84,12 @@ the 10–20 day target. A second pass, on the owner's further decisions, adds la
 refusal and a modelled customer channel. It shows that customers recognise their Baker only if
 they are regulars. Recognition v2 and individual dealings are now implemented as an opt-in rules
 version (`WorldConfig.recognition = 'v2'`). Study 1 runs on it (authority-attribution contract 1.1.0);
-the kernel default stays v1 so the archived reproductions still hold.
+the kernel default stays v1 so the archived reproductions still hold. In v2 each observation lists
+who is within speaking range, an address to anyone else is refused, and moves take effect after
+the day's speech, so an admitted address is heard unless someone leaves that day. The response
+schema uses no `const` keyword, which OpenAI and Google do not document for strict structured output.
+Model options, including the confirmed deprecation of the planned study model, are being verified in
+[docs/research/model-options-2026-10-21](docs/research/model-options-2026-10-21/README.md).
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the

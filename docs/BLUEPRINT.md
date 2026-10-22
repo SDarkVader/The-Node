@@ -264,6 +264,22 @@ State: `world.recognitionV2` (ledger, last-dealt, regulars, Wall reach), `world.
 (not the witness graph) and hear their district's Wall. Pressure amplification uses Wall exposure
 `1 − Π(1 − daily reach)` over 30 days, never the recognition ledger.
 
+**Who can hear (owner decision D6, 2026-10-21).** In v2 the observation's `hearing` list and the
+context's `hearingRefs` hold the present people within speaking range of the observer, computed by
+the kernel's own rule (Manhattan distance through `proximityCloseness`, as `buildProximityGraph`
+uses). The protected validator requires `hearingRefs` exactly when `rules: 'v2'` is set, and
+accepts a proximity address only to someone on it. The schema's addressee enum is that list. Moves
+apply after the day's speech, and only to the same body still in the same place and role episode;
+the `move` effect is reported only when applied. An admitted address is therefore heard unless the
+speaker or addressee changes place that day: in 40 days, 3,323 of 3,378 addresses were heard and
+all 55 misses were such changes. Out-of-range addresses get the evaluator reason
+`proximity_referent_out_of_range`.
+
+**Decision schema (both versions, 2026-10-22).** Fixed values are one-value typed enums
+(`{type:'number', enum:[3]}`), never `const`. Neither OpenAI's nor Google's documented
+structured-output subset includes `const`. The constraint is unchanged: the schema-vs-validator
+equivalence test passes.
+
 ### Oracle
 ```
 ORACLE_BASE_ODDS_HEALTHY 0.3   ORACLE_HEALTH_REFERENCE 0.96   ORACLE_HEALTH_FLOOR 0.4

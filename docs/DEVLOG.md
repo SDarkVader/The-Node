@@ -1,3 +1,27 @@
+> 2026-10-22 — Who can hear; no `const` in the schema; the study-1 model is deprecated.
+>
+> **Owner decisions (2026-10-21):**
+> - D6: show who can hear.
+> - D7: study 1 stays at 6 days, and a separate 30–40-day study covers the diary and recognition.
+> - D8: Courier commissions and multi-member campaigns are deferred.
+> - D9: the repeat-custom Baker wealth effect is accepted.
+>
+> **Built (v2 only):**
+> - The observation lists who is within speaking range (`hearing`).
+> - The protected validator requires the list under `rules: 'v2'` and refuses an address to anyone else. This edit is owner-authorised; the new fingerprint is in `DEVELOPMENT_BRANCH_AUDIT.md`.
+> - The schema's addressee enum is that list.
+> - Moves apply after the day's speech.
+>
+> In 40 days, 3,323 of 3,378 admitted addresses were heard, and every miss was a same-day change of place. 1,090 of 1,106 moves were applied.
+>
+> **A failure in my own test, recorded so it is not repeated:** `world.rng` is one mutable lineage, so stepping one saved state once per speaker gives each speaker a different day. The listener comparison has to rebuild an identical state from genesis for each speaker.
+>
+> **Verified, then fixed (owner-approved 2026-10-22):** independent checks of OpenAI's and Google's documentation found that neither documents `const` for strict structured output, and strict mode rejects an unsupported keyword. Our schema used `const` for every fixed value, so the first live call could have failed. Fixed values are now one-value typed enums. The exhaustive schema-vs-validator equivalence test passes, and a new test forbids `const`. The freeze was re-pinned a third and a fourth time (request bytes only).
+>
+> **Verified:** `gpt-5.4-nano-2026-03-17` is deprecated, announced 2026-10-01, with removal on 2027-04-01. The replacement, `gpt-6-luna`, costs $0.10/$0.50 per M and has no dated snapshot. The model choice is open.
+>
+> **Results:** Vitest 1292/1292, Python 28/28, G1 29/29, G2 12/12, rehearsal 8/8.
+
 > 2026-10-21 (late night) — Closing the loop on the outstanding problems before the study.
 >
 > **Found and fixed, a study-breaking blocker:** both request builders fail closed above 32,768 bytes even after packing, and v2 requests reached 32,756 bytes in active play. Observer references repeated across the people list and the schema enums were the bulk. v2 now uses 64-bit (16-hex) HMAC references, still unguessable and uncorrelatable per observer; v1 keeps 64 hex. The largest active-play body is now ~26 KB. A regression test holds 10% headroom. Freeze pins moved a second time (bytes only, manifest unchanged), recorded in the test.
