@@ -114,8 +114,10 @@ PC preflight on 2026-10-22 at `b1a1646` passed TypeScript, all 105 Vitest files
 the offline runtime build with PowerShell 7.6.5. The closed October allowance was validated from
 a copy and preserved unchanged. The owner-directed reasoning-enabled repeat then passed: a returned
 summary, 315/2,048 output tokens, 5.493 s and a valid Baker decision, at USD 0.0015665. The
-[results and diagnostic input-estimate limitation](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
-are recorded; Study 1 remains paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
+[results and corrected diagnostic cost ceiling](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
+are recorded. The diagnostic now uses the same input bound as the study; TypeScript and 45 targeted
+tests passed at `acfff4e`, with no paid repeat or change to the 2,048 output cap. Study 1 remains
+paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
 
 ## Run the suite
 
