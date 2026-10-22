@@ -93,6 +93,13 @@ $carried = '<the closed 18 Oct allowance folder>'       # initial-test-budget-20
    The flag can only slow the run, never below the manifest's 4 s. It is not part of the manifest
    hash, so it needs no commit.
 
+   **Done 2026-10-22:** the owner's page shows 10,000 requests, 10,000,000 input tokens and
+   2,000,000 output tokens per minute for Claude Haiku 5.5. Those are the documented Scale-tier
+   figures. The default pacing uses about 2% of the input limit, so no flag is needed. The one
+   unquantified risk is Anthropic's acceleration limiting. If a run stops on an HTTP 429, settle the
+   held call and resume with `--min-interval-ms 8000` (step 4). The allowance's 84 spare requests
+   cover two re-run episodes.
+
 ## 1. Build the runtime (no API call)
 
 ```powershell

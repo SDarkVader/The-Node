@@ -28,7 +28,7 @@
 >
 > **Open before the run:**
 > - ~~The owner confirms, free, that the saved response names `claude-haiku-5-5` exactly.~~ **Confirmed the same evening:** the saved response (`msg_011CgHYj9CZ73MHDVMVGusBZ`) reads `model: claude-haiku-5-5`, `stop_reason: end_turn`. Any other value would have stopped the run at the first call, unsettleably.
-> - The owner reads their tier on the Rate limits page.
+> - ~~The owner reads their tier on the Rate limits page.~~ **Done:** 10,000 RPM, 10,000,000 ITPM and 2,000,000 OTPM for Claude Haiku 5.5, the documented Scale-tier figures. The default pacing (about 15 RPM, 210,000 ITPM) needs no `--min-interval-ms`. Anthropic's acceleration limits are not quantified; after a 429, resume at 8000 ms.
 > - Local open-model testing is deferred by the owner.
 
 > 2026-10-22 (later) — Anthropic adapter and an owner-run Haiku connection check; owner decision D10.

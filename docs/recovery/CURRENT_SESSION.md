@@ -76,7 +76,7 @@
   ],
   "unresolvedIssues": [
     "Study-path design choices (2026-10-21): RESOLVED by owner decisions - out-of-range addresses are now refused (v2, 'show who can hear'); study 1 stays 6 days and a separate 30-40 day study covers diary/recognition; Courier commissions and multi-member campaigns are deferred; repeat custom (+~14% mean Baker wealth) is accepted.",
-    "Study 1 not yet run: postponed on 2026-10-21 until the owner reactivates it; it now runs on claude-haiku-5-5 (D11) on the owner's PC with the Anthropic credential file and the private allowance, and stays frozen until then. Model echo CONFIRMED by the owner on 2026-10-22 (saved response msg_011CgHYj9CZ73MHDVMVGusBZ: model claude-haiku-5-5, stop_reason end_turn; any other value would stop the run at the first call, unsettleably). Still before running: read the Rate limits page (platform.claude.com/usage/limits); below Start-tier ITPM, pass --min-interval-ms per the runbook.",
+    "Study 1 not yet run: postponed on 2026-10-21 until the owner reactivates it; it now runs on claude-haiku-5-5 (D11) on the owner's PC with the Anthropic credential file and the private allowance, and stays frozen until then. Model echo CONFIRMED by the owner on 2026-10-22 (saved response msg_011CgHYj9CZ73MHDVMVGusBZ: model claude-haiku-5-5, stop_reason end_turn; any other value would stop the run at the first call, unsettleably). Rate limits read by the owner on 2026-10-22: Claude Haiku 5.5 at 10,000 RPM / 10,000,000 ITPM / 2,000,000 OTPM (the documented Scale-tier figures), so the default 4 s pacing (~15 RPM, ~210k ITPM) needs no --min-interval-ms. Residual risk: Anthropic's unquantified acceleration limits; after a 429, settle and resume with --min-interval-ms 8000 (the 84 spare requests cover two re-run episodes).",
     "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
     "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
     "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; growing past SHARD_COUNT_CAP (3) shards is a design decision, not built.",
@@ -88,7 +88,7 @@
   ],
   "nextSteps": [
     "Merge the D11 PR (ccr-8d64b59c-a4puhv -> main) when green, then restart the task branch from main.",
-    "Owner, before study 1: read the Rate limits page (runbook step 0.4). The model echo (step 0.3) is confirmed: claude-haiku-5-5, end_turn.",
+    "Pre-run checks done 2026-10-22: model echo claude-haiku-5-5 / end_turn (step 0.3); rate limits at the Scale-tier figures, no pacing flag (step 0.4). Before runbook step 2 the owner must name where the closed 18 Oct allowance folder (initial-test-budget-2026-10-18) is on their PC; never guess it.",
     "Deferred by the owner: local open-model testing ('well do open model testing later') and D10 mixed per-actor sourcing/accounting (manifest per-actor model, per-model price profiles with local at zero, provider routing). For local: LOCAL_REQUIREMENTS.md 'Changes our code needs'. For the diary study: local vs claude-haiku-5-5.",
     "VERIFIED 2026-10-21 (docs/research/model-options-2026-10-21/verification-partial.json): gpt-5.4-nano-2026-03-17 deprecated (announced 2026-10-01, removal 2027-04-01; replacement gpt-6-luna $0.10/$0.01/$0.50, alias only). const unsupported by OpenAI and Google docs (fixed at 168987d). Google also does not document a standalone {type:'null'} anyOf branch (still used; test with a first live request). Model choice for study 1 is the owner's.",
     "Before any study call on a model other than gpt-5.4-nano-2026-03-17: one real request with the actual v2 schema. Only gpt-5.4-nano has accepted the schema form live (2026-10-18, two HTTP 200 calls with const, min/max, nested anyOf; docs/recovery/INITIAL_GAME_TURN.md). Correction 2026-10-22: earlier checkpoint text said the only live call was the 2026-10-16 HTTP 401; that was wrong.",
@@ -131,7 +131,8 @@ recorded as a study-1 limitation in the runbook.
 **Next:** study 1 is postponed (2026-10-21) until the owner reactivates it; it then runs from `main` per the
 [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `claude-haiku-5-5` (D11, 2026-10-22). The
 owner's connection check passed on 2026-10-22, and its saved response names exactly `claude-haiku-5-5`.
-Before the run, the runbook's rate-limit check (step 0.4) comes first.
+The runbook's pre-run checks are done: the owner's Haiku 5.5 rate limits are the Scale-tier figures, so
+the default pacing needs no flag.
 
 **Done (2026-10-22):** mutation testing of `da8c325` (13/13 killed), and verification of the model research
 ([unverified outputs and the workflow script](../research/model-options-2026-10-21/README.md)). Verified
