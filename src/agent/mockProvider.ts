@@ -12,6 +12,10 @@ const objectSchema = (properties: Record<string, Schema>): Schema => ({
   type: 'object', properties, required: Object.keys(properties), additionalProperties: false,
 });
 const strings = (values: readonly string[]): Schema => ({ type: 'string', enum: [...new Set(values)] });
+/** One fixed value. Written as a one-value `enum`, never `const`: verified 2026-10-21 that neither
+ *  OpenAI's nor Google's structured-output subset documents `const` (strict mode rejects an
+ *  unsupported keyword), while both document typed string and number enums. Same constraint. */
+const fixed = (value: string | number): Schema => ({ type: typeof value === 'string' ? 'string' : 'number', enum: [value] });
 const nullable = (...alternatives: Schema[]): Schema => alternatives.length
   ? { anyOf: [nullSchema(), ...alternatives] } : nullSchema();
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -33,23 +37,23 @@ export function mockDecisionSchema(context: DecisionContext): Schema {
   // Recognition v2: only those who can hear you now may be addressed (the validator's rule).
   const present = (input.hearingRefs ?? input.presentRefs).filter(ref => ref !== input.selfRef);
   const known = input.knownSubjects.filter(ref => ref !== input.selfRef);
-  const referents = [objectSchema({ kind: { const: 'room', type: 'string' } })];
+  const referents = [objectSchema({ kind: fixed('room') })];
   if (present.length) referents.push(objectSchema({
-    kind: { const: 'player', type: 'string' }, playerId: strings(present),
+    kind: fixed('player'), playerId: strings(present),
   }));
   // Recognition-v2 contexts let Grifters speak and write (owner decision 2026-10-20), matching the validator.
   const silentGrifter = input.role === 'Grifter' && input.rules !== 'v2';
   const communication = silentGrifter ? nullSchema() : nullable(
-    objectSchema({ kind: { const: 'wallPost', type: 'string' }, state: strings(SELF_STATES) }),
+    objectSchema({ kind: fixed('wallPost'), state: strings(SELF_STATES) }),
     objectSchema({
-      kind: { const: 'proximityUtterance', type: 'string' },
+      kind: fixed('proximityUtterance'),
       intent: strings(INTENTS), tone: strings(TONES), referent: { anyOf: referents },
       context: nullable(strings(SPEECH_CONTEXTS)),
     }),
   );
   return freezeTree(objectSchema({
     move: nullable(...input.legalMoves.map(point => objectSchema({
-      x: { type: 'number', const: point.x }, y: { type: 'number', const: point.y },
+      x: fixed(point.x), y: fixed(point.y),
     }))),
     communication,
     diary: silentGrifter || !known.length ? nullSchema() : nullable(objectSchema({
@@ -57,7 +61,7 @@ export function mockDecisionSchema(context: DecisionContext): Schema {
       context: nullable(strings(DIARY_CONTEXTS)),
     })),
     role: input.role !== 'Baker' ? nullSchema() : nullable(objectSchema({
-      kind: { const: 'bakerPrice', type: 'string' }, price: { type: 'number', minimum: 0, maximum: 2 },
+      kind: fixed('bakerPrice'), price: { type: 'number', minimum: 0, maximum: 2 },
     })),
   }));
 }

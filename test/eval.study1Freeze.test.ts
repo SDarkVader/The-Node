@@ -20,25 +20,29 @@ import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.
  *      speaking range (`hearing`), the rules text says so, the schema's addressee enum is that list
  *      and moves take effect after the day's speech. Request bytes change; the contract and the
  *      manifest do not.
+ *   4. schema `const` written as one-value typed enums (owner approved 2026-10-22): verified on
+ *      2026-10-21 that neither OpenAI's nor Google's structured-output subset documents `const`,
+ *      and strict mode rejects an unsupported keyword, so the first live call could have failed.
+ *      Same constraint; request bytes change, the contract and the manifest do not.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
 const MODEL = 'gpt-5.4-nano-2026-03-17';
 const NULL_DECISION = JSON.stringify({ move: null, communication: null, diary: null, role: null });
 const TICK0 = {
-  'baker-0': 'ada54c045880b84b19eeb7cc5335b9b0a4b9c1736ed2749ad5b60f0f00f1bd62',
-  'baker-1': '8dcb1d9d0cae61f7a20afac3e9082d9248a668ebd60e47fce8e105ded9c3297c',
-  'miller-0': '7ad6d3645fec29ee7749cf9b25da94036a0c32b249b28936f62838d2979e2fa5',
-  'courier-0': '43f8e90d9b3b49e9dfdf7b044872fce853e30cc1b641e4f8bf76cfb0d631f4a3',
-  'investigator-0': 'a76836e8e616e5bce2db2501ca9b04a6f8a6f01c9410069c25e29d83b031aa75',
-  'importexport-0': 'fdd2dcc4754bd748b97fb7a25f81ae7e2290c5d13f89240bb5c1947b8d91035d',
-  'grifter-0': 'af1d0e6894705696aa9a8059fc9529755eb3d527b421ef9ec87c460ed950a208',
+  'baker-0': '836f050f343f5cb51c9c99b1b9fa07923b1bc2a543d5b3a51c28ae021db74fbd',
+  'baker-1': 'fb3028e6c8e027320d7209ecee1507b2a8b1678997d067c03c984dc8087d942d',
+  'miller-0': '7dea74c6084f650ebe39b64b8522ee8eec9203a1cd17ace225691960fcdc98d4',
+  'courier-0': '6f60a710802e5379ca4987a5a468531b568456ca32b821f03863be27290d2a7e',
+  'investigator-0': 'df584a95c37cdbfbb06bbd955dffd115b25e9a601e4a33e7a32831032a49b7bb',
+  'importexport-0': '9ab45f1438b7379d2cfcd49689de93a565971c8d6a473d29f7054a22045111f8',
+  'grifter-0': 'fe5234d561b9296713f884a02f99e8dae98e8d5daed0ed07ba4360ab3fda0994',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '06c9174a49a2f49335d0a68fd8f3d9e78739cd64f92c641858edcda8c6d44c32', 'miller-0': '0063005a7b2dfbb13e9492568c551ec370ee5926fd060cbcf50dd39afca19b98', 'grifter-0': 'cf8776438e3b91b5e9baa64c430bf90e22d4e974b1bd702d8d686b9f2ca4e2d1' },
-  anonymous: { 'baker-0': 'd978e1d15ce1ce34996f052a5aa4acc7f4a64d52efc64b4e0c087f0b4f3f7100', 'miller-0': '5dd7ff93d601499fa77b1cabe66fcf62782c00814f205ad81a24a762cd2c3cdb', 'grifter-0': '993aca07e6e23b4d8b8a9797bf7b6477578d950d64df78edd37d859a5be657d4' },
-  none: { 'baker-0': 'cb524f0dd66ce62103ddb81cbd9045c989d37b337e4f94ee09992ec8b6b68ac1', 'miller-0': 'b226916b703247e56c35688fb08f1c10d9d5c3714158a609e6658d731049f385', 'grifter-0': '396d57dca0ad9084ad330f8f54f0196f04fc738887dc889c5ea6740a3d153600' },
+  council: { 'baker-0': '44ca86349aa333c7c0e2a730b46b84239d1f9004cc4d3044df3837f692edd8d8', 'miller-0': 'bab54b3de4281cfb8268edbb0fe5aeaaa15ab6f65e1b1b3580dfa543ea6de18e', 'grifter-0': '50290cc1ed99909044d1a8ffe2cfe7da865ad996637c2f36510f242a8206efbc' },
+  anonymous: { 'baker-0': '9edb3a159f219242243220d98f0207ffbe12cb7f4ede5447e80c810827cc988d', 'miller-0': 'ed7a7c2d4becba1962bb1e605e96ffc06c0e915bd22a513370dad3f1975af756', 'grifter-0': '3b7769f3aa62fadb681280b6f14d42d4804873c77839792d6cb826b2b05d014d' },
+  none: { 'baker-0': '1b2b3d06a5ee52b4bbda4eb1c01117e101f611b691064f426d68efa6b0b689c1', 'miller-0': '948e2ec4332a96167fa0ad8ff3f8a2a6a11adf56419c64b82e84e3216dfc9861', 'grifter-0': '1208de3e7a6eef69b77d185aa6c2d67c7843906fd90a2180db153a0f15735927' },
 };
 
 describe('study 1 is frozen until it has run', () => {
