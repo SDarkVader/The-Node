@@ -112,8 +112,10 @@ tasks, scenarios, scorers and exported records in detail.
 PC preflight on 2026-10-22 at `b1a1646` passed TypeScript, all 105 Vitest files
 (1,315 tests passed; one POSIX-only fixture skipped on Windows), eight recovery tests and
 the offline runtime build with PowerShell 7.6.5. The closed October allowance was validated from
-a copy and preserved unchanged. The reasoning-enabled connection check is next; Study 1 remains
-paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
+a copy and preserved unchanged. The owner-directed reasoning-enabled repeat then passed: a returned
+summary, 315/2,048 output tokens, 5.493 s and a valid Baker decision, at USD 0.0015665. The
+[results and diagnostic input-estimate limitation](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
+are recorded; Study 1 remains paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
 
 ## Run the suite
 

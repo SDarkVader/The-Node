@@ -60,10 +60,54 @@ before any call if it is missing.
   answer; each holds a provider-written summary (never the raw chain of thought) and an opaque
   signature. Thinking counts toward the 2,048-token cap and is billed as output. The check below
   was run earlier with `thinking: {type:'disabled'}` at effort `low`, which mirrored the OpenAI
-  request; re-run it (runbook step 0.5) to measure the new setting.
+  request; the approved repeat below (runtime b1a1646) measures the new setting.
 - **Not sent:** temperature, top_p, top_k or an assistant prefill. Each returns a 400 on Haiku 5.5.
 - **Model id:** `claude-haiku-5-5` is itself a pinned snapshot, with retirement no sooner than
   2027-10-07.
+
+## Result — approved PC repeat, 2026-10-22 (runtime b1a1646, reasoning at medium effort)
+
+The owner explicitly requested the test in the PC session. Exactly seven free token-count requests
+and one paid Baker message were sent, with no retry. The request used adaptive thinking with
+summarized display, effort medium, the unchanged 2,048 output-token cap and a USD 0.01 diagnostic
+limit. The saved request hash matches the committed Baker freeze pin.
+
+- HTTP 200; schema accepted; response model exactly `claude-haiku-5-5`; `end_turn`, completed and actionable.
+- 5,493 ms, inside the check's 12,000 ms threshold and the runner's 16,000 ms deadline.
+- 14,090 input and 315 output tokens; the provider reports 272 thinking tokens within that output.
+  No cache creation or cache-read tokens. Standard service tier.
+- Output used 315/2,048 (15.38%), leaving 1,733 tokens. No truncation or crowded cap.
+- `reasoning.status: summary_returned`; one 208-character provider-written summary, no redacted
+  blocks. The summary and raw response remain private; they are not committed.
+- Cost at the configured list rates: USD 0.0015665. The diagnostic estimated USD 0.0023739 as its
+  ceiling; the actual cost was below it and below the USD 0.01 limit. This is usage-priced cost,
+  not a provider invoice.
+- Decision: move, communication and diary null; role `bakerPrice` at 0.5. Validator accepts;
+  no enum case mismatches. No episode was advanced.
+
+All seven free counts returned HTTP 200 (schema excluded):
+
+| Actor | Input tokens |
+|---|---:|
+| baker-0 | 10,799 |
+| baker-1 | 10,668 |
+| miller-0 | 10,661 |
+| courier-0 | 10,736 |
+| investigator-0 | 10,593 |
+| importexport-0 | 10,728 |
+| grifter-0 | 10,807 |
+
+**Diagnostic estimate limitation found:** the free Baker count was 10,799, whereas billed input
+was 14,090 (3,291 extra). The 25% margin estimates 13,499 input tokens, so it is not a reliable upper
+bound: measured input with the full 2,048 output tokens would cost USD 0.002433, slightly above
+that estimate. The observed bill did not overrun either limit. The accounted study uses its own
+request-byte-derived input ceiling (30,538 for this request), rather than this diagnostic heuristic.
+No cap, price, pin or source code was changed; strengthen the diagnostic estimate before relying
+on it as a strict cost bound.
+
+The original October 18 journal hash is unchanged. No allowance or 72-hour window was created,
+and Study 1 remains paused until the owner reactivates it. One successful fixture does not measure
+reasoning behaviour across the full study.
 
 ## Result — owner's PC, 2026-10-22 (runtime 973ed24, thinking disabled at effort low)
 

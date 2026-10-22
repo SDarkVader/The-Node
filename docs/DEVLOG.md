@@ -1,3 +1,10 @@
+> 2026-10-22 — Owner-directed reasoning-enabled PC test (runtime `b1a1646`).
+>
+> - Seven free counts and exactly one paid Baker message, no retry. HTTP 200; exact model `claude-haiku-5-5`; schema accepted; `end_turn`; validator accepts a Baker price of 0.5 and no other action.
+> - Adaptive summarized thinking at medium effort: one 208-character summary returned; 315/2,048 output tokens, including 272 reported thinking tokens; no redacted blocks. 5,493 ms, inside the check and runner deadlines; cost USD 0.0015665 at configured list rates.
+> - Diagnostic limitation: input count plus 25% is 13,499, below billed input 14,090. Actual cost stayed below its USD 0.0023739 estimate and USD 0.01 limit, but that estimate is not a strict bound. The accounted study uses its separate 30,538-token bound for this request. No source, pin, rate or cap was changed.
+> - Original October 18 journal hash unchanged; no episode advanced, new allowance/window created or Study 1 run. Private artifacts and summary text stay off GitHub. Figures and the limitation are recorded in HAIKU_CONNECTION_CHECK and the checkpoint.
+
 > 2026-10-22 — Windows PC preflight after PR #35 (source `b1a1646`).
 >
 > - Updated the clean main checkout by fast-forward; installed locked dependencies.
