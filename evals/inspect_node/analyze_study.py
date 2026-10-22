@@ -28,7 +28,27 @@ from .bridge import NodeBridge
 
 ARMS = ("council", "anonymous", "none")
 BOOTSTRAP = 10_000
-STANDARD_USD_PER_MILLION = {"input": 0.20, "output": 1.25}  # recorded 18 Oct rate evidence for gpt-5.4-nano
+# List prices per model, USD per million tokens (an estimate, never an invoice):
+# gpt-5.4-nano from the recorded 18 Oct rate evidence; claude-haiku-5-5 from the evidence excerpt
+# docs/research/model-options-2026-10-21/evidence/anthropic-pricing-haiku-5-5-2026-10-22.md.
+STANDARD_USD_PER_MILLION = {
+    "gpt-5.4-nano-2026-03-17": {"input": 0.20, "output": 1.25},
+    "claude-haiku-5-5": {"input": 0.10, "output": 0.50},
+}
+
+
+def estimated_cost_usd(calls: list[dict]) -> float | None:
+    """Standard-price estimate over recorded calls. None when any recorded call names a model
+    without listed prices: a partial sum would understate the cost."""
+    total = 0.0
+    for c in calls:
+        if c.get("outcome") != "response_recorded":
+            continue
+        rates = STANDARD_USD_PER_MILLION.get(c.get("model", ""))
+        if rates is None:
+            return None
+        total += c.get("inputTokens", 0) / 1e6 * rates["input"] + c.get("outputTokens", 0) / 1e6 * rates["output"]
+    return round(total, 6)
 
 
 def bootstrap(values: list[float], seed: int) -> list[float] | None:
@@ -106,10 +126,11 @@ def analyse(records: list[dict], calls: list[dict], checks: list[dict], excluded
         "contrast_council_minus_anonymous": {"pairs": len(diffs), "mean": mean(diffs) if diffs else None, "ci95": bootstrap(diffs, 2000)},
         "calls": {"total": len(calls), "byOutcome": {o: sum(1 for c in calls if c["outcome"] == o) for o in sorted({c["outcome"] for c in calls})},
                   "unactionable": sum(1 for c in calls if c.get("actionable") is False), "inputTokens": tokens_in, "outputTokens": tokens_out,
-                  "estimatedStandardCostUsd": round(tokens_in / 1e6 * STANDARD_USD_PER_MILLION["input"] + tokens_out / 1e6 * STANDARD_USD_PER_MILLION["output"], 6)},
+                  "models": sorted({c["model"] for c in calls if c.get("outcome") == "response_recorded" and c.get("model")}),
+                  "estimatedStandardCostUsd": estimated_cost_usd(calls)},
         "verification": checks,
         "excludedAttempts": excluded or [],
-        "limits": ["One seed (103), one notice text, one model: results describe this world and request only.",
+        "limits": ["One seed (103), one notice text, one model: results describe this world, request and model only.",
                    "Actors share a world, so the episode is the unit; actor-level outcomes are descriptive.",
                    "Cost is an estimate from recorded usage at standard prices, not an invoice."],
     }
@@ -129,7 +150,7 @@ def summary_md(result: dict, reports: list[dict]) -> str:
     c = result["contrast_council_minus_anonymous"]
     lines += ["", f"Council minus anonymous, paired by replicate: {fmt(c['mean'])} over {c['pairs']} pairs, 95% CI {ci(c['ci95'])}.", "",
               f"Calls: {result['calls']['total']} ({result['calls']['byOutcome']}); unactionable responses {result['calls']['unactionable']}; "
-              f"tokens {result['calls']['inputTokens']} in / {result['calls']['outputTokens']} out; estimated standard cost ${result['calls']['estimatedStandardCostUsd']}.", "",
+              f"tokens {result['calls']['inputTokens']} in / {result['calls']['outputTokens']} out; estimated standard cost {'$' + str(result['calls']['estimatedStandardCostUsd']) if result['calls']['estimatedStandardCostUsd'] is not None else 'not estimated (a call names an unpriced model)'}.", "",
               "Verification: " + ", ".join(f"{v['file']} replay={v['replay']} classification={v['classification']}" for v in result["verification"]), "",
               "Excluded attempts (not counted): " + (", ".join(f"{x['file']} ({x['status']})" for x in result["excludedAttempts"]) or "none"), "",
               "Limits:"] + [f"- {x}" for x in result["limits"]]

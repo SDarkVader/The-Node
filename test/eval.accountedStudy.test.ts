@@ -6,6 +6,7 @@ import { ExperimentBudget, EXPERIMENT_MODEL, type ExperimentAuthorization, type 
 import { usageCost } from '../src/agent/accountingLedger.js';
 import { sha256 } from '../src/agent/accountingStore.js';
 import { runAccountedStudy, manifestSha256, validateManifest, type StudyManifest, type Sender, type CallRecord } from '../src/eval/accountedRunner.js';
+import { PRICED_MODELS } from '../src/agent/modelPricing.js';
 import { classifyAuthorityAttribution, contractHash, AUTHORITY_ATTRIBUTION_CONTRACT as C } from '../src/eval/constructs/authorityAttribution.js';
 import type { MultiEpisodeRecord } from '../src/eval/multiActorEpisode.js';
 import { replay, evidenceHash } from '../src/agent/replay.js';
@@ -309,15 +310,93 @@ describe('the committed study manifest', () => {
   it('matches the owner decisions and fits its allowance', () => {
     const m = JSON.parse(readFileSync('evals/manifests/authority_attribution_study_1.json', 'utf8')) as StudyManifest;
     validateManifest(m);
-    expect(m.model).toBe(EXPERIMENT_MODEL);
+    // Owner decision D11 (2026-10-22): study 1 runs on claude-haiku-5-5 at its reviewed rates.
+    expect(m.model).toBe(HAIKU);
     expect(m.episodes.length).toBe(15);
     expect(m.allowance).toEqual({ maxRequests: 714, limitMicroUsd: 5_000_000, perRequestMicroUsd: 20000, windowHours: 72 });
     for (const arm of ['council', 'anonymous', 'none']) expect(m.episodes.filter((e) => e.scenario.endsWith(arm)).length).toBe(5);
     // Counterbalanced: each arm occupies each within-replicate position (Latin square rows 1-3).
     const position = (r: number, arm: string) => m.episodes.filter((e) => e.replicate === r).findIndex((e) => e.scenario.endsWith(arm));
     for (const arm of ['council', 'anonymous', 'none']) expect(new Set([1, 2, 3].map((r) => position(r, arm)))).toEqual(new Set([0, 1, 2]));
-    expect(usageCost(36864, 2048, PRICES)).toBeLessThanOrEqual(m.allowance.perRequestMicroUsd);
-    // At the recorded 18 Oct usage (~13k in / ~300 out), 630 calls book about 3.5 of the 5 USD.
-    expect(630 * usageCost(13000, 300, PRICES)).toBeLessThan(m.allowance.limitMicroUsd);
+    expect(usageCost(36864, 2048, HAIKU_PRICES)).toBeLessThanOrEqual(m.allowance.perRequestMicroUsd);
+    // At the measured Haiku size (14,089 in on 2026-10-22; 100 out allowed for speech), 630 calls
+    // book about 1.8 of the 5 USD at the 2x booking rates.
+    expect(630 * usageCost(14089, 100, HAIKU_PRICES)).toBeLessThan(m.allowance.limitMicroUsd / 2);
+  });
+});
+
+const HAIKU = 'claude-haiku-5-5';
+const HAIKU_PRICES = PRICED_MODELS[HAIKU]!;
+
+/** Loopback Anthropic "model": reads only the Messages bytes it is given; same label-sensitive policy. */
+function anthropicLoopback(opts: { wrongModelAt?: number; refuseAt?: number } = {}) {
+  const seen: { index: number; body: string; provider: string }[] = [];
+  const send: Sender = async (input) => {
+    seen.push({ index: input.index, body: input.body, provider: input.provider });
+    const request = JSON.parse(input.body) as { model: string; messages: { content: { text: string }[] }[] };
+    const user = JSON.parse(request.messages[0]!.content[0]!.text) as { evaluation: { notices: { source: string }[] }; observation: Record<string, any> };
+    const observation = user.observation.encoding ? user.observation.observation : user.observation;
+    const role = observation.self.role as string, council = user.evaluation.notices.some((n) => n.source === 'town_council_authority');
+    const decision = { move: null, communication: council && role !== 'Baker' ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
+      role: role === 'Baker' ? { kind: 'bakerPrice', price: council ? 1.9 : 0.8 } : null };
+    return Buffer.from(JSON.stringify({ id: `msg_${input.index}`, type: 'message', role: 'assistant', model: input.index === opts.wrongModelAt ? 'claude-other' : request.model,
+      content: [{ type: 'text', text: JSON.stringify(decision) }], stop_reason: input.index === opts.refuseAt ? 'refusal' : 'end_turn', stop_sequence: null,
+      usage: { input_tokens: 13000, output_tokens: 60 } }));
+  };
+  return { send, seen };
+}
+const haikuManifest = (): StudyManifest => ({ ...manifest(), model: HAIKU });
+const haikuExperiment = (m: StudyManifest, over: Partial<ExperimentAuthorization> = {}) => experiment(m, { model: HAIKU, prices: HAIKU_PRICES, ...over });
+
+describe('study 1 on claude-haiku-5-5 (owner decision D11, 2026-10-22)', () => {
+  it('the allowance takes Haiku only at its reviewed, evidence-backed rates, never carried or supplied ones', () => {
+    const m = haikuManifest();
+    const { budget } = haikuExperiment(m);
+    expect(budget.view().authorization).toMatchObject({ model: HAIKU, prices: HAIKU_PRICES });
+    for (const over of [{ prices: PRICES }, { prices: { ...HAIKU_PRICES, inputMicroUsdPerMillionTokens: 100000 } }, { prices: { ...HAIKU_PRICES, evidenceSha256: 'd'.repeat(64) } },
+      { model: 'claude-opus-5-5', prices: { ...HAIKU_PRICES, model: 'claude-opus-5-5' } }]) {
+      expect(() => haikuExperiment(m, over as Partial<ExperimentAuthorization>), JSON.stringify(over)).toThrow('experiment_budget_authorization');
+    }
+  });
+
+  it('runs a full episode: each reservation binds the Anthropic bytes actually sent, booked at Haiku rates', async () => {
+    const m = haikuManifest(); const { budget } = haikuExperiment(m); const { send, seen } = anthropicLoopback(); const out = sink();
+    const summary = await runAccountedStudy(m, budget, send, out.sink, { sourceRevision: 'test', forbiddenSubstrings: ['offline-fixture-observer-secret'] });
+    expect(summary).toMatchObject({ stoppedReason: null, episodesCompleted: 1, calls: 42, heldMicroUsd: '0', bookedMicroUsd: String(42 * usageCost(13000, 60, HAIKU_PRICES)) });
+    expect(new Set(seen.map((x) => x.provider))).toEqual(new Set(['anthropic']));
+    const reserved = budget.view().requests.map((q) => q.request);
+    for (const { body } of seen) {
+      const b = JSON.parse(body);
+      expect(Object.keys(b).sort()).toEqual(['max_tokens', 'messages', 'model', 'output_config', 'system', 'thinking']);
+      expect(body).not.toMatch(/"minimum"|"maximum"|"const"/);
+      expect(reserved.some((q) => q.inputSha256 === sha256(body) && q.maxInputTokens === Buffer.byteLength(body) + 4096)).toBe(true);
+    }
+    for (const c of out.calls) expect(c.model).toBe(HAIKU);
+    const record = out.episodes[0]!;
+    expect(record.status).toBe('completed');
+    expect(evidenceHash(replay(record.tape, record.tape.genesis.sourceRevision))).toBe(record.finalStateHash);
+    expect(record.construct!.executedRate).toBe(1);
+  });
+
+  it('a different model in the receipt stops the run with the hold retained; a refusal is paid and the run continues', async () => {
+    const m = haikuManifest();
+    const wrong = haikuExperiment(m);
+    const stopped = await runAccountedStudy(m, wrong.budget, anthropicLoopback({ wrongModelAt: 3 }).send, sink().sink, { sourceRevision: 'test' });
+    expect(stopped.stoppedReason).toBe('inference_failed:model_mismatch');
+    expect(wrong.budget.view()).toMatchObject({ canReserve: false, stopReason: 'outstanding_hold' });
+    const refused = haikuExperiment(m); const out = sink();
+    const ran = await runAccountedStudy(m, refused.budget, anthropicLoopback({ refuseAt: 5 }).send, out.sink, { sourceRevision: 'test' });
+    expect(ran.stoppedReason).toBeNull();
+    expect(out.calls.find((c) => c.index === 5)).toMatchObject({ outcome: 'response_recorded', status: 'refused', actionable: false });
+  });
+
+  it('pacing can be slowed for a lower provider tier, never sped up below the manifest', async () => {
+    const m = { ...haikuManifest(), minIntervalMs: 10 };
+    const fast = haikuExperiment(m);
+    await expect(runAccountedStudy(m, fast.budget, anthropicLoopback().send, sink().sink, { sourceRevision: 'test', minIntervalMs: 5 })).rejects.toThrow('min_interval_invalid');
+    expect(fast.budget.view().requests.length).toBe(0);
+    const slow = haikuExperiment(m); const { send } = anthropicLoopback(); const starts: number[] = [];
+    await runAccountedStudy(m, slow.budget, (input, signal) => { starts.push(performance.now()); return send(input, signal); }, sink().sink, { sourceRevision: 'test', minIntervalMs: 30 });
+    expect(Math.min(...starts.slice(1).map((t, i) => t - starts[i]!))).toBeGreaterThanOrEqual(28);
   });
 });

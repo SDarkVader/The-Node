@@ -63,7 +63,8 @@ export async function runAnthropicConnectionCheck(send: CheckSender, options: Ch
     try {
       const r = parseAnthropicResponse(x.bytes, sha256(target.request.sha256 + ':check').slice(0, 64));
       const schema = (JSON.parse(target.request.body) as { output_config: { format: { schema: unknown } } }).output_config.format.schema;
-      Object.assign(sent, { schemaAccepted: true, stopReason: r.stopReason, status: r.receipt.status, actionable: r.actionable, usage: r.receipt.usage,
+      Object.assign(sent, { schemaAccepted: true, responseModel: r.receipt.model, responseModelMatches: r.receipt.model === model,
+        stopReason: r.stopReason, status: r.receipt.status, actionable: r.actionable, usage: r.receipt.usage,
         costUsd: r.receipt.usage ? usd(r.receipt.usage.inputTokens, r.receipt.usage.outputTokens) : null,
         countedVsBilledInput: r.receipt.usage ? { counted: count, billed: r.receipt.usage.inputTokens } : null,
         decision: r.decision, validatorAccepts: r.actionable && validateDecision(r.decision, target.request.context) !== null,

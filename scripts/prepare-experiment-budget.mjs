@@ -3,6 +3,8 @@
 // Args: <emitted runtime> <closed prior allowance directory> <NEW allowance directory> <study manifest .json> <instruction .txt>
 //   [--from-experiment]   the prior directory is an experiment allowance rather than the initial test allowance
 // The instruction file holds the owner's own authorisation words; it is stored inside the allowance.
+// Rates: the carried allowance's own when the manifest names the same model, otherwise only the
+// reviewed entry in src/agent/modelPricing.ts (owner decision D11: claude-haiku-5-5). Never typed in.
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -16,6 +18,7 @@ if (existsSync(directory)) throw Error('new_allowance_directory_must_not_exist')
 const load = (file) => import(pathToFileURL(join(runtime, file)).href);
 const { ExperimentBudget } = await load('agent/experimentBudget.js');
 const { validateManifest, manifestSha256 } = await load('eval/accountedRunner.js');
+const { authorizedPrices } = await load('agent/modelPricing.js');
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 validateManifest(manifest);
@@ -24,8 +27,10 @@ if (!instruction) throw Error('instruction_required');
 
 const budget = fromExperiment ? ExperimentBudget.carryFromExperiment(directory, priorDirectory) : ExperimentBudget.carryFromInitial(directory, priorDirectory);
 try {
-  const prices = budget.carriedPrices();
-  if (!prices) throw Error('carried_allowance_has_no_rate_evidence');
+  const carriedPrices = budget.carriedPrices();
+  if (!carriedPrices) throw Error('carried_allowance_has_no_rate_evidence');
+  const prices = authorizedPrices(manifest.model, carriedPrices);
+  if (!prices) throw Error('no_reviewed_price_for_manifest_model');
   const now = new Date();
   const authorizedAt = now.toISOString();
   const expiresAt = new Date(now.getTime() + manifest.allowance.windowHours * 3_600_000).toISOString();
@@ -35,5 +40,5 @@ try {
     maxRequests: manifest.allowance.maxRequests, limitMicroUsd: manifest.allowance.limitMicroUsd, perRequestMicroUsd: manifest.allowance.perRequestMicroUsd, prices });
   const v = budget.view();
   console.log(JSON.stringify({ directory, runId, authorizedAt, expiresAt, model: manifest.model, manifestSha256: manifestSha256(manifest),
-    maxRequests: manifest.allowance.maxRequests, limitUsd: manifest.allowance.limitMicroUsd / 1e6, carried: v.carried, canReserve: v.canReserve }, null, 2));
+    maxRequests: manifest.allowance.maxRequests, limitUsd: manifest.allowance.limitMicroUsd / 1e6, prices, carried: v.carried, canReserve: v.canReserve }, null, 2));
 } finally { budget.close(); }

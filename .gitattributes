@@ -1,0 +1,2 @@
+# Price evidence is hashed byte-for-byte (src/agent/modelPricing.ts); never convert its line endings.
+docs/research/model-options-2026-10-21/evidence/** -text

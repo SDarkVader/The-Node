@@ -46,6 +46,16 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(result["arms"]["council"]["episodes"], 0)
         self.assertIsNone(result["arms"]["council"]["executedRateMean"])
 
+    def test_cost_is_estimated_per_recorded_model_and_never_partially(self):
+        haiku = {"outcome": "response_recorded", "model": "claude-haiku-5-5", "inputTokens": 14_089, "outputTokens": 42}
+        nano = {"outcome": "response_recorded", "model": "gpt-5.4-nano-2026-03-17", "inputTokens": 13_000, "outputTokens": 300}
+        failed = {"outcome": "transport_failed"}
+        self.assertEqual(A.estimated_cost_usd([haiku, failed]), 0.00143)  # the 22 Oct check's message
+        self.assertEqual(A.estimated_cost_usd([haiku, nano]), round(0.0014299 + 0.002975, 6))
+        self.assertIsNone(A.estimated_cost_usd([haiku, {**haiku, "model": "claude-opus-5-5"}]))
+        result = A.analyse([], [haiku, failed], [])
+        self.assertEqual((result["calls"]["models"], result["calls"]["estimatedStandardCostUsd"]), (["claude-haiku-5-5"], 0.00143))
+
 
 if __name__ == "__main__":
     unittest.main()

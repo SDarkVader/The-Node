@@ -1,10 +1,13 @@
-// TEST ONLY stand-in for scripts/initial-test-request.ps1, used by rehearse-accounted-study.sh.
-// Same file contract (reads request.json, writes network.json and response.json in the call
-// directory), no network, no credential. A label-sensitive scripted "model": complies with
-// council notices only. If FAIL_AT_FILE (path baked in by the rehearsal) names this call
-// directory, it answers HTTP 429 once, like a provider rate limit.
+// TEST ONLY stand-in for scripts/initial-test-request.ps1 and scripts/anthropic-request.ps1, used by
+// rehearse-accounted-study.sh. Same file contract (reads request.json, writes network.json and
+// response.json in the call directory), no network, no credential. It answers in the shape of the
+// request it receives: an OpenAI Responses body gets a Responses envelope, an Anthropic Messages
+// body a Messages envelope. A label-sensitive scripted "model": complies with council notices only.
+// If FAIL_AT_FILE (path baked in by the rehearsal) names this call directory, it answers HTTP 429
+// once, like a provider rate limit. As `pwsh -Command ...` it answers the PowerShell 7 preflight.
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join, basename } from 'node:path';
+if (process.argv.includes('-Command')) { process.stdout.write('7\n'); process.exit(0); }
 const dir = process.argv[process.argv.indexOf('-ArtifactDirectory') + 1];
 const marker = process.argv[process.argv.indexOf('-FailAtFile') + 1];
 if (marker && existsSync(marker) && readFileSync(marker, 'utf8').trim() === basename(dir)) {
@@ -13,7 +16,8 @@ if (marker && existsSync(marker) && readFileSync(marker, 'utf8').trim() === base
   process.exit(0);
 }
 const body = readFileSync(join(dir, 'request.json'), 'utf8');
-const user = JSON.parse(JSON.parse(body).input[0].content[0].text);
+const request = JSON.parse(body), anthropic = Array.isArray(request.messages);
+const user = JSON.parse(anthropic ? request.messages[0].content[0].text : request.input[0].content[0].text);
 const obs = user.observation.encoding ? user.observation.observation : user.observation;
 const role = obs.self.role, council = user.evaluation.notices.some((n) => n.source === 'town_council_authority');
 // On the recognition-v2 baseline (observation carries `dealings`) a Grifter may post like everyone else.
@@ -21,6 +25,12 @@ const silent = role === 'Baker' || (role === 'Grifter' && !('dealings' in obs));
 const decision = { move: null, communication: council && !silent ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
   role: role === 'Baker' ? { kind: 'bakerPrice', price: council ? 1.9 : 0.8 } : null };
 const n = Math.round(body.length / 2.3);
+if (anthropic) {
+  writeFileSync(join(dir, 'response.json'), JSON.stringify({ id: 'msg_' + Buffer.from(dir).toString('hex').slice(-48), type: 'message', role: 'assistant', model: request.model,
+    content: [{ type: 'text', text: JSON.stringify(decision) }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: n, output_tokens: 60 } }));
+  writeFileSync(join(dir, 'network.json'), JSON.stringify({ endpoint: 'messages', httpStatus: 200, outcome: 'response_archived' }));
+  process.exit(0);
+}
 writeFileSync(join(dir, 'response.json'), JSON.stringify({ object: 'response', id: 'resp_' + Buffer.from(dir).toString('hex').slice(-48), model: 'gpt-5.4-nano-2026-03-17',
   status: 'completed', error: null, incomplete_details: null,
   output: [{ type: 'message', status: 'completed', role: 'assistant', content: [{ type: 'output_text', annotations: [], text: JSON.stringify(decision) }] }],

@@ -2,6 +2,9 @@
 // outstanding at a time, no retries, stops at the cap, expiry or the first inference failure.
 // Args: <emitted runtime> <experiment allowance directory> <NEW private artifact directory>
 //       <approved credential .env file> <runner commit sha> <study manifest .json> [--resume <prior run dir> ...]
+//       [--min-interval-ms <ms>]   slower pacing for a lower provider tier; never below the manifest's
+// The worker follows the manifest's model: claude-* models use anthropic-request.ps1 (ANTHROPIC_API_KEY
+// in the credential file), others initial-test-request.ps1 (OPENAI_API_KEY). Both need PowerShell 7.
 // Resume: completed episodes in the prior run directories are re-verified by replay (same runner
 // revision required) and skipped; an interrupted episode is re-run as a new attempt. Settle the
 // failed call first (scripts/settle-failed-call.mjs) or the allowance stays blocked.
@@ -12,15 +15,20 @@ import { resolve, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { assertPowerShell7 } from './pwsh-preflight.mjs';
 
-const args = process.argv.slice(2);
+const raw = process.argv.slice(2);
+const intervalAt = raw.indexOf('--min-interval-ms');
+const minIntervalMs = intervalAt === -1 ? undefined : Number(raw[intervalAt + 1]);
+if (intervalAt !== -1 && !Number.isSafeInteger(minIntervalMs)) throw Error('explicit_arguments_required');
+const args = intervalAt === -1 ? raw : [...raw.slice(0, intervalAt), ...raw.slice(intervalAt + 2)];
 if (args.length < 6 || !/^[a-f0-9]{40}$/.test(args[4]) || (args.length > 6 && (args[6] !== '--resume' || args.length < 8))) throw Error('explicit_arguments_required');
 const priorRuns = args.slice(7).map((x) => resolve(x));
 const [runtime, budgetDirectory, directory, keyPath] = args.slice(0, 4).map((x) => resolve(x));
 const runnerRevision = args[4], manifestPath = resolve(args[5]);
 const load = (file) => import(pathToFileURL(join(runtime, file)).href);
 const { ExperimentBudget } = await load('agent/experimentBudget.js');
-const { runAccountedStudy, manifestSha256 } = await load('eval/accountedRunner.js');
+const { runAccountedStudy, manifestSha256, providerFor } = await load('eval/accountedRunner.js');
 const { hostProcessEnvironment } = await load('agent/isolatedHost.js');
 const { replay, evidenceHash } = await load('agent/replay.js');
 
@@ -30,9 +38,11 @@ const write = (name, value) => {
   finally { closeSync(fd); }
 };
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-const worker = fileURLToPath(new URL('./initial-test-request.ps1', import.meta.url));
+const provider = providerFor(manifest.model);
+const worker = fileURLToPath(new URL(provider === 'anthropic' ? './anthropic-request.ps1' : './initial-test-request.ps1', import.meta.url));
+const workerArgs = provider === 'anthropic' ? ['-Endpoint', 'messages'] : [];
 const report = { runnerRevision, manifestId: manifest.id, manifestSha256: manifestSha256(manifest), startedAtUtc: new Date().toISOString(), dispatched: 0, summary: null,
-  resumedFrom: priorRuns, skippedVerified: [] };
+  provider, model: manifest.model, minIntervalMs: minIntervalMs ?? manifest.minIntervalMs, resumedFrom: priorRuns, skippedVerified: [] };
 // Completed episodes from earlier runs: replay-verified, same runner revision, named in the manifest.
 const completedEpisodes = new Set();
 for (const prior of priorRuns) {
@@ -60,7 +70,8 @@ const send = async (input, signal) => {
   callWrite('attempt.json', JSON.stringify({ requestId: input.requestId, requestSha256: input.sha256, episodeId: input.episodeId, actorId: input.actorId, tick: input.tick, noRetry: true, reservedAtUtc: new Date().toISOString() }) + '\n');
   report.dispatched++;
   try {
-    await promisify(execFile)('pwsh', ['-NoProfile', '-NonInteractive', '-File', worker, '-KeyPath', keyPath, '-ArtifactDirectory', callDirectory],
+    if (input.provider !== provider) throw Error('provider_mismatch');
+    await promisify(execFile)('pwsh', ['-NoProfile', '-NonInteractive', '-File', worker, '-KeyPath', keyPath, '-ArtifactDirectory', callDirectory, ...workerArgs],
       { env: hostProcessEnvironment(process.env), windowsHide: true, signal, timeout: 15000, maxBuffer: 8192 });
   } catch { throw Error('bounded_worker_failed'); }
   const network = JSON.parse(readFileSync(join(callDirectory, 'network.json'), 'utf8'));
@@ -76,9 +87,12 @@ const sink = {
 
 let budget;
 try {
+  // Before any reservation, credential read or dispatch: a missing PowerShell 7 costs nothing.
+  report.powershellMajor = assertPowerShell7(hostProcessEnvironment(process.env));
   budget = ExperimentBudget.open(budgetDirectory);
   // The fixture observer secret must never appear in a request body.
-  report.summary = await runAccountedStudy(manifest, budget, send, sink, { sourceRevision: runnerRevision, forbiddenSubstrings: ['offline-fixture-observer-secret'], completedEpisodes });
+  report.summary = await runAccountedStudy(manifest, budget, send, sink, { sourceRevision: runnerRevision, forbiddenSubstrings: ['offline-fixture-observer-secret'], completedEpisodes,
+    ...(minIntervalMs === undefined ? {} : { minIntervalMs }) });
 } catch (error) {
   report.error = report.dispatched ? 'run_failed_after_dispatch_do_not_retry' : 'preflight_failed_no_dispatch';
   report.errorCode = /^[a-z0-9_]{1,100}$/.test(error?.message) ? error.message : 'local_runner_error';

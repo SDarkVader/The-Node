@@ -11,6 +11,7 @@ import { resolve, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { assertPowerShell7 } from './pwsh-preflight.mjs';
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith('--')));
@@ -23,22 +24,32 @@ if (existsSync(directory)) throw Error('artifact_directory_must_not_exist');
 const { runAnthropicConnectionCheck } = await import(pathToFileURL(join(runtime, 'eval/anthropicConnectionCheck.js')).href);
 const { hostProcessEnvironment } = await import(pathToFileURL(join(runtime, 'agent/isolatedHost.js')).href);
 const worker = fileURLToPath(new URL('./anthropic-request.ps1', import.meta.url));
+// Fails here, before any call, if PowerShell 7 is missing (it used to show only as null statuses).
+const powershellMajor = assertPowerShell7(hostProcessEnvironment(process.env));
 mkdirSync(directory, { mode: 0o700 });
 const write = (dir, name, value) => { const fd = openSync(join(dir, name), 'wx', 0o600); try { writeFileSync(fd, value); fsyncSync(fd); } finally { closeSync(fd); } };
 
 const send = async (endpoint, body, label) => {
   const dir = join(directory, label); mkdirSync(dir, { mode: 0o700 });
   write(dir, 'request.json', body);
+  let workerError = null;
   try {
     await promisify(execFile)('pwsh', ['-NoProfile', '-NonInteractive', '-File', worker, '-KeyPath', keyPath, '-ArtifactDirectory', dir, '-Endpoint', endpoint],
       { env: hostProcessEnvironment(process.env), windowsHide: true, timeout: 15000, maxBuffer: 8192 });
-  } catch { /* network.json records what happened */ }
-  const network = existsSync(join(dir, 'network.json')) ? JSON.parse(readFileSync(join(dir, 'network.json'), 'utf8')) : { httpStatus: null, elapsedMs: 0 };
+  } catch (error) { workerError = typeof error?.code === 'string' ? error.code : 'worker_failed'; }
+  if (!existsSync(join(dir, 'network.json'))) {
+    // The worker never wrote its record: name the local cause instead of reporting a bare null.
+    return { httpStatus: null, bytes: null, elapsedMs: 0, errorType: 'local_worker_did_not_run', errorMessage: workerError };
+  }
+  const network = JSON.parse(readFileSync(join(dir, 'network.json'), 'utf8'));
   const bytes = existsSync(join(dir, 'response.json')) ? readFileSync(join(dir, 'response.json')) : null;
-  return { httpStatus: network.httpStatus ?? null, bytes, elapsedMs: network.elapsedMs ?? 0, errorType: network.errorType ?? null, errorMessage: network.errorMessage ?? null };
+  const local = network.httpStatus == null;
+  return { httpStatus: network.httpStatus ?? null, bytes, elapsedMs: network.elapsedMs ?? 0,
+    errorType: network.errorType ?? (local ? `local_${network.outcome ?? 'unknown'}` : null), errorMessage: network.errorMessage ?? (local ? network.transportError ?? null : null) };
 };
 
 const report = await runAnthropicConnectionCheck(send, { sendOne: flags.has('--send-one'), maxUsd: maxUsdArg });
 report.ranAtUtc = new Date().toISOString();
+report.powershellMajor = powershellMajor;
 write(directory, 'report.json', JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));
