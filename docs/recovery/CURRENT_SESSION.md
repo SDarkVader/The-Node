@@ -3,8 +3,9 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "b06548b7c36c9dbb7b018fc6ca4f056ec39b2d84",
+  "verifiedBaseCommit": "973ed24c39db09319701a7f1a7dfe725d8b245a5",
   "completedWork": [
+    "2026-10-22 (evening): PR #33 merged at 973ed24. Owner's Haiku connection check on their PC (runtime 973ed24): the first attempt returned seven httpStatus null because PowerShell 7 was missing; after installing it, the 7 free counts were 10,592-10,803 tokens (HTTP 200), and --send-one baker-0 returned HTTP 200, end_turn, schema accepted, 3,797 ms, 14,089 in / 42 out, $0.0014299, validator accepts, no case mismatches. Cost comparison (owner asked): study 1 about $0.9 list / $1.8 booked on Haiku vs $1.6-1.9 / $3.2-3.7 on gpt-5.4-nano. Owner D11 ('use haiku and make the fix please'): study 1 on claude-haiku-5-5. Built: src/agent/modelPricing.ts (reviewed 2x-list rates 200,000 / 1,000,000 micro-USD per M, evidence excerpt hashed under LF, .gitattributes -text); ExperimentBudget accepts Haiku only at those rates; the runner routes by model and binds reservation, ceiling, forbidden-substring check and call record to the Anthropic wire bytes; --min-interval-ms (slow only, max 10 min); prepare-experiment-budget takes the manifest model's authorised rates (it copied the carried nano rates before, so a Haiku allowance would have been refused); scripts/pwsh-preflight.mjs checks PowerShell 7 before any reservation or call in the connection check and the study runner; the check names a worker that never ran and reports the response model; analyze_study prices per model; manifest model claude-haiku-5-5 (hash changed; contract unchanged); freeze re-pinned a fifth time at the Anthropic wire bytes. Commit bc9304c. Local open-model testing deferred by the owner ('well do open model testing later').",
     "2026-10-22: PR #32 merged at b06548b (CI green on 2c3debe). Branch restarted from main. Owner D10: local and free preferred where suitable; paid models may run alongside free ones. Built the Anthropic Messages adapter (src/agent/anthropicRequest.ts translates the final study request bytes: system/messages, output_config.format json_schema, effort low, thinking disabled, minimum/maximum removed; src/agent/anthropicResponse.ts reads the message envelope into the booked receipt) and an owner-run Haiku connection check (src/eval/anthropicConnectionCheck.ts, scripts/check-anthropic-connection.mjs, scripts/anthropic-request.ps1: free count_tokens for the 7 study-1 actors, then with --send-one one paid Baker message capped at --max-usd 0.01). 10 offline tests plus an end-to-end run with a TEST-ONLY fake pwsh. No API call made from the cloud.",
     "2026-10-22: model research VERIFIED for all five families (verification-only rerun, 3 agents, owner's limit) and synthesised without an agent: docs/research/model-options-2026-10-21/README.md (costs, survivors, pinnability, recommendation: keep gpt-5.4-nano-2026-03-17 for study 1; decide local vs claude-haiku-5-5 for the diary study) and LOCAL_REQUIREMENTS.md (runtime pins, flags, GGUF hashes, code changes, measurement protocol). Corrections recorded: two live calls on 2026-10-18 DID succeed with the const/min/max/nested-anyOf schema (my earlier 'no live call reached a model' was wrong); the per-call deadline is 12,000 ms, not ~16 s. Mutation testing by script: 13/13 killed after one new test (hearing cross-check).",
     "2026-10-22: owner approved the schema const fix; done at 168987d (fixed values are one-value typed enums; equivalence test passes; new no-const test; freeze re-pinned a fourth time, contract and manifest unchanged). Docs updated (BLUEPRINT v2 'who can hear' + schema note, BLUEPRINT_HISTORY D6-D9, DEVLOG, runbook, README). Owner: no fixed local model setup yet; will implement once the import (integration) requirements are known. Owner: research reruns must use limited agents, verification only, on already aggregated data.",
@@ -41,6 +42,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-22 (evening, Linux) at bc9304c: tsc clean; Vitest 1312/1312 (105 files); Python 29/29; G1 verify 29/29 replay-verified and compare_hashes 29/29 equal to main-consolidation-2026-10-20; G2 constructs ok (12 fixture checks, 9 deterministic); accounted-study rehearsal 10/10 (Haiku rates in the allowance; Anthropic bodies through the Anthropic worker after the PowerShell 7 check; 429, settlement, resume, analysis); session-recovery 8/8. No API call made from the cloud.",
     "2026-10-22 (Linux) at 168987d: tsc clean; Vitest 1292/1292 (freeze file re-run after re-pin); Python 28/28; G1 29/29; G2 12/12; rehearsal 8/8.",
     "2026-10-21 (late night, Linux) at da8c325: tsc clean; Vitest 1291/1291 (102 files); Python 28/28; G1 29/29 against main-consolidation-2026-10-20; G2 12/12 fixture checks; accounted-study rehearsal 8/8; study-1 freeze 4/4 at the third pins.",
     "2026-10-21 (late night, Linux): Vitest 1286/1286; Python 28/28; G1 29/29; G2 12/12; freeze 4/4 at the re-pinned bytes.",
@@ -74,7 +76,7 @@
   ],
   "unresolvedIssues": [
     "Study-path design choices (2026-10-21): RESOLVED by owner decisions - out-of-range addresses are now refused (v2, 'show who can hear'); study 1 stays 6 days and a separate 30-40 day study covers diary/recognition; Courier commissions and multi-member campaigns are deferred; repeat custom (+~14% mean Baker wealth) is accepted.",
-    "Study 1 not yet run: postponed on 2026-10-21 (it was planned for 2026-10-22) until the owner reactivates it; it runs on the PC with the credential and private allowance and stays frozen until then. If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
+    "Study 1 not yet run: postponed on 2026-10-21 until the owner reactivates it; it now runs on claude-haiku-5-5 (D11) on the owner's PC with the Anthropic credential file and the private allowance, and stays frozen until then. Model echo CONFIRMED by the owner on 2026-10-22 (saved response msg_011CgHYj9CZ73MHDVMVGusBZ: model claude-haiku-5-5, stop_reason end_turn; any other value would stop the run at the first call, unsettleably). Rate limits read by the owner on 2026-10-22: Claude Haiku 5.5 at 10,000 RPM / 10,000,000 ITPM / 2,000,000 OTPM (the documented Scale-tier figures), so the default 4 s pacing (~15 RPM, ~210k ITPM) needs no --min-interval-ms. Residual risk: Anthropic's unquantified acceleration limits; after a 429, settle and resume with --min-interval-ms 8000 (the 84 spare requests cover two re-run episodes).",
     "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
     "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
     "Settlement: currency option A/B/C is still the user's decision; whether funded settlement's halved Gini (0.68 -> 0.32) is the intended feel; growing past SHARD_COUNT_CAP (3) shards is a design decision, not built.",
@@ -85,12 +87,12 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Owner: run the Haiku connection check (docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md), counts first (free), then --send-one (~$0.001); share report.json. Then decide per D10 which models qualify; build mixed per-actor sourcing/accounting (manifest per-actor model assignment, per-model price profiles with local at zero, provider routing) once the check and local measurement are in.",
-    "Owner decisions pending: model for study 1 (recommendation: keep gpt-5.4-nano-2026-03-17); for the diary study, local vs claude-haiku-5-5; local accounting mode. When the owner is ready for local: implement LOCAL_REQUIREMENTS.md 'Changes our code needs' (transport local endpoint, request builder temperature/effort/chat-completions variant, parser, accounting profile, provenance).",
-    "Then open a PR (ccr-8d64b59c-a4puhv -> main) for da8c325..HEAD, watch CI, merge when green.",
+    "Merge the D11 PR (ccr-8d64b59c-a4puhv -> main) when green, then restart the task branch from main.",
+    "Pre-run checks done 2026-10-22: model echo claude-haiku-5-5 / end_turn (step 0.3); rate limits at the Scale-tier figures, no pacing flag (step 0.4). Before runbook step 2 the owner must name where the closed 18 Oct allowance folder (initial-test-budget-2026-10-18) is on their PC; never guess it.",
+    "Deferred by the owner: local open-model testing ('well do open model testing later') and D10 mixed per-actor sourcing/accounting (manifest per-actor model, per-model price profiles with local at zero, provider routing). For local: LOCAL_REQUIREMENTS.md 'Changes our code needs'. For the diary study: local vs claude-haiku-5-5.",
     "VERIFIED 2026-10-21 (docs/research/model-options-2026-10-21/verification-partial.json): gpt-5.4-nano-2026-03-17 deprecated (announced 2026-10-01, removal 2027-04-01; replacement gpt-6-luna $0.10/$0.01/$0.50, alias only). const unsupported by OpenAI and Google docs (fixed at 168987d). Google also does not document a standalone {type:'null'} anyOf branch (still used; test with a first live request). Model choice for study 1 is the owner's.",
     "Before any study call on a model other than gpt-5.4-nano-2026-03-17: one real request with the actual v2 schema. Only gpt-5.4-nano has accepted the schema form live (2026-10-18, two HTTP 200 calls with const, min/max, nested anyOf; docs/recovery/INITIAL_GAME_TURN.md). Correction 2026-10-22: earlier checkpoint text said the only live call was the 2026-10-16 HTTP 401; that was wrong.",
-    "Owner: when reactivated, run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (postponed on 2026-10-21); share study1-analysis/results.json and summary.md."
+    "Owner: when reactivated, run study 1 on claude-haiku-5-5 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (about $0.9 list, $1.8 booked, 45-55 min at 4 s pacing); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
   "reviewBranch": "ccr-8d64b59c-a4puhv"
@@ -105,9 +107,11 @@ Windows Main integration, including the 80 native checks, and both Linux Researc
 runs. The merged tree is identical to that head, and a clean `main` checkout passes tracked
 recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`
 and PR #29 (recognition v2 simulation) at `90b4954`, PR #30 at `a759182`, PR #31 (recognition v2 and
-individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`, and PR #32 (who can hear, no-const
-schema, verified model options) at `b06548b`. This checkpoint anchors at `b06548b` and accepts `main` or the exact
-task branch `ccr-8d64b59c-a4puhv`, which carries the Anthropic adapter and the owner-run Haiku connection check.
+individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`, PR #32 (who can hear, no-const
+schema, verified model options) at `b06548b`, and PR #33 (Anthropic adapter and Haiku connection check) at
+`973ed24`. This checkpoint anchors at `973ed24` and accepts `main` or the exact task branch
+`ccr-8d64b59c-a4puhv`, which moves study 1 to `claude-haiku-5-5` (owner decision D11) and adds the
+PowerShell 7 preflight.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -125,7 +129,10 @@ owner's 2026-10-21 statements settle R1–R3, with R4, R5 and Q1–Q5 still open
 recorded as a study-1 limitation in the runbook.
 
 **Next:** study 1 is postponed (2026-10-21) until the owner reactivates it; it then runs from `main` per the
-[runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `gpt-5.4-nano-2026-03-17`.
+[runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `claude-haiku-5-5` (D11, 2026-10-22). The
+owner's connection check passed on 2026-10-22, and its saved response names exactly `claude-haiku-5-5`.
+The runbook's pre-run checks are done: the owner's Haiku 5.5 rate limits are the Scale-tier figures, so
+the default pacing needs no flag.
 
 **Done (2026-10-22):** mutation testing of `da8c325` (13/13 killed), and verification of the model research
 ([unverified outputs and the workflow script](../research/model-options-2026-10-21/README.md)). Verified

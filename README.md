@@ -65,8 +65,11 @@ before anything is scored. The requirements and decisions behind it are tracked 
 
 A capped, accounted runner now exists for the first live run of that study. Every model call is
 reserved against a USD 5 allowance before it is sent, and its usage is booked before the response
-can affect the simulation. Its run, planned for 22 October 2026, is postponed until the owner reactivates it
-([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)).
+can affect the simulation. The study runs on `claude-haiku-5-5` (owner decision D11, 2026-10-22). The
+allowance books it only at reviewed rates backed by a committed, hashed copy of the provider's
+price table. The run waits until the owner reactivates it
+([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)). Its scripts check for PowerShell 7 before
+any reservation or call.
 
 The participants' private diaries now have a written contract
 ([A01](docs/research/DIARY_CONTRACT_A01.md)):
@@ -91,7 +94,9 @@ schema uses no `const` keyword, which OpenAI and Google do not document for stri
 Model options, including the confirmed deprecation of the planned study model, are verified in
 [docs/research/model-options-2026-10-21](docs/research/model-options-2026-10-21/README.md). An Anthropic
 adapter and an owner-run [Haiku connection check](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
-are built. Local, free models are preferred where suitable, alongside paid ones.
+are built. On the owner's PC the check accepted the real study schema and returned a valid
+decision in 3.8 s. Local, free models are preferred where suitable, alongside paid ones; testing
+them comes later.
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the

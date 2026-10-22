@@ -506,6 +506,13 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   `MultiActorEpisode`: seven controlled inhabitants in one world, all admitted actions in a
   single `stepParticipantState` per tick, classified by a hash-bound contract. See
   `docs/EVAL_INFRASTRUCTURE.md` and `docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md`.
+  Live study calls run only through the TypeScript accounted runner (`src/eval/accountedRunner.ts`).
+  It routes by model id: `claude-*` goes to the Anthropic Messages translation, anything else to
+  OpenAI Responses. It reserves the bytes actually sent. The allowance books at the carried
+  allowance's own rates, or, for a different model, only at a reviewed entry in
+  `src/agent/modelPricing.ts` backed by a hashed evidence excerpt (2026-10-22, D11: study 1 on
+  `claude-haiku-5-5`). Every PowerShell worker needs PowerShell 7, which is checked before any
+  reservation.
 - **The literal "commissioner-funded" courier transfer** — a real cross-role wealth debit — was
   never built; courier pay is derived, not transferred.
 - **The shard count is a fixed cap (`SHARD_COUNT_CAP` = 3), not a growth signal.** Alternative

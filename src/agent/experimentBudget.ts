@@ -1,6 +1,7 @@
 import { AccountingStore, sha256, failAccounting as fail, type AccountingStoreOptions } from './accountingStore.js';
 import { usageCost, type AccountingPrices } from './accountingLedger.js';
 import { InitialTestBudget } from './initialTestBudget.js';
+import { authorizedPrices, PRICED_MODELS } from './modelPricing.js';
 
 /**
  * Accounted experiment allowance (2026-10-20; docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md).
@@ -11,7 +12,9 @@ import { InitialTestBudget } from './initialTestBudget.js';
  *
  * - the complete prior allowance document is carried unchanged; nothing is reset or forgiven,
  *   and the prior allowance must already be closed (expired) when this one is authorised;
- * - prices are the carried authorisation's conservative rates and rate evidence, never new claims;
+ * - prices are the carried authorisation's conservative rates and rate evidence, never new claims.
+ *   A different model (owner decision D11, 2026-10-22: study 1 on claude-haiku-5-5) may only use
+ *   its reviewed, evidence-backed entry in `modelPricing.ts`, never operator-supplied rates;
  * - a reservation is durable before dispatch; one request may be outstanding at a time;
  * - each (episode, actor) has one participant reference and strictly increasing ticks;
  * - a reservation records the participant identity (tick, observer reference, role, epoch) and
@@ -27,6 +30,9 @@ import { InitialTestBudget } from './initialTestBudget.js';
  */
 
 export const EXPERIMENT_MODEL = 'gpt-5.4-nano-2026-03-17' as const;
+/** Models an allowance may authorise: the carried 18 Oct model, or one with a reviewed price entry. */
+export const isExperimentModel = (model: unknown): model is string =>
+  model === EXPERIMENT_MODEL || (typeof model === 'string' && Object.hasOwn(PRICED_MODELS, model));
 const MAX_LIMIT_MICRO_USD = 25_000_000; // hard ceiling per allowance; larger studies chain allowances
 const MAX_REQUESTS = 5_000;
 const MAX_WINDOW_MS = 7 * 86_400_000;
@@ -46,7 +52,7 @@ export interface CarriedSummary { bookedMicroUsd: string; heldMicroUsd: string; 
 export interface CarriedAllowance { kind: 'node-initial-test-budget-v1' | 'node-experiment-budget-v1'; document: unknown; fingerprint: string; summary: CarriedSummary }
 export interface ExperimentAuthorization {
   runId: string; authorizedAt: string; expiresAt: string; expectedCarriedFingerprint: string; instruction: string;
-  scope: 'accounted_experiment_spending_only'; manifestSha256: string; model: typeof EXPERIMENT_MODEL;
+  scope: 'accounted_experiment_spending_only'; manifestSha256: string; model: string;
   maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number; prices: AccountingPrices;
 }
 export interface ReservedParticipant { tick: number; selfRef: string; role: string; roleEpoch: number }
@@ -97,13 +103,14 @@ function replay(d: Document) {
       if (!exact(event, ['kind', 'value']) || !object(a) || authorization || !exact(a, ['runId', 'authorizedAt', 'expiresAt', 'expectedCarriedFingerprint', 'instruction', 'scope', 'manifestSha256', 'model', 'maxRequests', 'limitMicroUsd', 'perRequestMicroUsd', 'prices']) ||
         !id(a.runId) || !iso(a.authorizedAt) || !iso(a.expiresAt) || a.expiresAt <= a.authorizedAt || Date.parse(a.expiresAt) - Date.parse(a.authorizedAt) > MAX_WINDOW_MS ||
         a.expectedCarriedFingerprint !== d.carried.fingerprint || typeof a.instruction !== 'string' || !a.instruction.trim() || a.instruction.length > 8192 ||
-        a.scope !== 'accounted_experiment_spending_only' || !hash(a.manifestSha256) || a.model !== EXPERIMENT_MODEL ||
+        a.scope !== 'accounted_experiment_spending_only' || !hash(a.manifestSha256) || !isExperimentModel(a.model) ||
         !integer(a.maxRequests) || a.maxRequests < 1 || a.maxRequests > MAX_REQUESTS ||
         !integer(a.limitMicroUsd) || a.limitMicroUsd < 1 || a.limitMicroUsd > MAX_LIMIT_MICRO_USD ||
         !integer(a.perRequestMicroUsd) || a.perRequestMicroUsd < 1 || a.perRequestMicroUsd > a.limitMicroUsd ||
-        // The prior allowance must be closed before new spending opens, and its rate evidence is reused unchanged.
+        // The prior allowance must be closed before new spending opens. Its rate evidence is reused
+        // unchanged for the same model; a different model may only use its reviewed price entry.
         carried.expiresAt === null || a.authorizedAt < carried.expiresAt || carried.prices === null ||
-        !checkPrices(a.prices, a.model) || !same(a.prices, carried.prices)) return fail('experiment_budget_authorization');
+        !checkPrices(a.prices, a.model) || !same(a.prices, authorizedPrices(a.model, carried.prices))) return fail('experiment_budget_authorization');
       authorization = a;
     } else if (event.kind === 'reservation') {
       const q = event.value, a = authorization;

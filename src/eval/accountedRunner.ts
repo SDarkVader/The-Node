@@ -1,6 +1,12 @@
 /**
  * Capped, accounted batch runner for a construct study (owner decisions 2026-10-20: capped batch
- * runner, USD 5 first allowance, gpt-5.4-nano-2026-03-17).
+ * runner, USD 5 first allowance; model gpt-5.4-nano-2026-03-17, then claude-haiku-5-5 by owner
+ * decision D11, 2026-10-22).
+ *
+ * Provider by model id: `claude-*` models receive the Anthropic Messages translation of the final
+ * evaluation request (`toAnthropicRequest`), and their receipts are read by
+ * `parseAnthropicResponse`. Every other model is sent the evaluation request unchanged. Either way
+ * the reservation names the sha256 and ceilings of the exact bytes dispatched.
  *
  * For every present actor at every tick of every manifest episode, in a fixed order:
  *
@@ -23,7 +29,10 @@
  * Pacing: dispatches start at least `minIntervalMs` apart, to stay under provider rate limits.
  */
 import { sha256 } from '../agent/accountingStore.js';
-import { parseRecordedResponse } from '../agent/recordedResponse.js';
+import { parseRecordedResponse, type RecordedResponse } from '../agent/recordedResponse.js';
+import { toAnthropicRequest } from '../agent/anthropicRequest.js';
+import { parseAnthropicResponse } from '../agent/anthropicResponse.js';
+import type { EvaluationRequest } from './evaluationRequest.js';
 import { usageCost } from '../agent/accountingLedger.js';
 import type { ExperimentBudget } from '../agent/experimentBudget.js';
 import { MultiActorEpisode, multiScenarioById, type MultiEpisodeRecord } from './multiActorEpisode.js';
@@ -46,7 +55,7 @@ export interface CallRecord {
   outcome: 'response_recorded' | 'transport_failed' | 'usage_unknown' | 'model_mismatch' | 'deadline_exceeded';
   receiptId?: string; model?: string; status?: string; actionable?: boolean; inputTokens?: number; outputTokens?: number;
 }
-export interface SendInput { requestId: string; body: string; sha256: string; episodeId: string; actorId: string; tick: number; index: number }
+export interface SendInput { requestId: string; body: string; sha256: string; episodeId: string; actorId: string; tick: number; index: number; provider: Provider }
 export type Sender = (input: SendInput, signal: AbortSignal) => Promise<Buffer>;
 export interface StudySink { call(entry: CallRecord): void; episode(record: MultiEpisodeRecord, episodeId: string): void }
 export interface StudySummary {
@@ -56,6 +65,21 @@ export interface StudySummary {
 
 const id = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(v);
 export const manifestSha256 = (manifest: StudyManifest) => sha256(JSON.stringify(manifest));
+
+export type Provider = 'openai' | 'anthropic';
+export const providerFor = (model: string): Provider => (model.startsWith('claude-') ? 'anthropic' : 'openai');
+/** The exact bytes dispatched for `request`, and their ceilings. */
+export function wireRequest(request: EvaluationRequest, model: string): { body: string; sha256: string; maxInputTokens: number; maxOutputTokens: number } {
+  if (providerFor(model) === 'anthropic') {
+    const a = toAnthropicRequest(request, model);
+    return { body: a.body, sha256: a.sha256, maxInputTokens: a.maxInputTokens, maxOutputTokens: a.maxOutputTokens };
+  }
+  return { body: request.body, sha256: request.sha256, maxInputTokens: request.maxInputTokens, maxOutputTokens: request.maxOutputTokens };
+}
+const readReceipt = (model: string, bytes: Buffer, requestId: string): RecordedResponse =>
+  providerFor(model) === 'anthropic' ? parseAnthropicResponse(bytes, requestId) : parseRecordedResponse(bytes, requestId);
+/** Upper bound for an operator-chosen slower pacing (`options.minIntervalMs`). */
+export const MAX_MIN_INTERVAL_MS = 600_000;
 
 export function validateManifest(m: StudyManifest): void {
   const C = AUTHORITY_ATTRIBUTION_CONTRACT;
@@ -72,8 +96,13 @@ export function validateManifest(m: StudyManifest): void {
 }
 
 export async function runAccountedStudy(manifest: StudyManifest, budget: ExperimentBudget, send: Sender, sink: StudySink,
-  options: { sourceRevision: string; forbiddenSubstrings?: readonly string[]; completedEpisodes?: ReadonlySet<string> }): Promise<StudySummary> {
+  options: { sourceRevision: string; forbiddenSubstrings?: readonly string[]; completedEpisodes?: ReadonlySet<string>; minIntervalMs?: number }): Promise<StudySummary> {
   validateManifest(manifest);
+  // Pacing may be slowed for a lower provider tier, never sped up beyond the manifest's floor.
+  if (options.minIntervalMs !== undefined && (!Number.isSafeInteger(options.minIntervalMs) || options.minIntervalMs < manifest.minIntervalMs ||
+    options.minIntervalMs > MAX_MIN_INTERVAL_MS)) throw Error('min_interval_invalid');
+  const minIntervalMs = options.minIntervalMs ?? manifest.minIntervalMs;
+  const provider = providerFor(manifest.model);
   const start = budget.view();
   if (!start.authorization) throw Error('allowance_not_authorized');
   if (start.authorization.manifestSha256 !== manifestSha256(manifest) || start.authorization.model !== manifest.model) throw Error('allowance_manifest_mismatch');
@@ -94,21 +123,21 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
       const prompts = ep.prompts({ model: manifest.model });
       const outputs: Record<string, string> = {}, receipts: Record<string, unknown> = {};
       for (const p of prompts) {
-        const request = p.request!, tick = request.context.tick;
+        const request = p.request!, tick = request.context.tick, wire = wireRequest(request, manifest.model);
         const view = budget.view();
         // Stop cleanly when the next request's ceiling no longer fits; reserve() would refuse it.
-        const ceiling = BigInt(usageCost(request.maxInputTokens, request.maxOutputTokens, view.authorization!.prices));
+        const ceiling = BigInt(usageCost(wire.maxInputTokens, wire.maxOutputTokens, view.authorization!.prices));
         const stop = !view.canReserve ? view.stopReason : ceiling > BigInt(view.authorization!.perRequestMicroUsd) ? 'request_ceiling' : ceiling > view.remainingMicroUsd! ? 'cost_limit' : null;
         if (stop) { stoppedReason = `budget_stopped:${stop}`; ep.halt('budget_stopped', { reason: stop, actorId: p.actorId }); break; }
-        if (options.forbiddenSubstrings?.some((s) => s && request.body.includes(s))) throw Error('dispatch_precondition');
+        if (options.forbiddenSubstrings?.some((s) => s && (request.body.includes(s) || wire.body.includes(s)))) throw Error('dispatch_precondition');
         const requestId = sha256(JSON.stringify([runId, stream, p.actorId, request.context.selfRef, tick]));
-        const wait = lastDispatch + manifest.minIntervalMs - performance.now();
+        const wait = lastDispatch + minIntervalMs - performance.now();
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
         const index = calls++;
-        const base = { index, requestId, episodeId: stream, actorId: p.actorId, tick, requestSha256: request.sha256 };
-        if (budget.reserve({ id: requestId, episodeId: stream, actorId: p.actorId, inputSha256: request.sha256,
+        const base = { index, requestId, episodeId: stream, actorId: p.actorId, tick, requestSha256: wire.sha256 };
+        if (budget.reserve({ id: requestId, episodeId: stream, actorId: p.actorId, inputSha256: wire.sha256,
           participant: { tick, selfRef: request.context.selfRef, role: request.context.role, roleEpoch: request.context.roleEpoch },
-          model: request.model, maxInputTokens: request.maxInputTokens, maxOutputTokens: request.maxOutputTokens }) !== 'reserved') {
+          model: request.model, maxInputTokens: wire.maxInputTokens, maxOutputTokens: wire.maxOutputTokens }) !== 'reserved') {
           throw Error('request_already_consumed');
         }
         const fail = (outcome: CallRecord['outcome'], extra: Partial<CallRecord> = {}) => {
@@ -122,13 +151,13 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
         let bytes: Buffer;
         lastDispatch = performance.now();
         try {
-          bytes = await Promise.race([send({ requestId, body: request.body, sha256: request.sha256, episodeId: stream, actorId: p.actorId, tick, index }, abort.signal),
+          bytes = await Promise.race([send({ requestId, body: wire.body, sha256: wire.sha256, episodeId: stream, actorId: p.actorId, tick, index, provider }, abort.signal),
             new Promise<never>((_, reject) => { timer = setTimeout(() => { abort.abort(); reject(Error('deadline')); }, manifest.deadlineMs); })]);
         } catch { fail('transport_failed'); break; } finally { if (timer) clearTimeout(timer); }
         // The deadline covers the provider round trip only; local ledger writes below must not count.
         const received = performance.now();
         let recorded;
-        try { recorded = parseRecordedResponse(bytes, requestId); } catch { fail('usage_unknown'); break; }
+        try { recorded = readReceipt(manifest.model, bytes, requestId); } catch { fail('usage_unknown'); break; }
         const u = recorded.receipt.usage;
         if (!u) { fail('usage_unknown'); break; }
         // Book usage before the response can affect anything, including when it is late or wrong.

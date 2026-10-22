@@ -3,12 +3,13 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { MultiActorEpisode, multiScenarioById } from '../src/eval/multiActorEpisode.js';
 import { contractHash } from '../src/eval/constructs/authorityAttribution.js';
-import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.js';
+import { manifestSha256, wireRequest, type StudyManifest } from '../src/eval/accountedRunner.js';
 
 /**
  * Study 1 freeze (run postponed on 2026-10-21 until the owner reactivates it; docs/research/RUNBOOK_AUTHORITY_STUDY_1.md).
  * The research object must not change mid-study: these pins hold the exact request bytes the
- * live model receives, the contract and the manifest. A failure here means a change would alter
+ * live model receives (the runner's own `wireRequest`, so they are what it dispatches), the
+ * contract and the manifest. A failure here means a change would alter
  * what study 1 measures.
  *
  * Pins moved deliberately, before any study, by owner direction on 2026-10-21 ("no study starts
@@ -24,38 +25,41 @@ import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.
  *      support `const` and OpenAI does not document it (it accepted it in the two live calls of
  *      2026-10-18). Same constraint, in the form every provider documents; request bytes change,
  *      the contract and the manifest do not.
+ *   5. study 1 runs on claude-haiku-5-5 (owner decision D11, 2026-10-22: "use haiku"). The model
+ *      receives the Anthropic Messages translation of each final request, so the pins now hold
+ *      those bytes; the manifest's model changes (manifest pin moves), the contract does not.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
-const MODEL = 'gpt-5.4-nano-2026-03-17';
+const MODEL = 'claude-haiku-5-5';
 const NULL_DECISION = JSON.stringify({ move: null, communication: null, diary: null, role: null });
 const TICK0 = {
-  'baker-0': '836f050f343f5cb51c9c99b1b9fa07923b1bc2a543d5b3a51c28ae021db74fbd',
-  'baker-1': 'fb3028e6c8e027320d7209ecee1507b2a8b1678997d067c03c984dc8087d942d',
-  'miller-0': '7dea74c6084f650ebe39b64b8522ee8eec9203a1cd17ace225691960fcdc98d4',
-  'courier-0': '6f60a710802e5379ca4987a5a468531b568456ca32b821f03863be27290d2a7e',
-  'investigator-0': 'df584a95c37cdbfbb06bbd955dffd115b25e9a601e4a33e7a32831032a49b7bb',
-  'importexport-0': '9ab45f1438b7379d2cfcd49689de93a565971c8d6a473d29f7054a22045111f8',
-  'grifter-0': 'fe5234d561b9296713f884a02f99e8dae98e8d5daed0ed07ba4360ab3fda0994',
+  'baker-0': '471f5288994e9bd84b3232435c98617bde2378ec4a7d1fa1ab810fc22620d448',
+  'baker-1': 'e64fbdea059a54681a0b1f5fc3c207a52df802bf5d26b90d1223a415c8650059',
+  'miller-0': 'c3ea59ef43f7ce3947283ae65ca134a34d2915d5ae38958e77def814b23e156d',
+  'courier-0': '21b69f0475123023ce858ff40580eeb57b035d9b99f7ff91c5da485505a021d2',
+  'investigator-0': 'fa0dbdf2752a6ee601d1adcb5f3d3a8cd81be023931fe5d8c3f20f0c1f4eb3c5',
+  'importexport-0': '6a492121006a0115c28c0b6939bc2b95351bcb2a61e305c1285635ec3cec9d48',
+  'grifter-0': 'f37f80f466390cb0b6e8b776bf4c8cd03753fc4581ffb6136483329b4b8ffb43',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '44ca86349aa333c7c0e2a730b46b84239d1f9004cc4d3044df3837f692edd8d8', 'miller-0': 'bab54b3de4281cfb8268edbb0fe5aeaaa15ab6f65e1b1b3580dfa543ea6de18e', 'grifter-0': '50290cc1ed99909044d1a8ffe2cfe7da865ad996637c2f36510f242a8206efbc' },
-  anonymous: { 'baker-0': '9edb3a159f219242243220d98f0207ffbe12cb7f4ede5447e80c810827cc988d', 'miller-0': 'ed7a7c2d4becba1962bb1e605e96ffc06c0e915bd22a513370dad3f1975af756', 'grifter-0': '3b7769f3aa62fadb681280b6f14d42d4804873c77839792d6cb826b2b05d014d' },
-  none: { 'baker-0': '1b2b3d06a5ee52b4bbda4eb1c01117e101f611b691064f426d68efa6b0b689c1', 'miller-0': '948e2ec4332a96167fa0ad8ff3f8a2a6a11adf56419c64b82e84e3216dfc9861', 'grifter-0': '1208de3e7a6eef69b77d185aa6c2d67c7843906fd90a2180db153a0f15735927' },
+  council: { 'baker-0': '4975c8a83bbef48485e4bc377f2c7850c5ca2331c3ce8927ebabdec4f4435e3e', 'miller-0': 'e58d12db50160aced8607fdea1242de04a0afc4be833f047d759ef490b322414', 'grifter-0': '1d9206340a9ce2f7718036abf4289b40be74e755de01a5999fbdbe539c38e34d' },
+  anonymous: { 'baker-0': 'a9a495e5f2162ed9e8f5852502fe1a9fd60e4abdfe102b91e8e22f4a1ca07606', 'miller-0': '0f7fd47f2d95e49c0eb4cc48b605de23c6acb1030e7871288eb339975c92b402', 'grifter-0': '4a37b41c526970c4905bac30b835a4f8ec9e7182b0d61fe8bf1734c26dfe0fea' },
+  none: { 'baker-0': '1dc5ac1d3294fa31dbbbe614f8849245dce638e3e5b5f3f97bd9095beda509d2', 'miller-0': '4aa9a9589beaaa4a15fb6e9255aebc062edee9d02a957e2dad98ab10d95d5cf7', 'grifter-0': '309d39d8f17009cf52cdf9ca882b8c143e3dbcf2c66b31f18d0618a413ba061a' },
 };
 
 describe('study 1 is frozen until it has run', () => {
   for (const arm of ['council', 'anonymous', 'none'] as const) {
     it(`${arm}: tick-0 and exposure-tick request bytes are unchanged`, () => {
       const ep = new MultiActorEpisode(multiScenarioById(`authority_attribution_${arm}`), 'freeze');
-      const t0 = Object.fromEntries(ep.prompts({ model: MODEL }).map((p) => [p.actorId, p.request!.sha256]));
+      const t0 = Object.fromEntries(ep.prompts({ model: MODEL }).map((p) => [p.actorId, wireRequest(p.request!, MODEL).sha256]));
       expect(t0).toEqual(TICK0);
       for (let t = 0; t < 2; t++) {
         const ps = ep.prompts();
         ep.act(Object.fromEntries(ps.map((p) => [p.actorId, NULL_DECISION])));
       }
-      const t2 = Object.fromEntries(ep.prompts({ model: MODEL }).filter((p) => p.actorId in TICK2[arm]!).map((p) => [p.actorId, p.request!.sha256]));
+      const t2 = Object.fromEntries(ep.prompts({ model: MODEL }).filter((p) => p.actorId in TICK2[arm]!).map((p) => [p.actorId, wireRequest(p.request!, MODEL).sha256]));
       expect(t2).toEqual(TICK2[arm]);
     });
   }
@@ -68,4 +72,4 @@ describe('study 1 is frozen until it has run', () => {
   });
 });
 
-const MANIFEST_SHA256 = 'c875f610a9c2b3df1077c7db5ebcbacccea1e8282910f576bfca7b36c162d0d5';
+const MANIFEST_SHA256 = '5979c6f9ae8ed134d4307707f0a43b1713a34062eb5cc6283c946450f48c50ac';

@@ -97,7 +97,16 @@ rest, including mixed within one study. The Anthropic adapter (`src/agent/anthro
 are designed (register D10). They will be built once the check and the local measurement show which
 models qualify.
 
-## Recommendation (the owner decides)
+## Owner decision D11 (2026-10-22): study 1 on `claude-haiku-5-5`
+
+After the [connection check](HAIKU_CONNECTION_CHECK.md) passed on the owner's PC (schema accepted,
+3.8 s, a valid decision) and the measured cost comparison, the owner chose Haiku for study 1: “use
+haiku and make the fix please”. The allowance books Haiku at 2× its list price, from a reviewed
+entry backed by a hashed excerpt of the pricing page (`evidence/`, `src/agent/modelPricing.ts`). The
+recommendation below predates the decision and is kept as written. Its reason, that only nano had
+live evidence for the schema, no longer holds after the check.
+
+## Recommendation (the owner decides; superseded for study 1 by D11)
 
 - **Study 1: keep `gpt-5.4-nano-2026-03-17`.** It is the only option with live evidence for our
   schema and transport, and it needs no code change. It is a dated snapshot, it costs about $1.1–1.3
