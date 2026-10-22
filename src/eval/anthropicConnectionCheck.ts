@@ -54,11 +54,15 @@ export async function runAnthropicConnectionCheck(send: CheckSender, options: Ch
   const target = requests.find((r) => r.actorId === actorToSend);
   const count = counted.find((c) => c.actorId === actorToSend)?.inputTokens;
   if (!target || count === null || count === undefined) { report.sent = { refused: 'no token count for the actor to send' }; return report; }
-  // Ceiling: the counted input plus a 25% margin for schema overhead, and the full output allowance.
-  const ceilingUsd = usd(Math.ceil(count * 1.25), target.request.maxOutputTokens);
-  if (!(ceilingUsd <= maxUsd)) { report.sent = { refused: 'ceiling_above_max_usd', ceilingUsd, maxUsd }; return report; }
+  // The free count excludes the output schema. Use the study's full request bound instead
+  // of a percentage margin; the PC check showed that 25% underestimated billed input.
+  const { maxInputTokens, maxOutputTokens } = target.request;
+  const ceilingUsd = usd(maxInputTokens, maxOutputTokens);
+  const ceiling = { ceilingUsd, ceilingBasis: 'request_bound', maxInputTokens, maxOutputTokens, maxUsd };
+  if (count > maxInputTokens) { report.sent = { refused: 'input_count_above_bound', countedInputTokens: count, ...ceiling }; return report; }
+  if (!(ceilingUsd <= maxUsd)) { report.sent = { refused: 'ceiling_above_max_usd', ...ceiling }; return report; }
   const x = await send('messages', target.request.body, `message-${actorToSend}`);
-  const sent: Record<string, unknown> = { actorId: actorToSend, requestSha256: target.request.sha256, ceilingUsd, httpStatus: x.httpStatus, elapsedMs: x.elapsedMs,
+  const sent: Record<string, unknown> = { actorId: actorToSend, requestSha256: target.request.sha256, ...ceiling, httpStatus: x.httpStatus, elapsedMs: x.elapsedMs,
     withinStudyDeadline: x.elapsedMs <= STUDY_DEADLINE_MS, errorType: x.errorType ?? null, errorMessage: x.errorMessage ?? null };
   if (x.httpStatus === 200 && x.bytes) {
     try {

@@ -9,7 +9,7 @@ observation, notices and decision schema, translated to Anthropic's Messages for
 | Step | Endpoint | Cost |
 |---|---|---|
 | Count the 7 tick-0 requests | `POST /v1/messages/count_tokens` | **free** (rate-limited) |
-| `--send-one`: one real message (the Baker) | `POST /v1/messages` | about **$0.001** at $0.10 / $0.50 per M. The script refuses to send if the ceiling (counted input + 25%, plus 2,048 output tokens) is over `--max-usd`, default $0.01, allowed up to $0.05 |
+| `--send-one`: one real message (the Baker) | `POST /v1/messages` | about **$0.001** at $0.10 / $0.50 per M. The script refuses to send if the ceiling (the full request input bound plus 2,048 output tokens) is over `--max-usd`, default $0.01, allowed up to $0.05 |
 
 Nothing here is study evidence. No allowance is created or touched, and the episode is not
 advanced.
@@ -65,6 +65,40 @@ before any call if it is missing.
 - **Model id:** `claude-haiku-5-5` is itself a pinned snapshot, with retirement no sooner than
   2027-10-07.
 
+## Cost ceiling corrected offline — 2026-10-22 (source acfff4e)
+
+The 2,048 output-token cap remains unchanged: the approved call used only 315 tokens (15.38%).
+The defect was the diagnostic's input estimate. It now uses the same full-request input bound as
+the study (UTF-8 request bytes plus a 4,096-token margin), rather than multiplying the
+schema-excluding free count by 1.25. For this frozen Baker request the bound is 30,538 input and
+2,048 output tokens, giving **USD 0.0040778**, below the unchanged USD 0.01 diagnostic limit.
+This is a conservative admission ceiling; the observed call cost remains USD 0.0015665.
+
+Reports now state `ceilingBasis`, `maxInputTokens`, `maxOutputTokens` and `maxUsd`. A free
+count above the request bound stops before the paid message with `input_count_above_bound`.
+Two fake-sender regression tests reproduced unwanted dispatch in the old code, then passed
+with the fix. TypeScript and 45 tests across the adapter, study freeze, pricing and accounted
+study files passed; a new committed runtime built offline. No paid call was repeated, and no
+request bytes, freeze pins, model settings, pricing entry, study manifest or accounting code changed.
+The earlier live result below remains tied to its original runtime b1a1646.
+
+At the measured 14,090 input tokens per request, with no cache use:
+
+| Output tokens per call | List USD per call | List USD for 630 calls | Booked USD for 630 calls |
+|---|---:|---:|---:|
+| 315 (observed) | 0.0015665 | 0.986895 | 1.97379 |
+| 2,048 (current output cap) | 0.002433 | 1.53279 | 3.06558 |
+| 4,096 (hypothetical, not enabled) | 0.003457 | 2.17791 | 4.35582 |
+
+These are projections holding input size fixed, not a completed study or an upper bound across
+all future prompts. Booked values use the unchanged 2x list rates with the ledger's micro-USD
+rounding; they consume the USD 5 allowance. The provider's list-price column is separate from that
+conservative booking. Official pricing was rechecked at
+[Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing): USD 0.10 per
+million input and USD 0.50 per million output tokens for prompts up to 100,000 tokens. Reasoning
+is included in the recorded output tokens. Raising the output cap is unnecessary for this sample
+and would require a separate owner-directed change to the frozen study; no such change was made.
+
 ## Result — approved PC repeat, 2026-10-22 (runtime b1a1646, reasoning at medium effort)
 
 The owner explicitly requested the test in the PC session. Exactly seven free token-count requests
@@ -102,8 +136,8 @@ was 14,090 (3,291 extra). The 25% margin estimates 13,499 input tokens, so it is
 bound: measured input with the full 2,048 output tokens would cost USD 0.002433, slightly above
 that estimate. The observed bill did not overrun either limit. The accounted study uses its own
 request-byte-derived input ceiling (30,538 for this request), rather than this diagnostic heuristic.
-No cap, price, pin or source code was changed; strengthen the diagnostic estimate before relying
-on it as a strict cost bound.
+The paid test changed no cap, price, pin or source code. The subsequent offline correction above
+replaces that diagnostic heuristic; its historical figures remain unchanged.
 
 The original October 18 journal hash is unchanged. No allowance or 72-hour window was created,
 and Study 1 remains paused until the owner reactivates it. One successful fixture does not measure
