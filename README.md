@@ -67,7 +67,10 @@ A capped, accounted runner now exists for the first live run of that study. Ever
 reserved against a USD 5 allowance before it is sent, and its usage is booked before the response
 can affect the simulation. The study runs on `claude-haiku-5-5` (owner decision D11, 2026-10-22). The
 allowance books it only at reviewed rates backed by a committed, hashed copy of the provider's
-price table. The run waits until the owner reactivates it
+price table. Each call also captures the model's reasoning evidence where the provider exposes it:
+for Haiku 5.5, a provider-written summary of its thinking (never the raw chain of thought), recorded
+verbatim with what was requested and marked absent when none comes back (owner decision,
+2026-10-22). The run waits until the owner reactivates it
 ([runbook](docs/research/RUNBOOK_AUTHORITY_STUDY_1.md)). Its scripts check for PowerShell 7 before
 any reservation or call.
 

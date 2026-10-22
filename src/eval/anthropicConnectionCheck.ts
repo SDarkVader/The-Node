@@ -8,7 +8,8 @@
  * 3. Only with `sendOne`: sends ONE real message (the Baker, whose schema exercises the most
  *    keywords), after refusing if its cost ceiling exceeds `maxUsd`. It reports whether the schema
  *    was accepted, the stop reason, usage, cost, latency against the 12,000 ms study deadline, and
- *    whether the decision passes the real validator. Enum case mismatches are reported, not repaired.
+ *    whether the decision passes the real validator, and what reasoning came back (status and the
+ *    summaries, verbatim) against the 2,048 output-token cap. Enum case mismatches are reported, not repaired.
  * Nothing here is study evidence: the episode is not advanced and no allowance is touched. The
  * single message's cost is reported, at list price, in the check's own report.
  */
@@ -67,6 +68,8 @@ export async function runAnthropicConnectionCheck(send: CheckSender, options: Ch
         stopReason: r.stopReason, status: r.receipt.status, actionable: r.actionable, usage: r.receipt.usage,
         costUsd: r.receipt.usage ? usd(r.receipt.usage.inputTokens, r.receipt.usage.outputTokens) : null,
         countedVsBilledInput: r.receipt.usage ? { counted: count, billed: r.receipt.usage.inputTokens } : null,
+        reasoning: { status: r.reasoning.status, summaryChars: r.reasoning.summaries.map((t) => t.length), redactedBlocks: r.reasoning.redactedBlocks,
+          summaries: r.reasoning.summaries }, outputTokensOfCap: r.receipt.usage ? `${r.receipt.usage.outputTokens}/${target.request.maxOutputTokens}` : null,
         decision: r.decision, validatorAccepts: r.actionable && validateDecision(r.decision, target.request.context) !== null,
         caseMismatches: r.actionable ? caseMismatches(r.decision, schema) : [] });
     } catch (e) { sent.parseError = e instanceof Error ? e.message : String(e); }

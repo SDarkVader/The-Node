@@ -8,9 +8,13 @@
  *   stop_reason, stop_sequence, usage:{input_tokens, output_tokens, cache_*_input_tokens?}}`.
  * - Usage is extracted independently of content. Cache read/creation tokens, if any, are added to
  *   input tokens, so booking never undercounts.
- * - Only `end_turn` with exactly one text block is actionable. `refusal` is booked as refused;
- *   `max_tokens` and any other stop reason are incomplete. A thinking or tool block means the
- *   request settings were not honoured, so it is not actionable.
+ * - Only `end_turn` with exactly one text block, last, is actionable; before it may come only
+ *   well-formed `thinking` / `redacted_thinking` blocks. `refusal` is booked as refused;
+ *   `max_tokens` and any other stop reason are incomplete. A tool or other block is not actionable.
+ * - Reasoning evidence is read whether or not the response is actionable: each thinking block's
+ *   text verbatim, in order (a provider-written summary, never the raw chain of thought), the
+ *   sha256 of its opaque signature, and how many blocks were redacted. Absent reasoning is
+ *   recorded as absent (`not_returned`), never filled in.
  * - Enum capitalisation is not normalised. Anthropic documents that enum values may come back in
  *   another case, and the validator then rejects the decision. That is recorded, not repaired.
  */
@@ -23,7 +27,29 @@ const object = (v: unknown): v is Record<string, unknown> => v !== null && typeo
 const integer = (v: unknown): v is number => Number.isSafeInteger(v) && Number(v) >= 0;
 const id = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(v);
 
-export interface AnthropicRecorded extends RecordedResponse { stopReason: string | null }
+/** What came back about the model's reasoning. `summary_empty`: thinking blocks with empty text
+ *  (display omitted); `redacted_only`: only redacted blocks; `not_returned`: the model did not think. */
+export type ReasoningStatus = 'summary_returned' | 'summary_empty' | 'redacted_only' | 'not_returned';
+export interface ReasoningEvidence {
+  source: 'anthropic_thinking_summary';
+  status: ReasoningStatus;
+  summaries: string[];
+  signatureSha256: string[];
+  redactedBlocks: number;
+}
+export interface AnthropicRecorded extends RecordedResponse { stopReason: string | null; reasoning: ReasoningEvidence }
+
+const isThinking = (b: unknown): b is { type: 'thinking'; thinking: string; signature: string } =>
+  object(b) && b.type === 'thinking' && typeof b.thinking === 'string' && typeof b.signature === 'string';
+const isRedacted = (b: unknown) => object(b) && b.type === 'redacted_thinking' && typeof b.data === 'string';
+
+function readReasoning(content: unknown[]): ReasoningEvidence {
+  const thinking = content.filter(isThinking), redactedBlocks = content.filter(isRedacted).length;
+  const summaries = thinking.map((b) => b.thinking);
+  const status: ReasoningStatus = summaries.some((t) => t.length > 0) ? 'summary_returned' : thinking.length ? 'summary_empty'
+    : redactedBlocks ? 'redacted_only' : 'not_returned';
+  return { source: 'anthropic_thinking_summary', status, summaries, signatureSha256: thinking.map((b) => sha256(b.signature)), redactedBlocks };
+}
 
 export function parseAnthropicResponse(bytes: Buffer, requestId: string): AnthropicRecorded {
   if (!Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > 262_144 || !id(requestId)) return fail('anthropic_response_bounds');
@@ -38,13 +64,15 @@ export function parseAnthropicResponse(bytes: Buffer, requestId: string): Anthro
   }
   const stopReason = typeof value.stop_reason === 'string' ? value.stop_reason : null;
   let decision: unknown = null, actionable = false;
-  const content = Array.isArray(value.content) ? value.content : [];
-  const part = content[0];
-  if (stopReason === 'end_turn' && content.length === 1 && object(part) && part.type === 'text' && typeof part.text === 'string' && Buffer.byteLength(part.text) <= 32_768) {
+  const content: unknown[] = Array.isArray(value.content) ? value.content : [];
+  const part = content.at(-1);
+  if (stopReason === 'end_turn' && content.slice(0, -1).every((b) => isThinking(b) || isRedacted(b)) &&
+    object(part) && part.type === 'text' && typeof part.text === 'string' && Buffer.byteLength(part.text) <= 32_768) {
     try { decision = JSON.parse(part.text); actionable = true; } catch { /* Usage is still booked. */ }
   }
   const status: AccountingReceipt['status'] = stopReason === 'refusal' ? 'refused' : stopReason === 'end_turn' ? 'completed' : 'incomplete';
-  return { receipt: { receiptId: value.id, requestId, sourceSha256: sha256(bytes), model: value.model, status, usage }, decision, actionable, stopReason };
+  return { receipt: { receiptId: value.id, requestId, sourceSha256: sha256(bytes), model: value.model, status, usage }, decision, actionable, stopReason,
+    reasoning: readReasoning(content) };
 }
 
 /** Where a decision differs from an enum value only by case (reported by the connection check). */

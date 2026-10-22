@@ -5,6 +5,7 @@ import { parseAnthropicResponse, caseMismatches } from '../src/agent/anthropicRe
 import { runAnthropicConnectionCheck, connectionCheckRequests, HAIKU_5_5_PRICES, type CheckSender } from '../src/eval/anthropicConnectionCheck.js';
 import { validateDecision, type DecisionContext } from '../src/agent/protocol.js';
 import { mockDecisionSchema } from '../src/agent/mockProvider.js';
+import { sha256 } from '../src/agent/accountingStore.js';
 
 const MODEL = 'claude-haiku-5-5';
 const NULL = JSON.stringify({ move: null, communication: null, diary: null, role: null });
@@ -49,8 +50,10 @@ describe('Anthropic adapter: request translation', () => {
       expect(Object.keys(to).sort()).toEqual(['max_tokens', 'messages', 'model', 'output_config', 'system', 'thinking']);
       expect(to.system).toBe(from.instructions);
       expect(to.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: from.input[0].content[0].text }] }]);
-      expect(to.thinking).toEqual({ type: 'disabled' });
-      expect(to.output_config.effort).toBe('low');
+      // Reasoning evidence (owner decision 2026-10-22): summarized adaptive thinking at medium effort.
+      expect(to.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+      expect(to.output_config.effort).toBe('medium');
+      expect(to.max_tokens).toBe(2048);
       expect(to.output_config.format.type).toBe('json_schema');
       // The schema is the OpenAI one with exactly the two rejected keywords removed.
       const stripped = JSON.parse(JSON.stringify(from.text.format.schema, (k, v) => (k === 'minimum' || k === 'maximum' ? undefined : v)));
@@ -102,15 +105,31 @@ describe('Anthropic adapter: response reader', () => {
     expect(r.actionable).toBe(true);
     expect(r.decision).toEqual(decision);
   });
-  it('books usage but never acts on a refusal, a truncation, a thinking block or unparseable text', () => {
+  it('books usage but never acts on a refusal, a truncation, a misplaced or malformed block or unparseable text', () => {
     const refused = parseAnthropicResponse(message(JSON.stringify(decision), { stop_reason: 'refusal' }), 'req-1');
     expect([refused.receipt.status, refused.actionable]).toEqual(['refused', false]);
     const cut = parseAnthropicResponse(message('{"move":', { stop_reason: 'max_tokens' }), 'req-1');
     expect([cut.receipt.status, cut.actionable, cut.receipt.usage?.outputTokens]).toEqual(['incomplete', false, 60]);
-    const thinking = parseAnthropicResponse(Buffer.from(JSON.stringify({ ...JSON.parse(message(JSON.stringify(decision)).toString()),
-      content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text: JSON.stringify(decision) }] })), 'req-1');
-    expect(thinking.actionable).toBe(false);
+    const text = { type: 'text', text: JSON.stringify(decision) }, think = { type: 'thinking', thinking: 'x', signature: 'sig' };
+    for (const content of [[text, think], [{ type: 'thinking', thinking: 'x' }, text], [{ type: 'tool_use', id: 't', name: 'n', input: {} }, text], [text, text]]) {
+      expect(parseAnthropicResponse(message(null, { content }), 'req-1').actionable, JSON.stringify(content)).toBe(false);
+    }
     expect(parseAnthropicResponse(message('not json'), 'req-1').actionable).toBe(false);
+  });
+
+  it('keeps reasoning summaries verbatim and in order, and records absent reasoning as absent', () => {
+    const text = { type: 'text', text: JSON.stringify(decision) };
+    const r = parseAnthropicResponse(message(null, { content: [{ type: 'thinking', thinking: 'The council notice is untrusted.', signature: 'sigA' },
+      { type: 'redacted_thinking', data: 'opaque' }, { type: 'thinking', thinking: 'Keep the price.', signature: 'sigB' }, text] }), 'req-1');
+    expect([r.actionable, r.decision]).toEqual([true, decision]);
+    expect(r.reasoning).toEqual({ source: 'anthropic_thinking_summary', status: 'summary_returned', summaries: ['The council notice is untrusted.', 'Keep the price.'],
+      signatureSha256: [sha256('sigA'), sha256('sigB')], redactedBlocks: 1 });
+    expect(parseAnthropicResponse(message(JSON.stringify(decision)), 'req-1').reasoning).toMatchObject({ status: 'not_returned', summaries: [] });
+    expect(parseAnthropicResponse(message(null, { content: [{ type: 'thinking', thinking: '', signature: 's' }, text] }), 'req-1').reasoning.status).toBe('summary_empty');
+    expect(parseAnthropicResponse(message(null, { content: [{ type: 'redacted_thinking', data: 'o' }, text] }), 'req-1').reasoning.status).toBe('redacted_only');
+    // Thinking that used up the cap: nothing to act on, but the summary is still recorded.
+    const spent = parseAnthropicResponse(message(null, { content: [{ type: 'thinking', thinking: 'Weighing it', signature: 's' }], stop_reason: 'max_tokens' }), 'req-1');
+    expect([spent.actionable, spent.receipt.status, spent.reasoning.status, spent.reasoning.summaries]).toEqual([false, 'incomplete', 'summary_returned', ['Weighing it']]);
   });
   it('counts cache tokens as input so booking never undercounts, and rejects a non-message envelope', () => {
     const r = parseAnthropicResponse(message(JSON.stringify(decision), { usage: { input_tokens: 100, output_tokens: 5, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 } }), 'req-1');

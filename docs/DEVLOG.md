@@ -1,3 +1,27 @@
+> 2026-10-22 (late night) — Two owner-directed fixes to Study 1: the Grifter role line, and reasoning evidence.
+>
+> **Owner direction.** The design is the owner's; fix clear issues and avoid scope creep. The documents are a working record, not explicit rules. "Reasoning was always part of the design. Just not yet selected as implementation was developing." Answers: reasoning goes "Into Study 1", at "Medium" effort.
+>
+> - **Grifter role line (`5e09cb1`).** Under v2 it said the broker permits movement and observation only, while the validator and the v2 action line let a Grifter speak and keep the diary. It now reads "May move, speak and keep the diary; has no role input." The v1 text is unchanged. Only `grifter-0`'s request bytes moved (sixth pin move); a new test holds both texts.
+> - **Reasoning evidence (`906ea9d`).**
+>   - Request: `thinking: {type:'adaptive', display:'summarized'}` at effort `medium`, replacing thinking disabled at `low`.
+>   - Reader: thinking and redacted-thinking blocks may come before the single text answer. Each summary is kept verbatim, in order, with a hash of its signature. Status is `summary_returned`, `summary_empty`, `redacted_only` or `not_returned`, and absent reasoning is recorded as absent.
+>   - Call records state the settings read back from the bytes sent and what came back, linked to the tape by `requestId`. Reasoning never reaches the game: a test shows the episode is identical with or without it.
+>   - The manifest records the setting, and `validateManifest` refuses a Claude manifest that differs from what the builder sends. The manifest hash moved to `8237ceeb…` and every actor's pins moved (seventh pin move).
+>   - The connection check now reports reasoning and output tokens against the cap.
+> - **Kept on purpose:** the 2,048 output-token cap (thinking counts toward it), the per-request ceiling, the USD 5 cap, the contract and the analysis. At the full cap, 630 calls would book about 3.1 USD.
+> - **Not yet known:** how much Haiku thinks at medium effort on these requests, and whether it skips thinking. Runbook step 0.5 measures this with one message on the owner's PC.
+> - **Verification:** tsc clean; Vitest 1316/1316; Python 29/29.
+> - **Docs:** runbook, connection-check guide, README, BLUEPRINT_HISTORY D12–D13, checkpoint, and the nine Claude Docs.
+
+> 2026-10-22 (night) — Research documentation in Claude Docs; two findings; the 18 October journal checked.
+>
+> - **Documents.** At the owner's request, nine documents now live outside the repository, in Claude Docs: the programme, Study 1, evaluation and metrics, rules and actions, world design, models and accounting, the operator runbook, decisions and open questions, and a results-interface stub. They were drafted from the verified repository records and the owner's own account of purpose and history. Links are in the checkpoint. The repository governs implementation; discrepancies are recorded, not rewritten.
+> - **Finding: the Grifter's instructions contradict themselves.** In `src/agent/rulesContext.ts`, the Grifter's role line ends "This broker currently permits movement/observation only." The shared v2 text, the v2 validator and contract 1.1.0 all let the Grifter post. The line is in Study 1's frozen request bytes, so it is left unchanged pending the owner's decision. The recommendation is to correct it and re-pin before any call.
+> - **Finding: the gate count.** The owner's register defines gates G0–G7; the owner's brief for the documents named G0–G6. Both are recorded.
+> - **Corrected:** `docs/EVAL_INFRASTRUCTURE.md` still named `gpt-5.4-nano-2026-03-17` as Study 1's model and called the Grifter ineligible. Both statements are now corrected, with the date.
+> - **18 October allowance.** The owner uploaded a copy of the journal. It validates with the repository's own code, matches the recorded state (two requests, 11,418 micro-USD booked, nothing held, expired 19 October), and a dry run of runbook step 2 carried it into a Haiku allowance. The scratch copies were deleted, and nothing was committed. On the PC, the folder must hold the file named exactly `accounting.journal.json`.
+
 > 2026-10-22 (evening) — Study 1 moves to `claude-haiku-5-5` (owner decision D11), with a PowerShell 7 preflight.
 >
 > **Owner's connection check (their PC, runtime `973ed24`):**

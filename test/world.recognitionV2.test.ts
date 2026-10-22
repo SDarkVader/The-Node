@@ -386,6 +386,23 @@ describe('v2 data blockers closed: Grifter gate, rules text, courier pay', () =>
     expect(v1).not.toContain(RULES_CONTEXT_VERSION_V2);
   });
 
+  it('the v2 Grifter role line states what the validator permits, and v1 keeps its own', async () => {
+    const { buildResponsesRequest } = await import('../src/agent/responsesRequest.js');
+    const instructions = (cfg: typeof DEFAULT_WORLD_CONFIG) => {
+      const g = fixtureGenesis(103, cfg);
+      let st = createParticipantState(g);
+      for (let d = 0; d < 3; d++) st = stepParticipantState(st, [], []).state; // housing places Grifters
+      const grifter = [...st.registry.people.values()].find((p) => p.location !== null && p.role === null)!;
+      return JSON.parse(buildResponsesRequest({ observationId: 'grifter-rules-test', ...observe(st, grifter.id, g.observerSecret) }, 'gpt-5.4-nano-2026-03-17').body).instructions as string;
+    };
+    const v2 = instructions(V2), v1 = instructions(DEFAULT_WORLD_CONFIG);
+    expect(v2).not.toMatch(/movement\/observation only|move\/observe only/);
+    expect(v2).toContain('Grifter: Roleless resident');
+    expect(v2).toContain('May move, speak and keep the diary; has no role input.');
+    expect(v1).toContain('This broker currently permits movement/observation only.');
+    expect(v1).toContain('Grifter has move/observe only.');
+  });
+
   it('a v2 Courier is paid by its workplace route, whether it walks or not', () => {
     const genesis = fixtureGenesis(103, V2);
     const wealthAfter = (walk: boolean) => {

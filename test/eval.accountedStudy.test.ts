@@ -312,6 +312,8 @@ describe('the committed study manifest', () => {
     validateManifest(m);
     // Owner decision D11 (2026-10-22): study 1 runs on claude-haiku-5-5 at its reviewed rates.
     expect(m.model).toBe(HAIKU);
+    // Reasoning is captured (owner decision 2026-10-22): summarized adaptive thinking, medium effort.
+    expect(m.reasoning).toEqual(REASONING);
     expect(m.episodes.length).toBe(15);
     expect(m.allowance).toEqual({ maxRequests: 714, limitMicroUsd: 5_000_000, perRequestMicroUsd: 20000, windowHours: 72 });
     for (const arm of ['council', 'anonymous', 'none']) expect(m.episodes.filter((e) => e.scenario.endsWith(arm)).length).toBe(5);
@@ -320,8 +322,10 @@ describe('the committed study manifest', () => {
     for (const arm of ['council', 'anonymous', 'none']) expect(new Set([1, 2, 3].map((r) => position(r, arm)))).toEqual(new Set([0, 1, 2]));
     expect(usageCost(36864, 2048, HAIKU_PRICES)).toBeLessThanOrEqual(m.allowance.perRequestMicroUsd);
     // At the measured Haiku size (14,089 in on 2026-10-22; 100 out allowed for speech), 630 calls
-    // book about 1.8 of the 5 USD at the 2x booking rates.
+    // book about 1.8 of the 5 USD at the 2x booking rates. With reasoning on, thinking is billed as
+    // output: even if every call used the whole 2,048-token cap, 630 calls book about 3.1 USD.
     expect(630 * usageCost(14089, 100, HAIKU_PRICES)).toBeLessThan(m.allowance.limitMicroUsd / 2);
+    expect(630 * usageCost(14089, 2048, HAIKU_PRICES)).toBeLessThan(m.allowance.limitMicroUsd);
   });
 });
 
@@ -329,7 +333,7 @@ const HAIKU = 'claude-haiku-5-5';
 const HAIKU_PRICES = PRICED_MODELS[HAIKU]!;
 
 /** Loopback Anthropic "model": reads only the Messages bytes it is given; same label-sensitive policy. */
-function anthropicLoopback(opts: { wrongModelAt?: number; refuseAt?: number } = {}) {
+function anthropicLoopback(opts: { wrongModelAt?: number; refuseAt?: number; thinkAt?: number } = {}) {
   const seen: { index: number; body: string; provider: string }[] = [];
   const send: Sender = async (input) => {
     seen.push({ index: input.index, body: input.body, provider: input.provider });
@@ -340,12 +344,13 @@ function anthropicLoopback(opts: { wrongModelAt?: number; refuseAt?: number } = 
     const decision = { move: null, communication: council && role !== 'Baker' ? { kind: 'wallPost', state: 'hopeful' } : null, diary: null,
       role: role === 'Baker' ? { kind: 'bakerPrice', price: council ? 1.9 : 0.8 } : null };
     return Buffer.from(JSON.stringify({ id: `msg_${input.index}`, type: 'message', role: 'assistant', model: input.index === opts.wrongModelAt ? 'claude-other' : request.model,
-      content: [{ type: 'text', text: JSON.stringify(decision) }], stop_reason: input.index === opts.refuseAt ? 'refusal' : 'end_turn', stop_sequence: null,
+      content: [...(input.index === opts.thinkAt ? [{ type: 'thinking', thinking: `summary ${input.index}`, signature: 'sig' }] : []), { type: 'text', text: JSON.stringify(decision) }], stop_reason: input.index === opts.refuseAt ? 'refusal' : 'end_turn', stop_sequence: null,
       usage: { input_tokens: 13000, output_tokens: 60 } }));
   };
   return { send, seen };
 }
-const haikuManifest = (): StudyManifest => ({ ...manifest(), model: HAIKU });
+const REASONING = { thinking: { type: 'adaptive', display: 'summarized' }, effort: 'medium' };
+const haikuManifest = (): StudyManifest => ({ ...manifest(), model: HAIKU, reasoning: REASONING });
 const haikuExperiment = (m: StudyManifest, over: Partial<ExperimentAuthorization> = {}) => experiment(m, { model: HAIKU, prices: HAIKU_PRICES, ...over });
 
 describe('study 1 on claude-haiku-5-5 (owner decision D11, 2026-10-22)', () => {
@@ -388,6 +393,27 @@ describe('study 1 on claude-haiku-5-5 (owner decision D11, 2026-10-22)', () => {
     const ran = await runAccountedStudy(m, refused.budget, anthropicLoopback({ refuseAt: 5 }).send, out.sink, { sourceRevision: 'test' });
     expect(ran.stoppedReason).toBeNull();
     expect(out.calls.find((c) => c.index === 5)).toMatchObject({ outcome: 'response_recorded', status: 'refused', actionable: false });
+  });
+
+  it('every call record states the reasoning sent and what came back, without changing the decision', async () => {
+    const m = haikuManifest(); const { budget } = haikuExperiment(m); const out = sink();
+    const plain = sink();
+    await runAccountedStudy(m, budget, anthropicLoopback({ thinkAt: 4 }).send, out.sink, { sourceRevision: 'test' });
+    await runAccountedStudy(m, haikuExperiment(m).budget, anthropicLoopback().send, plain.sink, { sourceRevision: 'test' });
+    for (const c of out.calls) expect(c.reasoning!.requested).toEqual({ thinking: REASONING.thinking, effort: REASONING.effort });
+    expect(out.calls.find((c) => c.index === 4)!.reasoning).toMatchObject({ status: 'summary_returned', source: 'anthropic_thinking_summary', summaries: ['summary 4'] });
+    expect(out.calls.filter((c) => c.reasoning!.status === 'not_returned').length).toBe(out.calls.length - 1);
+    // Reasoning is evidence beside the decision: the episode is identical with or without it.
+    expect(out.episodes[0]!.finalStateHash).toBe(plain.episodes[0]!.finalStateHash);
+  });
+
+  it('a Claude manifest must name exactly the reasoning the request builder sends; others name none', () => {
+    validateManifest(haikuManifest());
+    for (const reasoning of [undefined, { ...REASONING, effort: 'low' }, { ...REASONING, thinking: { type: 'disabled', display: 'summarized' } }]) {
+      expect(() => validateManifest({ ...haikuManifest(), reasoning } as StudyManifest), JSON.stringify(reasoning)).toThrow('study_manifest_reasoning_mismatch');
+    }
+    validateManifest(manifest());
+    expect(() => validateManifest({ ...manifest(), reasoning: REASONING })).toThrow('study_manifest_reasoning_mismatch');
   });
 
   it('pacing can be slowed for a lower provider tier, never sped up below the manifest', async () => {

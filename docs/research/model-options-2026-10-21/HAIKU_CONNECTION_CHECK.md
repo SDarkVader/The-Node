@@ -47,19 +47,25 @@ before any call if it is missing.
   any enum value Claude returned in a different case. Anthropic documents this can happen; we
   record it and do not repair it.
 - **Cost:** `costUsd` at list price, and `stopReason` (`end_turn`, `refusal` or `max_tokens`).
+- **Reasoning:** `reasoning.status` (`summary_returned`, `summary_empty`, `redacted_only` or
+  `not_returned`), the summaries verbatim, and `outputTokensOfCap` (output tokens used of 2,048).
 
 ## Request settings, and why
 
 - **Format:** `output_config.format = {type:'json_schema', schema}`. The schema is study 1's, with
   `minimum`/`maximum` removed, because Anthropic rejects those with a 400. The validator still
   enforces price ∈ [0, 2].
-- **Reasoning:** `output_config.effort = 'low'` and `thinking: {type:'disabled'}`. For Haiku 5.5,
-  thinking is off at high effort or below; this mirrors the OpenAI request's low reasoning.
+- **Reasoning (since 2026-10-22, owner decision):** `thinking: {type:'adaptive', display:'summarized'}`
+  at `output_config.effort = 'medium'`. The reply may begin with `thinking` blocks before the
+  answer; each holds a provider-written summary (never the raw chain of thought) and an opaque
+  signature. Thinking counts toward the 2,048-token cap and is billed as output. The check below
+  was run earlier with `thinking: {type:'disabled'}` at effort `low`, which mirrored the OpenAI
+  request; re-run it (runbook step 0.5) to measure the new setting.
 - **Not sent:** temperature, top_p, top_k or an assistant prefill. Each returns a 400 on Haiku 5.5.
 - **Model id:** `claude-haiku-5-5` is itself a pinned snapshot, with retirement no sooner than
   2027-10-07.
 
-## Result — owner's PC, 2026-10-22 (runtime 973ed24)
+## Result — owner's PC, 2026-10-22 (runtime 973ed24, thinking disabled at effort low)
 
 First attempt: all seven calls returned `httpStatus: null` because PowerShell 7 (`pwsh`) was not
 installed. The report did not name that cause, which was a gap in the script. (Fixed 2026-10-22,

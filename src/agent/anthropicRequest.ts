@@ -9,8 +9,11 @@
  * (docs/research/model-options-2026-10-21/verify-anthropic.json):
  * - `system` = instructions; one user `text` block = the observation text;
  * - `output_config.format = {type:'json_schema', schema}` (structured outputs, GA);
- * - `output_config.effort = 'low'` with `thinking: {type:'disabled'}` (Haiku 5.5: thinking off at
- *   high effort or below), mirroring the OpenAI request's low reasoning;
+ * - reasoning evidence (owner decision 2026-10-22: reasoning is part of the design; study 1
+ *   captures it): `thinking: {type:'adaptive', display:'summarized'}` at `output_config.effort =
+ *   'medium'`. Haiku 5.5 returns a provider-written SUMMARY of its reasoning, never the raw chain
+ *   of thought, and may skip thinking on a simple request. Thinking tokens are billed as output
+ *   and count toward `max_tokens` (2,048, unchanged, inside the same reservation ceiling);
  * - no temperature/top_p/top_k and no assistant prefill (both return 400 on Haiku 5.5);
  * - `minimum`/`maximum` removed from the schema: Anthropic rejects them with 400. The validator
  *   still enforces price ∈ [0, 2] (`validateDecision`), so the bound is checked, not lost.
@@ -25,6 +28,9 @@ export const ANTHROPIC_VERSION = '2023-06-01' as const;
 export const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages' as const;
 export const ANTHROPIC_COUNT_TOKENS_URL = 'https://api.anthropic.com/v1/messages/count_tokens' as const;
 const MAX_BODY_BYTES = 32_768;
+/** The reasoning configuration every Anthropic request carries; call records restate it from the bytes sent. */
+export const ANTHROPIC_THINKING = Object.freeze({ type: 'adaptive', display: 'summarized' } as const);
+export const ANTHROPIC_EFFORT = 'medium' as const;
 
 type Schema = Record<string, unknown>;
 export interface AnthropicRequest {
@@ -62,9 +68,9 @@ export function toAnthropicRequest(request: ResponsesShapedRequest, model: strin
   const format = object(source.text) && object(source.text.format) ? source.text.format : undefined;
   if (!object(message) || message.role !== 'user' || !object(part) || part.type !== 'input_text' || typeof part.text !== 'string' ||
     !format || format.type !== 'json_schema' || format.strict !== true || !object(format.schema)) return fail('anthropic_source_invalid');
-  const input = { system: source.instructions, messages: [{ role: 'user', content: [{ type: 'text', text: part.text }] }], thinking: { type: 'disabled' } };
+  const input = { system: source.instructions, messages: [{ role: 'user', content: [{ type: 'text', text: part.text }] }], thinking: { ...ANTHROPIC_THINKING } };
   const body = JSON.stringify({ model, max_tokens: 2_048, ...input,
-    output_config: { effort: 'low', format: { type: 'json_schema', schema: anthropicSchema(format.schema) } } });
+    output_config: { effort: ANTHROPIC_EFFORT, format: { type: 'json_schema', schema: anthropicSchema(format.schema) } } });
   const countBody = JSON.stringify({ model, ...input });
   const size = Buffer.byteLength(body, 'utf8');
   if (size > MAX_BODY_BYTES) return fail('anthropic_request_too_large');
