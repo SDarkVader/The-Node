@@ -1,3 +1,11 @@
+> 2026-10-22 — Windows PC preflight after PR #35 (source `b1a1646`).
+>
+> - Updated the clean main checkout by fast-forward; installed locked dependencies.
+> - TypeScript passed; 105 Vitest files passed (1,315 tests, one intentional POSIX-only skip on Windows); 8/8 session-recovery checks passed. PowerShell 7.6.5, the real worker preflight, tracked recovery and an offline runtime build passed. Python and hosted CI were not rerun.
+> - The October 18 allowance hash matched the handover. Opened only a scratch copy: two requests, 11,418 micro-USD booked, zero held, expected nano model and expiry. Deleted the copy; the original hash is unchanged and no original lock was created. No private file or path is included in this record.
+> - No provider call, new allowance or Study 1 run. The medium-effort reasoning check remains the next owner-directed step.
+> - The test runner normalized the regression snapshot line endings; its content hash still matched the committed blob, and no snapshot values changed.
+
 > 2026-10-22 (late night) — Two owner-directed fixes to Study 1: the Grifter role line, and reasoning evidence.
 >
 > **Owner direction.** The design is the owner's; fix clear issues and avoid scope creep. The documents are a working record, not explicit rules. "Reasoning was always part of the design. Just not yet selected as implementation was developing." Answers: reasoning goes "Into Study 1", at "Medium" effort.

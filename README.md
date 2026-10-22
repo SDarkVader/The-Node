@@ -109,6 +109,12 @@ inference accounting will connect to this same evidence pipeline. The
 [evaluation infrastructure guide](docs/EVAL_INFRASTRUCTURE.md) describes the current
 tasks, scenarios, scorers and exported records in detail.
 
+PC preflight on 2026-10-22 at `b1a1646` passed TypeScript, all 105 Vitest files
+(1,315 tests passed; one POSIX-only fixture skipped on Windows), eight recovery tests and
+the offline runtime build with PowerShell 7.6.5. The closed October allowance was validated from
+a copy and preserved unchanged. The reasoning-enabled connection check is next; Study 1 remains
+paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
+
 ## Run the suite
 
 Use Node 24 and install the locked dependencies from the repository root. These

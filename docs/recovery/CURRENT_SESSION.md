@@ -3,8 +3,9 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "8d3e39dc84565e567149c8b4f872e9bf375dca31",
+  "verifiedBaseCommit": "b1a16460b5b09feeb1a90891cf6593d20cbf0177",
   "completedWork": [
+    "2026-10-22 PC preflight after PR #35: fast-forwarded the clean local main checkout to b1a1646. npm ci completed; TypeScript passed; 105 Vitest files passed (1,315 tests passed, one intentionally skipped POSIX-shell fixture on Windows); all eight session-recovery tests passed; tracked recovery matched clean main. PowerShell 7.6.5 and the real worker preflight passed. Built an offline connection-check runtime from b1a1646. Confirmed the original 18 October journal hash matches the handover, validated only a scratch copy (2 requests, 11,418 micro-USD booked, 0 held, nano model, expiry 2026-10-19T13:21:24.584Z), deleted the copy, and re-hashed the unchanged original; no lock was created in the original folder. No provider endpoint was contacted and no allowance was created, extended or reset. The medium-effort reasoning check remains unmeasured; Study 1 remains paused.",
     "2026-10-22 (late night): owner: Codex on the PC can reach the 18 October folder, so a handover for Codex was written (docs/recovery/CODEX_HANDOVER_2026-10-22.md: never-rules, then tasks A verify, B confirm and inspect a copy of the 18 Oct allowance, C reasoning re-check (runbook step 0.5), D run when reactivated, E afterwards). The branch was merged to main by PR at the owner's request, with explicit direction for Codex in the PR body.",
     "2026-10-22 (late night): owner directed: the design is the owner's; fix clear issues without scope creep; the documents are a working record, not explicit rules; 'Reasoning was always part of the design. Just not yet selected as implementation was developing.' Two fixes, both re-pinning study 1 by owner direction. (1) 5e09cb1: the v2 Grifter role line now states what the v2 validator permits ('May move, speak and keep the diary; has no role input.'); v1 text unchanged; only grifter-0's request bytes moved; new test holds both texts. (2) 906ea9d, owner answers 'Into Study 1' and 'Medium': every Anthropic request asks for thinking {type:'adaptive', display:'summarized'} at effort medium (was disabled at low); the reader accepts thinking/redacted_thinking blocks before the single text answer and keeps each summary verbatim with a signature hash (status summary_returned / summary_empty / redacted_only / not_returned; absent reasoning recorded as absent); CallRecord.reasoning states the settings read from the bytes sent and what came back, linked by requestId, and never reaches the game (episode identical with or without it, tested); manifest gains a reasoning field that validateManifest requires to equal the request builder's setting (manifest sha 8237ceeb...); the connection check reports reasoning and output tokens of the 2,048 cap. Unchanged: max_tokens 2,048, per-request ceiling, USD 5 cap (630 calls at the full cap book about 3.1 USD), contract, analysis. Docs updated: runbook (header, cost bound, new step 0.5 re-check, privacy, interpretation), HAIKU_CONNECTION_CHECK, README, BLUEPRINT_HISTORY D12-D13, DEVLOG, the nine Claude Docs.",
     "2026-10-22 (night): owner-invoked doc co-authoring done (faster process; owner answers recorded: audience includes external reviewers and publication; the repo governs implementation and verified contracts, the owner's documented intentions govern purpose and provenance, discrepancies recorded not rewritten; 'the experiment' = the whole programme; Study 1 is exploratory with NO directional prediction and no invented hypotheses). Nine Claude Docs created from verified repo records (owner's private links): programme https://claude.ai/artifact/SsyJPrDUxTUweJVBGEvJAB ; Study 1 https://claude.ai/artifact/E9BwBtpsAYdYywWuHz79db ; evaluation and metrics https://claude.ai/artifact/9bGuCui7sB4KefHoSqs4JE ; rules and actions https://claude.ai/artifact/SoiBUkcZoMSwB99HnTv9bS ; world design https://claude.ai/artifact/Mn7FHKS2Jvj8LQkUyETr3A ; models, costs and accounting https://claude.ai/artifact/KCNp4KA43rtM4JhHAbxr8N ; operator runbook https://claude.ai/artifact/LEvNy74eSbvLA7n32omeG3 ; decisions and open questions https://claude.ai/artifact/LhMaQTzaVaBhYC25qMTDg7 ; results interface stub https://claude.ai/artifact/5k5Vd7uVfmTwAe5BhY2WT9 . Findings while drafting: (1) the Grifter's role line in rulesContext.ts says 'This broker currently permits movement/observation only' while the v2 text, validator and contract let Grifters post (open owner decision, see unresolvedIssues); (2) the owner's register defines gates G0-G7, the owner's brief said G0-G6 (both recorded); (3) EVAL_INFRASTRUCTURE.md named gpt-5.4-nano for Study 1 and called the Grifter ineligible: corrected in 8899405. The owner uploaded a copy of the 18 Oct allowance journal: it validates with InitialTestBudget.open (2 requests, 11,418 micro-USD booked, 0 held, expired 2026-10-19T13:21:24.584Z) and a scratch dry run of prepare-experiment-budget at a16bff4 carried it into a Haiku allowance (prices 200000/1000000, canReserve true); scratch copies deleted, nothing committed. The PC folder must contain that file named exactly accounting.journal.json.",
@@ -46,6 +47,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-22 Windows PC at b1a1646: locked npm install, TypeScript, 105/105 Vitest files (1,315 passed, one intentional POSIX-only skip), 8/8 native session-recovery checks, tracked recovery on clean main, real PowerShell 7 preflight (7.6.5), offline runtime build and copied-allowance validation all passed. The test runner rewrote snapshot line endings; its committed content hash was identical and no snapshot values changed. Python tests and hosted CI were not rerun for this preflight.",
     "2026-10-22 (late night, Linux) at 906ea9d: tsc clean; Vitest 1316/1316 (105 files); Python 29/29 (unittest); study-1 freeze 4/4 at the seventh pins.",
     "2026-10-22 (evening, Linux) at bc9304c: tsc clean; Vitest 1312/1312 (105 files); Python 29/29; G1 verify 29/29 replay-verified and compare_hashes 29/29 equal to main-consolidation-2026-10-20; G2 constructs ok (12 fixture checks, 9 deterministic); accounted-study rehearsal 10/10 (Haiku rates in the allowance; Anthropic bodies through the Anthropic worker after the PowerShell 7 check; 429, settlement, resume, analysis); session-recovery 8/8. No API call made from the cloud.",
     "2026-10-22 (Linux) at 168987d: tsc clean; Vitest 1292/1292 (freeze file re-run after re-pin); Python 28/28; G1 29/29; G2 12/12; rehearsal 8/8.",
@@ -93,16 +95,16 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Codex on the owner's PC: follow docs/recovery/CODEX_HANDOVER_2026-10-22.md (tasks A-C now; D only when the owner reactivates Study 1). The owner discusses there.",
+    "Codex on the owner PC: handover tasks A and B are complete at b1a1646. Next is task C, one owner-directed connection check with reasoning at medium effort (runbook step 0.5); record its figures on the task branch, never the private report or credential path. Do not prepare a new allowance or run Study 1 until the owner reactivates it.",
     "Keep the nine Claude Docs in step with the repo after each merge (links in completedWork); record discrepancies rather than rewriting either source.",
-    "Pre-run checks done 2026-10-22: model echo claude-haiku-5-5 / end_turn (step 0.3); rate limits at the Scale-tier figures, no pacing flag (step 0.4). Before runbook step 2 the owner must name where the closed 18 Oct allowance folder (initial-test-budget-2026-10-18) is on their PC; never guess it.",
+    "Pre-run checks: prior model echo and Scale-tier limits are recorded; PC tasks A/B now verified the closed 18 October allowance and current runtime. The credential-file path was confirmed privately by the owner. No reasoning-enabled message has been sent and no 72-hour window has started.",
     "Deferred by the owner: local open-model testing ('well do open model testing later') and D10 mixed per-actor sourcing/accounting (manifest per-actor model, per-model price profiles with local at zero, provider routing). For local: LOCAL_REQUIREMENTS.md 'Changes our code needs'. For the diary study: local vs claude-haiku-5-5.",
     "VERIFIED 2026-10-21 (docs/research/model-options-2026-10-21/verification-partial.json): gpt-5.4-nano-2026-03-17 deprecated (announced 2026-10-01, removal 2027-04-01; replacement gpt-6-luna $0.10/$0.01/$0.50, alias only). const unsupported by OpenAI and Google docs (fixed at 168987d). Google also does not document a standalone {type:'null'} anyOf branch (still used; test with a first live request). Model choice for study 1 is the owner's.",
     "Before any study call on a model other than gpt-5.4-nano-2026-03-17: one real request with the actual v2 schema. Only gpt-5.4-nano has accepted the schema form live (2026-10-18, two HTTP 200 calls with const, min/max, nested anyOf; docs/recovery/INITIAL_GAME_TURN.md). Correction 2026-10-22: earlier checkpoint text said the only live call was the 2026-10-16 HTTP 401; that was wrong.",
     "Owner: when reactivated, run study 1 on claude-haiku-5-5 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (about $0.9 list, $1.8 booked, 45-55 min at 4 s pacing); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "ccr-8d64b59c-a4puhv"
+  "reviewBranch": "codex/pr35-pc-preflight-2026-10-22"
 }
 NODE_SESSION_CHECKPOINT -->
 
@@ -117,8 +119,9 @@ and PR #29 (recognition v2 simulation) at `90b4954`, PR #30 at `a759182`, PR #31
 individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`, PR #32 (who can hear, no-const
 schema, verified model options) at `b06548b`, PR #33 (Anthropic adapter and Haiku connection check) at
 `973ed24`, and PR #34 (study 1 on `claude-haiku-5-5`, owner decision D11, and the PowerShell 7
-preflight) at `8d3e39d`. This checkpoint anchors at `8d3e39d` and accepts `main` or the exact task
-branch `ccr-8d64b59c-a4puhv`.
+preflight) at `8d3e39d`. PR #35 (Grifter role line, reasoning evidence and PC handover) merged
+at `b1a1646`. This checkpoint anchors at `b1a1646` and accepts `main` or the exact task
+branch `codex/pr35-pc-preflight-2026-10-22`.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -153,6 +156,13 @@ Codex on the owner's PC picks this up from [the Codex handover](CODEX_HANDOVER_2
 D1 is resolved: the diary is a measured daily task, and the earlier unprompted-only and marks-only
 rules are superseded. No API call has been made, and no existing accounting file was changed.
 Local ignored snapshots are optional and do not imply private runtime or accounting state.
+
+**PC preflight, 2026-10-22 (source `b1a1646`):** handover tasks A and B passed. The clean
+checkout, TypeScript, 105 Vitest files (1,315 passed; one intentional Windows skip), eight recovery
+tests, PowerShell 7.6.5 and offline runtime build were verified. Only a scratch copy of the closed
+18 October allowance was opened; its expected two requests, 11,418 micro-USD booked and zero held
+were confirmed. The original journal is unchanged and the copy is deleted. Task C remains the
+next owner-directed step; no provider request, new allowance or Study 1 run occurred.
 
 ## Cross-device continuation
 
