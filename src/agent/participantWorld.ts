@@ -23,6 +23,26 @@ export function fixtureGenesis(seed: number, config = DEFAULT_WORLD_CONFIG): Gen
   return {seed,config:structuredClone(config),namespace:'offline-person',observerSecret:'offline-fixture-observer-secret',sourceRevision:'participant-reconstruction-v1'};
 }
 
+/** Where the body at `location` stands, if anyone does. */
+function bodyAt(world: World, location: string): {x:number;y:number} | undefined {
+  const g = world.grifters.find(x => x.id === location); if (g) return {x:g.x,y:g.y};
+  for (const [, slots] of roleArrays(world)) { const slot = slots.find(x => x.buildingId === location); if (slot) return {x:slot.x,y:slot.y}; }
+  return undefined;
+}
+/** Moves `person`'s body (a Grifter or a role slot) to `move`, detaching the affected array. */
+function applyMove(world: World, role: string | null, location: string, move: {x:number;y:number}): World {
+  if (role === null) return {...world,grifters:world.grifters.map(g => g.id === location ? {...g,...move} : g)};
+  for (const [, slots] of roleArrays(world)) {
+    const slot = slots.find(x => x.buildingId === location);
+    if (slot) {
+      // Detach the affected array/slot rather than mutating a previous snapshot.
+      const key = role === 'importExport' ? 'importExporters' : role === 'investigator' ? 'investigators' : role === 'courier' ? 'couriers' : role === 'baker' ? 'bakers' : 'millers';
+      world = {...world,[key]:world[key].map(x => x.buildingId === location ? {...x,...move} : x)};
+    }
+  }
+  return world;
+}
+
 /** Real kernel execution; callers must hold sole ownership of the mutable RNG lineage. */
 export function stepParticipantState(previous: ParticipantState, actions: readonly CanonicalAction[], online: readonly string[]): TickResult {
   const registry = structuredClone(previous.registry);
@@ -43,23 +63,19 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
     if (!decision) throw Error('invalid_decision_tape');
     a.decision = decision; candidates.set(a.person,a);
   }
+  // Recognition v2: everyone speaks and is heard from where they stood when observed, so a move
+  // takes effect after the day's speech (owner decision 2026-10-21, "show who can hear").
+  const v2 = previous.world.config.recognition === 'v2';
+  const deferredMoves: {a: CanonicalAction; location: string; from: {x:number;y:number}}[] = [];
   for (const a of candidates.values()) {
     const p = registry.people.get(a.person)!;
     const d = a.decision;
     if (d.move) {
-      const move = d.move;
-      if (p.role === null) world = {...world,grifters:world.grifters.map(g => g.id === p.location ? {...g,...move} : g)};
+      if (v2) deferredMoves.push({a,location:p.location!,from:bodyAt(world,p.location!)!});
       else {
-        for (const [, slots] of roleArrays(world)) {
-          const slot = slots.find(x => x.buildingId === p.location);
-          if (slot) {
-            // Detach the affected array/slot rather than mutating a previous snapshot.
-            const key = p.role === 'importExport' ? 'importExporters' : p.role === 'investigator' ? 'investigators' : p.role === 'courier' ? 'couriers' : p.role === 'baker' ? 'bakers' : 'millers';
-            world = {...world,[key]:world[key].map(x => x.buildingId === p.location ? {...x,...move} : x)};
-          }
-        }
+        world = applyMove(world,p.role,p.location!,d.move);
+        effects.push({person:a.person,category:'move'});
       }
-      effects.push({person:a.person,category:'move'});
     }
     const translateRef = (ref: unknown) => {
       const found = [...registry.people.values()].find(p => p.location !== null && observerRef(previous.genesis.observerSecret,a.person,p.id,refHexLength(previous.world)) === ref);
@@ -84,7 +100,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       world = queueGameAction(world,a.person,parsed);
     }
   }
-  const next = stepWorld(world, {
+  let next = stepWorld(world, {
     transition: e => { transitionPerson(registry,e); },
     identityFor: location => {
       const id = registry.locations.get(location); if (!id) throw Error('missing_slot_identity'); return id;
@@ -104,6 +120,15 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       effects.push({person:a.person,category:'bakerPrice'}); return a.decision.role.price;
     },
   });
+  // A deferred move applies only to the same body, still in the same role episode and place;
+  // if the day moved or replaced them (a transition, a refill), the move has no effect.
+  for (const {a,location,from} of deferredMoves) {
+    const p = registry.people.get(a.person);
+    const at = bodyAt(next,location);
+    if (!p || p.location !== location || p.roleEpoch !== a.epoch || !at || at.x !== from.x || at.y !== from.y) continue;
+    next = applyMove(next,p.role,location,a.decision.move!);
+    effects.push({person:a.person,category:'move'});
+  }
   // Only report proven kernel effects; a submitted communication may have no listener.
   for (const a of candidates.values()) {
     if (next.lastDiaryWrites.includes(a.person)) effects.push({person:a.person,category:'diary'});

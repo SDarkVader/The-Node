@@ -42,6 +42,12 @@ The remote branch had already changed three of the four previously protected fil
 > the diary; a Grifter role action stays refused, and contexts without the marker validate exactly as before. The other
 > three files, including `test/brokerRecovery.test.mjs` (whose v1 Grifter refusal still holds), are unchanged.
 
+> **Changed again 2026-10-21 (owner-authorised: "show who can hear", chosen 2026-10-21; the option stated that it
+> needed one more edit to this file):** `src/agent/protocol.ts` is now `7A0B3EECA6B24E1AE90398E12D55C674143BD3ED9A6AFE569F115CA656E98C80`. It adds
+> `DecisionContext.hearingRefs`, required exactly when `rules: 'v2'` is present: a unique subset of `presentRefs`,
+> never `selfRef`. Under v2 a proximity utterance may address only someone in `hearingRefs`; contexts without the v2
+> marker validate exactly as before (and may not carry the field). The other three files are unchanged.
+
 ## Final local verification
 
 - Repository-wide `tsc --noEmit`: passed.

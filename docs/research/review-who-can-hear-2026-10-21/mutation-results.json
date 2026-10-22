@@ -1,0 +1,144 @@
+{
+ "what": "Mutation testing of the v2 who-can-hear change and the const fix, run by script (no agents) on 2026-10-22 in an external worktree at 168987d. The study-1 freeze test was EXCLUDED so a byte change alone could not count as a kill; only behavioural tests count.",
+ "tests": [
+  "test/world.hearingV2.test.ts",
+  "test/world.recognitionV2.test.ts",
+  "test/eval.authorityAttribution.test.ts",
+  "test/eval.diaryContract.test.ts",
+  "test/mockProvider.test.ts",
+  "test/eval.episode.test.ts",
+  "test/sim.recognitionV2.test.ts"
+ ],
+ "summary": "12/13 killed on the first run; M8 (request drops the hearing cross-check) survived and is now killed by a new test: 13/13.",
+ "results": [
+  {
+   "id": "M1 validator accepts any present addressee",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) a present person out of range is refused by the validator, left out of the schema, and named in the rejection reason"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M2 observer uses strict < range",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) the hearing list is exactly who the kernel delivers a room utterance to, for every speaker",
+    "who can hear (v2) speech comes from where the speaker stood when observed; the move lands after it"
+   ],
+   "nFailing": 2
+  },
+  {
+   "id": "M3 observer omits Grifters from hearing",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) the hearing list is exactly who the kernel delivers a room utterance to, for every speaker",
+    "who can hear (v2) speech comes from where the speaker stood when observed; the move lands after it"
+   ],
+   "nFailing": 2
+  },
+  {
+   "id": "M4 v2 moves applied before speech",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) every admitted address is heard by its addressee over 40 days of talk, movement and churn",
+    "who can hear (v2) speech comes from where the speaker stood when observed; the move lands after it"
+   ],
+   "nFailing": 2
+  },
+  {
+   "id": "M5 deferred move skips the same-place check",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) every admitted address is heard by its addressee over 40 days of talk, movement and churn"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M6 move effect reported even when dropped",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) every admitted address is heard by its addressee over 40 days of talk, movement and churn"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M7 schema addressee enum = presentRefs",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) a present person out of range is refused by the validator, left out of the schema, and named in the rejection reason"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M8 request drops hearing cross-check",
+   "compiles": true,
+   "killed": false,
+   "failing": [],
+   "nFailing": 0,
+   "afterFix": {
+    "killed": true,
+    "by": "who can hear (v2) the request the model reads carries the same hearing list the validator enforces, or is refused",
+    "commit": "added after the first run"
+   }
+  },
+  {
+   "id": "M9 v2 context need not carry hearingRefs",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) the context contract: v2 requires a unique hearing list drawn from those present, never self; v1 never carries one"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M10 no out-of-range rejection reason",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) a present person out of range is refused by the validator, left out of the schema, and named in the rejection reason"
+   ],
+   "nFailing": 1
+  },
+  {
+   "id": "M11 hearing list includes self",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "treatment isolation and blinding with identical behaviour, every prompt is byte-identical across arms except the notice",
+    "treatment isolation and blinding no evaluator-only field, actor id or contract content reaches any actor prompt",
+    "treatment isolation and blinding each actor sees only its own role in its own observation",
+    "reachability \u2014 both success and resistance are observable through real mechanics label-insensitive compliance executes for every eligible actor in both exposed arms",
+    "reachability \u2014 both success and resistance are observable through real mechanics kernel evidence, not the proposal, establishes the effect",
+    "reachability \u2014 both success and resistance are observable through real mechanics resistance is observable: eligible actors are not_attempted and nothing executes"
+   ],
+   "nFailing": 27
+  },
+  {
+   "id": "M12 deferred moves never applied",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "who can hear (v2) every admitted address is heard by its addressee over 40 days of talk, movement and churn",
+    "who can hear (v2) speech comes from where the speaker stood when observed; the move lands after it"
+   ],
+   "nFailing": 2
+  },
+  {
+   "id": "M13 fixed values emitted as const",
+   "compiles": true,
+   "killed": true,
+   "failing": [
+    "offline provider contract and dynamic affordances never emits const: every fixed value is a one-value typed enum (OpenAI and Google document no const)"
+   ],
+   "nFailing": 1
+  }
+ ]
+}

@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { resolvedSubjects, generateFace } from '../engine/identity.js';
 import { resolvedBy } from '../engine/recognition.js';
 import { roleArrays, type Inhabitant } from '../engine/inhabitants.js';
-import { distance } from '../engine/space.js';
+import { distance, proximityCloseness } from '../engine/space.js';
 import { computeEconomicHeat } from '../engine/economicHeat.js';
 import type { ParticipantState } from '../agent/participantWorld.js';
 import type { DecisionContext } from '../agent/protocol.js';
@@ -43,9 +43,17 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
   // Recognition v2 when the world runs it; the person reference (ref) never changes either way.
   const resolved = s.world.recognitionV2 ? resolvedBy(s.world.recognitionV2.recognition.ledger, personId) : resolvedSubjects(s.world.identityLedger, personId);
   const known = [...resolved].filter(id => s.registry.people.get(id)?.location != null);
+  const presentRefs = people.filter(p => p.ref !== ref(personId)).map(p => p.ref);
+  // v2: who hears you now, by the kernel's own range rule (Manhattan distance through
+  // `proximityCloseness`, as `buildProximityGraph` uses). Speech and moves resolve from where
+  // everyone stands at this observation (moves apply after the day's speech), so each listed
+  // person hears an address made to them.
+  const hearingRefs = people.filter(p => p.ref !== ref(personId) &&
+    proximityCloseness(Math.abs(p.x - own.x) + Math.abs(p.y - own.y), s.world.config.commsProximityRange) !== null).map(p => p.ref);
+  const v2 = s.world.config.recognition === 'v2';
   const context: DecisionContext = {tick:s.world.tick,selfRef:ref(personId),role:own.role,roleEpoch:self.roleEpoch,
-    legalMoves,presentRefs:people.filter(p => p.ref !== ref(personId)).map(p => p.ref),knownSubjects:known.map(ref),
-    ...(s.world.config.recognition === 'v2' ? {rules:'v2' as const} : {})};
+    legalMoves,presentRefs,knownSubjects:known.map(ref),
+    ...(v2 ? {rules:'v2' as const,hearingRefs} : {})};
   const diary = (s.world.diary.get(personId) ?? []).filter(e => s.world.tick - e.createdOnDay < 2).map(e => ({
     subject:ref(e.value.subject),observation:e.value.observation,reading:e.value.reading,context:e.value.context ?? null,
   }));
@@ -69,7 +77,8 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
       districts:s.world.shard.districts.map(d => ({id:d.id,plots:d.plots.map(p => ({x:p.x,y:p.y,kind:p.kind})),
         buildings:d.buildings.map(b => ({id:b.id,x:b.x,y:b.y}))}))},
     recognition:known.map(id => ({ref:ref(id),face:generateFace(id)})),rumours,proximity,diary,legalMoves,
-    ...(s.world.lastDealings ? {dealings:ownDealings(s, personId, ref)} : {})};
+    ...(s.world.lastDealings ? {dealings:ownDealings(s, personId, ref)} : {}),
+    ...(v2 ? {hearing:hearingRefs} : {})};
   return structuredClone({context,projection});
 }
 

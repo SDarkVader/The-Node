@@ -1,0 +1,163 @@
+{
+ "status": "UNVERIFIED researcher output; an independent verifier had not yet checked it when this file was written",
+ "family": "openai",
+ "read": "2026-10-21",
+ "producedBy": "workflow cheaper-model-research, run wf_c1105733-775, agent research:openai",
+ "result": {
+  "models": [
+   {
+    "provider": "OpenAI",
+    "model": "gpt-5.4-nano-2026-03-17",
+    "inputUsdPerM": 0.2,
+    "cachedInputUsdPerM": 0.02,
+    "outputUsdPerM": 1.25,
+    "contextTokens": 400000,
+    "reasoningControl": "reasoning.effort: none (default), low, medium, high, xhigh (model page).",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses (v1/responses) and Batch (v1/batch) as supported endpoints. The general strict-schema subset applies: enum, anyOf (not at the root), nullable via a type union with null, and $defs/recursion are supported. allOf, not, dependentRequired, dependentSchemas and if/then/else are not supported. Limits: 5,000 object properties, 10 nesting levels, 120,000 total chars of property, definition, enum and const strings, and 1,000 enum values across the schema. A single enum with more than 250 string values must stay under 15,000 chars in total, so one enum of 64-hex strings tops out at 250 values. `const` is not in the guide's list of supported keywords; it appears only in the string-length limit (see notes).",
+    "cheaperTiers": "Flex (service_tier='flex'): $0.10 input / $0.01 cached / $0.625 output, which is 50% off. Batch: $0.10 / $0.01 / $0.625 (50% off, 24h window). There is no Fast-mode row for this model. Regional or data-residency endpoints add 10% (stated on the model page).",
+    "deprecation": "DEPRECATED. Announced 2026-10-01; removal from the API on 2027-04-01. OpenAI's recommended replacement is gpt-6-luna. The model page badges both the alias and the snapshot gpt-5.4-nano-2026-03-17 as Deprecated.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing (platform.openai.com/docs/pricing 301-redirects here) - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-5.4-nano - read 2026-10-21",
+     "https://developers.openai.com/api/docs/deprecations - read 2026-10-21",
+     "https://developers.openai.com/api/docs/guides/structured-outputs - read 2026-10-21",
+     "https://developers.openai.com/api/docs/guides/prompt-caching - read 2026-10-21"
+    ],
+    "unverified": [
+     "Exact minimum cacheable prefix for this model. The guide says it 'varies by request settings' (tools, output schemas, reasoning effort, verbosity) for models before GPT-5.6 and gives no number.",
+     "Implicit breakpoint interval for this model ('model-dependent').",
+     "Flex latency or availability numbers: none are published."
+    ]
+   },
+   {
+    "provider": "OpenAI",
+    "model": "gpt-6-luna",
+    "inputUsdPerM": 0.1,
+    "cachedInputUsdPerM": 0.01,
+    "outputUsdPerM": 0.5,
+    "contextTokens": 1050000,
+    "reasoningControl": "reasoning.effort: none, low, medium (DEFAULT), high, xhigh, max. You must set none or low explicitly; the default is medium. When effort is not none, remove temperature, top_p and top_logprobs (Using GPT-6 guide).",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses and Batch as supported endpoints. The same schema subset and limits apply as for gpt-5.4-nano (the guide is not per-model).",
+    "cheaperTiers": "Flex: $0.05 input / $0.005 cached / $0.0625 for a 30m cache write / $0.25 output. Batch: the same rates, with a 12h cache write at $0.125. The model page says 'Batch and Flex are priced at 50% of Standard rates.' Fast mode is 2x ($0.20 / $1.00), so it is not cheaper. Standard cache writes are $0.125 (30m) and $0.25 (12h). Regional processing adds 10%.",
+    "deprecation": "None listed (2026-10-21). This is OpenAI's named replacement for gpt-5.4-nano, gpt-4o-mini and gpt-4.1-mini. No dated snapshot is published; the model page shows only the alias gpt-6-luna.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-6-luna - read 2026-10-21",
+     "https://developers.openai.com/api/docs/guides/latest-model - read 2026-10-21",
+     "https://developers.openai.com/api/docs/guides/prompt-caching - read 2026-10-21",
+     "https://developers.openai.com/api/reference/resources/responses/methods/create - read 2026-10-21",
+     "https://developers.openai.com/api/docs/deprecations - read 2026-10-21"
+    ],
+    "unverified": [
+     "Whether a dated, pinnable snapshot will be offered. None exists today, which matters for a reproducible study.",
+     "Reasoning-token count at none or low for this workload, and so the real output cost.",
+     "Flex latency and availability: no figures are published.",
+     "Quality and behaviour parity with gpt-5.4-nano on this task. Not tested."
+    ]
+   },
+   {
+    "provider": "OpenAI",
+    "model": "gpt-5.6-luna",
+    "inputUsdPerM": 0.2,
+    "cachedInputUsdPerM": 0.02,
+    "outputUsdPerM": 1.2,
+    "contextTokens": 1050000,
+    "reasoningControl": "reasoning.effort: none, low, medium (DEFAULT), high, xhigh, max (model page).",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses and Batch as supported endpoints. The same schema subset and limits apply as for gpt-5.4-nano.",
+    "cheaperTiers": "Flex: $0.10 / $0.01 / $0.60. Batch: $0.10 / $0.01 / $0.60. Standard 30m cache write: $0.25 (props value; the 12h write is shown as 2.5x input, $0.50). Fast mode: $0.40 / $2.40.",
+    "deprecation": "None listed (2026-10-21). No dated snapshot is published; the page shows only the alias.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-5.6-luna - read 2026-10-21",
+     "https://developers.openai.com/api/docs/guides/prompt-caching - read 2026-10-21"
+    ],
+    "unverified": [
+     "Whether it is actually cheaper per call. It is only $0.05/M cheaper on output and the same on input, and it defaults to medium reasoning plus implicit cache writes at 1.25x input. In default mode it is MORE expensive than gpt-5.4-nano (about $0.0026 vs $0.0022 at 9k in / 300 out).",
+     "Reasoning-token count at none or low."
+    ]
+   },
+   {
+    "provider": "OpenAI",
+    "model": "gpt-5-nano-2025-08-07",
+    "inputUsdPerM": 0.05,
+    "cachedInputUsdPerM": 0.005,
+    "outputUsdPerM": 0.4,
+    "contextTokens": 400000,
+    "reasoningControl": "Reasoning model ('Reasoning token support' on the page). The supported effort values and the default are NOT stated on the model page or in the reasoning guide.",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses and Batch as supported endpoints. Same schema subset and limits.",
+    "cheaperTiers": "Flex: $0.025 / $0.0025 / $0.20. Batch: $0.025 / $0.0025 / $0.20. Not offered in Fast mode.",
+    "deprecation": "DEPRECATED. Announced 2026-06-11; shutdown 2026-12-11, about 7 weeks away. Replacement: gpt-5.6-luna. The alias gpt-5-nano has only this snapshot, and the page badges it Deprecated.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-5-nano - read 2026-10-21",
+     "https://developers.openai.com/api/docs/deprecations - read 2026-10-21"
+    ],
+    "unverified": [
+     "Supported reasoning.effort values and the default (e.g. whether none or minimal is accepted).",
+     "Exact minimum cacheable prefix ('varies by request settings').",
+     "Flex latency."
+    ]
+   },
+   {
+    "provider": "OpenAI",
+    "model": "gpt-4o-mini-2024-07-18",
+    "inputUsdPerM": 0.15,
+    "cachedInputUsdPerM": 0.075,
+    "outputUsdPerM": 0.6,
+    "contextTokens": 128000,
+    "reasoningControl": "Non-reasoning model; there is no reasoning.effort and the page lists no reasoning-token support. Max output is 16,384 tokens.",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses and Batch as supported endpoints. The guide says Structured Outputs is available 'starting with GPT-4o'. Same schema subset and limits.",
+    "cheaperTiers": "No Flex row on the pricing page. Batch: $0.075 input / $0.30 output; the cached-input cell is '-'. Fast mode is $0.25 / $0.125 / $1.00, so it is not cheaper. The cached-input discount is only 50% ($0.075).",
+    "deprecation": "DEPRECATED. Announced 2026-10-14; shutdown 2027-01-14. Replacement: gpt-6-luna.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-4o-mini - read 2026-10-21",
+     "https://developers.openai.com/api/docs/deprecations - read 2026-10-21"
+    ],
+    "unverified": [
+     "Quality on a 5-9k token JSON-observation agent task compared with the GPT-5 generation. Not tested.",
+     "Exact cache minimum and breakpoint interval."
+    ]
+   },
+   {
+    "provider": "OpenAI",
+    "model": "gpt-4.1-nano-2025-04-14",
+    "inputUsdPerM": 0.1,
+    "cachedInputUsdPerM": 0.025,
+    "outputUsdPerM": 0.4,
+    "contextTokens": 1047576,
+    "reasoningControl": "Non-reasoning ('low latency without a reasoning step'). Max output is 32,768 tokens.",
+    "strictJsonSchema": "Yes. The model page lists Structured outputs as Supported, with Responses and Batch as supported endpoints.",
+    "cheaperTiers": "No Flex row. Batch: $0.05 / $0.20; the cached-input cell is '-'. Fast mode: $0.20 / $0.05 / $0.80.",
+    "deprecation": "UNUSABLE. Shutdown is 2026-10-23, two days from now (announced 2026-04-22). Replacement: gpt-5.6-luna. Listed only for completeness; do not adopt.",
+    "sources": [
+     "https://developers.openai.com/api/docs/pricing - read 2026-10-21",
+     "https://developers.openai.com/api/docs/models/gpt-4.1-nano - read 2026-10-21",
+     "https://developers.openai.com/api/docs/deprecations - read 2026-10-21"
+    ],
+    "unverified": []
+   }
+  ],
+  "notes": [
+   "Two OpenAI models are clearly cheaper than gpt-5.4-nano and usable for this workload: gpt-6-luna (about half the cost; OpenAI's named replacement for gpt-5.4-nano) and gpt-5-nano (about a quarter, but it shuts down 2026-12-11). gpt-4o-mini is about 30% cheaper and shuts down 2027-01-14. gpt-5.6-luna costs about the same; gpt-4.1-nano is cheaper but shuts down in two days. Everything below was read from official OpenAI pages on 2026-10-21.",
+   "Current model: gpt-5.4-nano-2026-03-17 lists at $0.20 input / $0.02 cached input / $1.25 output per 1M tokens (Standard). It has been DEPRECATED since 2026-10-01 and will be removed on 2027-04-01. OpenAI's recommended replacement is gpt-6-luna.",
+   "Method: the pricing page was parsed from its raw HTML/props, not taken from a summary. A summarizer once wrongly said gpt-5.4-nano appears in Fast mode; the raw tables show it does not. The rows shown in the Flex table were confirmed from the page's component JS, which renders the alternate rows under the 'flex' label.",
+   "Models that are MORE expensive and were excluded: gpt-5-mini ($0.25/$2.00), gpt-4.1-mini ($0.40/$1.60), gpt-5.4-mini ($0.75/$4.50) and gpt-3.5-turbo ($0.50/$1.50, shutting down 2026-10-23). Larger models were excluded too.",
+   "Worked per-call list cost, Standard tier, no cache hits, at 9,000 input / 300 output tokens and before any reasoning tokens. gpt-5.4-nano $0.002175 (study 1 at 630 calls ≈ $1.37 list, $2.74 booked at 2x). gpt-6-luna $0.001050 (≈ $0.66 list / $1.32 booked). gpt-5-nano $0.000570 (≈ $0.36 / $0.72). gpt-4o-mini $0.001530 (≈ $0.96 / $1.93). gpt-5.6-luna $0.002160 (≈ $1.36 / $2.72). At 5,000 / 100: $0.001125, $0.000550, $0.000290, $0.000810 and $0.001120 respectively. A 4,000-call diary study at 9k/300 costs about $8.70 list on gpt-5.4-nano against $4.20 on gpt-6-luna. Reasoning tokens are billed as output; each extra 1,000 costs gpt-5.4-nano $0.00125, gpt-6-luna $0.0005 and gpt-5-nano $0.0004.",
+   "Trap with GPT-5.6+ models (gpt-6-luna, gpt-5.6-luna): prompt_cache_options.mode defaults to 'implicit'. That writes everything through the latest user message to cache at 1.25x the input rate (30m TTL). With a per-call observation, almost nothing is reused, so default-mode input costs about 1.25x list. gpt-6-luna at 9k/300 becomes about $0.001275, still cheaper; gpt-5.6-luna becomes about $0.00261, which is more than gpt-5.4-nano. Fix: set prompt_cache_options.mode='explicit'. With no breakpoints that means no caching and no write charge, or put one breakpoint after a stable prefix of at least 1,024 visible tokens. Both luna models also default to MEDIUM reasoning, so set reasoning.effort to 'none' or 'low' explicitly.",
+   "Flex processing (service_tier='flex' on Responses or Chat Completions) is in beta with limited model availability. Of the candidates, the pricing page lists Flex for gpt-6-luna, gpt-5.6-luna, gpt-5.4-nano, gpt-5-nano, gpt-5.4-mini and gpt-5-mini. It does NOT list gpt-4o-mini, gpt-4.1-nano or gpt-4.1-mini. Price: Batch rates (50% off Standard) plus caching discounts.",
+   "Flex caveats from the guide. Responses are slower and resources are occasionally unavailable. A 429 'Resource Unavailable' is not charged; the guide suggests exponential backoff, or retrying with service_tier='auto' at Standard price. Timeouts are 'more likely', and the guide's examples raise the SDK timeout from the default 10 minutes to 15. No latency figure or SLA is published, so the 16 s per-call budget is NOT assured on Flex. Practical pattern (not a documented recommendation): Flex with a ~16 s client timeout, then retry on Standard.",
+   "Batch API: 50% discount, completion_window '24h' is the only value, and the rate-limit pool is separate. Supports /v1/responses. Each input file may contain requests to only one model. Batches that miss the window expire, with unfinished requests cancelled (error batch_expired). For sequential ticks you would batch one tick across all episodes, about 105 calls, and wait up to 24 h per tick, so 6 rounds for study 1. Flex gets the same price synchronously for the same models.",
+   "Prompt caching on earlier models (gpt-5.4-nano, gpt-5-nano, gpt-4o-mini): automatic and implicit only, with no write charge. Breakpoints are placed at 'model-dependent intervals'. The minimum cacheable prefix 'varies by request settings, including tools, images, output schemas, reasoning effort, and verbosity'; no number is published for these models. Reported cached_tokens excludes hidden system tokens and is rounded down to a multiple of 128.",
+   "Cache retention on earlier models is set with prompt_cache_retention: in_memory (typically 5-10 min inactive, up to 1 h) or 24h. The 24h option is listed only for gpt-5.5, gpt-5.5-pro, gpt-5.4, gpt-5.2, gpt-5.1(-codex/-max/-mini/-chat-latest), gpt-5, gpt-5-codex and gpt-4.1. That list does not include gpt-5.4-nano, gpt-5-nano or gpt-4o-mini. A stable prompt_cache_key improves routing; aim for about 15 requests/min per key. Cached-input discounts: 90% for gpt-5.4-nano and gpt-5-nano, 50% for gpt-4o-mini.",
+   "Prompt caching on GPT-5.6 and later (gpt-6-luna, gpt-5.6-luna): minimum prefix is 1,024 visible tokens; hidden system tokens do not count. Reads cost 0.1x input. Writes cost 1.25x for 30m and 2.5x for 12h; these are total rates, not surcharges on top of input. Up to 4 writes per request.",
+   "Docs conflict on 12h caching: the guide says ttl '12h' is available in the Responses API, while the API reference says '30m' is currently the only supported value.",
+   "Top-level `instructions` cannot carry an explicit breakpoint. To cache rules, put them in an input_text block inside a developer message with prompt_cache_breakpoint. The rules text alone (~650 tokens) is below the 1,024 minimum, so caching needs at least 1,024 tokens of stable content.",
+   "What counts as the prefix (Responses API). The cache covers the full rendered context: hidden OpenAI system message, then tools/definitions/schemas, then developer message, then conversation history. Settings that change the cached prefix: model, tools, parallel_tool_calls, text.format ('adds output-format instructions and the requested schema'), reasoning.effort, text.verbosity and context_management. The docs do NOT say where the text.format schema sits in that order. If the schema's enum lists of 64-hex or 16-hex references change per actor or tick, assume reuse breaks wherever the schema is rendered (unverified). A schema that is byte-identical across calls is needed for any cross-call cache benefit.",
+   "Structured Outputs guide: strict mode is available in Responses, Chat Completions, Batch and others. The extra first-request schema-processing latency applies only to fine-tuned models. The guide's list of supported keywords is: string, number, boolean, integer, object, array, enum, anyOf; plus pattern/format, numeric bounds, minItems/maxItems and $defs. It does not name 'const'. 'const' appears only in the 120,000-character limit, so const support is implied but not explicitly listed (unverified). Root must be an object, not anyOf; all fields required; additionalProperties:false.",
+   "Reproducibility caveat for a research study: gpt-6-luna and gpt-5.6-luna publish no dated snapshot IDs, only aliases. Switching the actor model mid-programme also confounds comparisons with runs already done on gpt-5.4-nano.",
+   "Model pages give latency only qualitatively ('Speed: Fast' for gpt-5.4-nano, gpt-6-luna, gpt-5.6-luna and gpt-4o-mini; 'Very fast' for gpt-5-nano and gpt-4.1-nano). No per-call latency numbers are published.",
+   "Regional or data-residency processing adds 10% for models released on or after 2026-03-05 (stated for gpt-5.4-nano and gpt-6-luna). Rate limits on these model pages are far above this workload (e.g. Build tier 5,000 RPM / 2M TPM)."
+  ]
+ }
+}

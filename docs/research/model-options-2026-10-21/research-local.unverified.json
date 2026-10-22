@@ -1,0 +1,157 @@
+{
+ "status": "UNVERIFIED researcher output; an independent verifier had not yet checked it when this file was written",
+ "family": "local",
+ "read": "2026-10-21",
+ "producedBy": "workflow cheaper-model-research, run wf_c1105733-775, agent research:local",
+ "result": {
+  "models": [
+   {
+    "provider": "OpenAI (open-weight, run locally)",
+    "model": "openai/gpt-oss-20b (HF commit 6cee5e81ee83917806bbde320786a8fb61efebee); GGUF ggml-org/gpt-oss-20b-GGUF @15dcfc7e7c608c6161507211ed43c5b590801b4b, file gpt-oss-20b-MXFP4.gguf",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 131072,
+    "cheaperTiers": "Not applicable: local inference, no per-token price.",
+    "deprecation": "None found. On HF (read 2026-10-21) this is still OpenAI's newest small open-weight text model. The repo was created 2025-08-04; the later openai repos are gpt-oss-safeguard and privacy-filter.",
+    "reasoningControl": "The model card offers three reasoning levels: low, medium and high. Reasoning cannot be switched off. Ollama maps reasoning.effort and translates 'none' to 'no thinking output' for GPT-OSS; whether that suppresses generation or only hides it is unverified. llama-server maps Responses reasoning.effort to reasoning_effort.",
+    "strictJsonSchema": "Partial, and it depends on the runtime (see notes). Ollama 0.40.7 /v1/responses maps text.format json_schema to a llama.cpp GBNF grammar. That grammar enforces: const and enum (strings and numbers); anyOf, including nested; type null and type arrays; integer minimum/maximum; additionalProperties:false. It silently ignores: minimum/maximum on type number; 'nullable'; the strict flag; any sibling keys next to anyOf/oneOf. llama-server /v1/responses ignores text.format entirely, so output is unconstrained there. llama-server Chat Completions response_format json_schema is honoured.",
+    "sources": [
+     "https://huggingface.co/api/models/openai/gpt-oss-20b (config.json: 24 layers, 8 KV heads, head_dim 64, alternating sliding window 128 and full attention, 32 experts with top-4, max_position 131072); read 2026-10-21",
+     "https://huggingface.co/openai/gpt-oss-20b/blob/main/README.md (Apache 2.0, reasoning levels) and /USAGE_POLICY; read 2026-10-21",
+     "https://huggingface.co/api/models/ggml-org/gpt-oss-20b-GGUF/tree/main (gpt-oss-20b-MXFP4.gguf 12.11 GB, sha256 27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901); read 2026-10-21",
+     "https://github.com/ggml-org/llama.cpp/discussions/15396 (RTX 4080 SUPER 16GB, gpt-oss-20b MXFP4, -fa 1: pp8192 7989 t/s, pp16384 7518 t/s, tg128 186.5 t/s, build 009b709); read 2026-10-21",
+     "https://github.com/ggml-org/llama.cpp/discussions/15013 (RTX 4070 Ti SUPER vs 4080 SUPER, Llama-2-7B Q4_0, FA: pp512 7612 vs 9439, tg128 132.9 vs 147.5); read 2026-10-21"
+    ],
+    "unverified": [
+     "Throughput on an RTX 4070 Ti SUPER is an ESTIMATE. I scaled the 4080 SUPER measurement by the 4070TiS/4080S ratios from the #15013 scoreboard (0.806 prefill, 0.901 decode). That gives about 6,400 t/s prefill and about 168 t/s decode: roughly 1.4 s for a 9,000-token prefill plus 1.8 s for 300 output tokens. Reasoning tokens at 'low' come on top and were not measured. Estimated total is about 3-7 s against the 16 s deadline.",
+     "VRAM fit is ESTIMATED as 12.11 GB of weights + about 0.40 GB of f16 KV cache at 16k (12 full-attention layers) + compute buffers, against 17.18 GB (16 GiB) minus what Windows uses. I did not measure it.",
+     "Whether the grammar constrains only the final channel and leaves the harmony analysis channel free, in llama-server and in Ollama, is untested.",
+     "Whether Ollama reasoning 'none' for GPT-OSS skips generating reasoning or only hides it is unverified."
+    ]
+   },
+   {
+    "provider": "Alibaba Qwen (open-weight, run locally)",
+    "model": "Qwen/Qwen3.5-9B (HF commit c202236235762e1c871ad0ccb60c8ee5ba337b9a, created 2026-02-27); GGUF unsloth/Qwen3.5-9B-GGUF @3885219b6810b007914f3a7950a8d1b469d598a5: Qwen3.5-9B-Q4_K_M.gguf or Qwen3.5-9B-Q8_0.gguf",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 262144,
+    "cheaperTiers": "Not applicable: local inference.",
+    "deprecation": "None. This is the newest Qwen dense model that fits in 16 GB. Qwen3.6 (Apr 2026) and Qwen3.8 (Aug 2026) were published only at 27B and up (27B, 35B-A3B, Flash-Next, 2.4T-A95B), and none of those fits 16 GB; see notes.",
+    "reasoningControl": "The card says Qwen3.5 thinks by default (<think>...</think>) and documents a non-thinking/instruct mode (enable_thinking false). For a 16 s deadline thinking MUST be off. The card also says thinking mode wants a context of at least 128K, which is far above the 16k budget here.",
+    "strictJsonSchema": "Same runtime-dependent llama.cpp GBNF behaviour as described for gpt-oss-20b (see notes).",
+    "sources": [
+     "https://huggingface.co/api/models/Qwen/Qwen3.5-9B and config.json (32 layers: 24 linear-attention plus 8 full-attention; 4 KV heads; head_dim 256; max_position 262144); read 2026-10-21",
+     "https://huggingface.co/Qwen/Qwen3.5-9B/blob/main/README.md (license apache-2.0; thinking on by default; non-thinking mode; recommended sampling); read 2026-10-21",
+     "https://huggingface.co/api/models/unsloth/Qwen3.5-9B-GGUF/tree/main (Q4_K_M 5.68 GB sha256 03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8; Q8_0 9.53 GB sha256 809626574d0cb43d4becfa56169980da2bb448f2299270f7be443cb89d0a6ae4); read 2026-10-21",
+     "https://github.com/ggml-org/llama.cpp/discussions/15013 (4070 Ti SUPER anchor); https://www.localscore.ai/model/1 (4070 Ti SUPER, Llama-3.1-8B Q4_K_M: prompt 3561 t/s, gen 53.9 t/s, llamafile); read 2026-10-21"
+    ],
+    "unverified": [
+     "There is no measured benchmark for Qwen3.5-9B on this GPU class. ESTIMATE for Q4_K_M with thinking off: about 3,200-5,700 t/s prefill and about 47-90 t/s decode, so 9k+300 takes about 5-9 s. Q8_0 decode is roughly 40% slower, about 7-11 s. llama.cpp kernel efficiency for the hybrid Gated-DeltaNet layers is unknown.",
+     "VRAM fit is ESTIMATED as 5.68 GB (Q4_K_M) or 9.53 GB (Q8_0) of weights + about 0.54 GB of f16 KV at 16k (only 8 full-attention layers hold KV) + recurrent state + compute buffers. That fits comfortably.",
+     "Whether Ollama's reasoning 'none'/think:false and llama-server's reasoning_effort 'none' fully suppress Qwen3.5 thinking is untested."
+    ]
+   },
+   {
+    "provider": "Google (open-weight, run locally)",
+    "model": "google/gemma-4-12B-it (HF commit 707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7, created 2026-05-23); official GGUF google/gemma-4-12B-it-qat-q4_0-gguf @29d097773436b69ff9feafd636ab4cf873786537, file gemma-4-12b-it-qat-q4_0.gguf; Q8_0 alternative unsloth/gemma-4-12b-it-GGUF @fc034cfff751157913579611efad8462ac1be606",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 262144,
+    "cheaperTiers": "Not applicable: local inference.",
+    "deprecation": "None. Gemma 4 (E2B, E4B, 12B, 26B-A4B, 31B) is Google's current open family on HF as of 2026-10-21.",
+    "reasoningControl": "The card says thinking is enabled by putting <|think|> at the start of the system prompt and disabled by leaving it out (enable_thinking=False in the template).",
+    "strictJsonSchema": "Same runtime-dependent llama.cpp GBNF behaviour as described for gpt-oss-20b (see notes).",
+    "sources": [
+     "https://huggingface.co/api/models/google/gemma-4-12B-it and config.json (48 layers: 40 sliding-window 1024 plus 8 full; 8 KV heads at 256 dims; 1 global KV head at 512 dims; max_position 262144); read 2026-10-21",
+     "https://huggingface.co/google/gemma-4-12B-it/blob/main/README.md (license apache-2.0; thinking control); https://ai.google.dev/gemma/docs/gemma_4_license (Apache License 2.0 text, last updated 2026-04-01); read 2026-10-21",
+     "https://huggingface.co/api/models/google/gemma-4-12B-it-qat-q4_0-gguf/tree/main (6.98 GB, sha256 93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b); https://huggingface.co/api/models/unsloth/gemma-4-12b-it-GGUF/tree/main (Q8_0 12.67 GB sha256 f20e7ff1be28c283eeeb18fc895733791c56a5851d5cd3fe9691b7f7d12afa72); read 2026-10-21",
+     "https://github.com/ggml-org/llama.cpp/discussions/15013 and https://www.localscore.ai/model/2 (4070 Ti SUPER, Qwen2.5-14B Q4_K_M: prompt 2147 t/s, gen 36.8 t/s) as anchors; read 2026-10-21"
+    ],
+    "unverified": [
+     "Throughput is an ESTIMATE scaled from the 7B and 14B anchors: QAT Q4_0 runs at about 2,600-4,200 t/s prefill and about 47-73 t/s decode, so 9k+300 takes about 6-10 s. Q8_0 decode is slower; expect about 8-13 s.",
+     "VRAM fit is ESTIMATED as 6.98 GB (or 12.67 GB for Q8_0) + about 0.6 GB of KV at 16k (sliding layers cap at 1,024 tokens) + compute buffers. That fits.",
+     "The Gemma 4 '12B unified' (gemma4_unified_text) architecture running text-only under llama-server/Ollama was not tested. Its support is inferred from Google publishing an official GGUF."
+    ]
+   },
+   {
+    "provider": "Mistral AI (open-weight, run locally)",
+    "model": "mistralai/Ministral-3-14B-Instruct-2512 (HF commit 29439f81c2be264d8d393273f99e7db9c0961120); official GGUF mistralai/Ministral-3-14B-Instruct-2512-GGUF @74fac473c43357d7fb2671713608183cc72496d0, file Ministral-3-14B-Instruct-2512-Q4_K_M.gguf",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 262144,
+    "cheaperTiers": "Not applicable: local inference.",
+    "deprecation": "None. Mistral Small 4 (119B, 2603) is too large for 16 GB; see notes.",
+    "reasoningControl": "This Instruct variant does not reason; a separate -Reasoning-2512 variant exists. The card recommends temperature below 0.1.",
+    "strictJsonSchema": "Same runtime-dependent llama.cpp GBNF behaviour as described for gpt-oss-20b (see notes).",
+    "sources": [
+     "https://huggingface.co/api/models/mistralai/Ministral-3-14B-Instruct-2512 and config.json (40 layers, 8 KV heads, head_dim 128, max_position 262144); read 2026-10-21",
+     "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512/blob/main/README.md (Apache 2.0; temperature < 0.1); read 2026-10-21",
+     "https://huggingface.co/api/models/mistralai/Ministral-3-14B-Instruct-2512-GGUF/tree/main (Q4_K_M 8.24 GB sha256 824e0f3373e69b84f2cae46fdcb9bd1ebc6ab3bfc7acc125d818b7b8178cc613; Q8_0 14.36 GB); read 2026-10-21",
+     "https://www.localscore.ai/model/2 (4070 Ti SUPER, Qwen2.5-14B Q4_K_M: prompt 2147 t/s, gen 36.8 t/s); https://github.com/ggml-org/llama.cpp/discussions/15013; read 2026-10-21"
+    ],
+    "unverified": [
+     "Throughput is an ESTIMATE: about 2,150-3,600 t/s prefill and about 40-62 t/s decode, so 9k+300 takes about 7-12 s. That is the tightest margin of the models that fit.",
+     "VRAM fit is computed, not measured. Q4_K_M is 8.24 GB of weights + 2.68 GB of f16 KV at 16k (160 KiB per token) + buffers, which fits. Q8_0 (14.36 GB + 2.68 GB) does NOT fit at 16k with f16 KV, and is marginal even with a q8_0 KV cache."
+    ]
+   },
+   {
+    "provider": "Mistral AI (open-weight, run locally)",
+    "model": "mistralai/Ministral-3-8B-Instruct-2512 (HF commit 5b26027e7b19eeb4b7352e1fed3926375dd2cb4d); official GGUF mistralai/Ministral-3-8B-Instruct-2512-GGUF @0102285ad796bd99af90f58de616092e5630e970",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 262144,
+    "cheaperTiers": "Not applicable: local inference.",
+    "deprecation": "None found.",
+    "reasoningControl": "This Instruct variant does not reason; a separate Reasoning variant exists.",
+    "strictJsonSchema": "Same runtime-dependent llama.cpp GBNF behaviour as described for gpt-oss-20b (see notes).",
+    "sources": [
+     "https://huggingface.co/api/models/mistralai/Ministral-3-8B-Instruct-2512 and config.json (34 layers, 8 KV heads, head_dim 128); tag license:apache-2.0; read 2026-10-21",
+     "https://huggingface.co/api/models/mistralai/Ministral-3-8B-Instruct-2512-GGUF/tree/main (Q4_K_M 5.20 GB sha256 33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761; Q8_0 9.03 GB sha256 bd0ca58473b64618df4d08c1410cc25c910ca84e647833ebaf099e0fc0523b45); read 2026-10-21"
+    ],
+    "unverified": [
+     "Throughput is an ESTIMATE from the 7B/8B anchors: 9k+300 at Q4_K_M takes about 4.5-8 s, and about 6-10 s at Q8_0.",
+     "VRAM fit is computed: 5.20 or 9.03 GB of weights + 2.28 GB of f16 KV at 16k + buffers. That fits."
+    ]
+   },
+   {
+    "provider": "Google (open-weight, run locally)",
+    "model": "google/gemma-4-26B-A4B-it (HF commit 4d7ae4984b7db7de8f8457170b3f1a419ee76d52); official GGUF google/gemma-4-26B-A4B-it-qat-q4_0-gguf @d1c082be9cf3c8a514acf63b8761f4b41935842e, file gemma-4-26B_q4_0-it.gguf",
+    "inputUsdPerM": null,
+    "outputUsdPerM": null,
+    "cachedInputUsdPerM": null,
+    "contextTokens": 262144,
+    "cheaperTiers": "Not applicable: local inference.",
+    "deprecation": "None found.",
+    "reasoningControl": "Same <|think|> system-prompt switch as Gemma 4 12B, per the Gemma 4 card.",
+    "strictJsonSchema": "Same runtime-dependent llama.cpp GBNF behaviour as described for gpt-oss-20b (see notes).",
+    "sources": [
+     "https://huggingface.co/api/models/google/gemma-4-26B-A4B-it and config.json (30 layers: 25 sliding-1024 plus 5 full; 128 experts); license tag apache-2.0; read 2026-10-21",
+     "https://huggingface.co/api/models/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/tree/main (14.44 GB, sha256 3eca3b8f6d7baf218a7dd6bba5fb59a56ee25fe2d567b6f5f589b4f697eca51d); read 2026-10-21"
+    ],
+    "unverified": [
+     "BORDERLINE FIT: 14.44 GB of weights + about 0.55 GB of KV at 16k + compute buffers, against 17.18 GB minus what Windows uses. It may need some experts offloaded to CPU, which cuts speed. Not measured.",
+     "No throughput data was found for this GPU class. Whether it meets the 16 s deadline is unknown."
+    ]
+   }
+  ],
+  "notes": [
+   "SCOPE AND METHOD. I re-verified this research on 2026-10-21 from official docs, source code at pinned tags (read through raw.githubusercontent.com), Hugging Face API metadata, and GitHub discussion pages. The scratchpad holds earlier notes only for hosted providers (anth/, gem/, mistral/); I found no earlier local-inference notes to diff against, so everything below was checked fresh. Per-token prices are null for every entry because inference is local.",
+   "RUNTIME: Ollama v0.40.7. This is the 'Latest' stable release (18 Oct 2026); v0.40.8 is a pre-release from 21 Oct (https://github.com/ollama/ollama/releases, read 2026-10-21). It runs natively on Windows.\n(1) /v1/responses exists. The docs say 'Added in Ollama v0.13.3' and only stateless requests are supported (docs/api/openai-compatibility.mdx). At the v0.40.7 tag, openai/responses.go lines 868-876 map text.format {type:'json_schema', schema} to the chat 'format'. The 'strict' and 'name' fields are parsed but never used. Chat Completions response_format json_schema is mapped the same way (openai/openai.go).\n(2) Enforcement is grammar-constrained. At v0.40.7, Ollama runs llama.cpp's llama-server as a subprocess (llm/llama_server.go). It sends the schema to llama-server's own json_schema-to-GBNF converter, and the bundled build is LLAMA_CPP_VERSION=b11738. I diffed common/json-schema.cpp, common/json-schema-to-grammar.cpp and grammars/README.md: they are byte-identical between b11738 and b11799, so the keyword behaviour in the llama.cpp note below applies. Thinking stays unconstrained and the grammar starts after it closes (llm/llama_server.go header comment).\n(3) Failure modes:\n- On <24 GiB VRAM the default context is 4k (docs/context-length.mdx). chatPrompt in server/prompt.go silently truncates messages that exceed num_ctx, so a 9k-token observation is cut unless OLLAMA_CONTEXT_LENGTH is at least 16384 or the Modelfile sets num_ctx.\n- The Responses 'truncation' field is only echoed back. It is not mapped to the request, so the project's truncation:'disabled' is NOT honoured.\n- 'seed' is not among the supported /v1/responses fields; it can be set in a Modelfile.\n- tool_choice is unsupported (a TODO in the source).\n- cache_prompt is hard-coded true (llm/llama_server.go line 1691).",
+   "RUNTIME: llama.cpp llama-server b11799 (commit 0756e83fc1529e207af783782905bc98a8ef0770, released 21 Oct 2026). Native Windows CUDA builds exist: llama-b11799-bin-win-cuda-12.4-x64.zip and -cuda-13.4-x64.zip, each with a matching cudart zip. MIT licence.\n(1) POST /v1/responses exists. The README says it 'works by converting Responses request into Chat Completions request'. The converter, server_chat_convert_responses_to_chatcmpl in tools/server/server-chat.cpp, maps input, instructions, tools, max_output_tokens and reasoning.effort. It does NOT map text.format. The chat parameter parser in server-common.cpp only reads 'response_format' and top-level 'json_schema'. Result: text.format is SILENTLY IGNORED and output is UNCONSTRAINED. The current transport, pointed at llama-server /v1/responses, would therefore lose schema enforcement without any error.\n(2) Chat Completions response_format {type:'json_schema', json_schema:{schema}} IS honoured, as is {type:'json_object', schema}; see server-common.cpp lines 1379-1392.\n(3) The converter copies every top-level key into the chat body. Adding a top-level 'response_format' or 'json_schema' to a Responses body should therefore be honoured. That is my inference from the source; it is UNTESTED.\n(4) It rejects previous_response_id.\nAll of this was read at tag b11799, and the files match master.",
+   "llama.cpp JSON Schema to GBNF behaviour, from source at b11799 (common/json-schema.cpp, common/json-schema-to-grammar.cpp, grammars/README.md). These are the keywords that matter for this schema:\n- 'const' works for any JSON value, string AND number. It is emitted as a literal and takes precedence over 'type'.\n- 'enum' works for any JSON values. 64-hex and 16-hex string enums are fine.\n- anyOf works. oneOf is treated as anyOf, with no exclusivity. Nested anyOf works.\n- When anyOf/oneOf is present, the node becomes ONLY the alternatives. Sibling 'properties' or 'type' on the same node are dropped; the README says 'Can't mix properties w/ anyOf/oneOf'.\n- Type arrays such as ['string','null'] become anyOf. type 'null' is supported.\n- OpenAPI 'nullable' is not recognised and is silently ignored.\n- integer minimum/maximum/exclusiveMinimum/exclusiveMaximum are enforced. On type 'number' they are SILENTLY IGNORED.\n- additionalProperties defaults to false, which is stricter than the spec. 'false' is enforced.\n- Other unsupported keywords are skipped silently: uniqueItems, contains, not, if/then/else, patternProperties, prefixItems (broken), nested $ref (broken).\n- An invalid pattern or an unresolved $ref throws 'JSON schema conversion failed' and the request is rejected.\n- The schema is not injected into the prompt. This project already includes it in the input.\n- A build with LLAMA_LLGUIDANCE uses llguidance instead. llguidance raises an error on unsupported keywords unless it is run in lenient mode (guidance-ai/llguidance docs/json_schema.md).\nThe project's schema checker (src/agent/responsesRequest.ts) requires additionalProperties:false and all properties required, and it uses enum, const and anyOf. Check whether any anyOf node also carries 'properties' or 'type'. Also check for number bounds or 'nullable'. Those are the constructs that would be silently weakened.",
+   "RUNTIME: LM Studio 0.4.26 (build 5), the newest entry at https://lmstudio.ai/changelog/lmstudio, read 2026-10-21. Build 2 bundles the 'llama.cpp runtime 2.50.0 (upstream b11337)'. It is closed source under proprietary terms (https://lmstudio.ai/app-terms) and runs natively on Windows.\n- /v1/responses is documented: streaming, reasoning, previous_response_id, remote MCP. The page does NOT mention text.format.\n- Structured output is documented only for /v1/chat/completions response_format json_schema. GGUF models use 'llama.cpp's grammar-based sampling APIs' and MLX models use Outlines (https://lmstudio.ai/docs/developer/openai-compat/structured-output).\n- Whether /v1/responses honours text.format, and keyword-level behaviour, are UNVERIFIED. Test before use.",
+   "RUNTIME: vLLM 0.32.0 (PyPI upload 2026-10-18).\n- It does NOT support Windows natively. Its docs say to use WSL2 or a community fork (docs/getting_started/installation/gpu.md).\n- /v1/responses honours text.format: vllm/entrypoints/openai/responses/protocol.py extract_structured_outputs maps json_schema to StructuredOutputsParams(json=schema). 'strict' is not used.\n- Enforcement is token-mask constrained through xgrammar or llguidance. The default 'auto' tries xgrammar and falls back to guidance when the schema uses features xgrammar does not support (vllm/sampling_params.py). An explicitly chosen backend has no fallback.\n- Structured outputs are not applied inside reasoning unless --structured-outputs-config.enable_in_reasoning=True is set.\n- Reproducibility is not guaranteed by default. Online serving needs batch invariance, which is beta, requires NVIDIA compute capability 8.0 or higher, and only holds on the same hardware and version (docs/usage/reproducibility.md, docs/features/batch_invariance.md).\n- I did not check how vLLM fits 16 GB under WSL2 for these models, or how fast it runs. I would not use it first on this PC.\n- Other runtimes (SGLang, TabbyAPI/ExLlama) were NOT assessed.",
+   "MODELS EXCLUDED, with checked numbers (Hugging Face API, read 2026-10-21):\n- Qwen3.8-27B (Aug 2026, Apache-2.0): ggml-org Q4_K_M is 18.97 GB, unsloth UD-Q4_K_M 16.46 GB, Q4_0 16.06 GB. Adding about 1.07 GB of KV at 16k, it does not fit in 16 GiB.\n- Qwen3.6-35B-A3B (Apr 2026): UD-Q4_K_M is 22.13 GB. It would only run with MoE experts offloaded to the 64 GB of system RAM; untested.\n- Qwen3.8-Flash-Next (licence tag 'other'): its BF16 GGUF shards total about 354 GB. Far too large.\n- Mistral-Small-3.2-24B-2506: Q4_K_M is 14.33 GB plus 2.68 GB of f16 KV at 16k, about 17.0 GB. That exceeds 16 GiB before Windows overhead.\n- Mistral-Small-4 (119B): too large.\n- Phi-4 (Dec 2024, MIT, max_position 16384): fits (Q4_0 8.38 GB + 3.36 GB KV), but it is the newest general Phi instruct model and is old.\n- Meta: the HF org shows nothing newer than Llama 4 (Apr 2025), which I did not assess. The newest small model is Llama-3.1-8B (Jul 2024; gated, Llama 3.1 licence). Skipped as stale.",
+   "THROUGHPUT ANCHORS. These are the only measured numbers; every per-model figure is a labelled ESTIMATE scaled from them.\n(a) llama.cpp CUDA scoreboard (github.com/ggml-org/llama.cpp/discussions/15013): RTX 4070 Ti SUPER, Llama-2-7B Q4_0, -fa 1, gave pp512 7,612 t/s and tg128 132.9 t/s (build 9c35706). The RTX 4080 SUPER gave 9,439 and 147.5.\n(b) gpt-oss guide (discussions/15396): RTX 4080 SUPER, gpt-oss-20b MXFP4, gave pp8192 7,989, pp16384 7,518 and tg128 186.5 t/s (build 009b709). No 4070 Ti SUPER entry exists there.\n(c) LocalScore, which runs on llamafile, so its numbers are conservative (localscore.ai/model/1 and /model/2): RTX 4070 Ti SUPER gave 3,561 t/s prompt and 53.9 t/s generation on Llama-3.1-8B Q4_K_M, and 2,147 and 36.8 on Qwen2.5-14B Q4_K_M.\nEstimated time for a 9,000-token prefill plus 300 output tokens, thinking off, one request at a time:\n- gpt-oss-20b: about 3-7 s, including low-effort reasoning.\n- Ministral-3-8B Q4_K_M: about 4.5-8 s.\n- Qwen3.5-9B Q4_K_M: about 5-9 s.\n- Gemma-4-12B QAT Q4_0: about 6-10 s.\n- Ministral-3-14B Q4_K_M: about 7-12 s.\nAll are within 16 s, but the margin narrows if a model emits reasoning tokens.\nMeasure before committing: llama-bench -m <file.gguf> -ngl 99 -fa 1 -p 9000 -n 300 -r 3. Then time a real request end-to-end, because grammar sampling adds overhead.\nVolumes: the 630 calls of study 1 at about 5-10 s each come to roughly 1-2 h sequential. 3,000-4,000 calls come to about 4-11 h.",
+   "RESEARCH SUITABILITY: pinning. Record all of the following:\n- the HF repo commit SHA and the GGUF sha256 (the LFS oid, listed per model above);\n- the runtime build: llama.cpp tag b11799 / commit 0756e83 plus the exact Windows asset name, or Ollama v0.40.7, which bundles llama.cpp b11738;\n- the CUDA runtime zip;\n- GPU driver version, quantisation, n_ctx, n_batch/n_ubatch, flash-attn, KV cache type, and -np.\nWith Ollama, create the model from the local GGUF file (Modelfile FROM ./file.gguf) and verify its sha256 rather than relying on an 'ollama pull' tag. I did not verify how Ollama registry digests correspond to HF hashes.",
+   "RESEARCH SUITABILITY: determinism.\n- In llama.cpp, temperature <= 0 is argmax: src/llama-sampler.cpp line 270 at b11799 'find the token with the highest logit'. The seed is irrelevant at temperature 0. The default seed is -1, which means random.\n- The llama-server README warns that cache_prompt (on by default) 'can cause nondeterministic results' because logits are 'not guaranteed to be bit-for-bit identical for different batch sizes'.\n- For repeatable runs on the same PC, use llama-server with -np 1, cache_prompt:false (or --no-cache-prompt), temperature 0, and a fixed build, driver and settings. Turning the cache off costs one full prefill per call, which is still estimated at a few seconds.\n- Ollama hard-codes cache_prompt:true and cannot expose this, so bitwise repeatability is not guaranteed there.\n- vLLM needs batch invariance, which is beta.\n- Treat repeatability as something to measure: rerun a fixed set of requests and diff the outputs and their sha256.",
+   "RESEARCH SUITABILITY: licences.\n- gpt-oss-20b: Apache-2.0, plus a USAGE_POLICY file ('comply with all applicable law').\n- Qwen3.5-9B: Apache-2.0.\n- Gemma 4 (12B and 26B-A4B): Apache-2.0. The Gemma 4 licence page shows the Apache License 2.0 text, last updated 2026-04-01; its sidebar also links separate 'Prohibited use' and 'Terms of use' pages whose contents I did not read.\n- Ministral 3 (8B, 14B): Apache-2.0.\n- Runtimes: llama.cpp is MIT, Ollama is MIT, vLLM is Apache-2.0, and LM Studio is proprietary.\nNone of these model licences restricts research use as far as their stated licence goes.",
+   "RECOMMENDATION.\n- Lowest-effort path with a verified schema guarantee: Ollama v0.40.7 /v1/responses. The existing Responses transport works with it, and text.format becomes a llama.cpp grammar. You MUST set OLLAMA_CONTEXT_LENGTH=16384 (or a Modelfile num_ctx), because 'truncation' is not honoured and overflow truncates silently. Accept that prompt caching cannot be turned off, so determinism is weaker.\n- Most controllable path for research: llama-server b11799 with a small new adapter to /v1/chat/completions and response_format json_schema, or, untested, a top-level response_format added to the Responses body. Do NOT rely on llama-server /v1/responses text.format: it is ignored.\n- Model order to test: gpt-oss-20b (closest to the current gpt-5.4-nano setup: reasoning effort 'low', Apache-2.0, fits with headroom), then Qwen3.5-9B and Gemma-4-12B with thinking off, then Ministral-3-14B.\n- Whatever the runtime, validate every output against the schema client-side. Grammar enforcement silently drops some keywords: number bounds, 'nullable', and properties next to anyOf."
+  ]
+ }
+}

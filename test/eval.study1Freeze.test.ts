@@ -16,25 +16,33 @@ import { manifestSha256, type StudyManifest } from '../src/eval/accountedRunner.
  *   1. contract 1.1.0 runs on the tightened recognition-v2 baseline (v1 manifest was cb172eea...);
  *   2. v2 observer references shortened to 64 bits, because v2 requests reached 32,756 of the
  *      32,768-byte fail-closed ceiling (now about 26 KB at most). The manifest is unchanged by 2.
+ *   3. "show who can hear" (owner decision 2026-10-21): the v2 observation lists who is within
+ *      speaking range (`hearing`), the rules text says so, the schema's addressee enum is that list
+ *      and moves take effect after the day's speech. Request bytes change; the contract and the
+ *      manifest do not.
+ *   4. schema `const` written as one-value typed enums (owner approved 2026-10-22): Google does not
+ *      support `const` and OpenAI does not document it (it accepted it in the two live calls of
+ *      2026-10-18). Same constraint, in the form every provider documents; request bytes change,
+ *      the contract and the manifest do not.
  * Pins move only by explicit owner direction before the study runs, never to make a test pass.
  */
 
 const MODEL = 'gpt-5.4-nano-2026-03-17';
 const NULL_DECISION = JSON.stringify({ move: null, communication: null, diary: null, role: null });
 const TICK0 = {
-  'baker-0': 'c2ae5ef869b0c7a4a1f0a540728430f09fb7e2c7bfff88a3524bfe2ca78cf944',
-  'baker-1': '8bb540e8f68be992a5b39bf7c71e28d04f6fe7982eea69c0f9adc952f546ef35',
-  'miller-0': 'ad587fe9d4711cadc31ef4f3dcb7ad5f963303d296a4b2ee62af9f59affadf75',
-  'courier-0': '2043d726bdac79e5632abe4e8852a30f4c9d11bb9fbb2e5417ade744c2f86b57',
-  'investigator-0': '28145e3eea26227bbadd631979706a3608a778d6234e850371b69593dfe2d92b',
-  'importexport-0': 'a60b461b19fc6042d10a35bbfe20daf7238429aca8fc17bee9ac433c4689b720',
-  'grifter-0': '190723b50be271b0ad621221a16a774ddd30981ec51f6ef00ac67864613765e5',
+  'baker-0': '836f050f343f5cb51c9c99b1b9fa07923b1bc2a543d5b3a51c28ae021db74fbd',
+  'baker-1': 'fb3028e6c8e027320d7209ecee1507b2a8b1678997d067c03c984dc8087d942d',
+  'miller-0': '7dea74c6084f650ebe39b64b8522ee8eec9203a1cd17ace225691960fcdc98d4',
+  'courier-0': '6f60a710802e5379ca4987a5a468531b568456ca32b821f03863be27290d2a7e',
+  'investigator-0': 'df584a95c37cdbfbb06bbd955dffd115b25e9a601e4a33e7a32831032a49b7bb',
+  'importexport-0': '9ab45f1438b7379d2cfcd49689de93a565971c8d6a473d29f7054a22045111f8',
+  'grifter-0': 'fe5234d561b9296713f884a02f99e8dae98e8d5daed0ed07ba4360ab3fda0994',
 };
 // Exposure tick (2) after two all-null ticks: the bytes that carry each arm's notice.
 const TICK2: Record<string, Record<string, string>> = {
-  council: { 'baker-0': '41926678a858d84201d902a12734c34f6f4b36b98489bd5159247a52869b728e', 'miller-0': 'b0bdfb4535d5ca45f2a7c82e9eb22f1e544c69ff7d4c88f90dfc6adc20d82d76', 'grifter-0': '5cdab81630ee39aeed3c38defc4807f43d67d7d426f9f695379185e85ace739a' },
-  anonymous: { 'baker-0': '535056a829c6ed4006f4b5a0d7b94b0cf51129dae024967b556fdd9064eacdcd', 'miller-0': '6048eae720ff89100ed5ce237ce114f76fcb0c0735839ed6e07acb1ce8f8c1f9', 'grifter-0': '7838fcc35fb8267f7c45e6d54eab67dff7f4966a5974430ccfa850baba714850' },
-  none: { 'baker-0': 'fd4df1d98a937dd742bf8122ef32499b0ec73b4de3def7d63330a780775de8d5', 'miller-0': 'fa40629be21c00c144c8b3b3b741473bd3e6090d2100c25d24cf719416bc81e3', 'grifter-0': 'cba7e88d91d3cdd2dd04d0ceb9c27f73f30290a46d1c982bfec2e79948f02f15' },
+  council: { 'baker-0': '44ca86349aa333c7c0e2a730b46b84239d1f9004cc4d3044df3837f692edd8d8', 'miller-0': 'bab54b3de4281cfb8268edbb0fe5aeaaa15ab6f65e1b1b3580dfa543ea6de18e', 'grifter-0': '50290cc1ed99909044d1a8ffe2cfe7da865ad996637c2f36510f242a8206efbc' },
+  anonymous: { 'baker-0': '9edb3a159f219242243220d98f0207ffbe12cb7f4ede5447e80c810827cc988d', 'miller-0': 'ed7a7c2d4becba1962bb1e605e96ffc06c0e915bd22a513370dad3f1975af756', 'grifter-0': '3b7769f3aa62fadb681280b6f14d42d4804873c77839792d6cb826b2b05d014d' },
+  none: { 'baker-0': '1b2b3d06a5ee52b4bbda4eb1c01117e101f611b691064f426d68efa6b0b689c1', 'miller-0': '948e2ec4332a96167fa0ad8ff3f8a2a6a11adf56419c64b82e84e3216dfc9861', 'grifter-0': '1208de3e7a6eef69b77d185aa6c2d67c7843906fd90a2180db153a0f15735927' },
 };
 
 describe('study 1 is frozen until it has run', () => {

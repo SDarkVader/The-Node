@@ -1,0 +1,443 @@
+{
+ "corrections": [
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Price $0.15 input / $0.075 cached input / $0.60 output per 1M; context 131,072",
+   "verdict": "confirmed",
+   "correctValue": "Same. Max completion 65,536 tokens (not in the research file).",
+   "source": "https://console.groq.com/docs/model/openai/gpt-oss-120b.md and https://console.groq.com/docs/models.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Production model; IDs carry no date so no snapshot pinning; no deprecation announced",
+   "verdict": "confirmed",
+   "correctValue": "Listed under Production Models. The deprecation history contains no gpt-oss entry. Its entries recommend gpt-oss-120b/20b as replacements for Llama and Qwen models.",
+   "source": "https://console.groq.com/docs/models.md and https://console.groq.com/docs/deprecations.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "strict:true uses constrained decoding on gpt-oss-20b, gpt-oss-120b, qwen3.8-27b and muse-spark-open (Chat Completions); strict needs every property required and additionalProperties:false",
+   "verdict": "confirmed",
+   "correctValue": "Same four model IDs. Muse Spark Open is Enterprise / Contact Sales.",
+   "source": "https://console.groq.com/docs/structured-outputs.md ('Models with Strict Mode', 'Schema Constraints by Mode'), read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Documented subset: string, number, boolean, integer, object, array, enum, anyOf; null only through a type union such as [\"string\",\"null\"]; $defs/$ref and recursion",
+   "verdict": "corrected",
+   "correctValue": "The strict-mode section also shows a standalone {\"type\":\"null\"} branch inside anyOf (explicit-recursion example: anyOf:[{type:'array',...},{type:'null'}]), and says every anyOf branch must itself follow the subset. Our anyOf:[{type:'null'}, ...] form is therefore shown by an example, not only the type-union form. No example of a numeric enum or of nested anyOf.",
+   "source": "https://console.groq.com/docs/structured-outputs.md ('Supported Data Types', 'Union types', 'Explicit recursion'), read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "const and minimum/maximum are not documented for strict mode; the only official minimum/maximum example runs in best-effort mode",
+   "verdict": "confirmed",
+   "correctValue": "The page lists no keyword other than type, enum, anyOf, required, additionalProperties, $defs/$ref. Every example that sets minimum/maximum (e.g. confidence_score 0..1) omits 'strict', so it runs with the default strict:false.",
+   "source": "https://console.groq.com/docs/structured-outputs.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Responses API: POST https://api.groq.com/openai/v1/responses (beta); OpenAPI defines text.format {type:'json_schema', name, schema, strict}",
+   "verdict": "confirmed",
+   "correctValue": "TextResponseFormatJsonSchema requires type, name, schema; strict is a nullable boolean, default false, described only as 'Whether to enable strict schema adherence'; schema is a free object. The guide's Responses structured-output example omits strict.",
+   "source": "https://console.groq.com/docs/responses-api.md and the OpenAPI spec embedded in https://console.groq.com/docs/api-reference (CreateResponseRequest, TextResponseFormatJsonSchema), read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "strict:true on /responses gets the same constrained decoding as Chat Completions",
+   "verdict": "unverifiable",
+   "correctValue": "No Groq page states it. The structured-outputs guide documents constrained decoding only for response_format on Chat Completions.",
+   "source": "https://console.groq.com/docs/structured-outputs.md and https://console.groq.com/docs/responses-api.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Responses guide lists store and truncation as unsupported while the API reference accepts store=false and truncation; background is not in the request body",
+   "verdict": "corrected",
+   "correctValue": "The OpenAPI spec resolves most of it. store: 'Currently only supports false or null values', so store:false is accepted. truncation: auto|disabled. service_tier: enum auto|default|flex, so our 'default' is accepted. reasoning.effort: none|low|medium|high. max_output_tokens counts reasoning tokens. tool_choice 'none' is valid. background is absent from the request schema and the spec does not say whether unknown fields are ignored or rejected, so background:false stays unverified. The guide separately says tool use is not supported with Structured Outputs, so whether tools:[] is tolerated is also unverified.",
+   "source": "OpenAPI spec embedded in https://console.groq.com/docs/api-reference and https://console.groq.com/docs/responses-api.md ('Unsupported Features'), read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "gpt-oss has reasoning effort low/medium/high only (no 'none'); Responses output carries a reasoning item with plaintext content [{type:'reasoning_text'}], which the repo parser rejects",
+   "verdict": "confirmed",
+   "correctValue": "Groq's example output has type 'reasoning', content:[{type:'reasoning_text',text:...}], summary:[]. src/agent/recordedResponse.ts lines 36-40 reject any reasoning item with a non-empty summary or non-empty content, so every such call would be non-actionable. Spec: 'none' is supported only by Qwen3.8; the default is medium for GPT-OSS. include_reasoning:false exists on Chat Completions, but the Responses spec has no equivalent.",
+   "source": "https://console.groq.com/docs/responses-api.md, https://console.groq.com/docs/reasoning.md, OpenAPI spec in https://console.groq.com/docs/api-reference; /home/user/The-Node/src/agent/recordedResponse.ts; read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Batch 50% off, 24h-7d window, does not stack with cache discount; Flex same price, 10x rate limits, fails fast with 498",
+   "verdict": "confirmed",
+   "correctValue": "Flex is for paid customers only, status 498 capacity_exceeded. Batch tokens are billed at the 50% rate regardless of cache status. Neither suits sequential 16 s ticks.",
+   "source": "https://console.groq.com/docs/batch.md and https://console.groq.com/docs/flex-processing.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Data: no retention by default except up to 30 days of reliability/abuse logs; ZDR self-serve; data stored in US GCP; training use not addressed",
+   "verdict": "confirmed",
+   "correctValue": "Same. Applies to /openai/v1/responses as well as chat completions (summary table). ZDR is a Data Controls toggle for all customers.",
+   "source": "https://console.groq.com/docs/your-data.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "claim": "Latency within 16 s for 5-9k-token prompts (only ~500 tps advertised)",
+   "verdict": "unverifiable",
+   "correctValue": "Only the advertised ~500 tokens/s is documented. No prefill or time-to-first-token figure and no SLA. Developer-plan limits are 250K TPM and 1K RPM (models page), which fits 7 actors per tick.",
+   "source": "https://console.groq.com/docs/model/openai/gpt-oss-120b.md and https://console.groq.com/docs/models.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-20b [Groq]",
+   "claim": "Price $0.075 input / $0.037 cached / $0.30 output; context 131,072; production; ~1000 tps",
+   "verdict": "confirmed",
+   "correctValue": "Same (Groq's page prints cached input as $0.037; OpenRouter lists 0.0375). Max completion 65,536.",
+   "source": "https://console.groq.com/docs/model/openai/gpt-oss-20b.md and https://console.groq.com/docs/models.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-20b [Groq]",
+   "claim": "Strict constrained decoding, plaintext reasoning item, batch and flex as for the 120B",
+   "verdict": "confirmed",
+   "correctValue": "Listed under Models with Strict Mode; same reasoning and Responses behaviour.",
+   "source": "https://console.groq.com/docs/structured-outputs.md, https://console.groq.com/docs/reasoning.md, read 2026-10-22"
+  },
+  {
+   "model": "qwen/qwen3.8-27b [Groq]",
+   "claim": "Price $0.80 input / $4.00 output; no cached-input price; context 131,072; PREVIEW model",
+   "verdict": "confirmed",
+   "correctValue": "Same. Max completion is only 16,384 tokens. Groq: preview models 'may be discontinued at short notice'.",
+   "source": "https://console.groq.com/docs/model/qwen/qwen3.8-27b.md and https://console.groq.com/docs/models.md, read 2026-10-22"
+  },
+  {
+   "model": "qwen/qwen3.8-27b [Groq]",
+   "claim": "Replaced qwen/qwen3.6-27b, which was shut down 09/14/26; weights at huggingface.co/Qwen/Qwen3.8-27B",
+   "verdict": "confirmed",
+   "correctValue": "qwen3.6-27b shutdown 09/14/26 with qwen3.8-27b as replacement. Groq had named qwen3.6-27b as a Llama replacement on 2026-06-17 and retired it 3 months later, so preview lifetimes are short. HF repo Qwen/Qwen3.8-27B exists, licence apache-2.0.",
+   "source": "https://console.groq.com/docs/deprecations.md; https://huggingface.co/api/models/Qwen/Qwen3.8-27B; read 2026-10-22"
+  },
+  {
+   "model": "qwen/qwen3.8-27b [Groq]",
+   "claim": "reasoning_effort none disables reasoning; whether /responses with 'none' returns no reasoning item is unverified",
+   "verdict": "corrected",
+   "correctValue": "Spec: 'none' disables reasoning and is supported only by Qwen3.8, and the default when omitted is none for Qwen3.8. So omitting reasoning avoids thinking, but our request sends effort 'low', which turns reasoning on. The resulting output shape on /responses is not documented. The Responses enum is none|low|medium|high ('default' appears only in the Chat Completions parameter table).",
+   "source": "OpenAPI spec in https://console.groq.com/docs/api-reference and https://console.groq.com/docs/reasoning.md, read 2026-10-22"
+  },
+  {
+   "model": "llama-3.1-8b-instant / llama-3.3-70b-versatile [Groq]",
+   "claim": "Deprecated with shutdown 08/16/26, replacements gpt-oss-20b/120b; models page lists both as Enterprise / Contact Sales",
+   "verdict": "confirmed",
+   "correctValue": "Deprecation applies to free and developer-tier usage; enterprise committed-spend customers are not affected. The models page shows ContactSales for both.",
+   "source": "https://console.groq.com/docs/deprecations.md and https://console.groq.com/docs/models.md, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Price peak $0.30 input / $0.006 cache hit / $1.20 output; off-peak $0.15 / $0.003 / $0.60; context 1M; model version DeepSeek-V4.1-Flash-1017",
+   "verdict": "confirmed",
+   "correctValue": "Same. Peak hours are 01:00-04:00 and 06:00-10:00 UTC Monday-Friday, EXCLUDING Chinese public holidays (the research file omitted this). Released 2026-10-17.",
+   "source": "https://api-docs.deepseek.com/quick_start/pricing/ and https://api-docs.deepseek.com/news/news261017/, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Cannot be pinned: only aliases deepseek-flash and deepseek-v4-pro; legacy names are served by the newest Flash",
+   "verdict": "confirmed",
+   "correctValue": "The docs say the legacy names deepseek-v4-flash and deepseek-v4-flash-vision-exp are accepted but the models are retired and 'their requests are served by the DeepSeek-V4.1-Flash-1017 model'. No dated API ID is offered. Third parties offer dated IDs (see Fireworks, Together, OpenRouter).",
+   "source": "https://api-docs.deepseek.com/quick_start/pricing/ footnote 1, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Chat Completions response_format supports only text or json_object; API may occasionally return empty content",
+   "verdict": "confirmed",
+   "correctValue": "response_format enum is [text, json_object]. JSON Output page: 'the API may occasionally return empty content'.",
+   "source": "https://api-docs.deepseek.com/api/create-chat-completion/ and https://api-docs.deepseek.com/guides/json_mode/, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Responses API POST /responses (base https://api.deepseek.com) lists text.format json_schema with name and schema, no strict field and no keyword list; unsupported parameters are silently ignored",
+   "verdict": "confirmed",
+   "correctValue": "The endpoint is /responses, not /v1/responses. Compatibility table: text 'Partially supported. format fully supported'. store, background, truncation, service_tier, metadata, include are 'Not supported' and 'silently ignored', so our extra body fields would not cause errors. No sentence anywhere says json_schema is enforced by constrained decoding.",
+   "source": "https://api-docs.deepseek.com/guides/responses_api/ and https://api-docs.deepseek.com/api/create-response/, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Tool-call strict mode (beta, /beta base_url) supports object, string, number, integer, boolean, array, enum, anyOf, $ref/$def and number const/minimum/maximum, but not type null or string const",
+   "verdict": "confirmed",
+   "correctValue": "Also documented: string pattern/format; unsupported minLength/maxLength and minItems/maxItems. 'null' is not in the supported-type list. This mode is for function tool calls on Chat Completions, not for text.format, so it would need a tool-call transport rather than our Responses structured output.",
+   "source": "https://api-docs.deepseek.com/guides/tool_calls/ ('strict Mode (Beta)'), read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Thinking is on by default; reasoning.effort 'none' disables it; low/high/max enable it; our effort 'low' keeps thinking on and the reasoning text would trip the parser",
+   "verdict": "confirmed",
+   "correctValue": "Default effort is high. minimal maps to low; medium/xhigh map to high. The Responses output carries a reasoning item with plaintext reasoning_text content; summary is accepted but none is generated. The repo parser rejects non-empty reasoning content.",
+   "source": "https://api-docs.deepseek.com/guides/thinking_mode/ and https://api-docs.deepseek.com/api/create-response/, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Data: terms do not address training; privacy policy unreachable (connection reset, then 503)",
+   "verdict": "corrected",
+   "correctValue": "The privacy policy loaded (HTTP 200, 'Last Update: Feb 10, 2026'). It says Personal Data is used 'to train and improve our technology, such as our machine learning models', and mentions a right to opt out of training in a regional section. It describes DeepSeek apps/websites/chatbots and does not state whether API inputs are in scope. The Open Platform Terms (effective 2026-04-29) say the user keeps rights in Inputs and are silent on training use; they point to the Privacy Policy. Net: training use of API data is unresolved, but not 'unreachable'.",
+   "source": "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html and https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Latency: no SLA; non-streaming requests may receive empty keep-alive lines; connection closed after 10 minutes without inference start; concurrency limit",
+   "verdict": "confirmed",
+   "correctValue": "Concurrency limit 2500 per account for deepseek-flash, HTTP 429 beyond it. No RPM/TPM limit published. Empty lines before the JSON body on non-streaming requests.",
+   "source": "https://api-docs.deepseek.com/quick_start/rate_limit/, read 2026-10-22"
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "claim": "Weights are open-sourced at deepseek-ai/DeepSeek-V4.1-Flash-1017",
+   "verdict": "confirmed",
+   "correctValue": "HF repo exists, licence MIT, last modified 2026-10-17.",
+   "source": "https://huggingface.co/api/models/deepseek-ai/DeepSeek-V4.1-Flash-1017, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Price $0.15 input / $0.015 cached / $0.60 output; priority $0.18 / $0.018 / $0.72; batch 50%",
+   "verdict": "confirmed",
+   "correctValue": "Same. Column order on the pricing page is input / cached input / output.",
+   "source": "https://docs.fireworks.ai/serverless/pricing.md, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Exact resource string and context length unverified",
+   "verdict": "corrected",
+   "correctValue": "Resource name accounts/fireworks/models/gpt-oss-120b, context length 131,072, serverless-capable. The API reference and Responses guide require the accounts/<account>/models/<model> form.",
+   "source": "https://app.fireworks.ai/models/fireworks/gpt-oss-120b (model record) and https://docs.fireworks.ai/api-reference/post-responses.md, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Serverless models 'may be updated or deprecated' with at least 2 weeks' notice (no specific deprecation reported)",
+   "verdict": "refuted",
+   "correctValue": "A specific decommission is announced. Changelog entry dated 2026-10-19: GPT OSS 120B is decommissioned from SERVERLESS on 2026-11-07 (dedicated deployments unaffected); the model record carries deprecationDate 2026-11-07, updated 2026-10-20 07:03 UTC. Fireworks also removed gpt-oss-20b from serverless on 2026-08-27. The research file missed this. The $0.15/$0.60 serverless price cannot be used past 2026-11-07.",
+   "source": "https://docs.fireworks.ai/updates/changelog.md (entry 2026-10-19) and https://app.fireworks.ai/models/fireworks/gpt-oss-120b, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Schema 'enforced during generation'; supported types incl. null, anyOf/allOf/oneOf, minLength/maxLength, pattern, $defs; enum, const, minimum, maximum not mentioned; pattern best-effort",
+   "verdict": "confirmed",
+   "correctValue": "Same. enum is also absent from the supported list. Docs warn that response_format with json_schema DISABLES reasoning output on reasoning models (Chat Completions).",
+   "source": "https://docs.fireworks.ai/structured-responses/structured-response-formatting.md, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Responses API at /inference/v1/responses supports text.format {strict:true}; reasoning.summary not configurable and always included; service_tier not in the supported fields",
+   "verdict": "confirmed",
+   "correctValue": "Supported request fields: model, input, instructions, stream, store, previous_response_id, background, include, tools, tool_choice, parallel_tool_calls, max_tool_calls, max_output_tokens, metadata, reasoning, text, temperature, top_p, top_logprobs, truncation, user, prompt_cache_key. service_tier is absent. The CreateResponse schema has no service_tier property either.",
+   "source": "https://docs.fireworks.ai/guides/response-api.md and https://docs.fireworks.ai/api-reference/post-responses.md, read 2026-10-22"
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "claim": "Data: zero retention by default; Responses API stores 30 days when store=true (default); transport sends store:false",
+   "verdict": "confirmed",
+   "correctValue": "Same.",
+   "source": "https://docs.fireworks.ai/guides/security_compliance/data_handling.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b via Groq [OpenRouter]",
+   "claim": "Groq endpoint on OpenRouter $0.15/$0.60, cached $0.075, context 131,072; cheapest listed endpoints about $0.03/$0.15",
+   "verdict": "confirmed",
+   "correctValue": "Groq endpoint max completion 65,536, structured_outputs and response_format flagged. Cheapest endpoint Near AI (fp4) $0.03 / $0.15, then CoreWeave, DekaLLM, AkashML, DeepInfra and others. Enforcement method on those endpoints is undocumented.",
+   "source": "https://openrouter.ai/api/v1/models/openai/gpt-oss-120b/endpoints, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b via Groq [OpenRouter]",
+   "claim": "Structured-output enforcement 'varies by provider'; use provider.require_parameters and pin a provider; Responses API is stateless and rejects store:true / previous_response_id with 400",
+   "verdict": "confirmed",
+   "correctValue": "Quote: 'Enforcement varies by provider: some guarantee schema-conforming output, while others translate your schema into their own structured-output format or treat it as a strong hint'. Provider fields exist: only, order, ignore, allow_fallbacks (default true), require_parameters (default false), data_collection, zdr. Responses request schema accepts service_tier 'default', store const false, background, truncation, and text.format json_schema with strict nullable boolean.",
+   "source": "https://openrouter.ai/docs/guides/features/structured-outputs.md, https://openrouter.ai/docs/api_reference/responses/overview.md, https://openrouter.ai/docs/guides/routing/provider-selection.md, https://openrouter.ai/docs/api/api-reference/responses/create-a-response.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b via Groq [OpenRouter]",
+   "claim": ":batch variant at $0.0296 / $0.136; DeepSeek first-party endpoint reports structured_outputs=false; dated slug deepseek/deepseek-v4.1-flash-1017 exists",
+   "verdict": "confirmed",
+   "correctValue": "openai/gpt-oss-120b:batch is $0.0296 / $0.136 per M. deepseek/deepseek-v4.1-flash-1017 exists; its 'DeepSeek' endpoint has structured_outputs false and response_format true. Most other endpoints for that slug report structured_outputs true. openai/gpt-oss-20b is listed at $0.018 / $0.09.",
+   "source": "https://openrouter.ai/api/v1/models and https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash-1017/endpoints, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b via Groq [OpenRouter]",
+   "claim": "Data: no prompt storage unless opted in; use-of-inputs opt-in off by default; credit-purchase fee percentage unreadable",
+   "verdict": "confirmed",
+   "correctValue": "Same. The FAQ still renders the fee as an unexpanded template, so the fee stays unverifiable.",
+   "source": "https://openrouter.ai/docs/guides/privacy/data-collection.md and https://openrouter.ai/docs/faq.md, read 2026-10-22"
+  },
+  {
+   "model": "mistral-small-2603 [Mistral]",
+   "claim": "Price $0.15 / $0.60; context 256k; GA; open weights Apache 2.0, 119B total / 6.5B active; pinnable by dated name",
+   "verdict": "confirmed",
+   "correctValue": "Also confirmed by the lifecycle policy: GA models get no silent updates, 6-month deprecation notice, and the major-minor ID is a fixed version while -latest is an alias. Correction: the model card links weights at huggingface.co/mistralai/Mistral-Small-4-2603, which does not exist (HTTP 401); the repo is mistralai/Mistral-Small-4-119B-2603, apache-2.0.",
+   "source": "https://docs.mistral.ai/inference/pricing.md, https://docs.mistral.ai/models/mistral-small-4-0-26-03.md, https://docs.mistral.ai/inference/model-lifecycle.md, https://huggingface.co/api/models/mistralai/Mistral-Small-4-119B-2603, read 2026-10-22"
+  },
+  {
+   "model": "mistral-small-2603 [Mistral]",
+   "claim": "strict flag accepted, enforcement and keyword support undocumented; schema is prepended to the system prompt; no Responses API",
+   "verdict": "confirmed",
+   "correctValue": "The docs show response_format json_schema with strict:true and say the schema is 'always prepended to the System Prompt'. No sentence claims constrained decoding and no keyword list exists. The docs index lists no /v1/responses endpoint; ZDR covers /v1/chat/completions and other stateless endpoints, not Agents or Conversations.",
+   "source": "https://docs.mistral.ai/studio/conversations/structured-output/custom.md, https://docs.mistral.ai/llms.txt, https://docs.mistral.ai/admin/monitor-comply/zero-data-retention.md, read 2026-10-22"
+  },
+  {
+   "model": "mistral-small-2603 [Mistral]",
+   "claim": "reasoning_effort 'none' or 'high'; with 'none' the thinking chunk is omitted",
+   "verdict": "confirmed",
+   "correctValue": "Same. With 'none', message.content is a plain string.",
+   "source": "https://docs.mistral.ai/studio/conversations/reasoning.md, read 2026-10-22"
+  },
+  {
+   "model": "mistral-small-2603 [Mistral]",
+   "claim": "Default of the training opt-out toggle is unstated; ZDR on paid plans; no batch price on the official page",
+   "verdict": "confirmed",
+   "correctValue": "The help article describes an 'Anonymous improvement data' toggle in the Admin panel privacy menu and does not state its default. The pricing page has no batch price.",
+   "source": "https://help.mistral.ai/en/articles/455207-can-i-opt-out-of-my-input-or-output-data-being-used-for-training and https://docs.mistral.ai/inference/pricing.md, read 2026-10-22"
+  },
+  {
+   "model": "ministral-8b-2512 [Mistral]",
+   "claim": "Price $0.15 / $0.15; context 256k; instruct output is text only; no reasoning_effort documented; structured-outputs listed; Apache 2.0",
+   "verdict": "confirmed",
+   "correctValue": "Features: structured-outputs, function-calling, document-qna, prefix, chat-completions, batching. The reasoning page lists reasoning_effort only for mistral-small-latest, mistral-medium-3-5, mistral-large-4-0 and zai-glm-5-3. HF repo mistralai/Ministral-3-8B-Instruct-2512 is apache-2.0.",
+   "source": "https://docs.mistral.ai/models/ministral-3-8b-25-12.md, https://docs.mistral.ai/studio/conversations/reasoning.md, https://huggingface.co/api/models/mistralai/Ministral-3-8B-Instruct-2512, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "claim": "Price $0.15 input / $0.60 output; context 131,072; catalog marks Structured outputs: Yes; DeepSeek V4.1 Flash 1017 at $0.30 / $0.006 / $1.20",
+   "verdict": "confirmed",
+   "correctValue": "Same. The serverless catalog shows no cached-input price for gpt-oss-120b.",
+   "source": "https://docs.together.ai/docs/serverless/models.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "claim": "No strict flag or keyword list; sampler-level constrained decoding described on the learn page; no /v1/responses endpoint",
+   "verdict": "confirmed",
+   "correctValue": "The structured-outputs API page documents response_format json_schema without 'strict' and says to also put the schema text in the prompt. The learn page describes constrained decoding generically. The OpenAI-compatibility matrix lists chat/completions, completions, embeddings, images and audio, not responses.",
+   "source": "https://docs.together.ai/docs/inference/chat/structured-outputs.md, https://docs.together.ai/learn/structured-outputs.md, https://docs.together.ai/docs/inference/openai-compatibility.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "claim": "Pinning was not checked",
+   "verdict": "corrected",
+   "correctValue": "Serverless models are not pinned: an 'upgrade' redirects the existing model ID to the newer version after a 3-day notice; serverless deprecations give 2-3 weeks. A fixed version needs a dedicated endpoint. Together removed gpt-oss-20b from serverless on 2026-09-15 and schedules removal of DeepSeek-V4-Flash-0731 and Llama-3.3-70B-Instruct-Turbo for 2026-10-22. No removal of gpt-oss-120b is listed.",
+   "source": "https://docs.together.ai/docs/deprecations.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "claim": "Data: Together stores prompts and outputs by default for product improvement; training opt-in off by default; ZDR is a toggle",
+   "verdict": "confirmed",
+   "correctValue": "Same. Turning storage off enables ZDR and also disables passthrough models.",
+   "source": "https://docs.together.ai/docs/privacy-and-security.md, read 2026-10-22"
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "claim": "Batch discount and reasoning control for this model",
+   "verdict": "unverifiable",
+   "correctValue": "Not re-checked: neither affects the decision (batch cannot serve sequential ticks).",
+   "source": "not fetched; no new research was done"
+  },
+  {
+   "model": "open-weight Qwen [Alibaba Model Studio]",
+   "claim": "JSON Schema mode is supported only for Qwen3.7-Plus/Flash/Max and Qwen3.8-Max/Flash series (not the open-source series); open Qwen3.x series get JSON Object mode only",
+   "verdict": "confirmed",
+   "correctValue": "Page last updated Oct 19, 2026. Supported-models list: JSON Schema = Qwen3.7-Plus, Qwen3.7-Flash, Qwen3.7-Max, Qwen3.8-Max, Qwen3.8-Flash series; JSON Object additionally lists the Qwen3.8/3.6/3.5/3 open-source series. 'Singapore region models are not supported yet' is verbatim.",
+   "source": "https://www.alibabacloud.com/help/en/model-studio/qwen-structured-output (Last Updated Oct 19, 2026), read 2026-10-22"
+  },
+  {
+   "model": "open-weight Qwen [Alibaba Model Studio]",
+   "claim": "The doc lists data types string, number, integer, boolean, object, array and enum; anyOf, const, null and minimum/maximum are not documented",
+   "verdict": "refuted",
+   "correctValue": "The keyword table for JSON Schema mode lists type including null and union types such as [\"string\",\"null\"]; enum and const; anyOf/oneOf/allOf/not; $defs+$ref; minimum, maximum, exclusiveMinimum, exclusiveMaximum; minLength/maxLength/pattern; unsupported keywords return 400. It applies only to the proprietary series, so the conclusion that open-weight Qwen cannot be used with a schema stands.",
+   "source": "https://www.alibabacloud.com/help/en/model-studio/qwen-structured-output ('Supported JSON Schema keywords'), read 2026-10-22"
+  },
+  {
+   "model": "open-weight Qwen [Alibaba Model Studio]",
+   "claim": "Responses endpoint /compatible-mode/v1/responses lists open models such as qwen3.6-35b-a3b and qwen3.5-122b-a10b but does not document text.format",
+   "verdict": "confirmed",
+   "correctValue": "Endpoints are workspace-specific hosts, e.g. https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/responses. The page has no mention of json_schema or text.format.",
+   "source": "https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-responses (Last Updated Oct 19, 2026), read 2026-10-22"
+  },
+  {
+   "model": "open-weight Qwen [Alibaba Model Studio]",
+   "claim": "Prices and data-retention terms",
+   "verdict": "unverifiable",
+   "correctValue": "Not fetched; the option is excluded on the schema-enforcement requirement.",
+   "source": "not fetched; no new research was done"
+  },
+  {
+   "model": "all hosted candidates",
+   "claim": "src/agent/responsesTransport.ts hard-codes https://api.openai.com/v1/responses; the model-id check /^[A-Za-z0-9._:-]{1,128}$/ rejects '/'",
+   "verdict": "confirmed",
+   "correctValue": "responsesTransport.ts line 15 sets the endpoint; the loopback fixture check requires pathname '/v1/responses' (line 129). responsesRequest.ts line 96 holds the regex, so openai/gpt-oss-120b, qwen/qwen3.8-27b and accounts/fireworks/models/... fail; deepseek-flash passes. Provider paths: Groq /openai/v1/responses, Fireworks /inference/v1/responses, OpenRouter /api/v1/responses, DeepSeek /responses, Alibaba /compatible-mode/v1/responses (all confirmed from their docs). The request body also sends stream:false, background:false, tools:[], tool_choice:'none', truncation:'disabled' (responsesRequest.ts line 102), which the REPOSITORY FACTS list did not mention.",
+   "source": "/home/user/The-Node/src/agent/responsesTransport.ts and responsesRequest.ts, read 2026-10-22"
+  },
+  {
+   "model": "all hosted candidates",
+   "claim": "Illustrative study-1 cost (630 calls, ~7,000 input and ~500 output tokens): $0.85 Groq gpt-oss-120b, $0.43 gpt-oss-20b, $1.70 DeepSeek peak / $0.85 off-peak, $0.78 Mistral Small 4",
+   "verdict": "corrected",
+   "correctValue": "Recomputed from the confirmed list prices: Groq 120B $0.8505; 20B $0.4253; DeepSeek peak $1.701, off-peak $0.8505; Mistral Small 4 $0.8505, not $0.78 ($0.78 would need about 313 output tokens, not 500). Groq qwen3.8-27b, absent from the file's cost list, is $4.788. Booked at 2x: $1.70 / $0.85 / $3.40 / $1.70 / $1.70 / $9.58. The $9.58 exceeds the USD 5 study-1 allowance; the others fit.",
+   "source": "arithmetic on the prices confirmed above (630 x (7000 x in + 500 x out) / 1e6), 2026-10-22"
+  }
+ ],
+ "schemaFit": [
+  {
+   "model": "openai/gpt-oss-120b [Groq]",
+   "fits": "unknown",
+   "detail": "Matches the documented strict subset: objects with additionalProperties:false and all properties required; string enums (the 16-hex ref lists and one-value string enums); anyOf with a standalone {type:'null'} branch, which Groq's recursion example shows. Not documented and so unproven: (1) minimum/maximum on price - absent from the strict subset and used only in best-effort examples, so it may be rejected (400) or ignored; a mechanical rewrite is to drop the keywords and rely on validateDecision for the 0..2 bound; (2) one-value NUMBER enums {type:'number', enum:[3]} - enum is documented, numeric values are not exemplified; (3) the three-level nested anyOf (communication -> proximityUtterance -> referent) - the docs say each branch must follow the subset but give no depth limit; (4) per-call enums of different content with no schema cache - no size or compile limits stated; (5) whether strict:true on /responses is enforced by constrained decoding at all (documented only for Chat Completions). Separately, the request fields background:false and tools:[] are not in Groq's request schema. Needs a live probe before any study call."
+  },
+  {
+   "model": "openai/gpt-oss-20b [Groq]",
+   "fits": "unknown",
+   "detail": "Same documented subset and the same five unproven points as gpt-oss-120b on Groq: minimum/maximum, numeric one-value enums, nested anyOf, per-call enums, and strict on /responses. A smaller model also raises the chance that valid-but-wrong choices come out of the constrained enums; that is a quality question, not a schema one."
+  },
+  {
+   "model": "qwen/qwen3.8-27b [Groq]",
+   "fits": "unknown",
+   "detail": "Listed under strict mode with the same Groq subset, so the same unproven points apply (minimum/maximum, numeric enums, nested anyOf, strict on /responses). Preview status, a 16,384-token output cap and a $4.79 list cost for study 1 (about $9.58 booked at 2x, above the USD 5 allowance) make it a weak candidate despite the schema position."
+  },
+  {
+   "model": "openai/gpt-oss-120b via Groq [OpenRouter]",
+   "fits": "unknown",
+   "detail": "Schema position is Groq's, if the request is pinned with provider.only=['groq'], allow_fallbacks=false and require_parameters=true; OpenRouter itself says enforcement varies by provider and that strict is passed on only where the provider has a native strict mode. Whether OpenRouter forwards strict and the full keyword set to Groq unchanged is undocumented. The request body we already send (service_tier 'default', store false, background, truncation, text.format json_schema strict) all validates against OpenRouter's Responses request schema. The model ID contains '/' and the provider block is not in the current body."
+  },
+  {
+   "model": "deepseek-flash (DeepSeek-V4.1-Flash-1017) [DeepSeek]",
+   "fits": "no",
+   "detail": "Not a strict schema path for our transport. Chat Completions accepts only json_object. The Responses text.format json_schema takes name and schema but documents no strict field, no keyword list and no constrained decoding, and ignores unsupported parameters silently. The only documented strict mode is for function tool calls on the /beta base URL, which does not list type null (our nullable anyOf branch) and would need a tool-call transport. effort 'low' also leaves thinking on, which the parser rejects. Fails hard requirement 1 as documented."
+  },
+  {
+   "model": "accounts/fireworks/models/gpt-oss-120b [Fireworks]",
+   "fits": "unknown",
+   "detail": "Moot: serverless is decommissioned 2026-11-07. For the record, the documented subset covers null, anyOf/allOf/oneOf, additionalProperties and properties; enum, const, minimum and maximum are not listed, and pattern-like constructs that cannot compile are silently relaxed, so enforcement of our enums and the price bound cannot be assumed. service_tier is not a supported Responses field and the model ID contains '/'."
+  },
+  {
+   "model": "mistral-small-2603 [Mistral]",
+   "fits": "unknown",
+   "detail": "No documented keyword subset and no statement that strict is enforced by constrained decoding; the schema is prepended to the system prompt, which suggests prompt-level guidance plus validation. Chat Completions only, so it also needs a new adapter. Cannot be judged against our nested anyOf, numeric enums or minimum/maximum."
+  },
+  {
+   "model": "ministral-8b-2512 [Mistral]",
+   "fits": "unknown",
+   "detail": "Same as Mistral Small 4: strict flag accepted, enforcement and keywords undocumented, Chat Completions only."
+  },
+  {
+   "model": "openai/gpt-oss-120b [Together]",
+   "fits": "unknown",
+   "detail": "Catalog says structured outputs: Yes and the learn page describes sampler-level constrained decoding, but the API documents no strict flag and no keyword subset, and recommends repeating the schema in the prompt. Chat Completions only. Our anyOf-with-null, numeric enums, nested anyOf and minimum/maximum are all unconfirmed."
+  },
+  {
+   "model": "open-weight Qwen [Alibaba Model Studio]",
+   "fits": "no",
+   "detail": "JSON Schema mode is not offered for the open-source Qwen series, only JSON Object mode, which 'does not guarantee a specific structure'. The proprietary Qwen3.7/3.8 series that do support it document every keyword we use (null, enum/const, anyOf, minimum/maximum, additionalProperties), but they are not open-weight and are outside this file's scope."
+  }
+ ],
+ "survivors": [
+  "openai/gpt-oss-120b [Groq]",
+  "openai/gpt-oss-20b [Groq]",
+  "qwen/qwen3.8-27b [Groq] (preview; conditional)",
+  "openai/gpt-oss-120b via Groq [OpenRouter] (pinned provider; conditional)"
+ ],
+ "notes": [
+  "Scope and method: verifier only, hosted open-weight family. No new models, providers or runtimes were searched for and no sub-agents were used. Every cited page was fetched directly on 2026-10-22 (raw markdown where the vendor serves it, otherwise HTML, plus the OpenAPI spec embedded in Groq's API reference and OpenRouter's endpoint/model JSON). The local-runtime items in the task template are not part of this file and were not checked. Scratch copies of the fetched pages are in the session scratchpad, not in the repository. Full result also written to /home/user/The-Node/docs/research/model-options-2026-10-21/verify-open-weight.json.",
+  "Material corrections to the research file: (1) Fireworks gpt-oss-120b is being decommissioned from serverless on 2026-11-07 (changelog 2026-10-19), which the file missed; (2) the file's $0.78 Mistral Small 4 cost is $0.85 under its own assumptions; (3) the DeepSeek privacy policy is reachable and does say data may be used for training, scope for API traffic unstated; (4) Alibaba's documented keyword subset does include null, enum/const, anyOf and minimum/maximum, but only for proprietary models, so the exclusion stands; (5) Groq's OpenAPI spec resolves several open items: store:false, truncation and service_tier 'default' are accepted, while background is not in the request schema; (6) Together serverless models are not pinnable (3-day redirect notice).",
+  "Survivors are the options whose own API documentation affirmatively promises constrained decoding for a supplied schema AND whose model is still on sale: Groq gpt-oss-120b, gpt-oss-20b and qwen3.8-27b, and OpenRouter-to-Groq as a routing wrapper around the same model. Dropped: Fireworks gpt-oss-120b (serverless removal 2026-11-07); DeepSeek (no documented enforcement on the Responses text.format, unpinnable alias, thinking on by default); Mistral Small 4 and Ministral 8B (enforcement mechanism undocumented, schema is prompt-prepended, Chat Completions only); Together gpt-oss-120b (no strict flag or keyword list, Chat Completions only, redirects rather than pins); Alibaba open-weight Qwen (JSON Object mode only). Mistral and Together are 'unverifiable', not 'refuted': a live probe could promote them, but nothing in their docs does.",
+  "Nothing here shows that any survivor accepts our schema. The Groq gaps to probe first: minimum/maximum on price under strict:true; numeric one-value enums; three-level nested anyOf; whether /responses honours strict with constrained decoding or only Chat Completions does; acceptance of background:false and tools:[]/tool_choice:'none'; and compile-time cost of a different schema on every call (no cache hit is possible). Mechanical fallback if minimum/maximum is rejected: drop them and let validateDecision enforce 0..2. No fallback is documented for numeric one-value enums or nested anyOf.",
+  "None of the survivors is a drop-in for the current code. Required changes, all in the transport/containment boundary: a configurable endpoint (Groq https://api.groq.com/openai/v1/responses; OpenRouter https://openrouter.ai/api/v1/responses); a model-id check that allows '/' (openai/gpt-oss-120b, qwen/qwen3.8-27b); and a reasoning-item rule. Groq's gpt-oss Responses output always carries a plaintext reasoning_text item (effort cannot be 'none'; the spec has no include_reasoning), and recordedResponse.ts rejects exactly that, so every call would be non-actionable unless the parser is deliberately changed. include_reasoning:false exists on Groq Chat Completions but is not in the Responses schema. For qwen3.8-27b the reasoning default is 'none' only when the request omits reasoning; our effort:'low' turns it on. OpenRouter additionally needs a provider block (only:['groq'], allow_fallbacks:false, require_parameters:true).",
+  "Cost at list price for study 1 (630 calls, 7,000 in / 500 out, no cache hits because the schema changes per call): Groq gpt-oss-120b $0.85 (booked 2x $1.70), gpt-oss-20b $0.43 ($0.85), qwen3.8-27b $4.79 ($9.58, over the USD 5 allowance); OpenRouter-to-Groq is the same as Groq. OpenRouter lists cheaper gpt-oss-120b endpoints ($0.03/$0.15) whose enforcement method is undocumented, and openai/gpt-oss-20b at $0.018/$0.09, so they are not survivors. Groq developer-plan limits are 250K TPM and 1K RPM for gpt-oss; flex needs a paid plan and can return 498; batch cannot serve sequential ticks.",
+  "Catalogs are moving fast: Fireworks announced the gpt-oss-120b removal on 2026-10-19; Together removed gpt-oss-20b on 2026-09-15 and schedules DeepSeek-V4-Flash-0731 for removal on 2026-10-22; Groq retired qwen3.6-27b on 2026-09-14, three months after naming it a replacement. Groq gpt-oss IDs are undated, so a Groq 'Automatic Upgrade Phase' (documented as possible when a model is deprecated) would change the research subject without a model-id change; there is no snapshot to pin. Re-read the deprecations pages immediately before any study run.",
+  "Not re-checked because they cannot change the survivor list: Together batch discount and reasoning control, Alibaba prices and data terms, OpenRouter's credit fee (the FAQ still shows an unexpanded template), Groq prompt-caching rules. A model switch is a new experimental condition rather than a cost saving; these checks establish availability, price and schema documentation only."
+ ]
+}

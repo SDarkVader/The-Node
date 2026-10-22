@@ -1,0 +1,82 @@
+{
+ "status": "UNVERIFIED researcher output; an independent verifier had not yet checked it when this file was written",
+ "family": "anthropic",
+ "read": "2026-10-21",
+ "producedBy": "workflow cheaper-model-research, run wf_c1105733-775, agent research:anthropic",
+ "result": {
+  "models": [
+   {
+    "provider": "Anthropic (Claude API, first-party)",
+    "model": "claude-haiku-5-5",
+    "inputUsdPerM": 0.1,
+    "cachedInputUsdPerM": 0.01,
+    "outputUsdPerM": 0.5,
+    "contextTokens": 1000000,
+    "cheaperTiers": "Prices above are for prompts up to 100,000 tokens. Prompts over 100,000 tokens cost $0.50 in / $2.50 out per MTok, and the whole request pays the higher rate (your 5K-9K inputs stay in the lower band). Cache writes cost $0.125/MTok (5-minute) or $0.20/MTok (1-hour). Cache reads cost $0.01/MTok, or $0.05 above 100K. The Batch API is 50% off: $0.05 in / $0.25 out per MTok. Most batches finish in under 1 hour, but a batch can take up to 24 hours before it expires, so it can't meet a 16 s per-call deadline. The service-tiers page lists three tiers (Priority, Standard, Batch) and no flex tier. Priority Tier does not support Haiku 5.5 and is no longer sold. US-only inference (inference_geo: \"us\") multiplies all token prices by 1.1x. The default global routing uses standard prices.",
+    "deprecation": "Active and the latest Haiku. Released 2026-10-07. Retirement is not sooner than 2027-10-07 (model page and model-deprecations table). claude-haiku-5-5 has no date suffix but is itself a pinned snapshot, per the Model IDs page.",
+    "reasoningControl": "Adaptive thinking is on by default. Set the level with output_config.effort: low, medium, high, xhigh or max (default medium). Anthropic recommends low as the cheapest and fastest level for simple, high-volume requests. thinking: {type: \"disabled\"} is accepted at low, medium and high effort only; at xhigh or max it returns a 400. budget_tokens (\"enabled\") returns a 400. Thinking tokens are billed as output tokens even when the text is hidden (display defaults to \"omitted\"), and they count toward max_tokens. Sampling parameters must be left out: a non-default temperature, top_p or top_k returns a 400. Assistant prefill returns a 400.",
+    "strictJsonSchema": "Yes, generally available, with partial JSON Schema coverage. You pass output_config.format {type: \"json_schema\", schema}, or set strict: true on a tool; the two can be combined. Output is enforced by constrained decoding. Supported: object, array, string, integer, number, boolean, null; enum (string, number, bool or null values only); const; anyOf and allOf (allOf with $ref not supported); internal $ref, $defs and definitions; default; required; additionalProperties, which must be false; string formats date-time, time, date, duration, email, hostname, uri, ipv4, ipv6, uuid; simple regex pattern; array minItems of 0 or 1 only. Not supported (returns a 400): recursive schemas, external $ref, minimum, maximum and multipleOf, minLength and maxLength, array constraints beyond minItems 0/1, additionalProperties other than false, and regex backreferences, lookarounds or \\b. Complexity limits per request: 20 strict tools, 24 optional parameters, and 16 parameters that use anyOf or type arrays such as [\"string\",\"null\"]; past those, 'Schema is too complex' errors and a 180 s compile timeout. Caveats: (a) required properties come first in the output; (b) enum and const values are not guaranteed to keep their capitalization, so compare case-insensitively; (c) a refusal (stop_reason \"refusal\") or hitting max_tokens can produce output that does not match the schema; (d) the first request with a new schema waits for grammar compilation, and compiled grammars are cached for 24 h; (e) changing output_config.format invalidates the prompt cache for that conversation thread. Anthropic's OpenAI-compatibility layer documents Chat Completions only and ignores response_format and strict, so strict output needs the native /v1/messages API and a new adapter.",
+    "sources": [
+     "https://platform.claude.com/docs/en/about-claude/pricing (read 2026-10-21)",
+     "https://claude.com/pricing (read 2026-10-21; same Haiku 5.5 prices)",
+     "https://platform.claude.com/docs/en/models/haiku-5-5/overview (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/about-claude/models/overview (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/about-claude/model-deprecations (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/thinking (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/effort (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5 (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/batch-processing (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/prompt-caching (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/api/service-tiers (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/api/openai-sdk (read 2026-10-21)"
+    ],
+    "unverified": [
+     "Per-call latency. Anthropic publishes only 'Fastest' relative to the current lineup, not seconds, so whether 5-9K-token calls with a strict schema return within 16 s has to be piloted.",
+     "Grammar compilation time. The docs say a new schema adds latency on its first request but give no number, only the 180 s compile timeout. If the 64-hex/16-hex enum lists change with every observation, every call may pay a fresh compile. This is the main latency risk for a 16 s budget.",
+     "Token counts of this workload under Claude's tokenizer. The docs say Haiku 5.5's tokenizer produces about 30% more tokens than Haiku 4.5's for the same text. How it compares with OpenAI's tokenizer is not published; measure with /v1/messages/count_tokens.",
+     "Thinking tokens per call at low or medium effort. No figure is published; with thinking disabled there are none.",
+     "Whether the project's current OpenAI strict schema uses any keyword Claude rejects, and whether it fits within the 16 union-type and 24 optional-parameter limits. Its nullable fields count toward the 16. A dry run against the API is needed."
+    ]
+   },
+   {
+    "provider": "Anthropic (Claude API, first-party)",
+    "model": "claude-haiku-4-5-20251001",
+    "inputUsdPerM": 1,
+    "cachedInputUsdPerM": 0.1,
+    "outputUsdPerM": 5,
+    "contextTokens": 200000,
+    "cheaperTiers": "Cache writes cost $1.25/MTok (5-minute) or $2/MTok (1-hour); cache reads cost $0.10/MTok. The Batch API is 50% off: $0.50 in / $2.50 out per MTok, with the same timing as above (most batches under 1 hour, up to 24 hours). Priority Tier supports this model but is sold only to holders of existing commitments. The minimum cacheable prompt is 4,096 tokens.",
+    "deprecation": "Legacy (Active). Released 2025-10-15. The alias claude-haiku-4-5 resolves to this ID. Retirement is listed as 'not sooner than October 15, 2026'. That date has passed, though no deprecation notice was listed on 2026-10-21. Anthropic recommends migrating to Claude Haiku 5.5.",
+    "reasoningControl": "Manual extended thinking: thinking: {type: \"enabled\", budget_tokens: N}, minimum 1024. Thinking is off by default. The effort parameter is not supported and adaptive thinking returns a 400. temperature, top_p and top_k are accepted.",
+    "strictJsonSchema": "Yes. claude-haiku-4-5-20251001 is on the supported-models list for structured outputs. It has the same JSON Schema support, the same unsupported keywords, the same complexity limits (20 strict tools, 24 optional parameters, 16 union-type parameters) and the same caveats as the Haiku 5.5 entry. It needs the native Messages API; the OpenAI-compatibility layer ignores strict and response_format.",
+    "sources": [
+     "https://platform.claude.com/docs/en/about-claude/pricing (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/models/haiku-4-5/overview (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/about-claude/model-deprecations (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/thinking (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/build-with-claude/prompt-caching (read 2026-10-21)",
+     "https://platform.claude.com/docs/en/api/service-tiers (read 2026-10-21)"
+    ],
+    "unverified": [
+     "Per-call latency in seconds (not published).",
+     "Whether a deprecation notice for Haiku 4.5 is coming. Its 'not sooner than' date has passed and no notice was listed when read."
+    ]
+   }
+  ],
+  "notes": [
+   "Recommendation: claude-haiku-5-5 is Anthropic's cheapest current model. Within the 100K-token prompt band it lists at $0.10 input and $0.50 output per MTok, one tenth of Haiku 4.5, so Haiku 4.5 has no cost advantage here. The next tier up, Sonnet 5.5, lists at $2 / $10 per MTok (pricing page, read 2026-10-21).",
+   "Rough cost estimate, my own arithmetic on the list prices above. Haiku 5.5 per call ranges from $0.00055 (5,000 tokens in, 100 out, thinking off) to about $0.0019 (9,000 tokens x 1.3 for a possible tokenizer difference = 11,700 in, plus 1,500 out including thinking). That gives study 1 (630 calls) $0.35-$1.21 at list, or $0.69-$2.42 booked at 2x. A 4,000-call study comes to $2.20-$7.68 at list, or $4.40-$15.36 booked at 2x. Haiku 4.5 on the same assumptions (old tokenizer, thinking off): $3.47-$6.62 for study 1 at list.",
+   "Settings for cheap, low-reasoning use on Haiku 5.5: output_config.effort \"low\", plus optionally thinking {type: \"disabled\"}, which is allowed at low, medium or high effort. Leave out temperature, top_p and top_k; any non-default value returns a 400. Don't prefill. Set max_tokens with room for thinking if it stays on. The Haiku 5.5 prompting guide says reasoning-like text appears in the visible reply more often with thinking off or at low effort. Under a strict schema, that could leak into free-text string fields.",
+   "The strict-schema feature most at risk for this workload is enums of 64-hex and 16-hex reference strings. Enums of strings are supported, but the docs do not guarantee capitalization of enum and const values, so validate client-side and compare case-insensitively. If the enum lists differ per actor or per tick, each new schema compiles a fresh grammar (latency not published) and invalidates the prompt cache. Nullable fields written as type [\"x\",\"null\"] or anyOf count toward the 16 union-type parameter limit.",
+   "Prompt caching is probably not worth building. The Haiku 5.5 minimum cacheable prompt is 512 tokens, so the ~650-token rules text qualifies. But changing output_config.format invalidates the cache, and at $0.10/MTok the saving on 650 tokens is under $0.0001 per call.",
+   "Batch API: 50% off, but processing can take up to 24 hours (most batches finish within 1 hour). Even batching a whole tick (15 episodes x 7 actors = 105 requests) means 6 sequential waits per study. At study-1 scale that saves well under $1, so synchronous standard calls are the practical choice.",
+   "Adapter: there is no Responses API. Anthropic's OpenAI-compatibility layer documents Chat Completions only, describes itself as not production-ready for most use cases, and ignores both response_format and strict. Strict schema output therefore needs the native POST /v1/messages with output_config.format, which means a new transport adapter. On a refusal, Haiku 5.5 returns stop_reason \"refusal\" (HTTP 200, billed, output may not match the schema). It has no server-side fallback, so the adapter must treat a refusal as a failed decision. The safeguard categories it documents are cyber and bio.",
+   "Before committing: run a small paid pilot of about 10-20 calls (needs budget authorization) to measure wall-clock latency including grammar compile, Claude token counts (count_tokens), thinking tokens at low effort, and whether the existing schema is accepted unchanged.",
+   "All prices and features were read from official Anthropic pages on 2026-10-21 (UTC). Raw copies of the pages are saved under /tmp/claude-0/-home-user/7757e374-39de-5183-90be-2ec9c14a17e3/scratchpad/anth/."
+  ]
+ }
+}

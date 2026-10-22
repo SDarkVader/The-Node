@@ -175,7 +175,7 @@ describe('reachability — both success and resistance are observable through re
     const grifter = { tick: 2, selfRef: 'g', role: 'Grifter', roleEpoch: 0, legalMoves: [], presentRefs: ['x'], knownSubjects: [] };
     const post = { move: null, communication: { kind: 'wallPost', state: 'hopeful' }, diary: null, role: null };
     expect(validateDecision(post, grifter)).toBeNull();
-    expect(validateDecision(post, { ...grifter, rules: 'v2' as const })).not.toBeNull();
+    expect(validateDecision(post, { ...grifter, rules: 'v2' as const, hearingRefs: [] })).not.toBeNull();
   });
 
   it('an infeasible request is a rejection control, never an executable opportunity', () => {

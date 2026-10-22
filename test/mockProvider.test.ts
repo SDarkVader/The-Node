@@ -66,6 +66,27 @@ describe('offline provider contract and dynamic affordances', () => {
     expect(accepts(schema, { move: null, communication: null, role: null })).toBe(false);
   });
 
+  it('never emits const: every fixed value is a one-value typed enum (OpenAI and Google document no const)', async () => {
+    const { MultiActorEpisode, multiScenarioById } = await import('../src/eval/multiActorEpisode.js');
+    const fixedValues: unknown[] = [];
+    const walk = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      const o = node as Record<string, unknown>;
+      expect(Object.hasOwn(o, 'const')).toBe(false);
+      if (Array.isArray(o.enum) && o.enum.length === 1) { expect(o.type).toBe(typeof o.enum[0]); fixedValues.push(o.enum[0]); }
+      Object.values(o).forEach(walk);
+    };
+    walk(mockDecisionSchema(context()));
+    expect(fixedValues).toEqual(expect.arrayContaining(['room', 'player', 'wallPost', 'proximityUtterance', 'bakerPrice', 1, 2]));
+    // The bytes a live model would receive, on the study-1 baseline (v2): no const anywhere.
+    const ep = new MultiActorEpisode(multiScenarioById('authority_attribution_council'), 'no-const');
+    for (const p of ep.prompts({ model: 'gpt-5.4-nano-2026-03-17' })) {
+      const body = JSON.parse(p.request!.body) as { text: { format: { schema: unknown } } };
+      expect(JSON.stringify(body.text.format.schema)).not.toContain('"const"');
+      walk(body.text.format.schema);
+    }
+  });
+
   it('handles empty and duplicate affordances without empty enums or ambiguous coordinate branches', () => {
     const input = context(); input.legalMoves = [...input.legalMoves, { x: 1, y: 2 }]; input.presentRefs = []; input.knownSubjects = [];
     const schema = mockDecisionSchema(input);

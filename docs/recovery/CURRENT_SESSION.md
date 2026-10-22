@@ -3,8 +3,11 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "a7591824f467759d227835c50a00691d9539501a",
+  "verifiedBaseCommit": "f855241172514c1869fcd284cbb11ac44cc05eb9",
   "completedWork": [
+    "2026-10-22: model research VERIFIED for all five families (verification-only rerun, 3 agents, owner's limit) and synthesised without an agent: docs/research/model-options-2026-10-21/README.md (costs, survivors, pinnability, recommendation: keep gpt-5.4-nano-2026-03-17 for study 1; decide local vs claude-haiku-5-5 for the diary study) and LOCAL_REQUIREMENTS.md (runtime pins, flags, GGUF hashes, code changes, measurement protocol). Corrections recorded: two live calls on 2026-10-18 DID succeed with the const/min/max/nested-anyOf schema (my earlier 'no live call reached a model' was wrong); the per-call deadline is 12,000 ms, not ~16 s. Mutation testing by script: 13/13 killed after one new test (hearing cross-check).",
+    "2026-10-22: owner approved the schema const fix; done at 168987d (fixed values are one-value typed enums; equivalence test passes; new no-const test; freeze re-pinned a fourth time, contract and manifest unchanged). Docs updated (BLUEPRINT v2 'who can hear' + schema note, BLUEPRINT_HISTORY D6-D9, DEVLOG, runbook, README). Owner: no fixed local model setup yet; will implement once the import (integration) requirements are known. Owner: research reruns must use limited agents, verification only, on already aggregated data.",
+    "2026-10-21 (late night, after PR #31): owner merged PR #31 at f855241 (merge commit; head edc32e9 was green on all three hosted checks). Task branch restarted from main. Owner decisions (answered 2026-10-21): show who can hear; study 1 stays 6 days plus a separate 30-40 day diary/recognition study; Courier commissions and multi-member campaigns deferred; the repeat-custom Baker wealth effect is accepted. 'Show who can hear' implemented and pushed as da8c325 (v2 only): observation 'hearing' + context hearingRefs (kernel range rule), protected protocol.ts requires hearingRefs under rules 'v2' and refuses an out-of-range address (owner-authorised; fingerprint 7A0B3EEC... recorded in DEVELOPMENT_BRANCH_AUDIT.md), schema addressee enum = hearing, v2 moves apply after the day's speech, rules text v2, rejection reason proximity_referent_out_of_range, freeze re-pinned a third time (contract and manifest unchanged). 40-day run: 3,323 of 3,378 admitted addresses heard; all 55 misses had the speaker or addressee change place that day; 1,090 of 1,106 moves applied, 16 dropped for the same reason. Model research saved (unverified) under docs/research/model-options-2026-10-21/.",
     "2026-10-21 (late night): PR #31 opened. Fixed a study-breaking request-size blocker (v2 requests at 32,756 of the 32,768-byte fail-closed ceiling) with 64-bit v2 observer references (max ~26 KB now; headroom regression test); freeze pins moved a second time (bytes only). identityResolved no longer sends the raw player id. Cheaper-model research running; owner has an RTX 4070 Ti Super (16 GB), 64 GB RAM, Ryzen 7 7800X3D for local models.",
     "2026-10-21 (night): owner directed that study 1 depends on the viable solution and must not start with known issues. Closed the v2 data blockers (protected protocol.ts Grifter gate via DecisionContext.rules 'v2', owner-authorised; decision schema; person-owned speech/diary across role changes; rules text v2; workplace Courier pay) and rebased study 1 onto authority contract 1.1.0 (design.world.recognition 'v2'): contract snapshot, manifest and freeze pins moved once, deliberately. Tests updated to the v2 baseline; G1 history untouched.",
     "2026-10-21 (evening): recognition v2 and individual dealings implemented as an opt-in rules version (WorldConfig.recognition = 'v2'; engine/recognition.ts, engine/dealings.ts; world.ts, observer.ts, responsesRequest.ts, worldProtocol.ts). Default v1 is byte-identical. Owner postponed study 1 until reactivated; runbook, README, register, A01, EVAL_INFRASTRUCTURE and this checkpoint updated. PR #30 merged at a759182.",
@@ -37,6 +40,8 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-22 (Linux) at 168987d: tsc clean; Vitest 1292/1292 (freeze file re-run after re-pin); Python 28/28; G1 29/29; G2 12/12; rehearsal 8/8.",
+    "2026-10-21 (late night, Linux) at da8c325: tsc clean; Vitest 1291/1291 (102 files); Python 28/28; G1 29/29 against main-consolidation-2026-10-20; G2 12/12 fixture checks; accounted-study rehearsal 8/8; study-1 freeze 4/4 at the third pins.",
     "2026-10-21 (late night, Linux): Vitest 1286/1286; Python 28/28; G1 29/29; G2 12/12; freeze 4/4 at the re-pinned bytes.",
     "2026-10-21 (night, Linux): Vitest 1285/1285; Python 28/28; G1 29/29 vs main-consolidation-2026-10-20; G2 constructs 12/12 fixture checks, 9 deterministic; accounted-study rehearsal 8/8 on the v2 manifest; study-1 freeze 4/4 at the new pins.",
     "2026-10-21 (evening, Linux): full Vitest 1279/1279, TypeScript, Python 28/28; G1 verify 29 deterministic and replay-verified, compare_hashes 29/29 equal to main-consolidation-2026-10-20; G2 constructs deterministic; study-1 freeze 4/4. test/world.recognitionV2.test.ts 19/19 with 10 kernel mutations killed. v1 vs v2 over 10 seeds x 300 days: bread unchanged (paired +2.6, SD 44), settlement residual ~3e-12 both, mean FILLED Baker wealth +5.0 (+14%, paired SD 4.8), Gini -0.019 (n.s.).",
@@ -67,7 +72,7 @@
     "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
   ],
   "unresolvedIssues": [
-    "Study-path design choices still open: a proximity address to someone out of range is admitted by the validator and dropped by the kernel (documented to agents; not a measured effect in study 1); study 1's 6-tick episodes cannot show recognition-dependent behaviour (first resolution takes ~10+ days); Courier commissions and multi-member campaigns do not exist (delivery/evidence attribute existing flows). Repeat custom raises mean Baker wealth ~14%.",
+    "Study-path design choices (2026-10-21): RESOLVED by owner decisions - out-of-range addresses are now refused (v2, 'show who can hear'); study 1 stays 6 days and a separate 30-40 day study covers diary/recognition; Courier commissions and multi-member campaigns are deferred; repeat custom (+~14% mean Baker wealth) is accepted.",
     "Study 1 not yet run: postponed on 2026-10-21 (it was planned for 2026-10-22) until the owner reactivates it; it runs on the PC with the credential and private allowance and stays frozen until then. If the owner's gpt-5.4-nano TPM limit is below ~300k, raise minIntervalMs in the manifest and commit before preparing the allowance.",
     "Authority contract v1.0.0 is one seed and not preregistered; G5 must freeze hypotheses, held-out seeds and analysis. The owner authorised study 1 (USD 5, 630 calls) on 2026-10-20 as a separate allowance; the historical ten-request ceiling belonged to the closed 18 Oct allowance and is carried, not reused.",
     "Eval harness: Inspect itself still refuses live models; live calls run only through the TypeScript accounted study runner (src/eval/accountedRunner.ts) and its ExperimentBudget. ControlArena/AgentDojo are reimplemented as patterns, not installed packages; Concordia is not integrated; scorers and monitor are deterministic rules; RMF thresholds are illustrative.",
@@ -79,13 +84,12 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Owner: when reactivated, run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (postponed on 2026-10-21); share study1-analysis/results.json and summary.md.",
-    "When the owner reactivates study 1: run it per the runbook on contract 1.1.0 (recognition-v2 baseline). Before a diary/recognition study: decide episode length (recognition needs ~10-20 days of dealings) and its allowance.",
-    "G5: add seeds (contract v1.1) and a frozen analysis plan before a larger allowance.",
-    "G3: accounted custom-provider adapter with execution disabled (synthetic ledgers, loopback responses, crash/failure injection), per DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md.",
-    "G5 protocol for authority attribution: held-out seeds, arm-order randomization, exclusions, episode-level uncertainty.",
-    "Continue separate review of the Godot sky/navigation branch and Vitest 5 upgrade when directed.",
-    "Continue the tracked accounted-agent/framework design only when directed, with execution disabled; maintain README/checkpoint together and preserve private accounting evidence."
+    "Open a PR (ccr-8d64b59c-a4puhv -> main) for da8c325..HEAD (who can hear, const fix, tests, docs, verified model research), watch CI, merge when green.",
+    "Owner decisions pending: model for study 1 (recommendation: keep gpt-5.4-nano-2026-03-17); for the diary study, local vs claude-haiku-5-5; local accounting mode. When the owner is ready for local: implement LOCAL_REQUIREMENTS.md 'Changes our code needs' (transport local endpoint, request builder temperature/effort/chat-completions variant, parser, accounting profile, provenance).",
+    "Then open a PR (ccr-8d64b59c-a4puhv -> main) for da8c325..HEAD, watch CI, merge when green.",
+    "VERIFIED 2026-10-21 (docs/research/model-options-2026-10-21/verification-partial.json): gpt-5.4-nano-2026-03-17 deprecated (announced 2026-10-01, removal 2027-04-01; replacement gpt-6-luna $0.10/$0.01/$0.50, alias only). const unsupported by OpenAI and Google docs (fixed at 168987d). Google also does not document a standalone {type:'null'} anyOf branch (still used; test with a first live request). Model choice for study 1 is the owner's.",
+    "Before any study call on a model other than gpt-5.4-nano-2026-03-17: one real request with the actual v2 schema. Only gpt-5.4-nano has accepted the schema form live (2026-10-18, two HTTP 200 calls with const, min/max, nested anyOf; docs/recovery/INITIAL_GAME_TURN.md). Correction 2026-10-22: earlier checkpoint text said the only live call was the 2026-10-16 HTTP 401; that was wrong.",
+    "Owner: when reactivated, run study 1 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (postponed on 2026-10-21); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
   "reviewBranch": "ccr-8d64b59c-a4puhv"
@@ -99,8 +103,10 @@ at `9d004e8` on 2026-10-20, after its hosted checks passed on head `c59dd70`. Th
 Windows Main integration, including the 80 native checks, and both Linux Research conformance
 runs. The merged tree is identical to that head, and a clean `main` checkout passes tracked
 recovery. PR #27 merged the follow-up at `022c0bf`, and the user merged PR #28 (A01) at `e2ff353`
-and PR #29 (recognition v2 simulation) at `90b4954`, and PR #30 at `a759182`. This checkpoint anchors at `a759182` and accepts `main` or the exact task branch
-`ccr-8d64b59c-a4puhv`, which carries recognition v2 and study 1 rebased onto it (contract 1.1.0).
+and PR #29 (recognition v2 simulation) at `90b4954`, PR #30 at `a759182`, and PR #31 (recognition v2 and
+individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`. This checkpoint anchors at `f855241`
+and accepts `main` or the exact task branch `ccr-8d64b59c-a4puhv`, which now carries "show who can hear"
+(`da8c325`) and the schema `const` fix (`168987d`) on top of it.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -119,6 +125,13 @@ recorded as a study-1 limitation in the runbook.
 
 **Next:** study 1 is postponed (2026-10-21) until the owner reactivates it; it then runs from `main` per the
 [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md): USD 5 cap, `gpt-5.4-nano-2026-03-17`.
+
+**Done (2026-10-22):** mutation testing of `da8c325` (13/13 killed), and verification of the model research
+([unverified outputs and the workflow script](../research/model-options-2026-10-21/README.md)). Verified
+2026-10-22: the study-1 model is deprecated (removal 2027-04-01); see the
+[verified synthesis](../research/model-options-2026-10-21/README.md) and the
+[local requirements](../research/model-options-2026-10-21/LOCAL_REQUIREMENTS.md). The checkpoint JSON's
+`nextSteps` lists exactly what to resume.
 
 D1 is resolved: the diary is a measured daily task, and the earlier unprompted-only and marks-only
 rules are superseded. No API call has been made, and no existing accounting file was changed.

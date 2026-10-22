@@ -110,7 +110,14 @@ export function rejectionReasons(candidate: unknown, context: DecisionContext): 
     else if (key === 'diary') {
       const d = candidate.diary;
       reasons.push(object(d) && typeof d.subject === 'string' && !context.knownSubjects.includes(d.subject) ? 'diary_subject_not_known' : 'diary_invalid');
-    } else reasons.push('communication_invalid');
+    } else {
+      // v2: addressing someone visible but out of speaking range (not in `hearing`).
+      const c = candidate.communication, r = object(c) ? c.referent : undefined;
+      const outOfRange = context.hearingRefs !== undefined && object(c) && c.kind === 'proximityUtterance' && object(r) && r.kind === 'player' &&
+        typeof r.playerId === 'string' && context.presentRefs.includes(r.playerId) && !context.hearingRefs.includes(r.playerId) &&
+        validateDecision({ ...empty, communication: { ...c, referent: { kind: 'room' } } }, context) !== null;
+      reasons.push(outOfRange ? 'proximity_referent_out_of_range' : 'communication_invalid');
+    }
   }
   return reasons.length ? reasons : ['rejected_by_validator'];
 }
