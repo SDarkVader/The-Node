@@ -88,8 +88,10 @@ the kernel default stays v1 so the archived reproductions still hold. In v2 each
 who is within speaking range, an address to anyone else is refused, and moves take effect after
 the day's speech, so an admitted address is heard unless someone leaves that day. The response
 schema uses no `const` keyword, which OpenAI and Google do not document for strict structured output.
-Model options, including the confirmed deprecation of the planned study model, are being verified in
-[docs/research/model-options-2026-10-21](docs/research/model-options-2026-10-21/README.md).
+Model options, including the confirmed deprecation of the planned study model, are verified in
+[docs/research/model-options-2026-10-21](docs/research/model-options-2026-10-21/README.md). An Anthropic
+adapter and an owner-run [Haiku connection check](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
+are built. Local, free models are preferred where suitable, alongside paid ones.
 
 The implementation is currently validated using scripted offline policies through
 Inspect's `mockllm` provider. The next stage is the

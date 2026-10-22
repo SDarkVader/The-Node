@@ -88,6 +88,15 @@ Dropped after verification:
 - gpt-4o-mini: shutdown on 2027-01-14.
 - gpt-4.1-nano: shutdown on 2026-10-23.
 
+## Owner direction (D10, 2026-10-22) and the Haiku check
+
+The owner prefers local, free models where they are suitable, and accepts paid models for the
+rest, including mixed within one study. The Anthropic adapter (`src/agent/anthropicRequest.ts`,
+`anthropicResponse.ts`) and an owner-run connection check are built and tested offline; see
+[HAIKU_CONNECTION_CHECK.md](HAIKU_CONNECTION_CHECK.md). Mixed per-actor sourcing and accounting
+are designed (register D10). They will be built once the check and the local measurement show which
+models qualify.
+
 ## Recommendation (the owner decides)
 
 - **Study 1: keep `gpt-5.4-nano-2026-03-17`.** It is the only option with live evidence for our
