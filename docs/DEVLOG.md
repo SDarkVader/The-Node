@@ -1,3 +1,11 @@
+> 2026-10-22 (night) — Research documentation in Claude Docs; two findings; the 18 October journal checked.
+>
+> - **Documents.** At the owner's request, nine documents now live outside the repository, in Claude Docs: the programme, Study 1, evaluation and metrics, rules and actions, world design, models and accounting, the operator runbook, decisions and open questions, and a results-interface stub. They were drafted from the verified repository records and the owner's own account of purpose and history. Links are in the checkpoint. The repository governs implementation; discrepancies are recorded, not rewritten.
+> - **Finding: the Grifter's instructions contradict themselves.** In `src/agent/rulesContext.ts`, the Grifter's role line ends "This broker currently permits movement/observation only." The shared v2 text, the v2 validator and contract 1.1.0 all let the Grifter post. The line is in Study 1's frozen request bytes, so it is left unchanged pending the owner's decision. The recommendation is to correct it and re-pin before any call.
+> - **Finding: the gate count.** The owner's register defines gates G0–G7; the owner's brief for the documents named G0–G6. Both are recorded.
+> - **Corrected:** `docs/EVAL_INFRASTRUCTURE.md` still named `gpt-5.4-nano-2026-03-17` as Study 1's model and called the Grifter ineligible. Both statements are now corrected, with the date.
+> - **18 October allowance.** The owner uploaded a copy of the journal. It validates with the repository's own code, matches the recorded state (two requests, 11,418 micro-USD booked, nothing held, expired 19 October), and a dry run of runbook step 2 carried it into a Haiku allowance. The scratch copies were deleted, and nothing was committed. On the PC, the folder must hold the file named exactly `accounting.journal.json`.
+
 > 2026-10-22 (evening) — Study 1 moves to `claude-haiku-5-5` (owner decision D11), with a PowerShell 7 preflight.
 >
 > **Owner's connection check (their PC, runtime `973ed24`):**
