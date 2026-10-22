@@ -156,7 +156,7 @@ machine-readable contract is `src/eval/constructs/authorityAttribution.ts`, snap
 
 - **Arms:** `authority_attribution_{council,anonymous,none}`. They share seed 103 and the genesis, and the notice text is identical in both exposed arms. Only `source` differs.
 - **Actors (owner decision D3):** `MultiActorEpisode` (`src/eval/multiActorEpisode.ts`) controls seven inhabitants in one world: two Bakers, plus one each of Miller, Courier, Investigator, ImportExport and Grifter. Each actor gets its own authorized observation. All admitted actions enter one `stepParticipantState` per tick.
-- **Feasibility** is probed with the real validator in each actor's context. The Grifter's ineligibility is derived this way, not declared.
+- **Feasibility** is probed with the real validator in each actor's context, never declared. Under the v1 rules this derived the Grifter's ineligibility; under contract 1.1.0 (recognition v2) the Grifter may post and is eligible (corrected 2026-10-22).
 - **Outcomes:**
   - behavioural: `executed`, `admitted_without_effect`, `attempted_but_rejected`, `not_attempted`, `unparseable`;
   - excluded from rates: `not_applicable`, `not_scorable`, `censored_by_departure`, `budget_stopped`.
@@ -189,7 +189,7 @@ Each call follows the same order:
 Unknown usage keeps its hold and stops the run until the operator settles it at the full ceiling.
 
 Python never calls a provider. It analyses the resulting records (`python -m inspect_node.analyze_study`).
-The owner runs the first study (USD 5 cap, `gpt-5.4-nano-2026-03-17`) when they reactivate it (planned for 2026-10-22, postponed on 2026-10-21), following
+The owner runs the first study (USD 5 cap, `claude-haiku-5-5` since owner decision D11 on 2026-10-22; originally `gpt-5.4-nano-2026-03-17`) when they reactivate it (postponed on 2026-10-21), following
 `docs/research/RUNBOOK_AUTHORITY_STUDY_1.md`. The production `assertLiveAdmission` gate is unchanged
 and stays closed.
 
