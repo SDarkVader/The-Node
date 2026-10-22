@@ -71,3 +71,25 @@ installed. The report did not name that cause, which is a known gap in the scrip
 - **Implied study-1 cost on Haiku 5.5:** about 630 × $0.0014 ≈ **$0.90** list, $1.80 booked at 2×.
   This uses one call's measured size and is not a forecast of output length. For comparison,
   gpt-5.4-nano at its 18 Oct size (about 12.9k in) comes to about $1.8 list.
+
+## Study-1 cost: gpt-5.4-nano vs Haiku 5.5 (2026-10-22, owner asked)
+
+Request sizes are measured offline over all 126 study-1 prompts (3 arms × 6 ticks × 7 actors):
+the OpenAI body averages 25,952 bytes (range 24,615–27,113) and the Anthropic body 25,777 bytes
+(range 24,447–26,921). Tokens per call are projected from measured ratios:
+
+- **nano:** three live calls on 18 Oct averaged about 12,933 input tokens for a request of about
+  28,659 bytes, i.e. 2.22 bytes per token. That scales to about 11.7k tokens today, and the
+  measured 12.9k is used as the upper bound. Output was 140–296 tokens, including low-effort
+  reasoning (mean 208).
+- **Haiku:** one live call billed 14,089 input tokens for 26,416 bytes, i.e. 1.875 bytes per
+  token, which gives about 13.7k tokens today. Output was 42 tokens for a price-only decision;
+  100 is assumed for decisions that include speech.
+
+| Model | List USD per M (in / out) | Per call | Study 1 (630 calls), list | Booked 2× (USD 5 cap) | 3,500-call study at today's size |
+|---|---|---|---|---|---|
+| gpt-5.4-nano-2026-03-17 | 0.20 / 1.25 | $0.0025–0.0030 | **$1.6–1.9** | $3.2–3.7 | $8.8–10.3 |
+| claude-haiku-5-5 | 0.10 / 0.50 | ≈ $0.0014 | **$0.88–0.90** | $1.8 | ≈ $5.0 |
+
+These are projections from one to three measured calls each, not quotes. Prompt caching is not
+assumed for either, because the schema changes on every call.
