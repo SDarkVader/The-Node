@@ -1,249 +1,249 @@
 {
-  "corrections": [
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Price is $0.10 input / $0.50 output per MTok for prompts up to 100,000 tokens.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing (model pricing table); https://platform.claude.com/docs/en/models/haiku-5-5/overview (Pricing table); https://claude.com/pricing (Haiku 5.5 card). All read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Cache read $0.01/MTok, 5-minute cache write $0.125/MTok, 1-hour cache write $0.20/MTok (prompts up to 100K).",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing; https://platform.claude.com/docs/en/models/haiku-5-5/overview; https://claude.com/pricing. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Prompts over 100,000 tokens cost $0.50 in / $2.50 out, cache read $0.05; the whole request pays the higher rate.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing, 'Long context pricing': prompt length counts all input tokens including cache reads and writes, and each request is priced on its own. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Batch API is 50% off ($0.05 in / $0.25 out). Most batches finish under 1 hour but can take up to 24 hours, so a batch cannot meet a per-call deadline.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing (Batch processing table); https://platform.claude.com/docs/en/build-with-claude/batch-processing ('most batches completing within 1 hour', results after completion or 24 hours, batches expire after 24 hours). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "The service-tiers page lists Priority, Standard and Batch (no flex tier). Priority Tier does not support Haiku 5.5 and is no longer sold.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/api/service-tiers: warning that Priority Tier commitments are no longer available for purchase; 'Priority Tier is supported on all available Claude models except ... Claude Haiku 5.5 ...'. Also the Haiku 5.5 migration guide. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "US-only inference (inference_geo: 'us') multiplies all token prices by 1.1x; default global routing uses standard prices.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing, 'Data residency pricing': applies to Claude 4.6 and later models, including cache categories and Haiku 5.5's over-100K prices. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Model id is claude-haiku-5-5 with no date suffix, and is itself a pinned snapshot.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions ('dateless IDs are pinned snapshots'); https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('a fixed model ID with no date suffix and no separate alias'). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Released 2026-10-07; Active (latest); retirement not sooner than 2027-10-07.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview (Availability table); https://platform.claude.com/docs/en/about-claude/model-deprecations (status table). Read 2026-10-22. The date is a tentative 'not sooner than'; the deprecations page promises at least 60 days' notice before retirement."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Context window 1,000,000 tokens.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview (1M context, 128K max output). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Its tokenizer produces about 30% more tokens than Haiku 4.5's for the same text.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview and migration-guide ('approximately 30 percent more tokens on Claude Haiku 5.5 than on Claude Haiku 4.5'); https://platform.claude.com/docs/en/about-claude/pricing. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Token count of this workload (5-9K OpenAI-tokenizer tokens) under Claude's tokenizer; the researcher's x1.3 upper bound.",
-      "verdict": "unverifiable",
-      "correctValue": "The 30% figure is Haiku 5.5 versus Haiku 4.5, not versus OpenAI's tokenizer. Anthropic publishes no comparison with OpenAI's tokenizer, so x1.3 is a placeholder. The free POST /v1/messages/count_tokens endpoint gives the real count for the real request body.",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/token-counting ('Token counting is free to use' but rate-limited; the count is an estimate). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Reasoning control: output_config.effort accepts low, medium, high, xhigh, max; default medium; low is the cheapest and fastest level, recommended for simple high-volume requests.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/effort ('Recommended effort levels for Claude Haiku 5.5'); https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "thinking: {type: 'disabled'} is accepted at low, medium and high effort only; at xhigh or max it returns a 400.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/thinking (per-model table and Haiku 5.5 paragraph); effort page; Haiku 5.5 prompting guide. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "thinking {type:'enabled', budget_tokens} returns a 400; adaptive thinking is on by default.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/thinking per-model table; https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('Configure thinking'). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "A non-default temperature, top_p or top_k returns a 400.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/thinking: on Claude Haiku 5.5 'non-default temperature, top_p, or top_k values return a 400 error on every request' (top_p default is 0.99, so top_p 1 is also a 400); migration guide says to omit all three. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Assistant prefill returns a 400.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('Replace assistant prefill': 'rejects it with a 400 error, even with thinking turned off'). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Thinking tokens are billed as output tokens even when hidden (display defaults to 'omitted') and count toward max_tokens.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/thinking (intro; 'display defaults to omitted' on Haiku 5.5; 'You're still charged for the full thinking tokens'). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Reasoning-like text appears in the visible reply more often with thinking off or at low effort.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5 ('Keep reasoning out of user-facing text'). Read 2026-10-22. The researcher's extension (it could leak into free-text schema fields) does not apply to our schema: every string we declare is an enum."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Strict JSON schema output is generally available through output_config.format {type:'json_schema', schema}, and claude-haiku-5-5 is on the supported-models list.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (featureMetadata status: ga; supportedModels includes claude-haiku-5-5; 'Using a raw JSON schema' cURL example). Read 2026-10-22."
-    },
-    {
-      "model": "both",
-      "claim": "Supported schema features: object/array/string/integer/number/boolean/null; enum (string, number, bool, null values); const; anyOf and allOf (allOf with $ref unsupported); internal $ref/$defs/definitions; default; required; additionalProperties only as false; string formats date-time, time, date, duration, email, hostname, uri, ipv4, ipv6, uuid; simple regex pattern; array minItems 0 or 1.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'JSON Schema limitations' > 'Supported features' and 'Pattern support'. Read 2026-10-22."
-    },
-    {
-      "model": "both",
-      "claim": "Not supported and returns a 400: recursive schemas, external $ref, minimum/maximum/multipleOf, minLength/maxLength, array constraints beyond minItems 0/1, additionalProperties other than false, regex backreferences, lookarounds and \\b.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'Not supported' accordion: 'If you use an unsupported feature, you'll receive a 400 error with details.' Read 2026-10-22. This is a rejection, not a silent drop, when calling the raw API. Only the SDK helpers strip these keywords."
-    },
-    {
-      "model": "both",
-      "claim": "Complexity limits per request: 20 strict tools, 24 optional parameters, 16 parameters using anyOf or type arrays; 'Schema is too complex' 400s; 180 s compile timeout.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'Schema complexity limits'. Read 2026-10-22. The page also says unions 'create exponential compilation cost' and states no cap on enum size."
-    },
-    {
-      "model": "both",
-      "claim": "Caveats: required properties come first in output; enum/const capitalization not guaranteed; refusal or max_tokens can give non-conforming output; first request with a new schema pays grammar compilation, grammars cached 24 h; changing output_config.format invalidates the prompt cache.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs ('Grammar compilation and caching', 'Property ordering', 'Invalid outputs', 'Prompt modification and token costs'). Read 2026-10-22. Nuance for us: the grammar cache is keyed on schema structure (name/description changes do not invalidate it), so a different enum membership on each call is a different schema. An extra system prompt describing the format is also injected and billed."
-    },
-    {
-      "model": "both",
-      "claim": "Anthropic's OpenAI-compatibility layer documents Chat Completions only, is described as not production-ready for most use cases, and ignores response_format and strict.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk (the cited .../api/openai-sdk URL redirects here): note box; 'response_format: Ignored'; 'strict: Ignored'. Read 2026-10-22."
-    },
-    {
-      "model": "both",
-      "claim": "There is no Responses API; strict output needs native POST /v1/messages with a new adapter.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/api/overview lists only Messages, Message Batches and Token Counting; https://platform.claude.com/llms.txt contains no /v1/responses entry; the compatibility page shows chat.completions only. Read 2026-10-22. Confirmed as a documented absence only, since a negative cannot be proved from docs."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "On a safeguard refusal it returns stop_reason 'refusal' (HTTP 200, billed, output may not match the schema) and has no server-side fallback. The documented safeguard categories are cyber and bio.",
-      "verdict": "corrected",
-      "correctValue": "Refusal behaviour and 'no server-side fallback' are confirmed. The categories are four, not two: cyber, frontier_llm, bio and general_harms. The page says benign work can also trigger cyber and general_harms, and that these refusals are new relative to Haiku 4.5.",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5 ('Safeguard refusals'); migration-guide checklist item 10; structured-outputs 'Invalid outputs'. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Minimum cacheable prompt is 512 tokens; prompt caching on the ~650-token rules text saves under $0.0001 per call and is not worth building.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching (512 tokens for Haiku 5.5; 4,096 for Haiku 4.5). Read 2026-10-22. Saving recomputed as 650 x ($0.10 - $0.01)/1e6 = about $0.00006 per call, before the cache-write premium. The 'not worth building' conclusion is the researcher's judgement."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Cost estimate: $0.00055 per call (5,000 in / 100 out) to about $0.0019 (11,700 in / 1,500 out); study 1 (630 calls) $0.35-$1.21 at list, $0.69-$2.42 at 2x; 4,000 calls $2.20-$7.68 at list, $4.40-$15.36 at 2x.",
-      "verdict": "confirmed",
-      "source": "Recomputed 2026-10-22 from the confirmed list prices: 5,000 x 1e-7 + 100 x 5e-7 = $0.00055; 11,700 x 1e-7 + 1,500 x 5e-7 = $0.00192; times 630 = $0.35 / $1.21; times 4,000 = $2.20 / $7.68. All match. The estimate leaves out the injected structured-output system prompt and, if thinking stays on, thinking tokens beyond the assumed 1,500 output tokens."
-    },
-    {
-      "model": "claude-haiku-5-5",
-      "claim": "Per-call wall-clock latency (including grammar compile) fits the per-call deadline.",
-      "verdict": "unverifiable",
-      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview publishes only 'Comparative latency: Fastest'; the structured-outputs page says first-request compile adds latency and gives no number beyond the 180 s timeout. Read 2026-10-22. Only a live pilot can settle this."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Price $1 in / $5 out per MTok; cache read $0.10, 5m write $1.25, 1h write $2; batch $0.50 / $2.50.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/pricing (model table and Batch table); https://platform.claude.com/docs/en/models/haiku-4-5/overview; https://claude.com/pricing. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Id claude-haiku-4-5-20251001; the alias claude-haiku-4-5 resolves to it; released 2025-10-15; context 200K.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/models/haiku-4-5/overview ('claude-haiku-4-5 is a convenience alias that resolves to the pinned snapshot'; max output 64K). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Legacy (Active); retirement 'not sooner than 2026-10-15', a date that has passed, with no deprecation notice listed; Anthropic recommends migrating to Haiku 5.5.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/about-claude/model-deprecations (status table; the newest history entry is 2026-09-30 for Sonnet 4.5, with no Haiku 4.5 entry; 'at least 60 days' notice'); https://platform.claude.com/docs/en/models/haiku-4-5/overview ('you should consider migrating to Claude Haiku 5.5'). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Reasoning control: manual extended thinking only (budget_tokens, minimum 1024), off by default; effort unsupported; adaptive thinking returns a 400; temperature, top_p and top_k accepted.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/thinking per-model table (no thinking field = off, adaptive = 400); https://platform.claude.com/docs/en/models/haiku-4-5/overview ('Default effort: Not supported'); the 1,024 minimum is stated on https://platform.claude.com/docs/en/build-with-claude/extended-thinking, not on the thinking page the researcher cited. Acceptance of sampling parameters is inferred: Haiku 4.5 is absent from the thinking page's list of models that 400 on them, and no page states acceptance outright. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "On the structured-outputs supported-models list, with the same keyword support, limits and caveats as Haiku 5.5.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (supportedModels lists claude-haiku-4-5-20251001; the schema limits are stated once for all models with no per-model differences). Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Minimum cacheable prompt 4,096 tokens; Priority Tier supports it but is sold only to holders of existing commitments.",
-      "verdict": "confirmed",
-      "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching ('4,096 tokens for Claude Haiku 4.5'); https://platform.claude.com/docs/en/api/service-tiers. Read 2026-10-22."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "claim": "Study 1 (630 calls) costs $3.47-$6.62 at list on Haiku 4.5 (old tokenizer, thinking off).",
-      "verdict": "confirmed",
-      "source": "Recomputed 2026-10-22: 5,000 in x $1/M + 100 out x $5/M = $0.0055 per call, times 630 = $3.47. The $6.62 upper end reproduces only if the output is 300 tokens (9,000 x $1/M + 300 x $5/M = $0.0105 per call), an assumption the researcher did not state."
-    }
-  ],
-  "schemaFit": [
-    {
-      "model": "claude-haiku-5-5",
-      "fits": "needs_rewrite",
-      "detail": "One blocking keyword. bakerPrice.price uses minimum:0 / maximum:2, and Anthropic lists minimum/maximum as unsupported, so the raw API answers HTTP 400. Rewrite: drop both keywords and state the 0..2 range in the field description or instructions. Enforcement is kept because validateDecision already rejects price outside [0,2] (src/agent/protocol.ts:86-87), but the model is no longer constrained, so an out-of-range price becomes a failed decision rather than an impossible one. Everything else is inside the documented subset. Objects use additionalProperties:false with every property required, giving 0 optional parameters against a limit of 24. One-value typed enums are supported (string and number enums are documented; the docs' own examples include an integer enum). Strings use enum only, with no pattern, length bounds, type arrays, $ref or allOf. anyOf with a {type:'null'} branch is allowed (anyOf and the null type are both listed). Union-type parameters, counted from src/agent/mockProvider.ts: move, communication, proximityUtterance.referent, proximityUtterance.context, diary, diary.context and role, so at most 7 against a limit of 16. Open risks, none settled by the docs. (1) The page says unions carry 'exponential compilation cost', and nested anyOf (communication > proximityUtterance > referent) plus a move anyOf with one object branch per legal move could hit 'Schema is too complex' or slow compilation. No enum-size cap is documented. (2) The 16-hex enums change per call, so the 24 h grammar cache mostly misses and nearly every call pays compile latency, which the docs do not quantify. Our code caps a call at 12,000 ms (src/agent/broker.ts:48, src/agent/responsesTransport.ts, src/agent/accountedBroker.ts:64), not the ~16 s in the stated facts. (3) Enum casing is not guaranteed; the docs describe it as typically the first letter after a space, so hex ids are at low risk, but member() in the validator is an exact match. Lowercase before comparing, or treat a mismatch as a failed read. Transport is not reusable: the Responses body does not map. A new adapter must POST https://api.anthropic.com/v1/messages with the x-api-key and anthropic-version: 2023-06-01 headers (as in the docs' cURL example) and body {model, max_tokens, system, messages:[{role:'user',...}], output_config:{format:{type:'json_schema', schema}, effort:'low'}}. Drop text.format name/strict, reasoning, service_tier:'default' (Anthropic's values are auto/standard_only) and store. Read the answer from the content block of type 'text', since thinking blocks may precede it, and check stop_reason for 'refusal' and 'max_tokens'. Thinking tokens count against max_tokens, and our cap is 2,048 (src/agent/broker.ts:48), so either send thinking:{type:'disabled'} (allowed at low effort) or accept truncation risk. Sampling parameters cannot be set and no seed exists, so runs are not reproducible; replay has to use recorded responses. The model-id regex accepts 'claude-haiku-5-5'. Nothing here has been accepted by the live API; the first request must carry the real schema."
-    },
-    {
-      "model": "claude-haiku-4-5-20251001",
-      "fits": "needs_rewrite",
-      "detail": "Same blocking item as Haiku 5.5: minimum/maximum on bakerPrice.price returns a 400 and must be dropped, with the range checked client-side by validateDecision (src/agent/protocol.ts:86-87). The rest of the schema is inside the same documented subset, with the same limits and the same open compile-latency, nested-anyOf and enum-casing risks. It also needs the same native /v1/messages adapter. Differences: no effort parameter, and thinking is off unless budget_tokens is sent (minimum 1,024), so nothing eats the 2,048 output cap and the refusal classifiers described for Haiku 5.5 are not documented for it. Temperature and top_p are probably settable, though no page states this outright. The cost is 10x Haiku 5.5, it is a legacy model, and its 'not sooner than' retirement date has already passed. It has no schema advantage over Haiku 5.5."
-    }
-  ],
-  "survivors": [
-    "claude-haiku-5-5",
-    "claude-haiku-4-5-20251001"
-  ],
-  "notes": [
-    "Method. On 2026-10-22 (about 02:00-02:25 UTC) I fetched the .md rendering of each cited platform.claude.com docs page, plus claude.com/pricing as HTML, and read them directly. I did not use the researcher's saved copies. The cited .../api/openai-sdk URL redirects to .../cli-sdks-libraries/libraries/openai-sdk. No new research was done, no paid API calls were made, and no models, providers or runtimes outside the researcher's two were looked at.",
-    "Overall result. Every price, model id, date, tier, reasoning-control and schema-keyword claim I checked matches the source. Two minor corrections: the refusal categories are four (cyber, frontier_llm, bio, general_harms), not two, and the 1,024-token budget_tokens minimum for Haiku 4.5 is on the extended-thinking page, not the thinking page the researcher cited. Two items cannot be verified from docs: per-call latency with grammar compile, and how this workload tokenizes under Claude's tokenizer.",
-    "Blocking item. minimum/maximum on the Baker price is not supported by Anthropic and returns a 400 on the raw API. Neither Anthropic model can take the current schema unchanged. The fix is small (drop both keywords) because the validator already enforces 0..2. The 'const is already gone' change is irrelevant here; Anthropic supports const anyway.",
-    "Discrepancy with the stated facts. Those facts say ~16 s per call. The code I read caps a call at 12,000 ms (src/agent/broker.ts:48 rejects deadlineMs > 12_000; responsesTransport.ts and accountedBroker.ts use 12_000), and also caps maxOutputTokens at 2,048. Latency including grammar compile is the main unknown, so re-check which limit applies before judging the pilot.",
-    "Refusal risk is new on Haiku 5.5 relative to Haiku 4.5. general_harms and cyber classifiers can fire on benign work and return HTTP 200 with stop_reason 'refusal', billed, with no fallback. The game has deception-themed roles; whether that triggers a classifier is an untested guess, so treat a refusal as a failed decision and count it in the pilot.",
-    "Haiku 4.5 is dominated by Haiku 5.5 on price (10x), currency and retirement window. It stays a survivor only because no hard requirement is violated. Its 'not sooner than 2026-10-15' date has passed with no deprecation notice listed, and the docs promise at least 60 days' notice, so a retirement inside the study window is possible but not signalled.",
-    "Changing the model is a change of study condition, not a cost saving. Anthropic fixes the sampling parameters on Haiku 5.5, so there is no temperature or seed to pin.",
-    "If US-only processing is required, add 1.1x to every Haiku 5.5 price. Batch is 50% off but is asynchronous (up to 24 h) and cannot meet a per-call deadline.",
-    "Nothing here shows that any provider accepts this schema. Anthropic's docs say it should after the min/max change, but the first request with the real schema and a real count_tokens measurement is the only evidence that counts. Compile latency, 'Schema is too complex' and nested-anyOf behaviour can only be seen live."
-  ]
+ "corrections": [
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Price is $0.10 input / $0.50 output per MTok for prompts up to 100,000 tokens.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing (model pricing table); https://platform.claude.com/docs/en/models/haiku-5-5/overview (Pricing table); https://claude.com/pricing (Haiku 5.5 card). All read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Cache read $0.01/MTok, 5-minute cache write $0.125/MTok, 1-hour cache write $0.20/MTok (prompts up to 100K).",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing; https://platform.claude.com/docs/en/models/haiku-5-5/overview; https://claude.com/pricing. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Prompts over 100,000 tokens cost $0.50 in / $2.50 out, cache read $0.05; the whole request pays the higher rate.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing, 'Long context pricing': prompt length counts all input tokens including cache reads and writes, and each request is priced on its own. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Batch API is 50% off ($0.05 in / $0.25 out). Most batches finish under 1 hour but can take up to 24 hours, so a batch cannot meet a per-call deadline.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing (Batch processing table); https://platform.claude.com/docs/en/build-with-claude/batch-processing ('most batches completing within 1 hour', results after completion or 24 hours, batches expire after 24 hours). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "The service-tiers page lists Priority, Standard and Batch (no flex tier). Priority Tier does not support Haiku 5.5 and is no longer sold.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/api/service-tiers: warning that Priority Tier commitments are no longer available for purchase; 'Priority Tier is supported on all available Claude models except ... Claude Haiku 5.5 ...'. Also the Haiku 5.5 migration guide. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "US-only inference (inference_geo: 'us') multiplies all token prices by 1.1x; default global routing uses standard prices.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing, 'Data residency pricing': applies to Claude 4.6 and later models, including cache categories and Haiku 5.5's over-100K prices. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Model id is claude-haiku-5-5 with no date suffix, and is itself a pinned snapshot.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions ('dateless IDs are pinned snapshots'); https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('a fixed model ID with no date suffix and no separate alias'). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Released 2026-10-07; Active (latest); retirement not sooner than 2027-10-07.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview (Availability table); https://platform.claude.com/docs/en/about-claude/model-deprecations (status table). Read 2026-10-22. The date is a tentative 'not sooner than'; the deprecations page promises at least 60 days' notice before retirement."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Context window 1,000,000 tokens.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview (1M context, 128K max output). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Its tokenizer produces about 30% more tokens than Haiku 4.5's for the same text.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview and migration-guide ('approximately 30 percent more tokens on Claude Haiku 5.5 than on Claude Haiku 4.5'); https://platform.claude.com/docs/en/about-claude/pricing. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Token count of this workload (5-9K OpenAI-tokenizer tokens) under Claude's tokenizer; the researcher's x1.3 upper bound.",
+   "verdict": "unverifiable",
+   "correctValue": "The 30% figure is Haiku 5.5 versus Haiku 4.5, not versus OpenAI's tokenizer. Anthropic publishes no comparison with OpenAI's tokenizer, so x1.3 is a placeholder. The free POST /v1/messages/count_tokens endpoint gives the real count for the real request body.",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/token-counting ('Token counting is free to use' but rate-limited; the count is an estimate). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Reasoning control: output_config.effort accepts low, medium, high, xhigh, max; default medium; low is the cheapest and fastest level, recommended for simple high-volume requests.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/effort ('Recommended effort levels for Claude Haiku 5.5'); https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "thinking: {type: 'disabled'} is accepted at low, medium and high effort only; at xhigh or max it returns a 400.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/thinking (per-model table and Haiku 5.5 paragraph); effort page; Haiku 5.5 prompting guide. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "thinking {type:'enabled', budget_tokens} returns a 400; adaptive thinking is on by default.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/thinking per-model table; https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('Configure thinking'). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "A non-default temperature, top_p or top_k returns a 400.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/thinking: on Claude Haiku 5.5 'non-default temperature, top_p, or top_k values return a 400 error on every request' (top_p default is 0.99, so top_p 1 is also a 400); migration guide says to omit all three. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Assistant prefill returns a 400.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide ('Replace assistant prefill': 'rejects it with a 400 error, even with thinking turned off'). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Thinking tokens are billed as output tokens even when hidden (display defaults to 'omitted') and count toward max_tokens.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/thinking (intro; 'display defaults to omitted' on Haiku 5.5; 'You're still charged for the full thinking tokens'). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Reasoning-like text appears in the visible reply more often with thinking off or at low effort.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5 ('Keep reasoning out of user-facing text'). Read 2026-10-22. The researcher's extension (it could leak into free-text schema fields) does not apply to our schema: every string we declare is an enum."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Strict JSON schema output is generally available through output_config.format {type:'json_schema', schema}, and claude-haiku-5-5 is on the supported-models list.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (featureMetadata status: ga; supportedModels includes claude-haiku-5-5; 'Using a raw JSON schema' cURL example). Read 2026-10-22."
+  },
+  {
+   "model": "both",
+   "claim": "Supported schema features: object/array/string/integer/number/boolean/null; enum (string, number, bool, null values); const; anyOf and allOf (allOf with $ref unsupported); internal $ref/$defs/definitions; default; required; additionalProperties only as false; string formats date-time, time, date, duration, email, hostname, uri, ipv4, ipv6, uuid; simple regex pattern; array minItems 0 or 1.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'JSON Schema limitations' > 'Supported features' and 'Pattern support'. Read 2026-10-22."
+  },
+  {
+   "model": "both",
+   "claim": "Not supported and returns a 400: recursive schemas, external $ref, minimum/maximum/multipleOf, minLength/maxLength, array constraints beyond minItems 0/1, additionalProperties other than false, regex backreferences, lookarounds and \\b.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'Not supported' accordion: 'If you use an unsupported feature, you'll receive a 400 error with details.' Read 2026-10-22. This is a rejection, not a silent drop, when calling the raw API. Only the SDK helpers strip these keywords."
+  },
+  {
+   "model": "both",
+   "claim": "Complexity limits per request: 20 strict tools, 24 optional parameters, 16 parameters using anyOf or type arrays; 'Schema is too complex' 400s; 180 s compile timeout.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs, 'Schema complexity limits'. Read 2026-10-22. The page also says unions 'create exponential compilation cost' and states no cap on enum size."
+  },
+  {
+   "model": "both",
+   "claim": "Caveats: required properties come first in output; enum/const capitalization not guaranteed; refusal or max_tokens can give non-conforming output; first request with a new schema pays grammar compilation, grammars cached 24 h; changing output_config.format invalidates the prompt cache.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs ('Grammar compilation and caching', 'Property ordering', 'Invalid outputs', 'Prompt modification and token costs'). Read 2026-10-22. Nuance for us: the grammar cache is keyed on schema structure (name/description changes do not invalidate it), so a different enum membership on each call is a different schema. An extra system prompt describing the format is also injected and billed."
+  },
+  {
+   "model": "both",
+   "claim": "Anthropic's OpenAI-compatibility layer documents Chat Completions only, is described as not production-ready for most use cases, and ignores response_format and strict.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk (the cited .../api/openai-sdk URL redirects here): note box; 'response_format: Ignored'; 'strict: Ignored'. Read 2026-10-22."
+  },
+  {
+   "model": "both",
+   "claim": "There is no Responses API; strict output needs native POST /v1/messages with a new adapter.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/api/overview lists only Messages, Message Batches and Token Counting; https://platform.claude.com/llms.txt contains no /v1/responses entry; the compatibility page shows chat.completions only. Read 2026-10-22. Confirmed as a documented absence only, since a negative cannot be proved from docs."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "On a safeguard refusal it returns stop_reason 'refusal' (HTTP 200, billed, output may not match the schema) and has no server-side fallback. The documented safeguard categories are cyber and bio.",
+   "verdict": "corrected",
+   "correctValue": "Refusal behaviour and 'no server-side fallback' are confirmed. The categories are four, not two: cyber, frontier_llm, bio and general_harms. The page says benign work can also trigger cyber and general_harms, and that these refusals are new relative to Haiku 4.5.",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5 ('Safeguard refusals'); migration-guide checklist item 10; structured-outputs 'Invalid outputs'. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Minimum cacheable prompt is 512 tokens; prompt caching on the ~650-token rules text saves under $0.0001 per call and is not worth building.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching (512 tokens for Haiku 5.5; 4,096 for Haiku 4.5). Read 2026-10-22. Saving recomputed as 650 x ($0.10 - $0.01)/1e6 = about $0.00006 per call, before the cache-write premium. The 'not worth building' conclusion is the researcher's judgement."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Cost estimate: $0.00055 per call (5,000 in / 100 out) to about $0.0019 (11,700 in / 1,500 out); study 1 (630 calls) $0.35-$1.21 at list, $0.69-$2.42 at 2x; 4,000 calls $2.20-$7.68 at list, $4.40-$15.36 at 2x.",
+   "verdict": "confirmed",
+   "source": "Recomputed 2026-10-22 from the confirmed list prices: 5,000 x 1e-7 + 100 x 5e-7 = $0.00055; 11,700 x 1e-7 + 1,500 x 5e-7 = $0.00192; times 630 = $0.35 / $1.21; times 4,000 = $2.20 / $7.68. All match. The estimate leaves out the injected structured-output system prompt and, if thinking stays on, thinking tokens beyond the assumed 1,500 output tokens."
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "claim": "Per-call wall-clock latency (including grammar compile) fits the per-call deadline.",
+   "verdict": "unverifiable",
+   "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview publishes only 'Comparative latency: Fastest'; the structured-outputs page says first-request compile adds latency and gives no number beyond the 180 s timeout. Read 2026-10-22. Only a live pilot can settle this."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Price $1 in / $5 out per MTok; cache read $0.10, 5m write $1.25, 1h write $2; batch $0.50 / $2.50.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/pricing (model table and Batch table); https://platform.claude.com/docs/en/models/haiku-4-5/overview; https://claude.com/pricing. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Id claude-haiku-4-5-20251001; the alias claude-haiku-4-5 resolves to it; released 2025-10-15; context 200K.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/models/haiku-4-5/overview ('claude-haiku-4-5 is a convenience alias that resolves to the pinned snapshot'; max output 64K). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Legacy (Active); retirement 'not sooner than 2026-10-15', a date that has passed, with no deprecation notice listed; Anthropic recommends migrating to Haiku 5.5.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/about-claude/model-deprecations (status table; the newest history entry is 2026-09-30 for Sonnet 4.5, with no Haiku 4.5 entry; 'at least 60 days' notice'); https://platform.claude.com/docs/en/models/haiku-4-5/overview ('you should consider migrating to Claude Haiku 5.5'). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Reasoning control: manual extended thinking only (budget_tokens, minimum 1024), off by default; effort unsupported; adaptive thinking returns a 400; temperature, top_p and top_k accepted.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/thinking per-model table (no thinking field = off, adaptive = 400); https://platform.claude.com/docs/en/models/haiku-4-5/overview ('Default effort: Not supported'); the 1,024 minimum is stated on https://platform.claude.com/docs/en/build-with-claude/extended-thinking, not on the thinking page the researcher cited. Acceptance of sampling parameters is inferred: Haiku 4.5 is absent from the thinking page's list of models that 400 on them, and no page states acceptance outright. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "On the structured-outputs supported-models list, with the same keyword support, limits and caveats as Haiku 5.5.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs (supportedModels lists claude-haiku-4-5-20251001; the schema limits are stated once for all models with no per-model differences). Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Minimum cacheable prompt 4,096 tokens; Priority Tier supports it but is sold only to holders of existing commitments.",
+   "verdict": "confirmed",
+   "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching ('4,096 tokens for Claude Haiku 4.5'); https://platform.claude.com/docs/en/api/service-tiers. Read 2026-10-22."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "claim": "Study 1 (630 calls) costs $3.47-$6.62 at list on Haiku 4.5 (old tokenizer, thinking off).",
+   "verdict": "confirmed",
+   "source": "Recomputed 2026-10-22: 5,000 in x $1/M + 100 out x $5/M = $0.0055 per call, times 630 = $3.47. The $6.62 upper end reproduces only if the output is 300 tokens (9,000 x $1/M + 300 x $5/M = $0.0105 per call), an assumption the researcher did not state."
+  }
+ ],
+ "schemaFit": [
+  {
+   "model": "claude-haiku-5-5",
+   "fits": "needs_rewrite",
+   "detail": "One blocking keyword. bakerPrice.price uses minimum:0 / maximum:2, and Anthropic lists minimum/maximum as unsupported, so the raw API answers HTTP 400. Rewrite: drop both keywords and state the 0..2 range in the field description or instructions. Enforcement is kept because validateDecision already rejects price outside [0,2] (src/agent/protocol.ts:86-87), but the model is no longer constrained, so an out-of-range price becomes a failed decision rather than an impossible one. Everything else is inside the documented subset. Objects use additionalProperties:false with every property required, giving 0 optional parameters against a limit of 24. One-value typed enums are supported (string and number enums are documented; the docs' own examples include an integer enum). Strings use enum only, with no pattern, length bounds, type arrays, $ref or allOf. anyOf with a {type:'null'} branch is allowed (anyOf and the null type are both listed). Union-type parameters, counted from src/agent/mockProvider.ts: move, communication, proximityUtterance.referent, proximityUtterance.context, diary, diary.context and role, so at most 7 against a limit of 16. Open risks, none settled by the docs. (1) The page says unions carry 'exponential compilation cost', and nested anyOf (communication > proximityUtterance > referent) plus a move anyOf with one object branch per legal move could hit 'Schema is too complex' or slow compilation. No enum-size cap is documented. (2) The 16-hex enums change per call, so the 24 h grammar cache mostly misses and nearly every call pays compile latency, which the docs do not quantify. Our code caps a call at 12,000 ms (src/agent/broker.ts:48, src/agent/responsesTransport.ts, src/agent/accountedBroker.ts:64), not the ~16 s in the stated facts. (3) Enum casing is not guaranteed; the docs describe it as typically the first letter after a space, so hex ids are at low risk, but member() in the validator is an exact match. Lowercase before comparing, or treat a mismatch as a failed read. Transport is not reusable: the Responses body does not map. A new adapter must POST https://api.anthropic.com/v1/messages with the x-api-key and anthropic-version: 2023-06-01 headers (as in the docs' cURL example) and body {model, max_tokens, system, messages:[{role:'user',...}], output_config:{format:{type:'json_schema', schema}, effort:'low'}}. Drop text.format name/strict, reasoning, service_tier:'default' (Anthropic's values are auto/standard_only) and store. Read the answer from the content block of type 'text', since thinking blocks may precede it, and check stop_reason for 'refusal' and 'max_tokens'. Thinking tokens count against max_tokens, and our cap is 2,048 (src/agent/broker.ts:48), so either send thinking:{type:'disabled'} (allowed at low effort) or accept truncation risk. Sampling parameters cannot be set and no seed exists, so runs are not reproducible; replay has to use recorded responses. The model-id regex accepts 'claude-haiku-5-5'. Nothing here has been accepted by the live API; the first request must carry the real schema."
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "fits": "needs_rewrite",
+   "detail": "Same blocking item as Haiku 5.5: minimum/maximum on bakerPrice.price returns a 400 and must be dropped, with the range checked client-side by validateDecision (src/agent/protocol.ts:86-87). The rest of the schema is inside the same documented subset, with the same limits and the same open compile-latency, nested-anyOf and enum-casing risks. It also needs the same native /v1/messages adapter. Differences: no effort parameter, and thinking is off unless budget_tokens is sent (minimum 1,024), so nothing eats the 2,048 output cap and the refusal classifiers described for Haiku 5.5 are not documented for it. Temperature and top_p are probably settable, though no page states this outright. The cost is 10x Haiku 5.5, it is a legacy model, and its 'not sooner than' retirement date has already passed. It has no schema advantage over Haiku 5.5."
+  }
+ ],
+ "survivors": [
+  "claude-haiku-5-5",
+  "claude-haiku-4-5-20251001"
+ ],
+ "notes": [
+  "Method. On 2026-10-22 (about 02:00-02:25 UTC) I fetched the .md rendering of each cited platform.claude.com docs page, plus claude.com/pricing as HTML, and read them directly. I did not use the researcher's saved copies. The cited .../api/openai-sdk URL redirects to .../cli-sdks-libraries/libraries/openai-sdk. No new research was done, no paid API calls were made, and no models, providers or runtimes outside the researcher's two were looked at. Full result also written to /home/user/The-Node/docs/research/model-options-2026-10-21/verify-anthropic.json (only file touched in the repository).",
+  "Overall result. Every price, model id, date, tier, reasoning-control and schema-keyword claim I checked matches the source. Two minor corrections: the refusal categories are four (cyber, frontier_llm, bio, general_harms), not two, and the 1,024-token budget_tokens minimum for Haiku 4.5 is on the extended-thinking page, not the thinking page the researcher cited. Two items cannot be verified from docs: per-call latency with grammar compile, and how this workload tokenizes under Claude's tokenizer.",
+  "Blocking item. minimum/maximum on the Baker price is not supported by Anthropic and returns a 400 on the raw API. Neither Anthropic model can take the current schema unchanged. The fix is small (drop both keywords) because the validator already enforces 0..2. The 'const is already gone' change is irrelevant here; Anthropic supports const anyway.",
+  "Discrepancy with the stated facts. Those facts say ~16 s per call. The code I read caps a call at 12,000 ms (src/agent/broker.ts:48 rejects deadlineMs > 12_000; responsesTransport.ts and accountedBroker.ts use 12_000), and also caps maxOutputTokens at 2,048. Latency including grammar compile is the main unknown, so re-check which limit applies before judging the pilot.",
+  "Refusal risk is new on Haiku 5.5 relative to Haiku 4.5. general_harms and cyber classifiers can fire on benign work and return HTTP 200 with stop_reason 'refusal', billed, with no fallback. The game has deception-themed roles; whether that triggers a classifier is an untested guess, so treat a refusal as a failed decision and count it in the pilot.",
+  "Haiku 4.5 is dominated by Haiku 5.5 on price (10x), currency and retirement window. It stays a survivor only because no hard requirement is violated. Its 'not sooner than 2026-10-15' date has passed with no deprecation notice listed, and the docs promise at least 60 days' notice, so a retirement inside the study window is possible but not signalled.",
+  "Changing the model is a change of study condition, not a cost saving. Anthropic fixes the sampling parameters on Haiku 5.5, so there is no temperature or seed to pin.",
+  "If US-only processing is required, add 1.1x to every Haiku 5.5 price. Batch is 50% off but is asynchronous (up to 24 h) and cannot meet a per-call deadline.",
+  "Nothing here shows that any provider accepts this schema. Anthropic's docs say it should after the min/max change, but the first request with the real schema and a real count_tokens measurement is the only evidence that counts. Compile latency, 'Schema is too complex' and nested-anyOf behaviour can only be seen live."
+ ]
 }

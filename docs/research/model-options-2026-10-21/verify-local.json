@@ -1,0 +1,494 @@
+{
+ "corrections": [
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "v0.40.7 is the 'Latest' stable release, dated 18 Oct 2026.",
+   "verdict": "corrected",
+   "source": "https://raw.githubusercontent.com/ollama/ollama/v0.40.7 and a shallow git clone at tag v0.40.7 (commit 2cd63f7a15039ccd790e97b31edc091fa1707c56), read in full; git ls-remote --tags https://github.com/ollama/ollama read 2026-10-22.",
+   "correctValue": "Tag v0.40.7 and tag v0.40.7-rc1 both point at commit 2cd63f7a, committed 2026-10-20T21:15:15Z (commit message 'mlx: deduplicate CUDA runtime payloads (#17956)'). A release cannot predate its tag commit, so 18 Oct is wrong; 20 Oct or later is what the git data supports. v0.40.6 is commit 2476d5ea (2026-10-16). The tag v0.40.7 does exist and the cited source is the right tag."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "v0.40.8 is a pre-release from 21 Oct, so v0.40.7 is still 'Latest'.",
+   "verdict": "unverifiable",
+   "source": "git ls-remote --tags https://github.com/ollama/ollama; github.com release pages, releases.atom and api.github.com all return 403 ('GitHub access to this repository is not enabled for this session') in this session. Git facts only read 2026-10-22.",
+   "correctValue": "Git shows a non-rc tag v0.40.8 at commit f580b548 (2026-10-21T14:45Z) beside v0.40.8-rc0 at the same commit, and tags v0.40.9-rc0 and v0.40.9-rc1 now exist. Whether GitHub flags v0.40.8 as pre-release, and which release is marked Latest today, cannot be read here. For an install, pin v0.40.7 explicitly and do not use ollama.com/download (it 307-redirects to releases/latest/download/OllamaSetup.exe, which resolves to whatever is Latest when downloaded)."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "/v1/responses exists, was added in v0.13.3, and only stateless requests are supported.",
+   "verdict": "confirmed",
+   "source": "docs/api/openai-compatibility.mdx lines 318-348 at v0.40.7 ('Note: Added in Ollama v0.13.3'; previous_response_id and conversation unchecked) read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "/v1/responses maps text.format {type:'json_schema', schema} to the chat 'format' (openai/responses.go lines 868-876); strict and name are parsed but unused.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): openai/responses.go 868-876 (case 'json_schema': format = r.Text.Format.Schema; assigned to ChatRequest.Format at line 884); ResponsesTextFormat struct lines 510-514 read 2026-10-22.",
+   "correctValue": "Caveat the researcher omitted: the 'Supported request fields' list in docs/api/openai-compatibility.mdx (lines 335-348) does not list `text` or text.format at all. The behaviour is source-only, undocumented, and untested live."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "Chat Completions response_format json_schema is mapped the same way.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): openai/openai.go 776-783 (case 'json_schema': format = r.ResponseFormat.JsonSchema.Schema); docs/api/openai-compatibility.mdx line 235 lists `response_format` as supported read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "Enforcement is grammar-constrained: Ollama runs llama.cpp llama-server as a subprocess and sends the schema to llama-server's own schema-to-GBNF converter.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): llm/llama_server.go header comment (lines 1-14), /completion path lines 1713-1723 (JsonSchema field), chat path llamaServerChatResponseFormat lines 2452-2478 (response_format {type:'json_schema', json_schema:{name:'schema', schema}}) read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "The bundled build is LLAMA_CPP_VERSION=b11738, and common/json-schema.cpp, common/json-schema-to-grammar.cpp and grammars/README.md are byte-identical between b11738 and b11799.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): file LLAMA_CPP_VERSION contains 'b11738'. Fetched b11738 copies from raw.githubusercontent.com/ggml-org/llama.cpp/b11738 and ran cmp against the b11799 clone: json-schema.cpp, json-schema-to-grammar.cpp, json-schema.h, json-schema-to-grammar.h and grammars/README.md are IDENTICAL. (tools/server/server-chat.cpp differs by 12 lines, tools/server/server-common.cpp by 92; neither is used by Ollama's own Responses converter.) read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "Thinking stays unconstrained and the grammar starts after it closes.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): llm/llama_server.go header comment and lines 1727-1738 (thinkingGrammar(req.ThinkingClose, grammar)); ThinkingClose is defined for gpt-oss in harmony/harmonyparser.go 469-477 (final-channel headers such as '<|end|><|start|>assistant<|channel|>final<|message|>'), qwen3.5 in model/parsers/qwen35.go 48-53 (returns '</think>' only while collecting thinking), gemma4 in model/parsers/gemma4.go 54-59 (only if thinkingEnabled), ministral in model/parsers/ministral.go 60-65 (only while collecting thinking) read 2026-10-22.",
+   "correctValue": "Refinement: when thinking is off the parser returns nil and the format applies from the FIRST token. For gpt-oss the source does define Harmony close strings, which answers the researcher's open question about the analysis channel for Ollama (source-level only; still untested live)."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "On <24 GiB VRAM the default context is 4k.",
+   "verdict": "confirmed",
+   "source": "docs/context-length.mdx lines 6-12 at v0.40.7 and server/routes.go lines 2556-2560 (defaultNumCtx 262144 / 32768 / 4096). Context is set with OLLAMA_CONTEXT_LENGTH (envconfig/config.go lines 229-230 and 338), the Modelfile `PARAMETER num_ctx`, or the app slider; /v1/responses cannot set num_ctx. llama-server is launched with -c NumCtx*numParallel (llm/llama_server.go line 392); OLLAMA_NUM_PARALLEL defaults to 1 (envconfig line 277). docs/modelfile.mdx line 148 still says num_ctx default 2048, which conflicts with context-length.mdx; the code (routes.go) agrees with 4096 read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "chatPrompt in server/prompt.go silently truncates messages that exceed num_ctx, so a 9k-token observation is cut unless the context is at least 16384.",
+   "verdict": "corrected",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): server/prompt.go lines 20-92; llm/llama_server.go lines 299-336, 338-348; server/sched.go lines 172-190; api/types.go line 1225 read 2026-10-22.",
+   "correctValue": "The conclusion stands but the mechanism is wrong. chatPrompt only drops OLDER messages and always keeps system messages and the last one, so for our request (one system message from `instructions` plus one user message) it never removes anything. The silent cut happens in llama_server.go completionPromptForRequest: with Truncate (default true) and context shift (resolveContextShift defaults true for every model except deepseek2) an over-long prompt has its MIDDLE discarded, keeping the first num_keep=4 tokens and the tail and cutting down to about half of num_ctx (contextShiftPromptLimit = numCtx - max((numCtx - numKeep)/2, 1), so about 8,194 tokens kept at 16,384), with only a server-log warning ('truncating input prompt') and no HTTP error. With shift off it would return 400 promptTooLong. I read only this /completion path; models without an Ollama renderer go through llama-server's chat endpoint, whose truncation I did not read. /v1/responses cannot set truncate or shift."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "The Responses 'truncation' field is only echoed back, so the project's truncation:'disabled' is NOT honoured.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): openai/responses.go field at line 577; used only at lines 1367-1411 and 1551-1617 to build the echoed response; docs/api/openai-compatibility.mdx line 348 lists `- [ ] truncation` read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "'seed' is not a supported /v1/responses field; it can be set in a Modelfile. tool_choice is unsupported (TODO).",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): docs/api/openai-compatibility.mdx lines 335-348 (no seed); docs/modelfile.mdx line 152 (seed parameter); openai/responses.go lines 581-583 (TODO tool_choice). Unknown body keys such as store, service_tier and tool_choice are ignored: ResponsesRequest (lines 538-585) has no such fields and gin ShouldBindJSON is used at middleware/openai.go line 1211 with no DisallowUnknownFields read 2026-10-22."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "cache_prompt is hard-coded true (llm/llama_server.go line 1691) and cannot be turned off.",
+   "verdict": "confirmed",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): llm/llama_server.go line 1691 (/completion path) and ALSO line 2299 (chat path, \"cache_prompt\": true); grep of llm/ and envconfig/ finds no switch, no '--no-cache-prompt', and '--cache-ram 0' only in the `launch.decision` branch (line 398) read 2026-10-22.",
+   "correctValue": "Cache hits are observable: the Responses usage block returns input_tokens_details.cached_tokens (middleware/openai.go line 1162), so a determinism run can log it."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "(Omission in the research) Determinism: the Modelfile can fix sampling.",
+   "verdict": "corrected",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): openai/responses.go lines 794-799 (options['temperature'] = 1.0 whenever the request omits temperature); server/routes.go lines 139-165 (request options are applied AFTER model.Options, so they override Modelfile PARAMETERs); repo src/agent/responsesRequest.ts lines 101-102 (body has no temperature) read 2026-10-22.",
+   "correctValue": "With the current request body, Ollama /v1/responses always samples at temperature 1.0, whatever `PARAMETER temperature` the Modelfile says. temperature is a supported field (docs line 340), so the request builder must send temperature:0 for any repeatable run. seed can still be fixed in the Modelfile because the Responses converter never sets seed. Ministral's card asks for temperature below 0.1."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "(Omission in the research) Thinking models: 'thinking MUST be off' for Qwen3.5 and Gemma 4.",
+   "verdict": "corrected",
+   "source": "Ollama tag v0.40.7 (commit 2cd63f7a, cloned): openai/openai.go lines 585-615 (ThinkingFromReasoningEffort: 'none' -> false; any named effort -> true for boolean-thinking models); llm/llama_server.go lines 2333-2346 (enable_thinking = think.Bool()); types/model/thinking.go lines 100-112 (a string value is true); repo responsesRequest.ts line 101 hard-codes reasoning:{effort:'low'} read 2026-10-22.",
+   "correctValue": "Our fixed effort 'low' turns thinking ON for any model Ollama knows to be thinking-capable. Turning it off needs reasoning.effort:'none' or the Ollama extension `think:false` in the body, a request-builder change. Unknown: whether a Modelfile built from a raw GGUF carries Ollama's thinking metadata, parser or renderer. For a model without the thinking capability the effort is relaxed to nil instead of returning 400 (relax_thinking set at middleware/openai.go line 1226, used at server/routes.go lines 3181-3198); a thinking-capable model with no descriptor defaults to thinking ON."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "The existing Responses transport works with Ollama.",
+   "verdict": "corrected",
+   "source": "repo src/agent/responsesTransport.ts lines 15, 111-122, 126-139 (read 2026-10-22); docs/api/openai-compatibility.mdx line 130 for Ollama's address http://localhost:11434/v1/responses read 2026-10-22.",
+   "correctValue": "The production path (sendLiveResponses) hard-codes https://api.openai.com/v1/responses. Only the test-only sendLoopbackResponsesFixture accepts http(s)://127.0.0.1:<port>/v1/responses (hostname must be 127.0.0.1, port required, pathname exactly /v1/responses, fake bearer). That could reach Ollama on 127.0.0.1:11434 without code changes, but it is the 'mechanical local-service fixture' path, not the accounted production path. Every path also caps a call at 12,000 ms (broker.ts:48 rejects deadlineMs > 12_000; accountedBroker.ts:64; responsesTransport.ts:32-33, 113, 133), not the ~16 s stated in the facts. The model-id regex rejects '/', so use a plain Ollama name such as gpt-oss-20b-local, never hf.co/org/repo."
+  },
+  {
+   "model": "Ollama v0.40.7",
+   "claim": "Ollama runs natively on Windows.",
+   "verdict": "unverifiable",
+   "source": "https://ollama.com/download/OllamaSetup.exe returns 307 to github.com/ollama/ollama/releases/latest/download/OllamaSetup.exe, which this session cannot open; the Windows asset list and whether it bundles a CUDA llama-server were not readable read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "Release b11799 is commit 0756e83fc1529e207af783782905bc98a8ef0770, released 21 Oct 2026; MIT licence.",
+   "verdict": "confirmed",
+   "source": "git ls-remote --tags https://github.com/ggml-org/llama.cpp (b11799 -> 0756e83f...) and clone: committer date 2026-10-21T10:01:03-07:00 ('sycl: q8 fast dequant (#30775)'); LICENSE 'MIT License, Copyright (c) 2023-2026 The ggml authors' read 2026-10-22.",
+   "correctValue": "b11799 is no longer the newest build: tags b11800 to b11804 already exist on 22 Oct. Pin the tag, not 'latest'."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "Native Windows CUDA builds exist: llama-b11799-bin-win-cuda-12.4-x64.zip and -cuda-13.4-x64.zip, each with a matching cudart zip.",
+   "verdict": "confirmed",
+   "source": "HEAD (following redirects) on https://github.com/ggml-org/llama.cpp/releases/download/b11799/<asset>: llama-b11799-bin-win-cuda-12.4-x64.zip 200, 272,125,951 B; llama-b11799-bin-win-cuda-13.4-x64.zip 200, 159,697,026 B; cudart-llama-bin-win-cuda-12.4-x64.zip 200, 391,443,627 B; cudart-llama-bin-win-cuda-13.4-x64.zip 200, 423,535,356 B; llama-b11799-bin-win-cuda-13.1-x64.zip 404 read 2026-10-22.",
+   "correctValue": "The cudart zip names carry no build number. Which CUDA line the owner's driver supports was not checked."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "POST /v1/responses converts the request to Chat Completions and does NOT map text.format, so output is unconstrained and silently so.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/README.md line 1604 ('works by converting Responses request into Chat Completions request'); tools/server/server-chat.cpp lines 6-~300 (server_chat_convert_responses_to_chatcmpl maps input, instructions, tools, max_output_tokens, reasoning.effort -> reasoning_effort; there is no read of 'text'); tools/server/server-context.cpp lines 5919-5929 (post_responses_oai); grep for text.format / [\"text\"][\"format\"] across tools/server/*.cpp finds nothing read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "Chat Completions response_format {type:'json_schema', json_schema:{schema}} is honoured (server-common.cpp lines 1379-1392).",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/server-common.cpp lines 1379-1392 inside oaicompat_chat_params_parse (starts line 1343); the schema must be nested at response_format.json_schema.schema, and an empty or absent schema means 'any object' (lines 1395-1398) read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "A top-level response_format added to a Responses body would be honoured (inference, untested).",
+   "verdict": "unverifiable",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): server-chat.cpp line 15 (`json chatcmpl_body = response_body;`) copies every top-level key and only erases input, instructions, tools (when empty), max_output_tokens and reasoning, so the source supports the inference; I did not run it. The same copy means temperature and cache_prompt in the Responses body would also pass through read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "previous_response_id is rejected.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/server-chat.cpp lines 10-12 read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "(Omission in the research) Context length and overflow behaviour for llama-server.",
+   "verdict": "corrected",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/README.md line 50 (-c default 0 = taken from the model), line 171 (--context-shift default disabled), line 177 (-np default auto); tools/server/server-context.cpp lines 3948-3956 (message string at line 3950) read 2026-10-22.",
+   "correctValue": "Set -c explicitly: the default is the model's training context (131,072 for gpt-oss, 262,144 for the others), which would allocate far more KV than the 16k assumed. With context shift off (the default) an over-long request is REJECTED with 'request (N tokens) exceeds the available context size (C tokens), try increasing it' (ERROR_TYPE_EXCEED_CONTEXT_SIZE), so llama-server does not truncate silently, unlike Ollama. Use -np 1 so the slot gets the whole -c."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "How to disable prompt caching.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/README.md line 223 (`--cache-prompt, --no-cache-prompt`, default enabled, env LLAMA_ARG_CACHE_PROMPT) and line 596 (per-request `cache_prompt`, default true, with the bit-for-bit warning) read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "Determinism: temperature <= 0 is argmax (src/llama-sampler.cpp line 270); default seed -1; cache_prompt can cause nondeterminism.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): src/llama-sampler.cpp lines 270-271 (`if (temp <= 0.0f)` then the comment 'find the token with the highest logit and set the rest to -inf'; the comment is on line 271); tools/server/README.md line 124 (seed -1 = random) and line 596 read 2026-10-22.",
+   "correctValue": "Add: the server default temperature is 0.80 (README line 127) and the body carries none, so launch with --temp 0 or put temperature:0 in the body."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "JSON-schema keyword behaviour: const works for any value and wins over type; enum any values; anyOf/oneOf alternatives only (siblings dropped); type arrays become anyOf; type null supported; nullable ignored; integer min/max enforced, number min/max ignored; additionalProperties defaults to false; unsupported keywords skipped silently.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): common/json-schema.cpp build_node (lines ~226-330: $ref, oneOf/anyOf early return, type-array expansion, const, enum, then type dispatch; 'number' returns a plain common_chat_schema_number, only build_integer reads minimum/maximum); no occurrence of 'nullable' anywhere; common/json-schema-to-grammar.cpp; grammars/README.md lines 205-216 (documents 'Can't mix properties w/ anyOf / oneOf', 'minimum... only supported for integer, not number', 'Unsupported features are skipped silently') read 2026-10-22.",
+   "correctValue": "Refinement: an unanchored or unsupported `pattern` is accepted as 'any string' with a warning (json-schema-to-grammar.cpp lines 390-402) rather than failing; only a syntactically invalid pattern or an unresolved $ref is an error. allOf is handled at this build. None of this affects our schema, which has no pattern or $ref."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "A build with LLAMA_LLGUIDANCE uses llguidance instead.",
+   "verdict": "confirmed",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): CMakeLists.txt line 147 `option(LLAMA_LLGUIDANCE ... OFF)`; the default is OFF, so the prebuilt Windows zips are not expected to use it (not checked inside the zips) read 2026-10-22."
+  },
+  {
+   "model": "llama-server b11799",
+   "claim": "Default listen address.",
+   "verdict": "corrected",
+   "source": "llama.cpp tag b11799 (commit 0756e83f, cloned): tools/server/README.md lines 193-194 (--host default 127.0.0.1; --port default 9931) read 2026-10-22.",
+   "correctValue": "Default port is 9931 at this tag (older documentation says 8080). Pass --port explicitly. The model id defaults to the path of the .gguf (README line 1329), which contains path separators ('/' or a backslash) and fails our model-id regex; set --alias (README line 190), e.g. --alias gpt-oss-20b-local."
+  },
+  {
+   "model": "LM Studio 0.4.26",
+   "claim": "0.4.26 (build 5) is the newest changelog entry; build 2 bundles llama.cpp runtime 2.50.0 (upstream b11337).",
+   "verdict": "confirmed",
+   "source": "https://lmstudio.ai/changelog/lmstudio (top entry 'LM Studio 0.4.26 ... Build 5 ... Build 2 Updated the llama.cpp runtime to 2.50.0 (upstream b11337)') read 2026-10-22.",
+   "correctValue": "b11337 is older than Ollama's b11738 and llama-server b11799, so the keyword findings above do NOT transfer to LM Studio without a test."
+  },
+  {
+   "model": "LM Studio 0.4.26",
+   "claim": "/v1/responses is documented without text.format; structured output is documented only for /v1/chat/completions (GGUF: llama.cpp grammar sampling; MLX: Outlines).",
+   "verdict": "confirmed",
+   "source": "https://lmstudio.ai/docs/developer/openai-compat/responses and .../structured-output (no 'text.format' or 'json_schema' on the Responses page; the structured-output page says 'through the /v1/chat/completions endpoint') read 2026-10-22.",
+   "correctValue": "Practical note: the Responses page's own example uses the model id 'openai/gpt-oss-20b', which our model-id regex rejects because of '/'."
+  },
+  {
+   "model": "LM Studio 0.4.26",
+   "claim": "Closed source under proprietary terms (lmstudio.ai/app-terms).",
+   "verdict": "unverifiable",
+   "source": "https://lmstudio.ai/app-terms was not fetched read 2026-10-22."
+  },
+  {
+   "model": "vLLM 0.32.0",
+   "claim": "vLLM 0.32.0 uploaded to PyPI 2026-10-18.",
+   "verdict": "confirmed",
+   "source": "https://pypi.org/pypi/vllm/json (0.32.0 files uploaded 2026-10-18T10:03; 0.31.0 on 2026-10-05); Apache-2.0 per LICENSE at tag v0.32.0 read 2026-10-22."
+  },
+  {
+   "model": "vLLM 0.32.0",
+   "claim": "No native Windows support (WSL2 or a community fork).",
+   "verdict": "confirmed",
+   "source": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/docs/getting_started/installation/gpu.md line 31 read 2026-10-22."
+  },
+  {
+   "model": "vLLM 0.32.0",
+   "claim": "/v1/responses honours text.format (extract_structured_outputs maps json_schema to StructuredOutputsParams(json=schema); strict unused); auto backend tries xgrammar then falls back to guidance, an explicit backend has no fallback; not applied inside reasoning unless enable_in_reasoning.",
+   "verdict": "confirmed",
+   "source": "vllm/entrypoints/openai/responses/protocol.py lines 476-499; vllm/sampling_params.py lines ~1330-1400 ('xgrammar with no fallback' vs the 'auto' branch with try/except fallback); vllm/config/structured_outputs.py lines 40-41 (enable_in_reasoning: bool = False), all at tag v0.32.0 read 2026-10-22."
+  },
+  {
+   "model": "vLLM 0.32.0",
+   "claim": "Reproducibility needs batch invariance (beta, compute capability 8.0+) and holds only on the same hardware and vLLM version.",
+   "verdict": "confirmed",
+   "source": "docs/usage/reproducibility.md lines 3-20 and docs/features/batch_invariance.md lines 4 and 18-22 at tag v0.32.0 read 2026-10-22."
+  },
+  {
+   "model": "openai/gpt-oss-20b",
+   "claim": "Base commit 6cee5e81ee83917806bbde320786a8fb61efebee, Apache-2.0, repo created 2025-08-04; config: 24 layers, 8 KV heads, head_dim 64, alternating sliding window 128 and full attention (12 + 12), 32 experts top-4, max_position 131072.",
+   "verdict": "confirmed",
+   "source": "https://huggingface.co/api/models/openai/gpt-oss-20b/revision/6cee5e81... and resolve/6cee5e81.../config.json read 2026-10-22."
+  },
+  {
+   "model": "openai/gpt-oss-20b",
+   "claim": "Newest small OpenAI open-weight text model; later openai repos are gpt-oss-safeguard and privacy-filter.",
+   "verdict": "confirmed",
+   "source": "https://huggingface.co/api/models?author=openai&sort=createdAt (also lists circuit-sparsity, 2025-12-11, a research artefact) read 2026-10-22."
+  },
+  {
+   "model": "openai/gpt-oss-20b",
+   "claim": "Reasoning cannot be switched off; levels low/medium/high set in the system prompt.",
+   "verdict": "confirmed",
+   "source": "https://huggingface.co/openai/gpt-oss-20b README at 6cee5e81 lines 37 and 147-155 read 2026-10-22."
+  },
+  {
+   "model": "ggml-org/gpt-oss-20b-GGUF @15dcfc7e",
+   "claim": "File gpt-oss-20b-MXFP4.gguf, 12.11 GB, sha256 27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901.",
+   "verdict": "confirmed",
+   "source": "HF tree API ggml-org/gpt-oss-20b-GGUF@15dcfc7e7c608c6161507211ed43c5b590801b4b (size 12,109,566,624 B; lfs.oid matches character for character; revision sha equals the cited commit, last modified 2026-10-19). The repo is an automatic llama.cpp-org conversion (its README says so and has TODOs) read 2026-10-22."
+  },
+  {
+   "model": "Qwen/Qwen3.5-9B",
+   "claim": "Commit c202236235762e1c871ad0ccb60c8ee5ba337b9a, created 2026-02-27, Apache-2.0; 32 layers (24 linear + 8 full attention), 4 KV heads, head_dim 256, max_position 262144.",
+   "verdict": "confirmed",
+   "source": "HF revision metadata and config.json at c2022362 (layer_types has exactly 8 'full_attention') read 2026-10-22."
+  },
+  {
+   "model": "Qwen/Qwen3.5-9B",
+   "claim": "Thinks by default; non-thinking mode exists; card advises at least 128K context for thinking.",
+   "verdict": "confirmed",
+   "source": "HF README at c2022362 lines 710-711, 728-730, 952-999 (non-thinking via chat_template_kwargs {enable_thinking:false}) read 2026-10-22."
+  },
+  {
+   "model": "unsloth/Qwen3.5-9B-GGUF @3885219b",
+   "claim": "Qwen3.5-9B-Q4_K_M.gguf 5.68 GB sha256 03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8; Qwen3.5-9B-Q8_0.gguf 9.53 GB sha256 809626574d0cb43d4becfa56169980da2bb448f2299270f7be443cb89d0a6ae4.",
+   "verdict": "confirmed",
+   "source": "HF tree API unsloth/Qwen3.5-9B-GGUF@3885219b6810b007914f3a7950a8d1b469d598a5 (sizes 5,680,522,464 and 9,527,502,048 B; oids match). This is a third-party (unsloth) conversion, last modified 2026-03-02 read 2026-10-22."
+  },
+  {
+   "model": "google/gemma-4-12B-it",
+   "claim": "Commit 707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7, created 2026-05-23, Apache-2.0; 48 layers (40 sliding-1024 + 8 full), 8 KV heads at 256 dims, 1 global KV head at 512 dims, max_position 262144, model_type gemma4_unified_text.",
+   "verdict": "confirmed",
+   "source": "HF revision metadata and config.json at 707f0a3b; licence page https://ai.google.dev/gemma/docs/gemma_4_license (title 'Apache License 2.0', 'Last updated 2026-04-01 UTC'; sidebar links Terms of use, Prohibited use, Intended use statement, none of which I read, as the researcher also did not) read 2026-10-22."
+  },
+  {
+   "model": "google/gemma-4-12B-it",
+   "claim": "Thinking is enabled by <|think|> at the start of the system prompt and disabled by omitting it.",
+   "verdict": "confirmed",
+   "source": "HF README at 707f0a3b lines 376-382 read 2026-10-22.",
+   "correctValue": "Missed by the researcher: for the 12B, 26B-A4B and 31B, disabled thinking still emits an empty block '<|channel>thought\\n<channel|>' before the answer (README line 381). A grammar applied from the first token has to cope with that; Ollama's gemma4 renderer has an `emptyBlockOnNothink` option (model/renderers/gemma4.go lines 17, 142-143) but whether a raw-GGUF Modelfile enables it is unverified."
+  },
+  {
+   "model": "google/gemma-4-12B-it-qat-q4_0-gguf @29d09777",
+   "claim": "gemma-4-12b-it-qat-q4_0.gguf 6.98 GB sha256 93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b; official Google GGUF.",
+   "verdict": "confirmed",
+   "source": "HF tree API google/gemma-4-12B-it-qat-q4_0-gguf@29d097773436b69ff9feafd636ab4cf873786537 (size 6,975,879,296 B; oid matches; repo created 2026-06-05; its README lists GGUF (Q4_0) as 'ready-to-deploy'). Also contains mmproj-gemma-4-12b-it-qat-q4_0.gguf (175,115,616 B, not needed for text) read 2026-10-22."
+  },
+  {
+   "model": "unsloth/gemma-4-12b-it-GGUF @fc034cff",
+   "claim": "Q8_0 alternative: gemma-4-12b-it-Q8_0.gguf 12.67 GB sha256 f20e7ff1be28c283eeeb18fc895733791c56a5851d5cd3fe9691b7f7d12afa72.",
+   "verdict": "confirmed",
+   "source": "HF tree API unsloth/gemma-4-12b-it-GGUF@fc034cfff751157913579611efad8462ac1be606 (size 12,669,647,680 B; oid matches; third-party) read 2026-10-22."
+  },
+  {
+   "model": "mistralai/Ministral-3-14B-Instruct-2512",
+   "claim": "Commit 29439f81c2be264d8d393273f99e7db9c0961120, Apache-2.0; 40 layers, 8 KV heads, head_dim 128, max_position 262144; no reasoning in this Instruct variant; card asks for temperature below 0.1.",
+   "verdict": "confirmed",
+   "source": "HF revision metadata, config.json and README at 29439f81 (README line 62; a separate -Reasoning-2512 variant is listed at line 78) read 2026-10-22."
+  },
+  {
+   "model": "mistralai/Ministral-3-14B-Instruct-2512-GGUF @74fac473",
+   "claim": "Ministral-3-14B-Instruct-2512-Q4_K_M.gguf 8.24 GB sha256 824e0f3373e69b84f2cae46fdcb9bd1ebc6ab3bfc7acc125d818b7b8178cc613; Q8_0 14.36 GB.",
+   "verdict": "confirmed",
+   "source": "HF tree API mistralai/Ministral-3-14B-Instruct-2512-GGUF@74fac473c43357d7fb2671713608183cc72496d0 (Q4_K_M 8,239,593,024 B, oid matches; Q8_0 14,359,836,224 B) read 2026-10-22.",
+   "correctValue": "The researcher gave no hash for Q8_0; the LFS oid is 8122acc8df446039d41dd9650dabb024d3c6b8dae6eff336d28ac2bddd3bbc13 (not usable on this GPU, see the fit entry)."
+  },
+  {
+   "model": "mistralai/Ministral-3-8B-Instruct-2512",
+   "claim": "Commit 5b26027e7b19eeb4b7352e1fed3926375dd2cb4d, Apache-2.0; 34 layers, 8 KV heads, head_dim 128.",
+   "verdict": "confirmed",
+   "source": "HF revision metadata, config.json and README at 5b26027e read 2026-10-22."
+  },
+  {
+   "model": "mistralai/Ministral-3-8B-Instruct-2512-GGUF @0102285a",
+   "claim": "Q4_K_M 5.20 GB sha256 33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761; Q8_0 9.03 GB sha256 bd0ca58473b64618df4d08c1410cc25c910ca84e647833ebaf099e0fc0523b45.",
+   "verdict": "confirmed",
+   "source": "HF tree API mistralai/Ministral-3-8B-Instruct-2512-GGUF@0102285ad796bd99af90f58de616092e5630e970 (5,198,911,904 and 9,029,392,800 B; both oids match) read 2026-10-22."
+  },
+  {
+   "model": "google/gemma-4-26B-A4B-it",
+   "claim": "Commit 4d7ae4984b7db7de8f8457170b3f1a419ee76d52, Apache-2.0; 30 layers (25 sliding-1024 + 5 full), 128 experts.",
+   "verdict": "confirmed",
+   "source": "HF revision metadata and config.json at 4d7ae498 (also 2 global KV heads at 512 dims) read 2026-10-22."
+  },
+  {
+   "model": "google/gemma-4-26B-A4B-it-qat-q4_0-gguf @d1c082be",
+   "claim": "gemma-4-26B_q4_0-it.gguf 14.44 GB sha256 3eca3b8f6d7baf218a7dd6bba5fb59a56ee25fe2d567b6f5f589b4f697eca51d.",
+   "verdict": "confirmed",
+   "source": "HF tree API google/gemma-4-26B-A4B-it-qat-q4_0-gguf@d1c082be9cf3c8a514acf63b8761f4b41935842e (14,439,363,584 B; oid matches; repo created 2026-05-01) read 2026-10-22."
+  },
+  {
+   "model": "All GGUF repos",
+   "claim": "The cited commits are the repo heads; tree/main equals tree@commit.",
+   "verdict": "confirmed",
+   "source": "HF tree API for main and for each cited commit returned identical listings (same byte length) for all seven GGUF repos read 2026-10-22."
+  },
+  {
+   "model": "openai/gpt-oss-20b MXFP4",
+   "claim": "Weights 12.11 GB + about 0.40 GB f16 KV at 16k (12 full-attention layers) fits in 16 GiB (17.18 GB).",
+   "verdict": "confirmed",
+   "source": "Recomputed from config.json: 12 full layers x 2 (K,V) x 8 x 64 x 2 B x 16,384 = 402,653,184 B. Total with weights 11.65 GiB, leaving 4.35 GiB for compute buffers, the Windows desktop and the sliding-window cache. Arithmetic only; fit was not measured read 2026-10-22."
+  },
+  {
+   "model": "Qwen3.5-9B Q4_K_M / Q8_0",
+   "claim": "5.68 or 9.53 GB + about 0.54 GB f16 KV at 16k fits.",
+   "verdict": "confirmed",
+   "source": "8 full-attention layers x 2 x 4 x 256 x 2 B x 16,384 = 536,870,912 B; totals 5.79 GiB (Q4_K_M) and 9.37 GiB (Q8_0). The recurrent state of the 24 linear-attention layers is not included. Arithmetic only read 2026-10-22."
+  },
+  {
+   "model": "Gemma-4-12B QAT Q4_0 / unsloth Q8_0",
+   "claim": "6.98 or 12.67 GB + about 0.6 GB KV at 16k (sliding layers capped at 1,024 tokens) fits.",
+   "verdict": "confirmed",
+   "source": "Recomputed 604 MB: 40 sliding layers x 8,192 B/token x 1,024 + 8 global layers x 2,048 B/token x 16,384. Totals 7.06 GiB and 12.36 GiB. This holds only if the sliding-window cache stays window-sized: llama-server's --swa-full defaults to false (README line 55) and Ollama v0.40.7 never passes --swa-full (grep of llm/ and server/ finds nothing). If the full-size cache were used the KV would be 5.64 GB and the Q8_0 total 17.05 GiB, which would NOT fit. Arithmetic only read 2026-10-22."
+  },
+  {
+   "model": "Ministral-3-14B Q4_K_M and Q8_0",
+   "claim": "Q4_K_M 8.24 GB + 2.68 GB KV fits; Q8_0 14.36 GB + 2.68 GB does NOT fit at 16k with f16 KV.",
+   "verdict": "confirmed",
+   "source": "40 layers x 2 x 8 x 128 x 2 B = 163,840 B/token (160 KiB) x 16,384 = 2,684,354,560 B. Q4_K_M totals 10.17 GiB; Q8_0 totals 15.87 GiB, leaving 0.13 GiB for compute buffers and Windows, which is not enough in practice. Arithmetic only read 2026-10-22."
+  },
+  {
+   "model": "Ministral-3-8B Q4_K_M / Q8_0",
+   "claim": "5.20 or 9.03 GB + 2.28 GB f16 KV at 16k fits.",
+   "verdict": "confirmed",
+   "source": "34 layers x 4,096 B x 16,384 = 2,281,701,376 B; totals 6.97 GiB and 10.53 GiB. Arithmetic only read 2026-10-22."
+  },
+  {
+   "model": "Gemma-4-26B-A4B QAT Q4_0",
+   "claim": "BORDERLINE FIT: 14.44 GB + about 0.55 GB KV against 17.18 GB minus Windows.",
+   "verdict": "confirmed",
+   "source": "KV recomputed as 545 MB (25 sliding layers capped at 1,024 + 5 global layers with 2 KV heads at 512 dims). Total 13.96 GiB, leaving 2.04 GiB for compute buffers and Windows. With a full-size sliding cache it would be 16.89 GiB and would not fit. The researcher's 'borderline' is the right description; nothing was measured and no throughput data exists read 2026-10-22."
+  },
+  {
+   "model": "RTX 4070 Ti SUPER anchors",
+   "claim": "LocalScore: Llama-3.1-8B Q4_K_M prompt 3561 t/s, generation 53.9 t/s; Qwen2.5-14B Q4_K_M prompt 2147 t/s, generation 36.8 t/s.",
+   "verdict": "confirmed",
+   "source": "https://www.localscore.ai/model/1 (row 'NVIDIA GeForce RTX 4070 Ti SUPER GPU / 16GB PROMPT 3561 tokens/s GENERATION 53.9 tokens/s TTFT 364 ms') and https://www.localscore.ai/model/2 (2147 / 36.8 / TTFT 617 ms) read 2026-10-22."
+  },
+  {
+   "model": "RTX 4070 Ti SUPER anchors",
+   "claim": "llama.cpp discussions #15013 (4070 Ti SUPER vs 4080 SUPER: pp512 7612 vs 9439, tg128 132.9 vs 147.5) and #15396 (4080 SUPER gpt-oss-20b MXFP4: pp8192 7989, pp16384 7518, tg128 186.5).",
+   "verdict": "unverifiable",
+   "source": "github.com/ggml-org/llama.cpp/discussions/15013 and /15396 return 403 in this session. The researcher's scaling arithmetic is internally consistent: 7612/9439 = 0.806, 132.9/147.5 = 0.901, 7989 x 0.806 = 6,439 t/s, 186.5 x 0.901 = 168 t/s read 2026-10-22."
+  },
+  {
+   "model": "All local models",
+   "claim": "Per-model time estimates for a 9,000-token prefill plus 300 output tokens: gpt-oss 3-7 s, Ministral-3-8B 4.5-8 s, Qwen3.5-9B 5-9 s, Gemma-4-12B 6-10 s, Ministral-3-14B 7-12 s.",
+   "verdict": "unverifiable",
+   "source": "These are the researcher's own estimates scaled from the anchors; no measurement exists. The arithmetic matches the stated tokens-per-second ranges (for example 9000/2150 + 300/40 = 11.7 s for the 14B). Relevant to the repo: calls are capped at 12,000 ms, so the 14B's upper estimate sits at the cap, and any thinking tokens (Qwen3.5 and Gemma 4 under effort 'low') would add to it read 2026-10-22."
+  },
+  {
+   "model": "Excluded models",
+   "claim": "Qwen3.6 (Apr 2026) and Qwen3.8 (Aug 2026) were published only at 27B and up (27B, 35B-A3B, Flash-Next, 2.4T-A95B).",
+   "verdict": "confirmed",
+   "source": "https://huggingface.co/api/models?author=Qwen&search=Qwen3.8 / Qwen3.6 (createdAt 2026-08-05 to 2026-08-24 and 2026-04-15 to 2026-04-21); the 9B/4B/2B/0.8B are Qwen3.5 only read 2026-10-22."
+  },
+  {
+   "model": "Excluded models",
+   "claim": "Qwen3.8-27B: ggml-org Q4_K_M 18.97 GB, unsloth UD-Q4_K_M 16.46 GB, Q4_0 16.06 GB; Qwen3.6-35B-A3B UD-Q4_K_M 22.13 GB; Mistral-Small-3.2-24B Q4_K_M 14.33 GB.",
+   "verdict": "confirmed",
+   "source": "HF tree API: ggml-org/Qwen3.8-27B-GGUF (18,973,870,528 B), unsloth/Qwen3.8-27B-GGUF (16,464,440,224 and 16,056,478,688 B), unsloth/Qwen3.6-35B-A3B-GGUF (22,134,528,992 B), unsloth and bartowski Mistral-Small-3.2-24B-Instruct-2506-GGUF (14,333,922,848 / 14,333,915,264 B). The researcher cited no repos or commits for these; I located them by name read 2026-10-22.",
+   "correctValue": "Fit conclusion: Qwen3.8-27B Q4_0 (16.06 GB) + 1.07 GB KV = 17.13 GB against 17.18 GB leaves 0.05 GB, so it cannot run in practice; Mistral-Small-3.2-24B Q4_K_M 14.33 GB + 2.68 GB KV = 17.0 GB is the same. The exclusions stand."
+  },
+  {
+   "model": "Excluded models",
+   "claim": "Meta: nothing newer than Llama 4 (Apr 2025) in the HF org.",
+   "verdict": "confirmed",
+   "source": "https://huggingface.co/api/models?author=meta-llama&sort=createdAt (newest entries are 2025-04-28 Prompt-Guard-2 and 2025-04-23 Llama-Guard-4) read 2026-10-22."
+  },
+  {
+   "model": "Excluded models",
+   "claim": "Qwen3.8-Flash-Next BF16 GGUF shards total about 354 GB; Phi-4 numbers (Q4_0 8.38 GB + 3.36 GB KV, max_position 16384).",
+   "verdict": "unverifiable",
+   "source": "No repo or commit cited by the researcher and I did not search for them. Not decision-relevant: both are out on size or age. microsoft/Phi-4-reasoning-vision-15B (2026-01-23) appears in the HF org listing and was not assessed by the researcher read 2026-10-22."
+  },
+  {
+   "model": "Runtimes",
+   "claim": "Licences: llama.cpp MIT, Ollama MIT, vLLM Apache-2.0, LM Studio proprietary; model licences Apache-2.0 for all five families plus gpt-oss USAGE_POLICY.",
+   "verdict": "confirmed",
+   "source": "LICENSE files at Ollama v0.40.7 ('MIT License, Copyright (c) Ollama'), llama.cpp b11799 and vLLM v0.32.0 (Apache 2.0); HF licence tags 'license:apache-2.0' on all six base repos. LM Studio terms and the gpt-oss USAGE_POLICY text were not fetched read 2026-10-22."
+  }
+ ],
+ "schemaFit": [
+  {
+   "model": "openai/gpt-oss-20b via Ollama v0.40.7 /v1/responses",
+   "fits": "yes",
+   "detail": "Schema analysis is in the 'SCHEMA ANALYSIS' note: every construct is inside the llama.cpp converter subset except bakerPrice.price number min/max, which is silently unenforced and caught by validateDecision (protocol.ts:86-87). Path: text.format.schema -> ChatRequest.Format -> llama-server json_schema; the grammar starts after the Harmony final-channel header (harmony/harmonyparser.go 469-477). Needs temperature:0 in the body, since Ollama otherwise forces 1.0. reasoning.effort 'low' is a native gpt-oss level. Not tested live."
+  },
+  {
+   "model": "openai/gpt-oss-20b via llama-server b11799 /v1/chat/completions",
+   "fits": "unknown",
+   "detail": "The schema is inside the converter's subset, but whether llama-server applies the response_format grammar only after the analysis channel for gpt-oss was neither read nor tested. The transport also needs a new adapter (response_format:{type:'json_schema', json_schema:{name, strict, schema}}, max_tokens, reasoning_effort) pointed at a non-OpenAI address."
+  },
+  {
+   "model": "Any model via llama-server b11799 /v1/responses with the current body",
+   "fits": "no",
+   "detail": "text.format is silently ignored (server-chat.cpp never reads 'text'; server-common.cpp reads only response_format / json_schema / grammar). Output is unconstrained and no error is raised, so a run would look fine while enforcing nothing. Do not use this path unless a top-level response_format (inference, untested) is added."
+  },
+  {
+   "model": "Qwen/Qwen3.5-9B (Q4_K_M or Q8_0) via Ollama v0.40.7 /v1/responses",
+   "fits": "yes",
+   "detail": "Schema analysis is in the 'SCHEMA ANALYSIS' note: every construct is inside the llama.cpp converter subset except bakerPrice.price number min/max, which is silently unenforced and caught by validateDecision (protocol.ts:86-87). Condition: the fixed reasoning.effort 'low' makes Ollama enable thinking (ThinkingFromReasoningEffort -> true), so the grammar starts only after '</think>' and thinking tokens eat time and the 2,048-token output cap. Send reasoning.effort 'none' or think:false to switch it off; that is a body change. Not tested live."
+  },
+  {
+   "model": "google/gemma-4-12B-it (QAT Q4_0 or Q8_0) and google/gemma-4-26B-A4B-it",
+   "fits": "unknown",
+   "detail": "The schema is inside the subset, but two things are untested: a first-token grammar against Gemma 4's empty '<|channel>thought\\n<channel|>' block when thinking is off (model card README line 381), and whether the 12B 'gemma4_unified_text' architecture loads under Ollama v0.40.7 or llama-server b11799. With thinking on (effort 'low' under Ollama) the gemma4 parser's ThinkingClose '<channel|>' would apply, also untested. Treat as untried until a live request succeeds."
+  },
+  {
+   "model": "mistralai/Ministral-3-8B-Instruct-2512 and Ministral-3-14B-Instruct-2512 via Ollama v0.40.7 /v1/responses",
+   "fits": "yes",
+   "detail": "Schema analysis is in the 'SCHEMA ANALYSIS' note: every construct is inside the llama.cpp converter subset except bakerPrice.price number min/max, which is silently unenforced and caught by validateDecision (protocol.ts:86-87). The Instruct variants do not reason, so there is no thinking/grammar interplay; for a model without the thinking capability Ollama relaxes the fixed effort 'low' to nil. Needs temperature:0 (the card asks for below 0.1). The 14B's estimated 7-12 s sits at the repo's 12,000 ms cap."
+  },
+  {
+   "model": "LM Studio 0.4.26 /v1/responses",
+   "fits": "unknown",
+   "detail": "The docs do not mention text.format on the Responses page and document structured output only for chat completions; the bundled llama.cpp is b11337, older than the b11738 whose converter was read. Not assessed further."
+  },
+  {
+   "model": "vLLM 0.32.0 /v1/responses",
+   "fits": "unknown",
+   "detail": "text.format is honoured and the 'auto' backend falls back from xgrammar to guidance for unsupported features, so the schema should be accepted, but I did not check xgrammar's handling of number min/max or one-value enums, and vLLM has no native Windows build. Not a first-use option on this PC."
+  }
+ ],
+ "survivors": [
+  "openai/gpt-oss-20b: ggml-org/gpt-oss-20b-GGUF @15dcfc7e gpt-oss-20b-MXFP4.gguf (12.11 GB, sha256 27cd6c43...5901). Best fit on every verified point; speed unmeasured.",
+  "mistralai/Ministral-3-8B-Instruct-2512: Q4_K_M (5.20 GB) or Q8_0 (9.03 GB). No reasoning, so no thinking/grammar interplay.",
+  "Qwen/Qwen3.5-9B: unsloth Q4_K_M (5.68 GB) or Q8_0 (9.53 GB). Conditional: thinking must be switched off by a body change, because the fixed effort 'low' enables it under Ollama.",
+  "google/gemma-4-12B-it: official QAT Q4_0 (6.98 GB) or unsloth Q8_0 (12.67 GB). Conditional: architecture support and empty-thought-block plus grammar are untested.",
+  "mistralai/Ministral-3-14B-Instruct-2512: Q4_K_M only (8.24 GB). Conditional: estimated 7-12 s against a 12,000 ms code cap. The Q8_0 does NOT fit and is removed.",
+  "runtime: Ollama v0.40.7 /v1/responses (needs temperature:0 and, for Qwen/Gemma, a thinking-off field; silent middle-truncation unless OLLAMA_CONTEXT_LENGTH >= 16384; prompt caching cannot be disabled)",
+  "runtime: llama-server b11799 via /v1/chat/completions response_format (needs a new adapter; explicit error on context overflow; --no-cache-prompt available)"
+ ],
+ "notes": [
+  "SCHEMA ANALYSIS (common to every local model; checked against llama.cpp common/json-schema.cpp build_node and grammars/README.md lines 205-216, identical in b11738 and b11799). Supported and used by us: objects with additionalProperties:false and every property required (enforced); one-value typed enums {type:'string',enum:[x]} and {type:'number',enum:[3]} (the enum node is checked before type); 16-hex string enums (strings() is only built from non-empty lists, guarded in mockProvider.ts, so no 'enum must be a non-empty array' failure); anyOf [{type:'null'}, ...] with no sibling keys on any anyOf node (nullable() and referent return only {anyOf}); nested anyOf communication > proximityUtterance > referent and context (children are built recursively); a bare {type:'null'} property. Not used by us, so no exposure: type arrays, $ref, allOf, pattern, length bounds, const. The single weakened construct is bakerPrice.price {type:'number', minimum:0, maximum:2}: the documented subset enforces min/max only for integer, so the grammar allows any number silently; validateDecision rejects price outside [0,2] (src/agent/protocol.ts:86-87), so an out-of-range price becomes a failed decision, not an impossible one. The id enums change every call, so a new grammar is built per call; its cost was not measured.",
+  "EXCLUDED FROM SURVIVORS. Ministral-3-14B Q8_0: weights 14.36 GB + 2.68 GB KV = 15.87 GiB, no room for compute buffers or Windows (fit confirmed NOT possible). Gemma-4-26B-A4B QAT: 13.96 GiB before compute buffers and Windows, no throughput data, so neither the fit nor the 12,000 ms cap can be shown; not established, left out rather than refuted. LM Studio and vLLM: no verified path to text.format on a Responses body (LM Studio) or no native Windows (vLLM).",
+  "METHOD. Read 2026-10-22, about 02:00-02:50 UTC. No new research: I did not look for models, providers or runtimes beyond the researcher's list. I read the saved result field, then fetched each cited source directly: raw.githubusercontent.com and shallow git clones at the exact tags (Ollama v0.40.7 = 2cd63f7a, llama.cpp b11799 = 0756e83f, plus b11738 raw copies for diffing, vLLM v0.32.0 raw files), the Hugging Face API at the cited commits, localscore.ai, lmstudio.ai, ai.google.dev and PyPI. A few spot checks of the researcher's exclusion claims used HF listings. No paid model call was made. I used the add_repo tool for ollama/ollama and ggml-org/llama.cpp; it only confirmed anonymous git read access.",
+  "NOT READABLE IN THIS SESSION (403 'GitHub access to this repository is not enabled for this session'): GitHub release pages, the releases API and atom feed, and github.com/.../discussions. So these claims stay unverifiable: which Ollama release is flagged Latest or pre-release, Ollama's Windows asset list, and llama.cpp discussions #15013 and #15396. Release ASSET downloads on github.com/ggml-org/llama.cpp did answer (HEAD), so the llama-server Windows zips were checked.",
+  "BOTTOM LINE ON THE RESEARCH. Every hash, size, commit, config value, licence, release tag and source-file claim I could reach matched. Corrections: (1) Ollama v0.40.7 was not released on 18 Oct (tag commit is 2026-10-20) and a v0.40.8 final tag already exists; (2) the silent-truncation mechanism is context-shift middle-discard in llama_server.go, not chatPrompt; (3) 'the existing transport works with Ollama' is only true of the loopback fixture function, not the production path. Omissions with real consequences: Ollama /v1/responses forces temperature 1.0 and overrides the Modelfile, so repeatability needs temperature:0 in the body; our fixed reasoning.effort 'low' switches thinking ON for Qwen3.5 and Gemma 4 under Ollama; llama-server defaults to port 9931, temperature 0.80, and -c = the model's training context, so -c, --temp, -np, --alias and --port must all be passed; and the repo caps every call at 12,000 ms, not ~16 s.",
+  "INSTALL CHECKLIST, OLLAMA (pin v0.40.7, commit 2cd63f7a, bundles llama.cpp b11738). (a) Do not install 'latest'. (b) Set OLLAMA_CONTEXT_LENGTH=16384 (default is 4096 under 24 GiB; the body can be up to 32,768 bytes plus 2,048 output tokens) or `PARAMETER num_ctx 16384` in the Modelfile. (c) Overflow is silent: middle tokens are discarded keeping the first 4 and the tail; only the server log shows 'truncating input prompt'. Log usage.input_tokens_details.cached_tokens and the prompt token count and compare them to the expected size. (d) Prompt caching cannot be disabled (cache_prompt:true is hard-coded at llm/llama_server.go lines 1691 and 2299), so bitwise repeatability is not guaranteed. (e) Create the model from the pinned GGUF (`FROM ./file.gguf`) after checking sha256, and give it a name matching /^[A-Za-z0-9._:-]{1,128}$/. (f) Body changes needed for any repeatable or thinking-off run: temperature:0; for Qwen3.5/Gemma 4 reasoning.effort 'none' or think:false. (g) Fixed sampling that Ollama will not override: seed in the Modelfile. (h) The only existing transport that can reach 127.0.0.1:11434 is the loopback fixture.",
+  "INSTALL CHECKLIST, LLAMA-SERVER (b11799, commit 0756e83f). Assets: llama-b11799-bin-win-cuda-12.4-x64.zip (272 MB) or -cuda-13.4-x64.zip (160 MB) plus the matching cudart-llama-bin-win-cuda-<12.4|13.4>-x64.zip (391 MB / 424 MB). Verified flags (tools/server/README.md): -m, -c N (default 0 = model training context, always set it), -np 1, -ngl (auto/all/N), -fa [on|off|auto], --temp 0, --no-cache-prompt, --host (default 127.0.0.1), --port (default 9931), --alias (needed so the model id passes the regex), -rea off / --reasoning-budget 0 for thinking models, --reasoning-effort, -s/--seed, --context-shift (default disabled; leave it off so an oversize prompt errors instead of truncating). Use /v1/chat/completions with response_format {type:'json_schema', json_schema:{name, strict, schema}}; /v1/responses ignores text.format. -fit defaults to on; since -c is set explicitly it should not shrink it, but I did not verify that interaction.",
+  "SCHEMA, ALL LOCAL RUNTIMES. Every construct we use is inside the llama.cpp subset except the price bounds (number min/max is documented as unsupported and is silently ignored). Whatever the runtime, validate every output client-side; validateDecision already does for price. Nothing in the research or here shows a live request with this schema being accepted by a local runtime.",
+  "WHAT IS STILL UNMEASURED. Real throughput of any listed model on the RTX 4070 Ti SUPER (all timings are the researcher's estimates), real VRAM use including compute buffers and Windows, Ollama's handling of a raw-GGUF Modelfile for thinking models (parser/renderer/thinking metadata), grammar plus empty-thought-block behaviour for Gemma 4, the grammar-after-analysis behaviour of llama-server for gpt-oss, and whether Ollama v0.40.7 actually loads the Gemma 4 12B 'unified text' architecture. Run `llama-bench -m <file> -ngl 99 -fa 1 -p 9000 -n 300 -r 3` and then time real requests end to end, including grammar overhead, before committing to a model."
+ ]
+}
