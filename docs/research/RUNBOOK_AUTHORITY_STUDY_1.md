@@ -77,7 +77,8 @@ $carried = '<the closed 18 Oct allowance folder>'       # initial-test-budget-20
    ```
    `model` must read exactly `claude-haiku-5-5`. If it shows anything else, for example a dated id,
    **stop and tell Claude.** The runner stops at the first response whose model differs from the
-   manifest, and that stop cannot be settled.
+   manifest, and that stop cannot be settled. **Done 2026-10-22:** the owner's saved response reads
+   `claude-haiku-5-5`, `end_turn`.
 4. **Rate limits.** Open the Claude Console's Rate limits page, https://platform.claude.com/usage/limits.
    Note your tier and the input-tokens-per-minute (ITPM) limit for Claude Haiku 5.5. Each call is
    about 14,000 input tokens. At the default of one call per 4 s, the run uses about 210,000 ITPM.

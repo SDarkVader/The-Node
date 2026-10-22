@@ -79,9 +79,10 @@ never ran is reported as `local_worker_did_not_run`.) After installing it:
 - **Implied study-1 cost on Haiku 5.5:** about 630 × $0.0014 ≈ **$0.90** list, $1.80 booked at 2×.
   This uses one call's measured size and is not a forecast of output length. For comparison,
   gpt-5.4-nano at its 18 Oct size (about 12.9k in) comes to about $1.8 list.
-- **Not yet confirmed:** the response's `model` field. The study runner requires it to equal
-  `claude-haiku-5-5` exactly. The saved response answers this for free (runbook step 0.3); the
-  check now prints it as `sent.responseModel`.
+- **Response model, confirmed by the owner on 2026-10-22** from the saved response (runbook step
+  0.3): `id msg_011CgHYj9CZ73MHDVMVGusBZ`, `model claude-haiku-5-5`, `stop_reason end_turn`. That is
+  exactly the manifest's model, which the study runner requires. The check now also prints it as
+  `sent.responseModel`.
 
 ## Study-1 cost: gpt-5.4-nano vs Haiku 5.5 (2026-10-22, owner asked)
 

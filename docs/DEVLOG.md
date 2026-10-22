@@ -27,7 +27,7 @@
 > - No API call made from the cloud.
 >
 > **Open before the run:**
-> - The owner confirms, free, that the saved response names `claude-haiku-5-5` exactly. Any other value stops the run at the first call and cannot be settled.
+> - ~~The owner confirms, free, that the saved response names `claude-haiku-5-5` exactly.~~ **Confirmed the same evening:** the saved response (`msg_011CgHYj9CZ73MHDVMVGusBZ`) reads `model: claude-haiku-5-5`, `stop_reason: end_turn`. Any other value would have stopped the run at the first call, unsettleably.
 > - The owner reads their tier on the Rate limits page.
 > - Local open-model testing is deferred by the owner.
 
