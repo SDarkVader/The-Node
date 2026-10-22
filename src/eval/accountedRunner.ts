@@ -21,6 +21,9 @@
  *   still paid and becomes an unparseable proposal, never a substitute decision;
  * - the allowance stopping (cost, count, expiry, overrun) records `budget_stopped` and stops.
  * Paid responses from a tick that could not complete are kept in the call log, never applied.
+ * Reasoning evidence: every call record that holds a response states the reasoning configuration
+ * read back from the bytes sent and what the provider returned (`CallRecord.reasoning`), linked to
+ * the episode tape by `requestId`. It is evidence beside the decision, never an input to the game.
  *
  * Resume: episodes the caller has verified complete are skipped. An episode that was interrupted
  * is run again from genesis as a new attempt with its own ledger streams (`<episodeId>:a<n>`), so
@@ -30,8 +33,8 @@
  */
 import { sha256 } from '../agent/accountingStore.js';
 import { parseRecordedResponse, type RecordedResponse } from '../agent/recordedResponse.js';
-import { toAnthropicRequest } from '../agent/anthropicRequest.js';
-import { parseAnthropicResponse } from '../agent/anthropicResponse.js';
+import { toAnthropicRequest, ANTHROPIC_THINKING, ANTHROPIC_EFFORT } from '../agent/anthropicRequest.js';
+import { parseAnthropicResponse, type ReasoningEvidence, type ReasoningStatus } from '../agent/anthropicResponse.js';
 import type { EvaluationRequest } from './evaluationRequest.js';
 import { usageCost } from '../agent/accountingLedger.js';
 import type { ExperimentBudget } from '../agent/experimentBudget.js';
@@ -45,6 +48,8 @@ export interface StudyManifest {
   description: string;
   contract: { id: string; version: string; hash: string };
   model: string;
+  /** Required for a Claude model, and must be what the request builder sends; absent otherwise. */
+  reasoning?: { thinking: { type: string; display: string }; effort: string };
   deadlineMs: number;
   minIntervalMs: number;
   episodes: { episodeId: string; scenario: string; replicate: number }[];
@@ -54,6 +59,14 @@ export interface CallRecord {
   index: number; requestId: string; episodeId: string; actorId: string; tick: number; requestSha256: string;
   outcome: 'response_recorded' | 'transport_failed' | 'usage_unknown' | 'model_mismatch' | 'deadline_exceeded';
   receiptId?: string; model?: string; status?: string; actionable?: boolean; inputTokens?: number; outputTokens?: number;
+  reasoning?: CallReasoning;
+}
+/** `requested` is read from the dispatched bytes; `not_requested` means the request asked for none. */
+export interface CallReasoning {
+  requested: unknown;
+  status: ReasoningStatus | 'not_requested';
+  source: ReasoningEvidence['source'] | null;
+  summaries: string[]; signatureSha256: string[]; redactedBlocks: number;
 }
 export interface SendInput { requestId: string; body: string; sha256: string; episodeId: string; actorId: string; tick: number; index: number; provider: Provider }
 export type Sender = (input: SendInput, signal: AbortSignal) => Promise<Buffer>;
@@ -76,8 +89,15 @@ export function wireRequest(request: EvaluationRequest, model: string): { body: 
   }
   return { body: request.body, sha256: request.sha256, maxInputTokens: request.maxInputTokens, maxOutputTokens: request.maxOutputTokens };
 }
-const readReceipt = (model: string, bytes: Buffer, requestId: string): RecordedResponse =>
+const readReceipt = (model: string, bytes: Buffer, requestId: string): RecordedResponse & { reasoning?: ReasoningEvidence } =>
   providerFor(model) === 'anthropic' ? parseAnthropicResponse(bytes, requestId) : parseRecordedResponse(bytes, requestId);
+/** The reasoning settings in the bytes actually sent, and what came back. */
+function callReasoning(body: string, evidence: ReasoningEvidence | undefined): CallReasoning {
+  const b = JSON.parse(body) as { thinking?: unknown; output_config?: { effort?: unknown }; reasoning?: unknown };
+  const requested = 'thinking' in b ? { thinking: b.thinking, effort: b.output_config?.effort ?? null } : { reasoning: b.reasoning ?? null };
+  if (!evidence) return { requested, status: 'not_requested', source: null, summaries: [], signatureSha256: [], redactedBlocks: 0 };
+  return { requested, status: evidence.status, source: evidence.source, summaries: evidence.summaries, signatureSha256: evidence.signatureSha256, redactedBlocks: evidence.redactedBlocks };
+}
 /** Upper bound for an operator-chosen slower pacing (`options.minIntervalMs`). */
 export const MAX_MIN_INTERVAL_MS = 600_000;
 
@@ -90,6 +110,8 @@ export function validateManifest(m: StudyManifest): void {
     new Set(m.episodes.map((e) => e.episodeId)).size !== m.episodes.length || !m.episodes.every((e) => id(e.episodeId) && Number.isSafeInteger(e.replicate))) {
     throw Error('study_manifest_invalid');
   }
+  const reasoning = providerFor(m.model) === 'anthropic' ? JSON.stringify({ thinking: ANTHROPIC_THINKING, effort: ANTHROPIC_EFFORT }) : undefined;
+  if ((m.reasoning === undefined ? undefined : JSON.stringify(m.reasoning)) !== reasoning) throw Error('study_manifest_reasoning_mismatch');
   for (const e of m.episodes) multiScenarioById(e.scenario);
   const needed = m.episodes.length * C.controlledActors.length * C.design.ticks;
   if (m.allowance.maxRequests < needed) throw Error('allowance_smaller_than_manifest');
@@ -165,9 +187,10 @@ export async function runAccountedStudy(manifest: StudyManifest, budget: Experim
           model: recorded.receipt.model, inputTokens: u.inputTokens, outputTokens: u.outputTokens });
         const receipt = { receiptId: recorded.receipt.receiptId, model: recorded.receipt.model, status: recorded.receipt.status, actionable: recorded.actionable,
           inputTokens: u.inputTokens, outputTokens: u.outputTokens };
-        if (recorded.receipt.model !== manifest.model) { fail('model_mismatch', receipt); break; }
-        if (received - begun > manifest.deadlineMs) { fail('deadline_exceeded', receipt); break; }
-        sink.call({ ...base, outcome: 'response_recorded', ...receipt });
+        const reasoning = callReasoning(wire.body, recorded.reasoning);
+        if (recorded.receipt.model !== manifest.model) { fail('model_mismatch', { ...receipt, reasoning }); break; }
+        if (received - begun > manifest.deadlineMs) { fail('deadline_exceeded', { ...receipt, reasoning }); break; }
+        sink.call({ ...base, outcome: 'response_recorded', ...receipt, reasoning });
         // An unactionable response is paid for and recorded as unparseable, never replaced.
         outputs[p.actorId] = recorded.actionable ? JSON.stringify(recorded.decision) : '';
         receipts[p.actorId] = { requestId, ...receipt };
