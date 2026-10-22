@@ -166,8 +166,30 @@ describe('Haiku connection check (fake sender, no network)', () => {
     }, { sendOne: true });
     expect(calls.filter((c) => c.e === 'messages').map((c) => c.body)).toEqual([baker.request.body]);
     expect(report.sent).toMatchObject({ actorId: 'baker-0', httpStatus: 200, schemaAccepted: true, stopReason: 'end_turn', actionable: true,
-      validatorAccepts: true, withinStudyDeadline: true, caseMismatches: [] });
+      validatorAccepts: true, withinStudyDeadline: true, caseMismatches: [], ceilingBasis: 'request_bound',
+      maxInputTokens: baker.request.maxInputTokens, maxOutputTokens: 2048, maxUsd: 0.01 });
+    expect((report.sent as { ceilingUsd: number }).ceilingUsd).toBeCloseTo(0.0040778, 12);
     expect((report.sent as { costUsd: number }).costUsd).toBeCloseTo((7000 * HAIKU_5_5_PRICES.inputUsdPerM + 60 * HAIKU_5_5_PRICES.outputUsdPerM) / 1e6, 12);
+  });
+  it('refuses a cap that the schema-excluding count plus 25% would wrongly permit', async () => {
+    const endpoints: string[] = [];
+    const base = counts(10799); // The approved PC count excluded 3,291 billed input tokens.
+    const report = await runAnthropicConnectionCheck(async (endpoint, body, label) => {
+      endpoints.push(endpoint); return base(endpoint, body, label);
+    }, { sendOne: true, maxUsd: 0.0024 });
+    // The old estimate was $0.0023739, but measured input with full output costs $0.002433.
+    expect(endpoints).toEqual(Array(7).fill('count_tokens'));
+    expect(report.sent).toMatchObject({ refused: 'ceiling_above_max_usd', maxUsd: 0.0024 });
+  });
+  it('refuses an input count above the request bound instead of assuming the bound still holds', async () => {
+    const baker = connectionCheckRequests().find((r) => r.actorId === 'baker-0')!;
+    const endpoints: string[] = [];
+    const base = counts(baker.request.maxInputTokens + 1);
+    const report = await runAnthropicConnectionCheck(async (endpoint, body, label) => {
+      endpoints.push(endpoint); return base(endpoint, body, label);
+    }, { sendOne: true });
+    expect(endpoints).toEqual(Array(7).fill('count_tokens'));
+    expect(report.sent).toMatchObject({ refused: 'input_count_above_bound' });
   });
   it('refuses to send when the cost ceiling exceeds the cap, and records a 400 as a rejected schema with its message', async () => {
     const refused = await runAnthropicConnectionCheck(counts(7000), { sendOne: true, maxUsd: 0.0001 });

@@ -1,3 +1,10 @@
+> 2026-10-22 — Diagnostic cost ceiling fixed offline (source `acfff4e`).
+>
+> - The owner asked how to resolve the token cap and what it costs. The 2,048 output cap had ample room (315 used); the defect was the diagnostic count-plus-25% input estimate.
+> - The diagnostic now uses the study's existing full-request input bound, reports that basis and both token bounds, and refuses a free count above the bound before paid dispatch. Frozen Baker ceiling: USD 0.0040778 from 30,538 input + 2,048 output, below the unchanged USD 0.01 limit.
+> - Two fake-sender regressions failed with the old code and passed after correction. TypeScript, 45 targeted tests (including freeze and pricing) and a committed offline runtime build passed. No further paid call, request-pin/manifest/pricing change or accounting reset.
+> - At fixed observed input, 630 calls project to USD 0.986895 list / 1.97379 booked at observed output; USD 1.53279 list / 3.06558 booked if every call uses the full current output cap. These are projections, not a completed study. The original live evidence remains tied to runtime b1a1646; Study 1 stays paused.
+
 > 2026-10-22 — Owner-directed reasoning-enabled PC test (runtime `b1a1646`).
 >
 > - Seven free counts and exactly one paid Baker message, no retry. HTTP 200; exact model `claude-haiku-5-5`; schema accepted; `end_turn`; validator accepts a Baker price of 0.5 and no other action.

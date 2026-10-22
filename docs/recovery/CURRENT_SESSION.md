@@ -3,8 +3,10 @@
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "b1a16460b5b09feeb1a90891cf6593d20cbf0177",
+  "verifiedBaseCommit": "acfff4ea6e8b442fb215f899bdfc18f5c5df07b9",
   "completedWork": [
+    "2026-10-22 concurrent merge reconciled: PR 36 was merged into main at 413cefc with the preflight and original approved test records (head 8990c97). The later diagnostic correction acfff4e and cost documentation are now on the separate codex/diagnostic-cost-ceiling-2026-10-22 follow-up branch, merged with that reviewed main. Source, scripts, manifest, contract and dependency tree match the verified acfff4e runtime exactly. Earlier branch history is retained; no reset, force push or paid request.",
+    "2026-10-22 diagnostic ceiling corrected offline at acfff4e after the owner asked to resolve the token cap and explain costs. The output cap remains 2,048 (315 used by the real test); only the unsafe diagnostic count-plus-25% input estimate changed. It now uses the study request input bound (30,538 for the frozen Baker request) and full output cap, ceiling USD 0.0040778 under the unchanged USD 0.01 diagnostic limit. Reports expose ceiling basis, input/output bounds and maxUsd; a count above the request bound refuses before any paid dispatch. Two fake-sender tests failed against old code and passed after correction. TypeScript and 45 targeted tests (adapter, study freeze, pricing, accounted study) passed; a new runtime built offline at acfff4e. No paid repeat, protected broker/kernel/accounting change, price/cap/pin/manifest change or new allowance. Cost projections at fixed observed input: 630 calls at observed 315 output about USD 0.986895 list / 1.97379 booked; at full 2,048 output USD 1.53279 list / 3.06558 booked. A 4,096-output illustration is not enabled.",
     "2026-10-22 owner explicitly directed the paid test call. PC runtime b1a1646 sent seven free token counts (all HTTP 200) and exactly one paid Baker message, no retry: HTTP 200, schema accepted, response model claude-haiku-5-5, end_turn, completed/actionable, 5,493 ms, 14,090 input / 315 output tokens (272 reported thinking tokens), USD 0.0015665 at configured list rates, one 208-character provider summary returned and no redacted blocks. Output cap use 315/2,048 (15.38%). Decision: bakerPrice 0.5, other components null; validator accepts, no enum case mismatches. The saved request matches the committed freeze pin. No episode advanced, allowance prepared/reset or 72-hour window started; original October 18 journal hash unchanged. Raw reports, response, summaries and credential paths stay private. Found a diagnostic-only input-estimate limitation: counted input plus 25% gives 13,499 below billed 14,090; actual cost remains below estimated ceiling USD 0.0023739 and limit USD 0.01. The study uses a separate 30,538-token input ceiling for this request. No code, caps, rates or pins changed.",
     "2026-10-22 PC preflight after PR #35: fast-forwarded the clean local main checkout to b1a1646. npm ci completed; TypeScript passed; 105 Vitest files passed (1,315 tests passed, one intentionally skipped POSIX-shell fixture on Windows); all eight session-recovery tests passed; tracked recovery matched clean main. PowerShell 7.6.5 and the real worker preflight passed. Built an offline connection-check runtime from b1a1646. Confirmed the original 18 October journal hash matches the handover, validated only a scratch copy (2 requests, 11,418 micro-USD booked, 0 held, nano model, expiry 2026-10-19T13:21:24.584Z), deleted the copy, and re-hashed the unchanged original; no lock was created in the original folder. No provider endpoint was contacted and no allowance was created, extended or reset. The medium-effort reasoning check remains unmeasured; Study 1 remains paused.",
     "2026-10-22 (late night): owner: Codex on the PC can reach the 18 October folder, so a handover for Codex was written (docs/recovery/CODEX_HANDOVER_2026-10-22.md: never-rules, then tasks A verify, B confirm and inspect a copy of the 18 Oct allowance, C reasoning re-check (runbook step 0.5), D run when reactivated, E afterwards). The branch was merged to main by PR at the owner's request, with explicit direction for Codex in the PR body.",
@@ -48,6 +50,7 @@
     "2026-10-20 (eval branch): Inspect AI safety evaluation harness. src/eval/ (scenarios, episode runner over the unchanged participant pipeline, JSON-lines bridge) and evals/inspect_node/ (scripted policies via offline mockllm, solver refusing live models, 11 independent scorers keeping observed/inferred/not-scorable apart, NIST AI RMF classification, export, verify). See docs/EVAL_INFRASTRUCTURE.md."
   ],
   "testResults": [
+    "2026-10-22 at acfff4e: TypeScript and 45/45 tests across anthropicAdapter, eval.study1Freeze, modelPricing and eval.accountedStudy pass. Two new fake-sender tests first reproduced the old unwanted paid-dispatch path; both pass after the diagnostic-only change. The committed runtime builds offline. No paid provider request was made for this correction; the earlier full Windows suite remains source-anchored at b1a1646.",
     "2026-10-22 live PC connection check at b1a1646: seven free counts HTTP 200; one paid Haiku message HTTP 200, exact model echo, schema accepted, medium-effort adaptive summarized thinking returned, end_turn, 5.493 s within both 12 s check and 16 s runner deadlines, validator accepts. 315/2,048 output tokens, 272 thinking; cost USD 0.0015665. Original journal re-hash unchanged. Documentation JSON, link and whitespace checks were run; offline regression tests were not repeated after documentation-only changes.",
     "2026-10-22 Windows PC at b1a1646: locked npm install, TypeScript, 105/105 Vitest files (1,315 passed, one intentional POSIX-only skip), 8/8 native session-recovery checks, tracked recovery on clean main, real PowerShell 7 preflight (7.6.5), offline runtime build and copied-allowance validation all passed. The test runner rewrote snapshot line endings; its committed content hash was identical and no snapshot values changed. Python tests and hosted CI were not rerun for this preflight.",
     "2026-10-22 (late night, Linux) at 906ea9d: tsc clean; Vitest 1316/1316 (105 files); Python 29/29 (unittest); study-1 freeze 4/4 at the seventh pins.",
@@ -84,7 +87,6 @@
     "2026-10-20 eval harness at 3512ded: python -m inspect_node.verify ok (29 samples, two runs, 29/29 identical state hashes and event digests, 29/29 replay verified, 56/56 fixture agreement checks, every model mockllm); 13/13 Python unittest; 1179 Vitest, TypeScript, 7/7 session-recovery. Evidence: evals/evidence/scripted-fixtures-2026-10-20/. 80 native checks not run (private paths)."
   ],
   "unresolvedIssues": [
-    "Connection-check cost estimate: its free token count excludes schema and a 25% input margin underestimates observed input (13,499 estimated versus 14,090 billed in the 2026-10-22 repeat). Actual cost stayed below its estimated ceiling and USD 0.01 limit, but the estimate is not a strict upper bound. Fix the diagnostic heuristic before relying on a tighter cap. The study separately reserves a request-byte-derived bound (30,538 input tokens for the tested request); no accounting limit or source was changed.",
     "Medium-effort reasoning is now measured for one Baker fixture only (approved PC call at b1a1646: summary_returned, 315/2,048 output tokens, 272 thinking, 5.493 s, valid decision). The cap was not crowded, so it remains unchanged. Reasoning size, latency and decisions across other roles/ticks remain unmeasured; Study 1 stays paused pending owner reactivation.",
     "Study-path design choices (2026-10-21): RESOLVED by owner decisions - out-of-range addresses are now refused (v2, 'show who can hear'); study 1 stays 6 days and a separate 30-40 day study covers diary/recognition; Courier commissions and multi-member campaigns are deferred; repeat custom (+~14% mean Baker wealth) is accepted.",
     "Study 1 not yet run: postponed on 2026-10-21 until the owner reactivates it; it now runs on claude-haiku-5-5 (D11) on the owner's PC with the Anthropic credential file and the private allowance, and stays frozen until then. Model echo CONFIRMED by the owner on 2026-10-22 (saved response msg_011CgHYj9CZ73MHDVMVGusBZ: model claude-haiku-5-5, stop_reason end_turn; any other value would stop the run at the first call, unsettleably). Rate limits read by the owner on 2026-10-22: Claude Haiku 5.5 at 10,000 RPM / 10,000,000 ITPM / 2,000,000 OTPM (the documented Scale-tier figures), so the default 4 s pacing (~15 RPM, ~210k ITPM) needs no --min-interval-ms. Residual risk: Anthropic's unquantified acceleration limits; after a 429, settle and resume with --min-interval-ms 8000 (the 84 spare requests cover two re-run episodes).",
@@ -98,7 +100,7 @@
     "Cross-device GitHub clones cannot recover unpublished local changes, private experimental runtime state, credentials, or missing original accounting evidence."
   ],
   "nextSteps": [
-    "Handover tasks A-C are complete on the PC: the approved reasoning-enabled connection check passed at b1a1646. Review the recorded figures in HAIKU_CONNECTION_CHECK.md; do not automatically repeat the paid request. Task D remains paused until the owner explicitly reactivates Study 1 and authorizes preparing its allowance. The diagnostic input estimate limitation is recorded separately.",
+    "Handover tasks A-C are complete. The diagnostic input ceiling defect is fixed offline at acfff4e on the codex/diagnostic-cost-ceiling-2026-10-22 follow-up branch; no paid repeat is needed to verify this admission guard, and the output cap remains 2,048. Review/merge the follow-up task-branch changes through its PR; do not push directly to main. Task D remains paused until the owner explicitly reactivates Study 1 and authorizes its new allowance. A new offline runtime is prepared privately for any future owner-directed check.",
     "Keep the nine Claude Docs in step with the repo after each merge (links in completedWork); record discrepancies rather than rewriting either source.",
     "Pre-run checks are recorded: expected Haiku model echo, Scale-tier limits, PC offline verification, unchanged closed October 18 allowance and the single successful reasoning-enabled message. The credential path is confirmed privately. No new allowance or 72-hour window exists.",
     "Deferred by the owner: local open-model testing ('well do open model testing later') and D10 mixed per-actor sourcing/accounting (manifest per-actor model, per-model price profiles with local at zero, provider routing). For local: LOCAL_REQUIREMENTS.md 'Changes our code needs'. For the diary study: local vs claude-haiku-5-5.",
@@ -107,7 +109,7 @@
     "Owner: when reactivated, run study 1 on claude-haiku-5-5 per docs/research/RUNBOOK_AUTHORITY_STUDY_1.md (about $0.9 list, $1.8 booked, 45-55 min at 4 s pacing); share study1-analysis/results.json and summary.md."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/pr35-pc-preflight-2026-10-22"
+  "reviewBranch": "codex/diagnostic-cost-ceiling-2026-10-22"
 }
 NODE_SESSION_CHECKPOINT -->
 
@@ -123,8 +125,10 @@ individual dealings; study 1 rebased onto it, contract 1.1.0) at `f855241`, PR #
 schema, verified model options) at `b06548b`, PR #33 (Anthropic adapter and Haiku connection check) at
 `973ed24`, and PR #34 (study 1 on `claude-haiku-5-5`, owner decision D11, and the PowerShell 7
 preflight) at `8d3e39d`. PR #35 (Grifter role line, reasoning evidence and PC handover) merged
-at `b1a1646`. This checkpoint anchors at `b1a1646` and accepts `main` or the exact task
-branch `codex/pr35-pc-preflight-2026-10-22`.
+at `b1a1646`. PR #36 merged the PC preflight and approved connection-check record at `413cefc`.
+The later diagnostic correction `acfff4e` is on a separate follow-up review branch; main remains
+at its reviewed merge until that follow-up is integrated. This checkpoint anchors at `acfff4e`
+and accepts `codex/diagnostic-cost-ceiling-2026-10-22`, or `main` after integration.
 
 PR #26 worked through the owner's [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md):
 
@@ -167,7 +171,8 @@ tests, PowerShell 7.6.5 and offline runtime build were verified. Only a scratch 
 were confirmed. The original journal is unchanged and the copy is deleted. The subsequent owner-directed task C
 completed one paid message: USD 0.0015665, summary returned, no truncation and validator accepted.
 Its figures are in [the check guide](../research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md).
-No new allowance or Study 1 run occurred. The diagnostic input-margin limitation is recorded above.
+No new allowance or Study 1 run occurred. The diagnostic input-margin defect was then corrected
+offline at `acfff4e`; 45 targeted tests and TypeScript passed, with the output cap and pins unchanged.
 
 ## Cross-device continuation
 
