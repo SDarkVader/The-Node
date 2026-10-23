@@ -1,6 +1,6 @@
 # Current development and experiment checkpoint
 
-Updated 2026-10-23. The live reasoning-continuation pilot is stopped at tick 18 after 36 decisions.
+Updated 2026-10-23. The live reasoning-continuation pilot is stopped at tick 28 after 56 decisions.
 Start with [CURRENT_EXPERIMENT](../research/CURRENT_EXPERIMENT.md), [documentation index](../README.md)
 and [sanitized results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
 
@@ -17,8 +17,9 @@ conditions and a reason. [Earlier session records](SESSION_HISTORY_2026-10-23.md
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "49a496b25455be1c980d0661410fe008f09b7ede",
+  "verifiedBaseCommit": "f946c725ac2ddd078f3b7f707314711085eb0fa4",
   "completedWork": [
+    "2026-10-23 owner-authorized additional 20 live Haiku 5.5 calls completed with unchanged runtime d237eff and existing USD 1 grant. Same identities/world/exact histories advanced from tick 18 to tick 28, now 56 total decisions. All 20 HTTP 200/end_turn, admitted and executed, no retries. Fresh replay, exact advanced-journal binding, Inspect import of 20 records and observatory acceptance (five segments/29 frames) passed. Additional estimated list USD 0.0558532 / booked USD 0.111716; zero held. Prior journal events preserved and 197 other original private files unchanged. Results docs/research/CONTINUATION_TICK28_RESULTS_2026-10-23.md; comments explicitly unverified, no behavioural evaluation.",
     "Integration verified 2026-10-23: PR 38 merged into main at afbdec7ec2e5278dc2d813433139d9f763bc249f. Claude branch ccr-8d64b59c-a4puhv at 0d70803 remains separate; the current Windows acceptance branch extends it without merging or changing main.",
     "2026-10-23 Windows acceptance, source 49a496b, in a separate PC checkout on codex/observatory-windows-2026-10-23 extending Claude source 0d70803: real private tick-18 archive verified as four segments, 36 decisions and 19 frames; final journal checksum/grant/canonical-history binding and recorded grant totals matched. Added repeatable observatory:acceptance with HTTP scopes, Godot protocol frame synchronization, renderer-input discard, SSE/cursor resumption and before/after source fingerprints. No model calls or behaviour evaluation. Original checkout, private evidence and accounting preserved. Runbook docs/observatory/WINDOWS_ACCEPTANCE_2026-10-23.md.",
     "2026-10-23 agent-specific perception (owner request), branch ccr-8d64b59c-a4puhv, source c611e10: the Node builds a per-agent, per-tick perception request from committed state, and a headless Godot worker (client/scenes/PerceptionWorker.tscn) derives first-person (camera frustums, raycasts against the client's own buildings and Wall, declared fog visibility) or isometric (district bands, locations, counts, no references) observations. The Node validates every item against its request before delivery; records bind agent, tick, request and world hash. The perception episode reuses ContinuationHost unchanged with a hash-checked mirror; policies receive only their own perception, position, role and legal moves. Runbook docs/observatory/README.md.",
@@ -32,6 +33,7 @@ conditions and a reason. [Earlier session records](SESSION_HISTORY_2026-10-23.md
     "Repository access: docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md and evidence JSON are confirmed readable through GitHub. Root README and PR 38 link them; CURRENT_EXPERIMENT.md and docs/README.md provide current orientation."
   ],
   "testResults": [
+    "Tick-28 live batch at runtime d237eff: 20/20 returned, validated and executed; fresh-process parent/world/history replay, journal binding, Inspect 0.3.282 import and the existing observatory acceptance CLI passed. No code/test implementation changed and the historical unit suite was not rerun for this live batch.",
     "At 49a496b on Windows: 66 Vitest tests across five files passed (observatory, nine new archive acceptance cases, perception, frozen Study 1 and pricing), including all four real-Godot tests using Godot 4.7.2-stable; TypeScript and all eight native session-recovery tests passed. Existing private tick-18 archive passed the new acceptance CLI. No full historical-suite rerun, paid request or reasoning-quality score.",
     "At c611e108afd8014997760352eb4d46200e12ef28 (Linux, cloud): TypeScript passed; 1,397 Vitest across 109 files with NODE_GODOT_BIN set to Godot 4.3-stable headless (the 4 real-Godot perception tests skip without it); 8 session-recovery tests; 29 Python Inspect tests. Perception mutation checks (no occlusion, empty frustum, fog ignored, Wall removed) each failed the suite and were reverted. Study 1 freeze test passed; protected core files unchanged. No provider call.",
     "Live runtime/source d237effcc129c7757e382a3af8ecc0e95307ebc4: 32/32 extension calls HTTP 200/end_turn, validated and executed, three fresh-process parent/world/history replay checks, explicit live diary-expiry/history assertion, three Inspect 0.3.282 imports totaling 32 samples with zero further calls. No retry, forced event, repair or history reset.",
@@ -48,12 +50,12 @@ conditions and a reason. [Earlier session records](SESSION_HISTORY_2026-10-23.md
     "Complete restricted trespass and individual abode transactions remain development work. Automatic event-only marking was an earlier design superseded by authored A01 entries; it must not be presented as the current implemented contract or a missing mandatory pilot feature.",
     "Additional framework packages, model-based monitors and metrics are work to select and verify. Existing adapted patterns and deterministic scorers do not certify general safety or establish intent.",
     "Billing reconciliation remains further evidence work. Original unknown historical liabilities are retained; zero holds in the extension grant do not erase them or prove invoice reconciliation.",
-    "The pilot is stopped at tick 18 with 32 extension calls consumed and zero held. Any later authorized continuation needs the actual latest private parent and matching current journal. Git does not contain unpublished private data because those bytes were never committed; do not invent them, repeat calls or reset balances.",
+    "The pilot is now stopped at tick 28 with 56 total decisions, 52 consumed extension-grant requests and zero held. Any later authorized continuation requires the actual latest private tick-28 ledger and matching advanced journal. The older tick-18 parent is stale against this journal. Do not invent missing data, repeat paid calls or reset balances.",
     "The separate authority-attribution Study 1 is paused with its frozen recognition-v2 manifest, contract 1.1.0 and current-view memory condition. Its reactivation is not implied by a docs edit or by the completed continuation pilot."
   ],
   "nextSteps": [
     "Review codex/observatory-windows-2026-10-23 for integration with main; it extends the existing Claude observatory/perception work. No PR is opened unless requested. PR 38 is already merged.",
-    "For interactive review on the owner PC, use the existing private registration with observatory serve; preserve local tokens and raw data outside Git. Repeat observatory:acceptance with the actual latest journal before any future archive continuation. Windows acceptance instructions are in docs/observatory/WINDOWS_ACCEPTANCE_2026-10-23.md.",
+    "The PC observatory now shows the tick-28 archive using the new private registration. Repeat observatory:acceptance against that registration and the actual latest journal before a later authorized continuation. Raw data and tokens stay private; the old tick-18 journal binding has advanced.",
     "Select the next perception, memory or evaluation development task with its rules, contract and acceptance evidence. Independent visibility re-derivation and declared scorer/import contracts are further work. No paid model call is authorized by the acceptance setup.",
     "Preserve main, the original checkout, all private parent segments and journals, and unrelated Git history. Any later authorized continuation must verify the exact latest private parent and journal first; never reset balances or replay paid calls as setup."
   ],

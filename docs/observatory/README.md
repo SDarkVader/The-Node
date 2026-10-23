@@ -1,4 +1,9 @@
-# Observatory and agent perception
+#Latest archive: the [subsequent 20-call batch](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) reached tick 28 and
+passed observatory acceptance over five segments and 29 frames. Use its new private registration
+and matching advanced journal for current acceptance. The tick-18 measurements below describe
+the earlier checkpoint; its old parent no longer matches the advanced journal for dispatch.
+
+ Observatory and agent perception
 
 Updated 2026-10-23. Code: [`src/observatory`](../../src/observatory), Godot scripts in
 [`client/scripts`](../../client/scripts). This page is the runbook for both parts:

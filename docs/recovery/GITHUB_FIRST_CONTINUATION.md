@@ -13,13 +13,13 @@ the shared integration line `main` at `afbdec7`. The observatory review branch r
 do not silently switch, reset, merge or discard work. See the
 [Windows acceptance record](../observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
 
-The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
+The live continuation pilot is stopped at tick 28 after 56 paid decisions, including 52 extension
 calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
-passed. Estimated extension list cost USD 0.0613495 / conservative booking USD 0.122711, zero holds.
-No background run is active. The separate authority-attribution Study 1 is still paused and frozen.
+passed. Latest 20-call estimated list cost USD 0.0558532 / conservative booking USD 0.111716, zero holds.
+No inference run is active; the PC observatory serves a read-only archive view. The separate authority-attribution Study 1 is still paused and frozen.
 
-[Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and
-[sanitized evidence](../research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
+[Results](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) and
+[sanitized evidence](../research/evidence/reasoning-continuation-tick28-2026-10-23.json)
 record runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and the original world revision.
 Current documentation describes the programme, the evidence so far and further work separately.
 An unimplemented task is not a limitation of the experiment's future.
@@ -48,7 +48,7 @@ responses, signatures, world observations, runtime state, credentials or allowan
 Those bytes cannot be reconstructed from a clone that never contained them. Secure transfer and
 recovery mechanisms can be developed; do not confuse missing data with a ceiling on future work.
 
-A later authorized live continuation requires the actual latest private tick-18 parent, its
+A later authorized live continuation requires the actual latest private tick-28 parent, its
 matching current journal, and independent verification before dispatch. The runner reconstructs
 the world through original replay and preserves exact signed own histories. Reusing an older
 checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to

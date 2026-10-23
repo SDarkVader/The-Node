@@ -8,15 +8,20 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current experiment — 2026-10-23
 
+**Latest checkpoint: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
+replay, journal binding, Inspect import and observatory acceptance. New estimated list cost
+USD 0.0558532 / booked USD 0.111716, zero held. [Current results and unverified comments](docs/research/CONTINUATION_TICK28_RESULTS_2026-10-23.md).
+Earlier tick-18 evidence remains linked from that report. Inference is stopped.
+
 Start with [the current experiment](docs/research/CURRENT_EXPERIMENT.md) and
 [read the sanitized results](docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
 They were merged into `main` through
 [PR #38](https://github.com/SDarkVader/The-Node/pull/38) at `afbdec7`.
 
-The live pilot completed **36 paid decisions across 18 real world ticks**, using two Bakers
-and Haiku 5.5. An initial four-call pilot was extended by 32 decisions over 16 ticks, continuing
-the same world and exact signed own histories. It stopped at the recorded exploratory tick-18
-checkpoint; nothing is running in the background.
+The live pilot has completed **56 paid decisions across 28 real world ticks**. The original
+two Baker identities and world continued through another 20 calls; game mechanics changed both
+actors into Investigators. Exact own histories persisted. Inference is stopped at tick 28; the
+read-only PC observatory is open against that archive.
 
 Agents received their own authorized observations, the rules and available action schema.
 Their exact previous messages and returned assistant blocks persisted, including thinking
@@ -24,17 +29,18 @@ summaries and opaque signatures. Current recognition, hearing, roles and legal a
 governed decisions. The diary aged through the real game mechanics.
 
 Diary behaviour changed after recognition developed through repeated dealings. An actual diary
-entry expired while earlier exposure remained in the conversation. Price policy stayed stable.
+entry expired while earlier exposure remained in the conversation. Baker pricing stayed stable before the recorded role changes.
 These are recorded outcomes, not grades of the agents. Whether memory improves decisions,
 and how agents use earlier thinking when it becomes stale, are questions for further work.
 
-Extension cost was **USD 0.0613495 estimated list / USD 0.122711 conservatively booked**,
-with zero holds, within its USD 1 allowance. Including the initial pilot: USD 0.0665121 estimated
-list / USD 0.133038 booked. These are receipt-based estimates, not reconciled invoices.
-See [sanitized evidence](docs/research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
+The latest 20 calls cost **USD 0.0558532 estimated list / USD 0.111716 booked**.
+The full extension grant has booked USD 0.234427, zero held, within its USD 1 cap.
+Including the initial pilot: USD 0.1223653 estimated list / USD 0.244754 booked.
+These are receipt-based estimates, not reconciled invoices.
+See [sanitized evidence](docs/research/evidence/reasoning-continuation-tick28-2026-10-23.json)
 for counts and hash anchors. Raw experimental data, signatures, credentials and journals remain private.
 
-At runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4`, TypeScript, **1,346 Vitest tests**
+Earlier verification at runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4`, TypeScript, **1,346 Vitest tests**
 with one existing Windows skip, eight recovery checks and hosted Windows/Linux CI passed.
 All three live checkpoint segments replayed independently; Inspect 0.3.282 imported the 32 new
 samples without extra calls. These are recorded results, not new runs implied by a docs update.

@@ -1,4 +1,8 @@
-# Live continuation pilot results — 2026-10-23
+#Latest owner-authorized continuation: **56 total decisions through tick 28**. The additional
+20 calls, costs, verification and explicitly unverified operator comments are recorded in
+[the tick-28 report](CONTINUATION_TICK28_RESULTS_2026-10-23.md). No inference run remains active.
+
+ Live continuation pilot results — 2026-10-23
 
 This sanitized report is stored in `SDarkVader/The-Node`, on branch
 `codex/stateful-continuation-2026-10-23`, alongside the implementation in

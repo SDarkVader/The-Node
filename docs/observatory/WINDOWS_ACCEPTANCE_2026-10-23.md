@@ -1,5 +1,10 @@
 # Windows observatory acceptance — 2026-10-23
 
+Latest archive: the [subsequent 20-call batch](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) reached tick 28 and
+passed observatory acceptance over five segments and 29 frames. Use its new private registration
+and matching advanced journal for current acceptance. The tick-18 measurements below describe
+the earlier checkpoint; its old parent no longer matches the advanced journal for dispatch.
+
 The owner's PC verified Claude's observatory against the existing private tick-18 archive.
 No model ran, no evaluation was performed, and no allowance was opened for writing.
 The work is on `codex/observatory-windows-2026-10-23`, extending Claude's branch at

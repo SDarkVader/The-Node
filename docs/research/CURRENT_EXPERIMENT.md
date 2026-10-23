@@ -1,4 +1,8 @@
-# Current experiment — reasoning continuity in The Node
+#Latest owner-authorized continuation: **56 total decisions through tick 28**. The additional
+20 calls, costs, verification and explicitly unverified operator comments are recorded in
+[the tick-28 report](CONTINUATION_TICK28_RESULTS_2026-10-23.md). No inference run remains active.
+
+ Current experiment — reasoning continuity in The Node
 
 Updated 2026-10-23. This page describes the current experiment and its further work.
 The programme can develop beyond the configuration and evidence recorded here.
@@ -14,7 +18,7 @@ The owner intends to add memory bounds and degradation and study how previous th
 future decisions. These are development and research tasks, not limitations on what the experiment
 may become. The programme is exploratory; this documentation imposes no directional hypothesis.
 
-## Current state and evidence
+## Earlier checkpoint evidence through tick 18
 
 The live pilot is stopped at a verified checkpoint after 18 real ticks and 36 paid decisions:
 an initial four-call pilot plus 32 additional decisions over 16 ticks. The extension stopped
@@ -54,14 +58,14 @@ The world retains genesis source `cf9947630d4164950b93d03b0b6b6b8c8dc99881`.
 
 | Path | Current role |
 | --- | --- |
-| Live continuation | Current exploratory experiment; own transcript plus evolving authorized observations; stopped at tick 18 |
+| Live continuation | Current exploratory experiment; own transcript plus evolving authorized observations; stopped at tick 28; see latest report |
 | Authority-attribution Study 1 | Separate seven-actor study; frozen contract 1.1.0 and manifest; paused pending owner reactivation; current-view memory condition unchanged |
 | Original Inspect fixtures | Offline `mockllm` infrastructure and scoring checks; historical fixture counts are not live-model observations |
 | Protected production broker | Original live-admission gate remains closed; accounted experiment runners are separate |
 
 The live runner controls the shared-world actors and exports evidence to Inspect. The original
 Inspect solver does not dispatch the continuation calls. The current review branch is
-`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
+`codex/observatory-windows-2026-10-23`; PR #38 is already merged into main.
 Verify actual Git refs before continuing.
 
 ## Evaluation ownership and separation
@@ -119,5 +123,5 @@ a causal memory effect; running an appropriate comparison remains possible work.
 - [Current recovery checkpoint](../recovery/CURRENT_SESSION.md)
 
 Read the checkpoint and verify actual Git state first. A later live continuation also requires
-the exact latest private tick-18 parent and matching allowance journal. Never repeat consumed
+the exact latest private tick-28 parent and matching allowance journal. Never repeat consumed
 calls, reset records or infer private runtime state from sanitized documentation.
