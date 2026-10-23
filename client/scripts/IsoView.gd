@@ -153,11 +153,11 @@ func _ready() -> void:
 	_shot_path = OS.get_environment("NODE_SHOT")
 	_build_environment()
 	_build_vignette()
-	var err := socket.connect_to_url("%s/" % SERVER_HOST)
+	var err := socket.connect_to_url(_world_url())
 	if err != OK:
 		hud.text = "Failed to start connection (error %d)" % err
 		return
-	hud.text = "Connecting to %s..." % SERVER_HOST
+	hud.text = "Connecting to %s..." % _world_url().split("?")[0]
 
 
 ## Ambient light, sun, and the glow that makes emissive surfaces read as light sources rather
@@ -311,7 +311,7 @@ func _handle_tick(msg: Dictionary) -> void:
 	_update_dynamic()
 	hud.text = "Day %d    health %.3f    tension %.3f    %d people" % [
 		day, economic_health, mean_tension, people.size()
-	]
+	] + _observatory_hud(msg)
 	if not logged:
 		logged = true
 		print("[NODE] first tick: day %d, %d people, %d stations, health %.3f" % [
@@ -1018,3 +1018,27 @@ func _place_icon(index: int, ground: Vector3, role, tint: Color) -> void:
 func _hide_icons_from(n: int) -> void:
 	for i in range(n, _icon_pool.size()):
 		_icon_pool[i].visible = false
+
+
+## Configurable endpoint (2026-10-23). The observatory bridge serves a recorded experiment on its
+## own port and path: `godot --path client -- --world-url=ws://127.0.0.1:8090/observatory/v1/godot?run=<id>&token=<renderer token>`,
+## or NODE_WORLD_URL. Without either, the standalone world server at SERVER_HOST, as before.
+func _world_url() -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--world-url="):
+			return arg.substr("--world-url=".length())
+	var env := OS.get_environment("NODE_WORLD_URL")
+	if env != "":
+		return env
+	return "%s/" % SERVER_HOST
+
+
+## Observatory frames carry ignored-by-default metadata. Shown, never acted on; the token in the
+## URL is never printed.
+func _observatory_hud(msg: Dictionary) -> String:
+	if not msg.has("sourceTick"):
+		return ""
+	var tag := "  SYNTHETIC" if msg.get("synthetic", false) else ""
+	return "    observatory %s  tick %d  world %s%s" % [
+		str(msg.get("mode", "")), int(msg.get("sourceTick", 0)), str(msg.get("worldHash", "")).substr(0, 12), tag
+	]

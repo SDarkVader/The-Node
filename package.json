@@ -47,7 +47,9 @@
     "population-capacity-sweep": "tsx src/sim/populationCapacitySweep.ts",
     "driver-heterogeneity-sweep": "tsx src/sim/driverHeterogeneitySweep.ts",
     "mvp": "tsx src/mvp/run.ts",
-    "server": "tsx src/server/ws.ts"
+    "server": "tsx src/server/ws.ts",
+    "observatory": "tsx src/observatory/cli.ts",
+    "observatory:demo": "tsx scripts/observatory-demo.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

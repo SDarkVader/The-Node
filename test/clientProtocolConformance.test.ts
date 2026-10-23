@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createWorld, stepWorld } from '../src/world/world.js';
 import { helloMessage, tickMessage } from '../src/server/worldProtocol.js';
+import { METADATA_KEYS } from '../src/observatory/worldProjection.js';
 
 const GD_PATH = new URL('../client/scripts/WorldView.gd', import.meta.url);
 
@@ -52,7 +53,8 @@ describe('Godot client / wire protocol conformance', () => {
   it('every key the client reads is a key the protocol actually sends', () => {
     const source = readFileSync(GD_PATH, 'utf8');
     const { hello, tick } = realMessages();
-    const emitted = new Set([...keysOf(hello), ...keysOf(tick)]);
+    // Observatory frames are the same messages plus metadata keys (src/observatory, 2026-10-23).
+    const emitted = new Set([...keysOf(hello), ...keysOf(tick), ...METADATA_KEYS]);
 
     // Literals that are VALUES rather than keys — the client compares against these, it does
     // not index with them. Listed explicitly so a genuine typo cannot hide among them.
