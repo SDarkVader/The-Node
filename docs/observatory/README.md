@@ -14,8 +14,10 @@ and the owner's perception request of the same day.
 **Verification so far:**
 
 - Offline TEST-ONLY staged runs and the real Godot 4.3 headless binary on Linux.
-- No run against the private tick-18 archive has been made from the cloud, because that archive
-  is private and lives on the owner's PC. The commands for doing so are below.
+- Windows acceptance at `49a496b`: the owner's private tick-18 archive passed replay, journal
+  binding, telemetry, HTTP scopes and web/Godot protocol synchronization. All 66 selected Vitest
+  tests passed, including the four real-Godot tests on Godot 4.7.2-stable, plus TypeScript.
+  [Results and repeatable acceptance command](WINDOWS_ACCEPTANCE_2026-10-23.md).
 
 ## Observatory
 
@@ -64,6 +66,7 @@ npm run observatory -- verify        <registration.json>
 npm run observatory -- serve         <registration.json>... [--host 127.0.0.1] [--port 8090]
 npm run observatory -- evaluate      <registration.json> --out <NEW evaluations.jsonl>
 npm run observatory -- export-frames <registration.json> --out <NEW frames.json>
+npm run observatory:acceptance -- <registration.json> <latest journal> <expectations.json> [<NEW private result>]
 npm run observatory:demo -- <NEW empty directory>      # SYNTHETIC, offline simulated provider
 ```
 
@@ -251,8 +254,9 @@ The CI image has no Godot, so CI runs the unit layer only.
 
 ### Further work
 
-- **Portability.** Verified with Godot 4.3 headless on Linux. The launcher passes the Windows
-  system variables sockets need but has not been run on Windows.
+- **Portability evidence.** Verified with Godot 4.3 headless on Linux and Godot 4.7.2-stable on
+  Windows. All four real-Godot tests passed on the owner's PC; no launcher change was needed.
+  Other engine/platform combinations remain further verification work.
 - **Live use.** No live model has been given perception. Policies in the tests are scripted.
   Wiring perception into a provider request is a separate experiment design, with its own
   rules text and tests.

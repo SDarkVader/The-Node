@@ -10,8 +10,8 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 Start with [the current experiment](docs/research/CURRENT_EXPERIMENT.md) and
 [read the sanitized results](docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
-They are on development branch `codex/stateful-continuation-2026-10-23` in
-[PR #38](https://github.com/SDarkVader/The-Node/pull/38), which is open.
+They were merged into `main` through
+[PR #38](https://github.com/SDarkVader/The-Node/pull/38) at `afbdec7`.
 
 The live pilot completed **36 paid decisions across 18 real world ticks**, using two Bakers
 and Haiku 5.5. An initial four-call pilot was extended by 32 decisions over 16 ticks, continuing
@@ -39,8 +39,9 @@ with one existing Windows skip, eight recovery checks and hosted Windows/Linux C
 All three live checkpoint segments replayed independently; Inspect 0.3.282 imported the 32 new
 samples without extra calls. These are recorded results, not new runs implied by a docs update.
 
-**Observatory and agent perception (2026-10-23)** are on branch `ccr-8d64b59c-a4puhv`, built on
-PR #38's branch. [Runbook](docs/observatory/README.md).
+**Observatory and agent perception (2026-10-23)** were built on `ccr-8d64b59c-a4puhv`.
+Current review branch `codex/observatory-windows-2026-10-23` extends that work with repeatable
+archive acceptance. [Runbook](docs/observatory/README.md).
 
 - **Observatory**: a read-only web view and Godot stream over the continuation ledgers. It shows
   the exact provider summaries, decisions, validation, committed world frames, telemetry,
@@ -50,9 +51,11 @@ PR #38's branch. [Runbook](docs/observatory/README.md).
   a first-person or isometric perspective, and the Node validates it before the agent receives
   it. First person: camera frustums, raycasts against the client's own buildings and Wall, fog.
   Isometric: broad district conditions, no person references.
-- **Verification**: offline with synthetic runs, and against real Godot 4.3 headless on Linux,
-  including a body disclosed only after the agent's own kernel-applied move made it observable.
-  Not yet run against the private tick-18 archive or a live model.
+- **Verification**: the private tick-18 archive passed replay, latest-journal binding, HTTP
+  scopes, cursor resumption and web/Godot frame synchronization on Windows. At `49a496b`,
+  66 selected Vitest tests and TypeScript passed, including all four real-Godot tests using
+  Godot 4.7.2-stable. Earlier Godot 4.3 Linux results remain recorded separately. No live model
+  has received perception. [Acceptance results](docs/observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
 
 ## How the environment and evaluation work
 

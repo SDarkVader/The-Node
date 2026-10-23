@@ -7,8 +7,11 @@ Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 ## Active branch and current experiment
 
 Repository: `SDarkVader/The-Node`. Current review branch:
-`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
-The shared integration line remains `main`; do not silently switch, reset, merge or discard work.
+`codex/observatory-windows-2026-10-23`, extending Claude's `ccr-8d64b59c-a4puhv` observatory
+and perception work. [PR #38](https://github.com/SDarkVader/The-Node/pull/38) has merged into
+the shared integration line `main` at `afbdec7`. The observatory review branch remains separate;
+do not silently switch, reset, merge or discard work. See the
+[Windows acceptance record](../observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
 
 The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
 calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
