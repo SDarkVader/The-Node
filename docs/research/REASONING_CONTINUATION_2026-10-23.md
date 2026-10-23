@@ -121,12 +121,12 @@ deference by joining own observations, signed evidence, actions and subsequent c
 Metrics and real-model decision quality remain unvalidated. SciSpace was consulted for research
 context; no paper result was used to redefine the owner's contracts or manufacture a metric.
 
-## Live pilot: separate explicit approval required
+## Pilot budget and original approval gate
 
 Prepared plan: `evals/manifests/reasoning_continuation_pilot.json`: two Bakers, two real ticks,
 four maximum calls, Haiku 5.5, medium adaptive summarized thinking, four-second pacing.
 Proposed separate allowance: **USD 0.10**, at most **USD 0.02** booked per request, 24-hour window.
-It is a proposal, not an activated allowance. Old one-message permission and Study 1 do not fund it.
+At preparation it was a proposal, not an activated allowance. The subsequent approval and completed execution are recorded below. Old one-message permission and Study 1 did not fund it.
 
 At the unchanged reviewed 2x list booking rates, the maximum allowed reservation is
 9,421 micro-USD per call (36,864 input + 2,048 output). Four such reservations are USD 0.037684,
@@ -150,8 +150,7 @@ a used or differently bound allowance, checks PowerShell 7 before any credential
 each exact request/response/network receipt privately, and never retries. Its optional worker
 flag archives non-2xx response bodies too; default Study 1 worker behaviour is unchanged.
 
-No live pilot has been dispatched by this implementation session. No new real allowance has
-been initialized, and no existing accounting record has been modified.
+At completion of the offline implementation stage, no pilot had been dispatched or real allowance initialized. The subsequent approved live execution is recorded below; existing accounting history was preserved.
 
 ## Verified offline evidence, 2026-10-23
 
@@ -168,4 +167,14 @@ In the two-tick proof, both admitted prices change to 0.5, then 0.55 from the sy
 
 Final implementation regression: **1,341 Vitest tests passed across 106 files; one existing Windows skip**, including 24 continuation tests. TypeScript, eight recovery checks and 29 Python evaluation tests passed. An added boundary regression first failed in its empty-directory cleanup; that cleanup was corrected and the complete suite rerun successfully. Real Inspect **0.3.282** loaded all four verified exports without model calls. The live entry and allowance-preparation scripts refuse without their explicit pilot flags.
 
-Actual paid provider requests in this session: **0**. Live receipts: **none**. No real allowance was created, no Study 1 run started and the original October 18 accounting journal hash remains unchanged. Additional transcript degradation/limits and scientific behaviour metrics remain future work; live signed-continuation acceptance and model interpretation require the separately approved pilot.
+At the end of the offline implementation stage: **0** paid requests and **no live receipts**; no real allowance had been created. The subsequent approved pilot is recorded below. Study 1 remains paused and the original October 18 accounting journal hash remains unchanged. Additional transcript degradation/limits and scientific behaviour metrics remain future work; live signed-continuation acceptance and model interpretation require the separately approved pilot.
+
+## Live pilot completed
+
+On 2026-10-23 the owner explicitly approved the separate four-call/two-agent/two-tick USD 0.10 pilot. Runtime cf99476 completed exactly four real Haiku 5.5 messages and two actual shared-world ticks. All responses were HTTP 200/end_turn and passed the original action validator. Both continuation requests preserved the exact original signed assistant blocks and unchanged system/user prefixes; provider continuations were accepted. A fresh Node process independently replayed all evidence, and pinned Inspect 0.3.282 imported four live samples without another model call.
+
+Aggregate usage: 46,706 input / 984 output tokens, including 812 reported thinking tokens within output. Receipt-based estimated list cost is **USD 0.0051626** at the [current standard/global prices](https://platform.claude.com/docs/en/about-claude/pricing) checked 2026-10-23; conservative 2x accounting booked **USD 0.010327** after per-component rounding. **Zero held.** No invoice reconciliation is claimed. The new allowance has reached its four-call limit; unused cost capacity does not authorize further calls.
+
+The original Oct 18 journal hash is unchanged; its complete history was carried from a verified exact private copy. No broker, kernel, contract, manifest or pricing source changed. Hosted CI on implementation bc00e6e passed. [Sanitized live evidence](evidence/reasoning-continuation-live-pilot-2026-10-23.json) records counts and hash anchors; raw requests/responses, signatures, game states, decisions, provider receipt IDs and accounting remain private.
+
+This establishes a working live continuation loop and independently verified world evolution. It does not establish a causal benefit of reasoning memory or validated decision-quality/adaptation scores. Live diary expiry was not tested by this two-tick pilot; real diary expiry with preserved earlier exposure is covered offline. New transcript limits/degradation and a controlled longer-run design remain next topics. Do not repeat this completed pilot, reinitialize its allowance or activate frozen Study 1 as routine setup.

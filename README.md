@@ -110,9 +110,13 @@ transcript-memory condition applies to this separate experiment; frozen Study 1 
 
 The continuation source at `cf99476` and final tests passed TypeScript, 1,341 Vitest tests
 across 106 files (one existing Windows skip), eight recovery checks and 29 Python tests.
-These are simulated-provider results. No new paid API call or real allowance was created.
-The prepared two-tick live pilot requires separate explicit approval for four calls under a
-USD 0.10 ceiling. Behavioural metrics and real-model decision quality remain unvalidated.
+The separately approved live pilot then completed: four Haiku 5.5 responses, two actual world
+ticks, exact own signed-block continuation, independent replay and four live Inspect samples.
+Aggregate use was 46,706 input / 984 output tokens; estimated list cost USD 0.0051626 and
+conservative accounting USD 0.010327, with zero held. The four-call allowance is consumed; no
+additional paid execution is authorized. Raw responses and game data remain private.
+[Sanitized live evidence](docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json)
+records the provenance. Causal memory benefit and behavioural metrics remain unvalidated.
 The [checkpoint](docs/recovery/CURRENT_SESSION.md) identifies the review branch and exact next step.
 
 ## Run the suite

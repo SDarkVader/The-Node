@@ -1,3 +1,7 @@
+> 2026-10-23 — Approved live continuation pilot completed (source cf99476).
+>
+> Exactly four Haiku 5.5 calls, all HTTP 200/end_turn, advanced two actual shared-world ticks. Exact signed own histories and prefixes persisted into both accepted continuation requests. Fresh-process replay and actual Inspect 0.3.282 import passed. Usage: 46,706 input / 984 output (812 thinking within output), estimated list USD 0.0051626 / conservative booking USD 0.010327, zero held. The separately authorized four-call limit is consumed; no further paid call is authorized. Original Oct 18 journal unchanged, carried through an exact private copy. No source/core/contract change; raw experimental data stays private. Scientific memory benefit and live diary-expiry effects remain unmeasured.
+
 > 2026-10-23 — Stateful reasoning continuation implemented offline (review branch codex/stateful-continuation-2026-10-23, base c2ac4c3).
 >
 > Exact own provider blocks/signatures, decisions and authorized observations persist across actual shared-world ticks. The owner permits transcript memory while diary degradation continues. Frozen Study 1 and protected broker/kernel/accounting/replay sources are preserved.
