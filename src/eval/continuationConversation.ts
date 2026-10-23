@@ -87,7 +87,7 @@ export function conversationObservations(messages: readonly Message[]) {
       });
       observation = applyObservationPatch(observation, patches);
     }
-    
+
     out.push(structuredClone(observation));
   }
   return out;
