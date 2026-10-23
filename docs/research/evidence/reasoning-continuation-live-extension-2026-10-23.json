@@ -1,0 +1,118 @@
+{
+  "schema": "node-live-continuation-extension-evidence-v1",
+  "date": "2026-10-23",
+  "sourceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4",
+  "worldGenesisSourceRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+  "mode": "live",
+  "planSha256": "f5256543fdcb079a1d279cb5253ee086b1837ea770d90704e8bda98d2ca6724e",
+  "authorization": {
+    "limitMicroUsd": 1000000,
+    "perRequestMicroUsd": 30000,
+    "maxRequests": 100,
+    "windowHours": 24,
+    "separateGrant": true,
+    "completePriorHistoryCarriedUnchanged": true
+  },
+  "actual": {
+    "newCalls": 32,
+    "newTicks": 16,
+    "totalCallsWithPilot": 36,
+    "finalTick": 18,
+    "http200": 32,
+    "endTurn": 32,
+    "validatorAdmitted": 32,
+    "retries": 0,
+    "heldMicroUsd": "0",
+    "conservativeBookedMicroUsd": "122711",
+    "estimatedStandardListUsd": "0.0613495",
+    "inputTokens": 596250,
+    "outputTokens": 3449,
+    "combinedEstimatedListUsd": "0.0665121",
+    "combinedConservativeBookedMicroUsd": "133038",
+    "thinkingTokensIncludedInOutput": 1934,
+    "nonemptyReturnedThinkingSummaries": 15
+  },
+  "stopping": {
+    "status": "checkpoint",
+    "reason": "behavior_worth_inspecting_observed",
+    "exploratory": true,
+    "backgroundRunActive": false
+  },
+  "verification": {
+    "allParentChainsIndependentlyVerified": true,
+    "freshProcessReplayPassed": true,
+    "exactOwnConversationPrefixesPreserved": true,
+    "liveDiaryExpiryWithHistoricalExposurePreserved": true,
+    "inspectVersion": "0.3.282",
+    "inspectNewSamples": 32,
+    "inspectModelCalls": 0,
+    "behavioralMetrics": "not_validated",
+    "causalMemoryBenefit": "not_established"
+  },
+  "stages": [
+    {
+      "newCalls": 8,
+      "finalTick": 6,
+      "cumulativeExtensionCalls": 8,
+      "ledgerRoot": "41adfe1e6df602289dde49feaa34b65503dd4e74ea4e000abc573d314d251732",
+      "finalStateHash": "932afd8bed464420f2b788a6b06711056b5de40b9526adc395fca4046ad201c6",
+      "historyHash": "bea91ad29cabc6f9bbb8b660f6cb8ce3b56db47156fb1eec0ecc899fdf102de5",
+      "bookedMicroUsd": "24032",
+      "inspectSamples": 8,
+      "inspectExportSha256": "fb582cea2a3ea9678cf5017eef48e3e4a25d894c48ec94b2e547c53d20f4f6d7"
+    },
+    {
+      "newCalls": 8,
+      "finalTick": 10,
+      "cumulativeExtensionCalls": 16,
+      "ledgerRoot": "a25a4afb4065a5e536cb454762505302ad5a7cf797b6bd6145583b4a86a22c64",
+      "finalStateHash": "fd6d29d6c1960f18488e8a79a46ddce9e71d12238799872776b97133106c7b66",
+      "historyHash": "7dfc8b9b8fc632230281a11c226875481637335e04863536642cd355a1270fe8",
+      "bookedMicroUsd": "52130",
+      "inspectSamples": 8,
+      "inspectExportSha256": "2b168c2e957e249c280d969c20f2c71d066515c6f5038329b3fed09240b73052"
+    },
+    {
+      "newCalls": 16,
+      "finalTick": 18,
+      "cumulativeExtensionCalls": 32,
+      "ledgerRoot": "3dd3472de909ec244536e508e98216accb4cde961c12ce38fd9971a2fc67b341",
+      "finalStateHash": "61ae622c38dd6a55229e35f635b84725ee5499d7904c0a90c2ec01aff8ab6bc2",
+      "historyHash": "c56630bade372ce51ca19ef99d6b9742a2cc2c4d5ac82c81e3d3ca850f7417dd",
+      "bookedMicroUsd": "122711",
+      "inspectSamples": 16,
+      "inspectExportSha256": "eecf0eedab1b44eec165b12c4d681740424ed25a2141ab8b744f179ca1e480bb"
+    }
+  ],
+  "preserved": {
+    "originalPilotJournalUnchanged": true,
+    "originalOctober18JournalUnchanged": true,
+    "protectedBrokerKernelReplayUnchanged": true,
+    "frozenStudy1Unchanged": true,
+    "priceEntriesAndEvidenceHashesUnchanged": true
+  },
+  "offlineVerification": {
+    "sourceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4",
+    "typeScript": "passed",
+    "vitestPassed": 1346,
+    "vitestWindowsExistingSkipped": 1,
+    "vitestFiles": 107,
+    "recoveryPassed": 8,
+    "pythonUnitSuite": "not_rerun_for_extension",
+    "priorPythonPassed": 29,
+    "hostedCI": {
+      "sourceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4",
+      "windowsOfflineVerification": "success",
+      "linuxOfflineConformance": [
+        "success",
+        "success"
+      ],
+      "runIds": [
+        39943642451,
+        39943642443,
+        39943633935
+      ]
+    }
+  },
+  "privacy": "Raw provider messages, signatures, identities, actions, world observations and accounting are retained privately; this file contains aggregate results and hash anchors only."
+}

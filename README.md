@@ -116,8 +116,15 @@ Aggregate use was 46,706 input / 984 output tokens; estimated list cost USD 0.00
 conservative accounting USD 0.010327, with zero held. The four-call allowance is consumed.
 The owner subsequently authorized an extension, capped here at USD 1: the same world and
 exact histories resume through verified complete-tick checkpoints. Its explicit 95,000-byte
-history profile leaves Study 1 and the original pilot limits unchanged. New live results are
-pending. Raw responses, game data and accounting remain private.
+history profile leaves Study 1 and the original pilot limits unchanged. The extension stopped
+after 32 new accepted decisions and 16 additional ticks when behavior worth inspecting appeared.
+All three checkpoint segments replayed independently; Inspect loaded 32 new samples. Estimated
+list cost was USD 0.0613495 (conservative booking USD 0.122711; zero held). Live diary expiry
+with preserved historical exposure is verified; causal memory benefit remains unestablished.
+[Extension evidence](docs/research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
+contains aggregate results and hash anchors. Extension source `d237eff` passed TypeScript,
+1,346 Vitest tests (one existing Windows skip), eight recovery checks and hosted Windows/Linux CI.
+Raw responses, game data and accounting stay private.
 [Sanitized live evidence](docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json)
 records the provenance. Causal memory benefit and behavioural metrics remain unvalidated.
 The [checkpoint](docs/recovery/CURRENT_SESSION.md) identifies the review branch and exact next step.

@@ -227,4 +227,39 @@ one existing Windows skip; eight recovery checks passed. Five new tests cover fr
 resumption, exact prior signatures, cumulative spending, separately authorized count-closed
 carry, unexhausted/held/overrun refusals, tampered/failed/stale parents and the larger bound.
 The actual saved pilot also replays and reconstructs tick 2 with its original state/history
-hashes. New live results are pending. Original pilot and October 18 journal hashes are verified.
+hashes. Original pilot and October 18 journal hashes are verified. The completed extension is recorded below.
+
+## Extension stopped after behavior worth inspecting
+
+Runtime **d237effcc129c7757e382a3af8ecc0e95307ebc4** completed **32 new paid decisions** over
+**16 additional real ticks**, taking the same world from tick 2 to tick 18 (36 calls including
+the original pilot). Every new response was HTTP 200/end_turn and passed the original validator.
+No retry, repair, forced event, model change or history reset occurred. Three stages stopped at
+complete-tick checkpoints (8/8/16 calls); each replayed in a fresh Node process, and Inspect
+0.3.282 imported all 32 new samples without another model call.
+
+Earned recognition was followed by diary behavior that differed from earlier turns. A current
+diary entry actually expired while its earlier authorized exposure and exact prior signed
+assistant blocks persisted in the later request. This satisfies the exploratory stopping goal
+of obtaining behavior worth inspecting. It does not establish a causal memory benefit, factual
+correctness of subjective diary impressions, or a validated decision-quality score. No matched
+no-history control was run; returned summaries are partial evidence. Price policy remained
+stable. Detailed observations and all raw data remain private.
+
+Extension usage: **596,250 input / 3,449 output tokens**, including 1934 reported thinking
+tokens within output. Estimated standard/global list cost **USD 0.0613495**; conservative 2x
+booking **USD 0.122711** after rounding, **zero held**. Including the original pilot: estimated
+list **USD 0.0665121**, conservative booking **USD 0.133038**. No invoice reconciliation is
+claimed. The USD 1 extension cap was not reached; unused budget is not a reason to keep running
+after the exploratory stopping criterion has been met. No background run remains active.
+
+The final self-contained ledger root is
+`3dd3472de909ec244536e508e98216accb4cde961c12ce38fd9971a2fc67b341`.
+[Sanitized extension evidence](evidence/reasoning-continuation-live-extension-2026-10-23.json)
+records source, state/history roots, stage exports and aggregate costs. Both earlier journals
+were rehashed unchanged. The real extension allowance remains at 32 consumed requests; any
+later authorized continuation must use its exact latest tick-18 parent and matching journal,
+not recreate the grant or resume an older stage. A controlled memory comparison and added
+transcript limits/degradation remain future work.
+
+Hosted Windows offline-verification and both Linux offline-conformance checks completed successfully at d237effcc129c7757e382a3af8ecc0e95307ebc4 (runs 39943642451, 39943642443 and 39943633935). The result-only handover changes no source or runtime.
