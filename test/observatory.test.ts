@@ -374,7 +374,7 @@ describe('A4 + A7 server, stream and Godot bridge', () => {
 
 describe('the observatory never acts on the experiment', () => {
   it('imports no provider transport, runner, budget writer or world server', () => {
-    const files = ['ledgerTail', 'reasoning', 'worldProjection', 'telemetryMetrics', 'annotations', 'evaluations', 'service', 'server', 'godotBridge', 'frameExport', 'timeline', 'auth', 'contracts', 'cli'];
+    const files = ['ledgerTail', 'reasoning', 'worldProjection', 'telemetryMetrics', 'annotations', 'evaluations', 'service', 'server', 'godotBridge', 'frameExport', 'timeline', 'auth', 'contracts', 'cli', 'archiveAcceptance', 'acceptanceCli'];
     for (const f of files) {
       const src = readFileSync(`src/observatory/${f}.ts`, 'utf8');
       for (const banned of ['continuationRunner.js\'', 'runContinuation', 'responsesTransport', 'providerCredential', 'ExperimentBudget', 'startWorldServer', 'createWorld', 'stepWorld', '../server/ws.js', 'anthropic-request.ps1']) {

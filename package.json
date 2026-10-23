@@ -49,6 +49,7 @@
     "mvp": "tsx src/mvp/run.ts",
     "server": "tsx src/server/ws.ts",
     "observatory": "tsx src/observatory/cli.ts",
+    "observatory:acceptance": "tsx src/observatory/acceptanceCli.ts",
     "observatory:demo": "tsx scripts/observatory-demo.ts"
   },
   "devDependencies": {

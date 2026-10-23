@@ -18,7 +18,7 @@ export interface Stage { path: string; events: ContinuationEvent[]; summary: Awa
 
 /** Three segments of one world: ticks 0->1, 1->3, 3->4, as the live extension was staged. */
 export async function stagedRun(handles: { close(): void }[], faults: Parameters<typeof simulatedContinuationProvider>[0] = {}) {
-  const plan = stagedPlan(), budget = continuationBudget(plan, join(root(), 'budget'));
+  const plan = stagedPlan(), budgetDirectory = join(root(), 'budget'), budget = continuationBudget(plan, budgetDirectory);
   handles.push(budget);
   const stages: Stage[] = [];
   for (const stopAtTick of [1, 3, undefined]) {
@@ -30,7 +30,7 @@ export async function stagedRun(handles: { close(): void }[], faults: Parameters
     ledger.close();
     stages.push({ path: ledger.path, events: readContinuationLedger(ledger.path), summary });
   }
-  return { plan, budget, stages };
+  return { plan, budget, budgetDirectory, stages };
 }
 
 export function registration(stages: Stage[], over: Partial<ExperimentRegistration> = {}): ExperimentRegistration {
