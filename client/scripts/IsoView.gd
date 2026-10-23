@@ -69,12 +69,14 @@ const ROLE_COLOUR := {
 ## as three real floors (the floor count is honest, and the height still layers economic
 ## street level against domestic storeys above), but the town is lower and people are larger
 ## than a photograph would have them.
-const FLOOR_HEIGHT := 0.30
-const BUILDING_FOOTPRINT := 0.56
+## Building geometry is shared with agent perception (NodeGeometry.gd, 2026-10-23).
+const Geo := preload("res://scripts/NodeGeometry.gd")
+const FLOOR_HEIGHT := Geo.FLOOR_HEIGHT
+const BUILDING_FOOTPRINT := Geo.BUILDING_FOOTPRINT
 ## Small on purpose. Visibility comes from the rim light and the floating glyph, not from
 ## bulk — an earlier pass made people large enough to read and they promptly buried the town.
-const PERSON_HEIGHT := 0.42
-const PERSON_RADIUS := 0.115
+const PERSON_HEIGHT := Geo.PERSON_HEIGHT
+const PERSON_RADIUS := Geo.PERSON_RADIUS
 ## Floating role glyph, billboarded above each person.
 const ICON_WORLD_SIZE := 0.62
 const ICON_TEX_PX := 40
@@ -100,10 +102,10 @@ const MAX_STATION_LIGHTS := 22
 ##   uneven and a perfect grid reads as a diagram. Stable per building forever, so the town has
 ##   a consistent skyline rather than shimmering. Kept deliberately narrow: wide enough to break
 ##   uniformity, too narrow to be mistaken for a signal.
-const LANDMARK_HEIGHT_MUL := 1.85
-const LANDMARK_FOOTPRINT_MUL := 1.28
-const JITTER_HEIGHT := 0.34
-const JITTER_FOOTPRINT := 0.16
+const LANDMARK_HEIGHT_MUL := Geo.LANDMARK_HEIGHT_MUL
+const LANDMARK_FOOTPRINT_MUL := Geo.LANDMARK_FOOTPRINT_MUL
+const JITTER_HEIGHT := Geo.JITTER_HEIGHT
+const JITTER_FOOTPRINT := Geo.JITTER_FOOTPRINT
 
 var socket := WebSocketPeer.new()
 var logged := false
@@ -533,25 +535,11 @@ void fragment() {
 ## Stable pseudo-random in [0,1) from a building's own id — no rng, so the skyline is identical
 ## every run and across clients.
 func _hash01(id: String, salt: int) -> float:
-	var h := 2166136261
-	for i in id.length():
-		h = (h ^ id.unicode_at(i)) * 16777619
-		h = h & 0xFFFFFFFF
-	h = (h ^ (salt * 2654435761)) & 0xFFFFFFFF
-	return float(h % 100000) / 100000.0
+	return Geo.hash01(id, salt)
 
 
 func _building_transform(b: Dictionary) -> Transform3D:
-	var id := str(b["id"])
-	var is_landmark: bool = b.get("isLandmark", false)
-	var foot := BUILDING_FOOTPRINT * (1.0 + (_hash01(id, 1) - 0.5) * 2.0 * JITTER_FOOTPRINT)
-	var floors := 3.0 * (1.0 + (_hash01(id, 2) - 0.5) * 2.0 * JITTER_HEIGHT)
-	if is_landmark:
-		foot *= LANDMARK_FOOTPRINT_MUL
-		floors *= LANDMARK_HEIGHT_MUL
-	var height := FLOOR_HEIGHT * floors
-	var basis := Basis().scaled(Vector3(foot, height, foot))
-	return Transform3D(basis, Vector3(float(b["x"]), height * 0.5, float(b["y"])))
+	return Geo.building_transform(b)
 
 
 func _roof_height(b: Dictionary) -> float:
@@ -577,13 +565,13 @@ func _build_wall() -> void:
 	_wall_root.add_child(_wall_disc)
 
 	var slab := BoxMesh.new()
-	slab.size = Vector3(0.85, 1.9, 0.16)
+	slab.size = Geo.WALL_SIZE
 	_wall_slab = MeshInstance3D.new()
 	_wall_slab.mesh = slab
-	_wall_slab.position = Vector3(0, 0.95, 0)
+	_wall_slab.position = Vector3(0, Geo.WALL_SIZE.y * 0.5, 0)
 	# Turned to sit square with the isometric view rather than to the world grid — from the
 	# camera's angle the slab now presents its face instead of an edge.
-	_wall_slab.rotation_degrees = Vector3(0, 90.0, 0)
+	_wall_slab.rotation_degrees = Vector3(0, Geo.WALL_YAW_DEGREES, 0)
 	var smat := StandardMaterial3D.new()
 	smat.albedo_color = COLOUR_WALL
 	smat.emission_enabled = true
@@ -819,7 +807,7 @@ func _update_dynamic() -> void:
 		var role = p.get("role")
 		var off := Vector3.ZERO
 		pmm.set_instance_transform(i, Transform3D(Basis(),
-			Vector3(float(p["x"]), PERSON_HEIGHT * 0.5 + 0.06, float(p["y"])) + off))
+			Vector3(float(p["x"]), PERSON_HEIGHT * 0.5 + Geo.PERSON_LIFT, float(p["y"])) + off))
 		# Role-specific colour, the same six hues the 2D view and the station signs use. A
 		# roleless player gets Ember's own ink tone — a colour of their own, not an absence of
 		# one, and at the same brightness as everyone else. Constraint 6's floor has a visual
