@@ -35,7 +35,7 @@
 > time; the contract is unchanged. `gpt-5.4-nano-2026-03-17`, the earlier choice, is deprecated and
 > will be removed on 2027-04-01.
 
-Prepared 2026-10-20 and updated 2026-10-22 for Haiku, for the owner's run on the Windows PC that
+Prepared 2026-10-20; current status reviewed 2026-10-23, for the owner's run on the Windows PC that
 holds the credential and the private allowance. Everything here was rehearsed end to end with the
 real scripts and a TEST-ONLY fake transport (`test/cli/rehearse-accounted-study.sh`; CI runs it on
 every push). The rehearsal covered a normal run, an injected HTTP 429, settlement, resume and
@@ -52,23 +52,23 @@ work.
 
 The [contract](../../evals/contracts/authority_attribution.v1.json) fixes what counts as a result.
 
-**Expected cost and time.** These estimates come from the one live Haiku message on 22 Oct: 14,089
-input and 42 output tokens, 3.8 s, at the list price of $0.10/M input and $0.50/M output. That size
-is scaled to the 126 measured study-1 requests, and 100 output tokens are allowed for decisions that
-include speech.
+**Measured cost inputs (2026-10-22).** The medium-effort diagnostic returned 14,090 input /
+315 output tokens, including 272 thinking tokens, in 5.493 seconds. The old 42-output-token,
+thinking-disabled call is historical, not the current reasoning cost estimate.
 
-| Item | Estimate |
-|---|---|
-| List-price estimate for 630 calls | about **$0.9** |
-| Booked against the cap (2× list, by design) | about **$1.8** |
-| Duration at the default pacing (one call per 4 s) | about 45–55 minutes |
+At those fixed observed sizes, 630 calls project to USD 0.986895 list / USD 1.97379 conservative
+booking. At 14,090 input and the full 2,048-output cap, the projection is USD 1.53279 list /
+USD 3.06558 booked. Actual sizes vary by actor and turn. These are projections, not a completed
+study or invoices. The continuation pilot supplies additional two-Baker multi-turn usage;
+broader role costs are further measurement work. Four-second pacing suggests about 45–55 minutes
+before extra latency and interruptions. Use the actual journal and receipts for results.
 
-These are estimates, not invoices. The Claude Console's usage page is the billing record.
+## Separate from the current continuation experiment
 
-**With reasoning on (2026-10-22), output will be larger, by an amount not yet measured.** Thinking is
-billed as output and counts toward the 2,048-token cap per call. The cap bounds it: even if every
-call used all 2,048 output tokens, 630 calls would cost about **$1.5** list and book about
-**$3.1**, inside the USD 5 cap. Step 0.5 measures the real figure before the run.
+The [live continuation pilot](CURRENT_EXPERIMENT.md) completed 36 calls over 18 ticks and is
+stopped. It does not activate this paused authority study or change its frozen memory condition.
+The v2 baseline, Grifter permission, hearing rules and Anthropic adapters are already implemented.
+The historical pin-change notes above record completed changes, not pending work.
 
 ## 0. Before you start
 
@@ -81,8 +81,9 @@ $work    = '<a folder for study files>'                 # runtime, allowance, ru
 $carried = '<the closed 18 Oct allowance folder>'       # initial-test-budget-2026-10-18
 ```
 
-1. **Get the code.** Use `main` once the Haiku PR is merged: `git checkout main; git pull`. Then
-   run `git status`, which must be clean, and `npm ci`.
+1. **Verify the code.** Read CURRENT_SESSION and inspect actual refs. Preserve local work; do not
+   automatically switch branches or pull over changes. The current review branch is
+   `codex/stateful-continuation-2026-10-23`. Use the agreed reviewed source and locked dependencies.
 2. **PowerShell 7.** `pwsh --version` must print 7.x. The connection check and the study runner
    now check this before anything else. Without PowerShell 7 they stop with
    `pwsh_not_found_install_powershell_7` before any reservation or call. Install it with
@@ -108,19 +109,12 @@ $carried = '<the closed 18 Oct allowance folder>'       # initial-test-budget-20
 
    The flag can only slow the run, never below the manifest's 4 s. It is not part of the manifest
    hash, so it needs no commit.
-5. **Re-run the connection check with reasoning on (about $0.002).** The 22 Oct check ran with
-   thinking off. Build a runtime from the current commit and send one message:
-   ```powershell
-   node scripts/build-study-runtime.mjs "$work\check-runtime-2"
-   node scripts/check-anthropic-connection.mjs "$work\check-runtime-2" "$work\send-2" $key --send-one
-   ```
-   In `report.json` under `sent`, read:
-   - `reasoning.status`: `summary_returned`, `summary_empty`, `redacted_only` or `not_returned`
-     (the model skipped thinking), and `reasoning.summaries`;
-   - `outputTokensOfCap`: output tokens used out of 2,048. If thinking comes close to the cap,
-     or `stopReason` is `max_tokens`, **stop and tell Claude** before the run;
-   - `elapsedMs`: must stay well inside the runner's 16,000 ms deadline;
-   - `responseModel` (still exactly `claude-haiku-5-5`) and `validatorAccepts`.
+5. **Review the completed medium-effort check before deciding another is needed.** The approved
+   repeat already succeeded at source b1a1646: exact model, HTTP 200/end_turn, valid decision,
+   315/2,048 output tokens, 272 thinking tokens and 5.493 seconds. Do not repeat a paid diagnostic
+   as routine setup. If relevant request/source changes call for a new diagnostic, preserve the
+   old evidence and follow the specifically authorized check procedure. Additional roles and
+   conditions are further tests, not proof the experiment cannot support them.
 
    **Done 2026-10-22:** the owner's page shows 10,000 requests, 10,000,000 input tokens and
    2,000,000 output tokens per minute for Claude Haiku 5.5. Those are the documented Scale-tier

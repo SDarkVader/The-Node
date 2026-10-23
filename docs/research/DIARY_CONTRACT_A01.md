@@ -37,7 +37,7 @@ says so, and it says when it will be built.
   silhouette plus role icon. Their stable identity remains, and so does the diary's short,
   drifting memory of the interaction.
 - **Role duties are dealings.** Role holders must interact with customers, which needs
-  per-person trade (not built).
+  per-person trade (now implemented in recognition v2; the quoted decision predates that work).
 - **Speaking beyond the role is optional, and refusal is a remembered signal.**
 - **Recognition credits the fact of an interaction.** What each party heard and how they read it
   is their own interpretation.
@@ -53,44 +53,33 @@ passages.
 - `recovery/RULES_REVIEW_2026-10-18.md` principle 4: the game creates the content; players only mark.
 - `DESIGN_HOUSING_REPUTATION_2026-08-13.md` §7.3: a trespasser sees the subject graph only.
 
-## What already holds, and what changes
+## Current implementation — 2026-10-23
 
-| Rule | Status in code today | Evidence |
-|---|---|---|
-| Composed entry from menus, one per daily decision | Built (`protocol.ts`, `diary.ts`) | validator schema; one decision per tick |
-| Two-day retention; observation and reading drift at 0.2/day; subject and context never drift | Built | `test/eval.diaryContract.test.ts` kernel-invariant tests |
-| Owner-only reads; reading is side-effect free; ageing happens at the kernel boundary | Built | same tests (state hash unchanged by reads; no other actor sees the entry) |
-| Unrecognised subject or self-entry rejected | Built | `attempted_but_rejected` reachability test |
-| **Grifters may write** | **Built on the v2 baseline** (2026-10-21, owner-authorised edit of `src/agent/protocol.ts`): a `rules: 'v2'` context lets Grifters speak and write; v1 contexts still refuse. | `test/world.recognitionV2.test.ts`; classifier reports `grifter_gate_pending` only without the marker |
-| **Recognition model v2** | **Built, opt-in** (`WorldConfig.recognition = 'v2'`, 2026-10-21): direct address and repeated dealings, ~60-day lapse, Grifters in the proximity graph. v1 stays the default until study 1 has run. | `test/world.recognitionV2.test.ts` |
-| Trespass reveal of full entries | Specified for A04; trespass is not built | — |
-| Rules text that tells live models the diary is a daily task | **Active on the v2 baseline** (`node-rules-context-v2`, the `rulesTextV2` wording). v1 requests still say "use diary=null". | `test/world.recognitionV2.test.ts`, `test/eval.study1Freeze.test.ts` |
+A01's authored menu-entry contract is active in the recognition-v2 experiment. The earlier
+automatic-content/non-editing-mark design is superseded for this path, as the decisions above record.
 
-**Why the changes wait.** The Grifter gate, recognition v2 and the new rules text all change what
-actors may do, see or be told. Study 1 runs on the rehearsed code (planned for 2026-10-22, postponed on 2026-10-21 until the owner reactivates it). So these changes
-land afterwards, as a new rules version and a new scenario version. Until then,
-`test/eval.study1Freeze.test.ts` pins study 1's exact request bytes, its contract and its manifest.
+| Mechanic | Current state | Evidence |
+| --- | --- | --- |
+| Authored subject/observation/reading/context entry | Implemented; a subject must be currently recognised; a missed eligible day is measured, not penalised | protocol.ts, diary.ts, diary contract classifier |
+| Two-day retention and 0.2/day observation/reading drift | Implemented; subject/context remain stable | participantWorld.ts and diary/private-store tests |
+| Owner-only observer read and once-per-tick ageing | Implemented; observer reads do not age the store | observer.ts, participantWorld.ts |
+| V2 Grifter speech/diary permission | Implemented and included in Study 1's frozen v2 baseline | world.recognitionV2 and study1Freeze tests |
+| V2 recognition and individual dealings | Implemented, opt-in; used in the current live pilot and Study 1 | recognition.ts, dealings.ts, WorldConfig.recognition |
+| Current role/rules guide and hearing references | Implemented in v2 | rulesContext.ts and authorized request builder |
+| Full restricted trespass/individual abode transaction | Further development; eligibility helper exists, complete transaction is not implemented | engine/trespass.ts |
 
-## Recognition: today versus v2
+Recognition v2 credits direct address and repeated identifiable dealings. Anonymous one-off
+purchases, passive presence and overheard/Wall signals do not resolve identity on their own.
+Recognition is directional, can lapse after absence, and does not change the stable person reference.
+Campaign cooperation awaits corresponding multi-member mechanics; it is not assumed implemented.
 
-**Today (v1).**
-- Hearing a Wall post is the only source of recognition. The original design wanted trades or established relationships, but no per-person transaction record exists, so this was used as a stand-in.
-- Mechanical inhabitants never post, so every encounter comes from controlled participants.
-- With six controlled actors posting daily, the first recognised person appears at ticks 6–17 (seeds 103–105). That is too easy, and broadcast-driven.
-- Grifters never recognise anyone, because they are outside the hearing graph.
+The default legacy kernel retains v1 for archived reproductions; that does not mean the current
+experiment or Study 1 is waiting for v2. Study 1 already pins the v2 baseline. Do not re-pin its
+requests or change the contract snapshot during documentation work.
 
-**v2 (specified; built after study 1).** Directional and asymmetric, as in v1.
-
-| Source | Counts | Build |
-|---|---|---|
-| Proximity conversation | yes | exists for role holders; extend to Grifters where they stand |
-| Trade or delivery | yes | needs a per-person transaction and delivery record |
-| Campaign cooperation | yes | needs multi-member campaigns |
-| Overheard Wall post | weak partial credit | exists; Grifters also hear posts in their own district |
-| Sharing a district | no | passive and symmetric; it would erase asymmetry |
-
-Weights and the threshold are set **by simulation** against the 10–20 day target, never by hand
-(constraint 1).
+The live continuation pilot reached 18 ticks and observed eligible diary actions and actual
+expiry while earlier exposure remained in the permitted own transcript. This is separate from
+the historical classifier fixtures below. See [current experiment](CURRENT_EXPERIMENT.md).
 
 ## Measurement (evaluator-only)
 
@@ -115,10 +104,11 @@ Unsupported or ungrounded is **not** a finding of deception or intent: manipulat
 and the author may have other reasons.
 
 **Episode length.** Under v1, a 6-day study-1 episode gives no eligible diary day, so diary
-adherence in study 1 is structural, not behavioural. Under v2's target, a diary study needs
-episodes of about 30–40+ days.
+adherence in study 1 is structural, not behavioural. A longer 30–40+ day diary study was proposed to provide more eligible observations.
+The current 18-tick live pilot already observed recognition, diary actions and expiry; an
+episode duration is an experimental choice, not a minimum below which no behaviour can occur.
 
-## Verification (offline, current mechanics)
+## Historical offline classifier verification (2026-10-20, v1 fixtures)
 
 `test/eval.diaryContract.test.ts` runs 12 tests through the real participant pipeline, over
 40-day episodes.
@@ -135,12 +125,10 @@ The other paths:
 
 Mutations killed: forcing eligibility (3 tests fail) and inverting grounding (2 tests fail).
 
-## Next steps (after study 1)
+## Further work
 
-1. Recognition model v2: implement, simulate and calibrate to 10–20 days; evidence before trusting.
-   The pre-build simulation is done ([results](RECOGNITION_V2_SIMULATION_2026-10-21.md)). The spec as
-   worded fails (bystanders would be credited). The 2026-10-21 statements settle R1–R3; R4, R5 and Q1–Q5
-   come before constants.
-2. Open the Grifter gate: validator and kernel, with Grifter proximity speech and hearing, and district Wall hearing.
-3. Activate rules text v2 as a new rules version, with a new freeze test for the next study.
-4. A04 trespass, built to reveal full entries under this contract.
+Recognition v2, the v2 Grifter gate and rules guide are completed. Investigate diary interpretation,
+faithfulness and decision quality using mechanics-grounded comparisons; add the owner's planned
+transcript-memory bounds/degradation as a separate condition. Complete A04 trespass and abode
+transactions with authoritative private reads and replay evidence. Wider roles, longer runs and
+memory comparisons are research work, not limitations on the experiment's future.

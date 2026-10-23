@@ -1,3 +1,8 @@
+> Dated development history. For the current 36-decision/tick-18 continuation pilot, read
+> [CURRENT_EXPERIMENT](research/CURRENT_EXPERIMENT.md). Statements and test totals below belong
+> to their recorded stages. Missing features, defects, unrun comparisons and chosen settings
+> are further work or configuration, not limitations on the programme's future.
+
 > 2026-10-22 decisions D12-D13 (ground-truth register annex). **D12, the v2 Grifter role line** (owner: "fix them"): the line said the broker permits movement and observation only, while the v2 validator, the v2 action line and contract 1.1.0 let a Grifter speak and keep the diary. It now states what v2 permits; v1 text is unchanged; only `grifter-0`'s request bytes moved. **D13, reasoning evidence in study 1** (owner: "Reasoning was always part of the design. Just not yet selected as implementation was developing"; placement "Into Study 1", effort "Medium"): every Anthropic request asks for adaptive thinking with summarized display at medium effort, replacing thinking disabled at low effort. **Reversal:** the 2026-10-22 adapter turned thinking off and treated any thinking block as unactionable, to mirror the OpenAI request; that was an implementation stage, not a design choice. What Haiku 5.5 returns is a provider-written summary, never the raw chain of thought, and it may skip thinking; each call records which. Kept unchanged on purpose: the 2,048 output-token cap (thinking counts toward it), the per-request ceiling, the USD 5 cap, the contract and the analysis. Raising the cap was rejected for now because it would change the ceiling the allowance is sized on; the owner-run check measures whether thinking crowds it.
 
 > 2026-10-22 decision D11, with a reversal. **D11, study 1 on `claude-haiku-5-5`:** the owner chose Haiku 5.5 after the connection check on their PC accepted the real schema (3.8 s, a valid decision) and the measured cost comparison (about $0.9 list for study 1 against $1.6-1.9 on nano). **Reversal:** the 2026-10-22 recommendation to keep `gpt-5.4-nano-2026-03-17` rested on nano being the only model with live evidence for the schema, and the check removed that reason. Rates for a model other than the carried one come only from a reviewed, evidence-hashed entry (`src/agent/modelPricing.ts`), never from the operator; the alternative, typing rates in at preparation, was rejected because nothing could then tie a booked rate to evidence. Found while building it: `prepare-experiment-budget.mjs` copied the carried rates for any model, so a Haiku allowance would have been refused at preparation.
@@ -2781,7 +2786,7 @@ and one 8-hour window with identical total dampened hours and the same dampening
 the exact same number — confirmed, not just argued, by the fact that `test/wealth.regression.
 test.ts`'s existing golden values and the tick-25 world snapshot needed zero changes after
 this edit. There is no finer time-of-day resolution in this kernel to make "two windows"
-observably different from "one" — the same limitation `wealth.ts`'s own header already named
+observably different from "one" — the same aggregation issue `wealth.ts`'s own header already named
 for wall-clock scheduling ("a real-time server-clock policy... a separate and later concern
 from this deterministic kernel's own economics").
 
@@ -3965,7 +3970,7 @@ cursor position on the grid.
 attempts against a 55% typical — the backstop visibly running a slot badly, legible at a glance
 in a way no sim report surfaces.
 
-**Real limitation, surfaced not hidden**: grifters cannot be inspected, having no coordinates
+**Implementation issue recorded for further work**: grifters cannot be inspected, having no coordinates
 anywhere in this engine (housing `districtId` only). That is 20-26 of ~64 people off the map.
 
 6 new tests, 621 total, typecheck clean. Phase C (the flashlight) remains blocked on the

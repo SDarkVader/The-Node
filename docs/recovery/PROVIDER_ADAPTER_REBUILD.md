@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Responses transport and separate game-host rebuild
 
 Continues account-ledger rebuild `70132cf081672784ba7eefeb7461e4c7218ebe0c` on `broker-provider-adapter-2026-10-17`. The actual request serializer, bounded HTTPS/CONNECT transport, lazy credential reader and credential-separated mechanical host are now reconstructed and verified locally. They are new implementations, not recovered original source. The four protected core/test files and original account journal remain byte-identical.

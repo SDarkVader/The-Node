@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 > Current implementation: [the interrupted-account ledger and broker rebuild](BROKER_ACCOUNTING_REBUILD.md) now carries the original documentary hold, combined admissions and unbounded diagnostic liability. Explicit evidence-linked operator reconciliation and full-ceiling uncertain-request disposition mechanics are implemented and tested, but no actual financial decision was executed. The original ledger bytes and actual billing remain unknown. The proposal below remains a decision for the human operator; neither a synthetic test nor this reconstruction supplies that decision.
 
 # Accounting reconciliation proposal — not executed

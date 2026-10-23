@@ -11,6 +11,15 @@ world changes and diary entries degrade. Each actor retains only its own receive
 Historical exposure remains historical; current recognition, hearing, role, diary and legal moves
 govern present actions. Additional transcript memory limits or degradation are future work.
 
+## Current experiment and reading this record
+
+The pilot and extension are completed and stopped at tick 18: 36 total decisions, with live
+signed continuation, independent replay and diary expiry verified. Start with
+[CURRENT_EXPERIMENT](CURRENT_EXPERIMENT.md) and [the results](CONTINUATION_PILOT_RESULTS_2026-10-23.md).
+The original pilot preparation below is historical procedure, not an instruction to prepare
+another allowance or repeat a completed run. Missing features and unanswered questions are
+further work; configured run caps are revisable choices, not limitations on the programme.
+
 ## Existing pieces and the connection added
 
 | Existing component | Continuation use |
@@ -47,8 +56,8 @@ Current Anthropic documentation, checked 2026-10-23:
 [preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking),
 [context editing](https://platform.claude.com/docs/en/build-with-claude/context-editing).
 Haiku 5.5 keeps prior thinking by default; blocks are tied to the originating account and prefix.
-Offline tests establish exact client preservation; the provider's acceptance and actual model use
-remain live-pilot questions. Reported input transformations stop execution after usage booking.
+Offline tests establish exact client preservation, and the completed live pilot confirms provider
+acceptance of these continuations. How retained thinking affects decisions is further research. Reported input transformations stop execution after usage booking.
 
 Static geometry is sent once using the existing table presentation. Subsequent authorized views
 use lossless patches, with a front-coded path dictionary and explicit set/delete/splice operations.
@@ -81,8 +90,9 @@ the harness supplies no invented explanation of why it changed.
 A fresh process reconstructs genesis, each authorized view, every request/history prefix,
 receipt and validator result, then re-executes all ticks and checks the evidence. A second
 existing `ReplayTape` replay checks the final state. A crash prefix is inspectable but incomplete;
-there is no automatic paid retry or paid-run resumption. Retain the original prefix and accounting
-hold for operator review. Hashes prove consistency relative to retained roots, not external
+there is no automatic paid retry or resumption from an incomplete crash prefix. Preserve it and
+its hold for diagnosis. Explicit resumption of a sealed complete-tick checkpoint is implemented
+and verified, using the exact matching latest journal. Hashes prove consistency relative to retained roots, not external
 attestation or provider cryptographic authenticity.
 
 ## Reproduce offline
@@ -104,7 +114,22 @@ The tests additionally drive actual repeated conversations to earn recognition, 
 diary entry, and advance until the kernel expires it. Earlier received diary content and signed
 thinking remain historical in the transcript; the current diary becomes empty.
 
-## Inspect AI and interpretation
+## Evaluation ownership and separation
+
+The run operator records requests, returned reasoning, decisions, receipts, validation and kernel
+outcomes. It may comment on what returned reasoning says, clearly attributed as a comment; it
+must not simultaneously improvise an evaluation or grade that reasoning or decision quality.
+
+Interpretation belongs to a named evaluation framework/scorer or a human reviewer. If an assistant
+runs an evaluation itself, identify the specific metric, definition, evidence inputs and result;
+keep that evaluation separate from execution and from freeform reasoning comments. Do not turn
+a comment, an exploratory stopping label, schema acceptance or a replay check into a quality score.
+
+Inspect imported the continuation records; no reasoning-quality score or causal memory evaluation
+was produced for this pilot. The original offline scorers have explicit rules for their own
+fixtures; their scores must not be presented as grades of this live continuation run.
+
+## Inspect AI records and downstream evaluation
 
 Verified exports use native Inspect sample JSONL with the evidence in metadata. Failed and
 unexecuted calls remain samples, marked with absent transitions and actual stop status.
@@ -123,7 +148,7 @@ deference by joining own observations, signed evidence, actions and subsequent c
 Metrics and real-model decision quality remain unvalidated. SciSpace was consulted for research
 context; no paper result was used to redefine the owner's contracts or manufacture a metric.
 
-## Pilot budget and original approval gate
+## Historical original-pilot preparation (completed; do not rerun)
 
 Prepared plan: `evals/manifests/reasoning_continuation_pilot.json`: two Bakers, two real ticks,
 four maximum calls, Haiku 5.5, medium adaptive summarized thinking, four-second pacing.
@@ -148,7 +173,7 @@ node scripts/verify-continuation.mjs <runtime> <private-ledger> <new-inspect-jso
 Use `--from-experiment` when carrying an existing closed experiment allowance rather than the
 initial allowance. Preparation preserves the entire carried document and all holds, and begins
 a new explicitly authorized time window. It is not run as routine setup. The live script refuses
-a used or differently bound allowance, checks PowerShell 7 before any credential access, archives
+a differently bound allowance or a used allowance without its matching verified latest parent, checks PowerShell 7 before any credential access, archives
 each exact request/response/network receipt privately, and never retries. Its optional worker
 flag archives non-2xx response bodies too; default Study 1 worker behaviour is unchanged.
 
@@ -169,7 +194,8 @@ In the two-tick proof, both admitted prices change to 0.5, then 0.55 from the sy
 
 Final implementation regression: **1,341 Vitest tests passed across 106 files; one existing Windows skip**, including 24 continuation tests. TypeScript, eight recovery checks and 29 Python evaluation tests passed. An added boundary regression first failed in its empty-directory cleanup; that cleanup was corrected and the complete suite rerun successfully. Real Inspect **0.3.282** loaded all four verified exports without model calls. The live entry and allowance-preparation scripts refuse without their explicit pilot flags.
 
-At the end of the offline implementation stage: **0** paid requests and **no live receipts**; no real allowance had been created. The subsequent approved pilot is recorded below. Study 1 remains paused and the original October 18 accounting journal hash remains unchanged. Additional transcript degradation/limits and scientific behaviour metrics remain future work; live signed-continuation acceptance and model interpretation require the separately approved pilot.
+At the end of the offline implementation stage: **0** paid requests and **no live receipts**; no real allowance had been created. The subsequent approved pilot is recorded below. Study 1 remains paused and the original October 18 accounting journal hash remains unchanged. Additional transcript degradation/limits and scientific behaviour metrics remain future work; live signed-continuation acceptance was subsequently verified by the pilot recorded below.
+Interpretation and decision-quality comparisons remain further work.
 
 ## Live pilot completed
 
@@ -179,7 +205,7 @@ Aggregate usage: 46,706 input / 984 output tokens, including 812 reported thinki
 
 The original Oct 18 journal hash is unchanged; its complete history was carried from a verified exact private copy. No broker, kernel, contract, manifest or pricing source changed. Hosted CI on implementation bc00e6e passed. [Sanitized live evidence](evidence/reasoning-continuation-live-pilot-2026-10-23.json) records counts and hash anchors; raw requests/responses, signatures, game states, decisions, provider receipt IDs and accounting remain private.
 
-This establishes a working live continuation loop and independently verified world evolution. It does not establish a causal benefit of reasoning memory or validated decision-quality/adaptation scores. Live diary expiry was not tested by this two-tick pilot; real diary expiry with preserved earlier exposure is covered offline. New transcript limits/degradation and a controlled longer-run design remain next topics. Do not repeat this completed pilot, reinitialize its allowance or activate frozen Study 1 as routine setup.
+This establishes a working live continuation loop and independently verified world evolution. It does not establish a causal benefit of reasoning memory or validated decision-quality/adaptation scores. Live diary expiry was not tested by this two-tick pilot; real diary expiry with preserved earlier exposure is covered offline. Additional transcript bounds/degradation and controlled comparisons are further work. Do not repeat this completed pilot, reinitialize its allowance or activate frozen Study 1 as routine setup.
 
 ## Authorized staged extension, 2026-10-23
 
@@ -229,7 +255,7 @@ carry, unexhausted/held/overrun refusals, tampered/failed/stale parents and the 
 The actual saved pilot also replays and reconstructs tick 2 with its original state/history
 hashes. Original pilot and October 18 journal hashes are verified. The completed extension is recorded below.
 
-## Extension stopped after behavior worth inspecting
+## Recorded extension stop and execution results
 
 See the [sanitized results page](CONTINUATION_PILOT_RESULTS_2026-10-23.md) for a
 readable repository summary and links to the underlying aggregate evidence.
@@ -243,9 +269,9 @@ complete-tick checkpoints (8/8/16 calls); each replayed in a fresh Node process,
 
 Earned recognition was followed by diary behavior that differed from earlier turns. A current
 diary entry actually expired while its earlier authorized exposure and exact prior signed
-assistant blocks persisted in the later request. This satisfies the exploratory stopping goal
-of obtaining behavior worth inspecting. It does not establish a causal memory benefit, factual
-correctness of subjective diary impressions, or a validated decision-quality score. No matched
+assistant blocks persisted in the later request. The stored exploratory stop label is retained as provenance, not treated as an evaluation of
+reasoning quality. No framework/human causal memory assessment or decision-quality score was
+produced for this pilot. Subjective diary impressions were not graded for factual correctness. No matched
 no-history control was run; returned summaries are partial evidence. Price policy remained
 stable. Detailed observations and all raw data remain private.
 

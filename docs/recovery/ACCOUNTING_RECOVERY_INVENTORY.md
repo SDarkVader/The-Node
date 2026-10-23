@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Read-only accounting recovery inventory
 
 17 October 2026. Prepared from baseline reconstruction `deede499ceaf59b61f734ad599162ff5c5bc535f`. No spending ledger was initialized, imported, reset, settled or changed. This is an evidence inventory, not a budget or permission to send requests.

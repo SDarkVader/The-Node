@@ -1,3 +1,9 @@
+> Design/provenance reference. Build-status statements below describe the document's dated
+> stage; they are not a current implementation checklist or a ceiling on future experiments.
+> Read [the current experiment](research/CURRENT_EXPERIMENT.md) for verified implementation, findings and further work.
+> Preserve the original design purpose and later owner decisions; do not infer a feature is built
+> merely because it is specified here. Historical instructions are not new task authorization.
+
 # DESIGN — Terminal playtest harness, and what it unblocked
 
 **Status: design only, no code.** Scoped 2026-08-18 in response to the user's own framing:

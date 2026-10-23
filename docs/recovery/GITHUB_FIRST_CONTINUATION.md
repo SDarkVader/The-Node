@@ -1,56 +1,63 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-20. This is the cross-device entry point for a **new ChatGPT, Codex, PC, phone or cloud checkout**. GitHub is the shared source of code and sanitized development context; a local PC checkout is optional.
+Updated 2026-10-23. A fresh phone, PC or cloud session can recover development context from GitHub.
+Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
+[CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
-## Start from GitHub, not a previous chat or PC
+## Active branch and current experiment
 
-Repository: `SDarkVader/The-Node`. Shared development branch: `main`. It was consolidated by PR #22 (`acb3b2d`), and the latest merge is PR #26 (`9d004e8`), both on 2026-10-20. Verify the live branch HEAD with Git before work; do not assume a hardcoded commit is the current HEAD. Read `AGENTS.md`, `docs/recovery/CURRENT_SESSION.md`, this file, and the relevant feature evidence. Treat the user's current task as authoritative. Do not require local `.codex/session-recovery/` files, a running PC, prior conversation memory or trusted Codex hooks to understand the GitHub checkout.
+Repository: `SDarkVader/The-Node`. Current review branch:
+`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
+The shared integration line remains `main`; do not silently switch, reset, merge or discard work.
 
-The local recovery hook is optional convenience for uncommitted work on the *same machine*. It is not the cross-device transport. Only committed/pushed files are shared; ignored local patches, private data, secret bindings, runtime game checkpoints and local account ledgers **do not follow** a GitHub clone. Never infer that they have been transferred.
+The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
+calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
+passed. Estimated extension list cost USD 0.0613495 / conservative booking USD 0.122711, zero holds.
+No background run is active. The separate authority-attribution Study 1 is still paused and frozen.
 
-## Current code and verification
+[Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and
+[sanitized evidence](../research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
+record runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and the original world revision.
+Current documentation describes the programme, the evidence so far and further work separately.
+An unimplemented task is not a limitation of the experiment's future.
 
-PR #26 is merged into main at `9d004e8`. Its tree is identical to verified head `c59dd70`, on which hosted
-[Main integration](https://github.com/SDarkVader/The-Node/actions/runs/39513742598) (Windows, 80 native checks) and
-[Research conformance](https://github.com/SDarkVader/The-Node/actions/runs/39513742596) (Linux, G1–G3 including the
-accounted-study rehearsal) passed. It adds:
+## Start in a fresh session
 
-- the [ground-truth register](../research/GROUND_TRUTH_REGISTER_2026-10-20.md);
-- multi-actor construct contracts;
-- the capped accounted study runner, with its [runbook](../research/RUNBOOK_AUTHORITY_STUDY_1.md).
+1. Read `AGENTS.md`, this guide, `CURRENT_SESSION.md` and the current experiment page on the
+   actual development branch. Older 'current' labels describe dated stages.
+2. Inspect Git HEAD, branch and worktree. Read relevant source and source-anchored evidence.
+3. Run `npm run recovery:verify`. A local `.codex/session-recovery/` snapshot and trusted
+   lifecycle hook are optional conveniences, not prerequisites for GitHub-first context.
+4. Preserve staged, unstaged, untracked and ignored private work. Never reset or automatically
+   overwrite it. Existing checkpoints are verified rather than restored over the worktree.
+5. After meaningful work update root README, CURRENT_SESSION and local continuity when available;
+   run `npm run recovery:capture`, then commit/push sanitized context on the agreed branch.
 
-The earlier consolidation state follows.
+The local recovery directory preserves machine-specific patches and snapshots. A trusted hook
+can invoke the same recovery checks at session lifecycle events. Manual commands work independently.
+The historical [consolidation report](MAIN_CONSOLIDATION_2026-10-20.md) and
+[PR #21 review](PR21_REVIEW_2026-10-20.md) retain their original source-specific test results.
 
-PR #22 is merged into main at `acb3b2d`, whose tracked tree matches verified PR
-head `1b6684a`. Hosted [integration](https://github.com/SDarkVader/The-Node/actions/runs/39456555818)
-and [dependency audit](https://github.com/SDarkVader/The-Node/actions/runs/39456555781)
-passed: 1189 Vitest, TypeScript, 18 Python, 80 native, 8 recovery, and two deterministic
-29-sample Inspect runs with exported replay. A fresh main clone passed tracked recovery.
-These are source-anchored results, not another full rerun for this documentation update.
-See [the consolidation report](MAIN_CONSOLIDATION_2026-10-20.md) and the historical
-[PR #21 review](PR21_REVIEW_2026-10-20.md). Root [README](../../README.md) is the current
-overview; maintain it with the checkpoint. The [accounted-agent/framework design](../DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md)
-is tracked, with execution disabled. Unique Godot sky/navigation and Vitest 5 work
-remain separate; do not assume those features are on main.
+## Private experimental state
 
-Branch cleanup deleted 23 fully merged remote branches after exact-tip/ancestry
-verification and explicit user authorization. Only main and the two separate
-Godot/Vitest 5 branches remain. The separately authorized temporary deletion-rule
-change was restored immediately; exact historical tips are in the
-[cleanup manifest](evidence/merged-branches-2026-10-20.json).
+GitHub carries source, documents and sanitized aggregates. It does not contain private provider
+responses, signatures, world observations, runtime state, credentials or allowance journals.
+Those bytes cannot be reconstructed from a clone that never contained them. Secure transfer and
+recovery mechanisms can be developed; do not confuse missing data with a ceiling on future work.
 
-The branch includes the TypeScript simulation and broker under `src/`, Godot client under `client/`, and deterministic tests under `test/`. Current rules-aware context lives in `src/agent/rulesContext.ts`, `rulesAwareContext.ts`, `observationTables.ts`, `responsesRequest.ts` and `offlineRulesEvaluation.ts`. Detailed implementation, source boundaries and reproducible evidence: [RULES_AWARE_CONTEXT](RULES_AWARE_CONTEXT.md). Its historical stage reported 1,143 Vitest + 80 native checks, TypeScript passing, and a deterministic bounded-memory fixture (8/8 with diary, 4/8 without, 8/8 replay-restored). These are **reported historical runs**, not independently rerun here and not proof of real-model strategy.
+A later authorized live continuation requires the actual latest private tick-18 parent, its
+matching current journal, and independent verification before dispatch. The runner reconstructs
+the world through original replay and preserves exact signed own histories. Reusing an older
+checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to
+retain and diagnose, not an instruction to retry or erase a hold.
 
-The Windows GitHub Actions workflow `.github/workflows/session-recovery-ci.yml` completed successfully at [run 39141127029](https://github.com/SDarkVader/The-Node/actions/runs/39141127029) after full-history checkout was enabled. It verified the Git-tracked recovery anchor, executed the hook-start script, tested recovery and typechecked. It **did not** verify an interactive Codex app automatically invoking hooks, and it did **not** test whether an agent can continue a substantive task. Check its run SHA when interpreting that result.
+Do not infer permission, missing records or a zero balance from a fresh clone. Do not create a
+replacement allowance or repeat paid calls as setup. This guide does not authorize a run.
 
-## Scientific and operational boundaries
+## Documentation discipline
 
-Read [RULES_AWARE_CONTEXT](RULES_AWARE_CONTEXT.md), [RULES_REVIEW_2026-10-18](RULES_REVIEW_2026-10-18.md), [INITIAL_GAME_TURN](INITIAL_GAME_TURN.md), and [INITIAL_TEST_BUDGET](INITIAL_TEST_BUDGET.md) before changing the agent experiment. The current diary/event-mark contract is not implemented automatically; restricted trespass transactions remain incomplete. Actual held-out multi-turn model comprehension has not been established. Do not treat old composed diary actions as automatic event marking.
-
-Some older documents (including `docs/HANDOVER.md` and `EXPERIMENT_FIRST_PASS_RESULTS.md`) contain **dated stages and older checkout descriptions**. Do not interpret their 'CURRENT' banners as the current branch state. Reconcile conflicting claims against Git, actual source, tests, and the latest scoped evidence. Historical original ledger gaps and holds must not be erased or replaced with zero. A successful earlier private two-tick experiment is not a portable game checkpoint. **Do not run paid model calls, initialize or reset allowances, or claim private experimental state is available from GitHub.** Obtain explicit authorization and actual private state through approved secure channels before any live work.
-
-## Continuation contract
-
-For each new task: inspect the live branch and exact relevant source; identify the requested change and protected invariants; implement and verify the smallest coherent change; distinguish actual test results from historical reports; update the Git-tracked `CURRENT_SESSION.md` and this handover when facts change; commit and push sanitized results to the agreed development branch. If writes cannot be performed, report that plainly and supply the patch. Do not silently change branches, merge to main, launch actors, use paid APIs, or substitute a local recovery test for the user's GitHub-first requirement.
-
-**Known limitations:** GitHub alone cannot recover unpublished local edits, ignored runtime state, private credentials or the original missing historical ledger. The presence of source and notes proves portability of documented context, not automatic injection of those notes into every ChatGPT conversation. A new agent must read the files through its available GitHub access.
+[Scope, evidence and development](../EVALUATION_SCOPE_AND_DEVELOPMENT.md) defines the terminology.
+Keep current implementation, revisable configuration, observed evidence and further work distinct.
+For a genuine boundary, state exactly what cannot be done under which conditions and why.
+Preserve original design documents, hash-bound evidence and dated results as provenance; route
+readers to current guidance rather than silently rewriting historical observations.

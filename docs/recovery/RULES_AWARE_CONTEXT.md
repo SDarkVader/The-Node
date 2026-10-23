@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Rules-aware observer context and offline evaluation
 
 Implementation: `f33469d7a40595b046ee5c262be5834de79a0918`, based on development/reconstruction tip `6ba5b2da23291c60c27235d8fc4d1798c3ffadd6`. The security-only merge on main remains separate. No paid API request, key access, agent launch, accounting migration or budget reset was performed.
@@ -70,9 +75,9 @@ The four validated core file SHA256 values remain:
 
 No engine, kernel, observer, action validator, host, checkpoint, replay or accounting implementation was edited. The historical journal retains SHA256 `fc91bd96dc2b34ba43aa063bfc5a9eabb2aff48ce7ca92d4c1fedaa77ac808df`. The private forward allowance still has two consumed requests, 11,418 microUSD booked, zero new hold and 88,582 microUSD remaining. Main and previous checkouts are preserved.
 
-## Remaining gaps
+## Further work recorded at this historical stage
 
-1. **Automatic mechanical diary connections and grounded non-editing event marking remain unbuilt.** The context explains that limitation and the evaluator flags legacy composition; it does not implement a new memory mechanic or enforce a new admission contract over the protected core.
+1. **Automatic mechanical diary connections and grounded non-editing event marking remain unbuilt.** The historical context describes that unimplemented work and the evaluator flags legacy composition; it does not implement a new memory mechanic or enforce a new admission contract over the protected core.
 2. **Trespass remains an eligibility helper, not a working restricted-read transaction.** Individual abodes, crafted-key provenance/consumption, real absence, detection and consequences still need their ordered integration work.
 3. **General signed reputation, monuments, discretionary verbs for other roles and full navigation are not invented by explanatory text.** Future implementation needs corresponding observer disclosure and action tests.
 4. **Offline fixture success is not evidence of actual model comprehension.** The rubric can test declared interpretation with source support; held-out multi-turn model decision quality and legitimate-memory ablations still require a separately authorized model run. No chain-of-thought or hidden reasoning is requested or claimed.

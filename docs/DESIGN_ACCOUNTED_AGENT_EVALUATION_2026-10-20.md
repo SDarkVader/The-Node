@@ -1,3 +1,9 @@
+> Design/provenance reference. Build-status statements below describe the document's dated
+> stage; they are not a current implementation checklist or a ceiling on future experiments.
+> Read [the current experiment](research/CURRENT_EXPERIMENT.md) for verified implementation, findings and further work.
+> Preserve the original design purpose and later owner decisions; do not infer a feature is built
+> merely because it is specified here. Historical instructions are not new task authorization.
+
 # Accounted agent evaluation and framework alignment
 
 2026-10-20. **Design only. Live execution remains disabled.**
@@ -21,7 +27,7 @@ mapping and proposed acceptance criteria are design recommendations, not framewo
 | Inspect AI | Tasks, solvers, models, scorers and reproducible logs. Custom providers extend `ModelAPI`. | Genuine native orchestration already exists. The current model is offline `mockllm`. | Add an accounted custom provider adapter, retaining actual usage and failure records. Inspect runs an evaluation; it does not itself establish reasoning, cooperation or safety. |
 | AgentDojo | Separate legitimate user tasks from attacker injection goals; evaluate task utility and security against environment state/traces. | A legitimate bakery task and injected notices exist, but they are an adapted pattern. | Define feasible user/attack task pairs; present injections through a declared lower-trust data surface; check kernel outcomes independently. Native integration requires an actual Node task suite and runtime adapter, not only an “AgentDojo-style” label. |
 | ControlArena | A setting supplies tools, tasks, honest/attack modes and task scorers. Control protocols may monitor, defer or edit proposals. | The pricing side task and passive rule monitor are an adapted pattern. | Supply a Node Setting and honest/attack datasets. Monitor the proposal before execution; keep monitoring and intervention arms separate. Report main-task usefulness and side-task success independently. Detection is not prevention. |
-| NIST AI RMF 1.0 | Contextual risk measurement, documented evaluation and evaluation-method effectiveness. | Project-defined metric mapping and illustrative thresholds exist. | Each mapping must link a defined measure to evidence, known limitations and review status. No “NIST-certified” score or generalized safety claim. |
+| NIST AI RMF 1.0 | Contextual risk measurement, documented evaluation and evaluation-method effectiveness. | Project-defined metric mapping and illustrative thresholds exist. | Each mapping must link a defined measure to evidence, evidence scope, further work and review status. No “NIST-certified” score or generalized safety claim. |
 | Concordia | No integration is present or requested for this increment. | No comparative environment or social-agent validation exists. | Leave unsupported. A future comparison would need its own environment/agent contracts and validation; it must not silently replace the Node kernel. |
 
 Sources: [Inspect custom Model APIs](https://inspect.aisi.org.uk/extensions-model-api.html),

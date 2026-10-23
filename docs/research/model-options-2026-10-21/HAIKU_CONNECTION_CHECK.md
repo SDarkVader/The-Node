@@ -1,8 +1,14 @@
+> Current status, 2026-10-23: the approved medium-effort diagnostic below already succeeded;
+> the later [live continuation pilot](../CURRENT_EXPERIMENT.md) completed 36 calls over 18 ticks.
+> Review the saved evidence before deciding whether a new paid diagnostic is needed. This page
+> preserves dated diagnostic results and projections; the old estimate defect was fixed offline.
+> Do not rerun completed checks or create an allowance as documentation setup.
+
 # Haiku connection check (owner-run) — 2026-10-22
 
 Checks whether `claude-haiku-5-5` accepts the **real study-1 requests**: the same instructions,
 observation, notices and decision schema, translated to Anthropic's Messages format by
-`src/agent/anthropicRequest.ts`. No cloud session makes this call; you run it on your PC.
+`src/agent/anthropicRequest.ts`. This is an explicit diagnostic path, separate from the current continuation run.
 
 ## What it costs
 
@@ -131,7 +137,7 @@ All seven free counts returned HTTP 200 (schema excluded):
 | importexport-0 | 10,728 |
 | grifter-0 | 10,807 |
 
-**Diagnostic estimate limitation found:** the free Baker count was 10,799, whereas billed input
+**Diagnostic estimate defect found and subsequently fixed offline:** the free Baker count was 10,799, whereas billed input
 was 14,090 (3,291 extra). The 25% margin estimates 13,499 input tokens, so it is not a reliable upper
 bound: measured input with the full 2,048 output tokens would cost USD 0.002433, slightly above
 that estimate. The observed bill did not overrun either limit. The accounted study uses its own

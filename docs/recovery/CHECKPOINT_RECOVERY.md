@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 > Follow-up: [durable fixture execution authority and v1/v2 compatibility](DURABLE_FIXTURE_RECOVERY.md). New checkpoints include execution attempts; old v1 game evidence remains readable but cannot grant fixtures from missing history. See [development audit](DEVELOPMENT_BRANCH_AUDIT.md) for the reproduced restart gap and current 956-test results. This earlier review below describes the original game-state checkpoint stage.
 
 # Durable participant checkpoints and crash recovery

@@ -1,3 +1,10 @@
+> Current status, 2026-10-23: Haiku 5.5 native Anthropic integration is implemented and has
+> completed the 36-call live continuation pilot. Its [results](../CONTINUATION_PILOT_RESULTS_2026-10-23.md)
+> supersede a claim that provider acceptance is still unknown. The comparison below is the
+> dated October 21–22 source/pricing review, not a new survey of today's offerings. In particular,
+> its transport-change list describes the earlier adapter state; Anthropic's separate worker
+> is now built. Local/model alternatives and benchmarks are further work, not programme limits.
+
 # Model options for the accounted studies — verified synthesis (2026-10-22)
 
 **Status: every family verified.** The researchers worked on 2026-10-21. Independent verifiers

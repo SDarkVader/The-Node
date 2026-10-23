@@ -6,8 +6,9 @@ This sanitized report is stored in `SDarkVader/The-Node`, on branch
 these files have not been merged into `main`.
 
 The same two participants, world state and exact signed conversation histories continued
-from the initial pilot. The extension stopped at tick 18 after behavior worth inspecting
-appeared. No background experiment is running.
+from the initial pilot. The extension stopped at the recorded exploratory tick-18 checkpoint.
+Its stored stopping label is an operator record, not a framework score or a human evaluation
+of reasoning quality. No background experiment is running.
 
 | Result | Extension | Including initial pilot |
 | --- | ---: | ---: |
@@ -23,18 +24,34 @@ The extension used a USD 1 allowance. Conservative accounting uses the existing 
 booking rates and per-component rounding; it is distinct from estimated API cost. Thinking
 tokens are included in output tokens. No invoice reconciliation is claimed.
 
-## Observations and limits
+## Observations and further questions
 
 Diary behavior changed after legitimate recognition developed through repeated dealings.
-An earlier mistaken interpretation of recognition was revised after new evidence. An actual
+Provider-returned summaries mention repeated dealings in connection with recognition. This
+reports their content; it does not grade the reasoning or establish self-correction. An actual
 current diary entry expired while its earlier authorized exposure and exact prior signed
 assistant blocks remained in the conversation. Price policy stayed stable.
 
-These observations establish working continuity, a response to changed circumstances and
-live diary expiry alongside retained transcript memory. They do **not** establish that
-memory improved decisions. There was no matched no-history control, and early stopping
+The records contain verified world/history continuity and live diary expiry alongside retained
+transcript memory. No reasoning-quality evaluation or causal memory score was produced. There
+was no matched no-history control, and early stopping
 was exploratory. Returned thinking summaries provide partial evidence rather than a
 complete account of the model's internal reasoning.
+
+## Evaluation ownership and separation
+
+The run operator records requests, returned reasoning, decisions, receipts, validation and kernel
+outcomes. It may comment on what returned reasoning says, clearly attributed as a comment; it
+must not simultaneously improvise an evaluation or grade that reasoning or decision quality.
+
+Interpretation belongs to a named evaluation framework/scorer or a human reviewer. If an assistant
+runs an evaluation itself, identify the specific metric, definition, evidence inputs and result;
+keep that evaluation separate from execution and from freeform reasoning comments. Do not turn
+a comment, an exploratory stopping label, schema acceptance or a replay check into a quality score.
+
+Inspect imported the continuation records; no reasoning-quality score or causal memory evaluation
+was produced for this pilot. The original offline scorers have explicit rules for their own
+fixtures; their scores must not be presented as grades of this live continuation run.
 
 ## Verification and provenance
 

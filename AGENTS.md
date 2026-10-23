@@ -1,6 +1,6 @@
 # GitHub-first, cross-device source of truth
 
-For any fresh ChatGPT/Codex/PC/phone session, first read `docs/recovery/GITHUB_FIRST_CONTINUATION.md` and `docs/recovery/CURRENT_SESSION.md` from the **current GitHub development branch**, then verify current branch HEAD and relevant source. The Git-tracked handover is primary; a local `.codex/session-recovery/` snapshot, PC connection, trusted lifecycle hook or previous chat is **not required**. Do not ask the user to connect a PC when GitHub contains the requested source. A GitHub clone does not contain uncommitted/ignored files, private ledgers, secrets or runtime checkpoints. Do not infer they are present or reset missing budgets. Update and push sanitized Git-tracked context after meaningful work. See the continuation contract for evidence, current limitations and the distinction between historical tests and live results.
+For any fresh ChatGPT/Codex/PC/phone session, first read `docs/recovery/GITHUB_FIRST_CONTINUATION.md` and `docs/recovery/CURRENT_SESSION.md` from the **current GitHub development branch**, then verify current branch HEAD and relevant source. The Git-tracked handover is primary; a local `.codex/session-recovery/` snapshot, PC connection, trusted lifecycle hook or previous chat is **not required**. Do not ask the user to connect a PC when GitHub contains the requested source. A GitHub clone does not contain uncommitted/ignored files, private ledgers, secrets or runtime checkpoints. Do not infer they are present or reset missing budgets. Update and push sanitized Git-tracked context after meaningful work. See the continuation contract for evidence, further work and the distinction between historical tests and live results.
 
 # Development-session recovery
 
@@ -15,3 +15,20 @@ Never put credentials, accounting journals, private experiment inputs or private
 After meaningful feature, behaviour, verification, branch-integration or next-step changes, update root `README.md` together with `docs/recovery/CURRENT_SESSION.md` before committing the handover. Keep one dated current overview, actual run commands, implemented versus planned capabilities, and links to the latest scoped evidence. Name the source commit for test totals; do not imply historical checks were rerun. Move dated development history to the devlog instead of accumulating competing “Current” banners. When a branch is merged into another, reconcile the checkpoint's branch field and active-branch wording and verify a clean checkout of the destination branch. Do not modify unrelated historical evidence to make it look current.
 
 The shared line is `main` after PR #22 merged. Its checkpoint no longer declares the completed consolidation review branch. A future explicitly directed integration may name one exact `reviewBranch`; arbitrary mismatches and missing ancestor anchors must still fail verification.
+
+# Experimental documentation terminology
+
+The owner's 2026-10-23 distinction applies throughout documentation: unimplemented features,
+defects, unresolved questions, unrun tests and revisable configurations are further work,
+not limitations on what the experiment may become. Reserve limitation for a boundary that
+cannot be crossed under explicit conditions and give the concrete reason. Keep current
+implementation, configuration, evidence so far and further work separate. Start with
+`docs/research/CURRENT_EXPERIMENT.md`; preserve historical evidence and original design intent.
+
+## Evaluation responsibilities (owner clarification, 2026-10-23)
+
+Keep execution and evaluation separate. The operator can record facts and make clearly
+attributed comments on returned reasoning, but cannot simultaneously grade it by freeform
+judgment. Interpretation belongs to named evaluation frameworks/scorers and humans. An
+assistant-run evaluation must identify specific metrics, definitions, evidence and results
+and be reported as a separate evaluation step. Import/replay/schema checks do not grade reasoning.

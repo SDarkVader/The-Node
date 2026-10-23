@@ -1,3 +1,5 @@
+> These are design-stage simulations, distinct from the [current live reasoning experiment](../docs/research/CURRENT_EXPERIMENT.md). Their original proposals and measurements are retained; unbuilt items are further work.
+
 # Design sims
 
 Standalone Python scripts for population-scale sanity-checking of not-yet-built

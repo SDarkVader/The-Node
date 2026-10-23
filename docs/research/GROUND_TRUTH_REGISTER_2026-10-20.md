@@ -1,3 +1,11 @@
+> Current reading, 2026-10-23: this register retains dated decisions and source checks. Read
+> [CURRENT_EXPERIMENT](CURRENT_EXPERIMENT.md) for today's status. Recognition v2, per-person
+> dealings, v2 Grifter permission, authored diary rules, Anthropic dispatch and verified live
+> transcript continuation are implemented. The completed live pilot has 36 decisions / 18 ticks.
+> The protected production gate is a separate path; its closed status is not a statement that
+> live experimental routing is unbuilt. Study 1 remains paused and frozen. Further work is not
+> a limitation of the programme. No directional hypothesis is imposed on exploratory work.
+
 # Ground-truth register: verification, decisions and gate status
 
 2026-10-20. Tracks [*The Node — Ground Truth and Publishable Route v0.1*](The_Node_Ground_Truth_and_Publishable_Route_v0_1_1.pdf)
@@ -19,7 +27,7 @@ state), **DECIDED** (owner decision, dated), **OPEN** (still needs a decision or
 | Inspect harness: observe → buildResponsesRequest → validateDecision → stepParticipantState; one Baker | VERIFIED, now extended | `src/eval/episode.ts`. Owner decision D3 adds a multi-actor driver for the anchored construct (§5); the single-actor runner is unchanged. |
 | Offline mockllm only | VERIFIED | `evals/inspect_node/solver.py` `agent_model` raises `LiveModelRefused` for any non-mockllm model; the new multi-actor solver reuses that function (`evals/tests/test_constructs.py`). |
 | 29 samples, 56 fixture checks, exported replay, matching hashes | REPRODUCED | [G1 record](G1_REPRODUCTION_2026-10-20.md): 29/29 deterministic, 29/29 replay, 56/56 fixture checks, 29/29 exported replay per run. |
-| PR #21 defects fixed; PASS WITH LIMITATIONS | VERIFIED (document) | `docs/recovery/PR21_REVIEW_2026-10-20.md`; reproduced current behaviour as above. |
+| PR #21 defects fixed; PASS; further work recorded | VERIFIED (document) | `docs/recovery/PR21_REVIEW_2026-10-20.md`; reproduced current behaviour as above. |
 | Main consolidation; Godot and Vitest 5 branches outside main | VERIFIED | `git branch -r` at session start lists only `main` and this task branch in this clone. The remote inventory is in `docs/recovery/evidence/merged-branches-2026-10-20.json`. |
 | Live inference not enabled; private ledgers not in Git | VERIFIED | `src/agent/broker.ts:12` `assertLiveAdmission(): never` throws `recovery_accounting_unresolved`; it is called before dispatch in `responsesBroker.ts:61` and `responsesTransport.ts:112`. |
 | Authority attribution confounded with wording | VERIFIED | `src/eval/scenarios.ts:61` (“TOWN COUNCIL DIRECTIVE: by order of the Council, all bakers must…”) vs `:68` (“A neighbour: you should…”). Resolved for the anchored study by the label-only arms in §5. |
@@ -142,7 +150,7 @@ The contract therefore fixes the statistical unit at episode × arm.
 |---|---|
 | G0 Ground-truth freeze | This annex. D1 is decided but conflicts with prior rules; it needs the owner's confirmation (§7). |
 | G1 Offline conformance | REPRODUCED on Linux; see [G1 record](G1_REPRODUCTION_2026-10-20.md). The native PowerShell checks were not reproduced here. |
-| G2 Construct and reachability | Contract v1.0.0 and reachability done, with offline Inspect verification (`python -m inspect_node.constructs`). Not preregistered: G5 owns hypotheses, seeds and analysis. |
+| G2 Construct and reachability | Contract v1.0.0 and reachability done, with offline Inspect verification (`python -m inspect_node.constructs`). Not preregistered: further design can declare questions, seeds, comparisons and analysis without inventing a directional prediction. |
 | G3 Accounted execution safety | **Done offline.** The owner chose a capped batch runner, a USD 5 first allowance and `gpt-5.4-nano-2026-03-17`. Pieces: `ExperimentBudget` (carries the closed 18 Oct allowance unchanged; rate evidence reused; one request outstanding; unknown usage held; explicit operator settlement at the full ceiling); `buildEvaluationRequest` (task and notices inside the hashed bytes); `runAccountedStudy` (fail closed, pacing, resume by attempt). 19 loopback tests, mutation M4 (dispatch before reservation) killed, and a CLI rehearsal of the exact procedure (`test/cli/rehearse-accounted-study.sh`, also in CI). Hosted CI on PR #26 found two defects, both fixed in `7f7bef9`. First, the response deadline counted our own journal write and fsync; it now ends when the response arrives. Second, reservations stored the full decision context, about 7.8 KB per call, which would have filled most of the 8 MiB journal in one study; they now store the participant identity plus the request-bytes hash, about 0.9 KB per call, so 714 calls take about 0.66 MB. |
 | G4 Minimal pilot | Combined with study 1 at the owner's choice: [runbook](RUNBOOK_AUTHORITY_STUDY_1.md), owner runs it when they reactivate it (planned for 2026-10-22, postponed on 2026-10-21). |
 | G5–G7 | Not started. Study 1 is one seed and not preregistered; G5 adds seeds and a frozen analysis plan. |

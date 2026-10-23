@@ -1,20 +1,19 @@
-# AI safety evaluation infrastructure
+# Agent evaluation infrastructure
 
-Status (2026-10-20, on `main` after PR #22 incorporated PR #21): **built and verified with
-scripted fixtures only.** No live model has been run against The Node through this harness,
-and the harness refuses to run one (see [Live models](#live-models-blocked)). Every number
-below describes the scripted fixtures. Together they verify the harness, validator, kernel,
-scorers and exports, and say nothing about any real model.
+Updated 2026-10-23. The current live experiment is [reasoning continuity](research/CURRENT_EXPERIMENT.md):
+36 paid decisions over 18 real ticks, stopped at a verified checkpoint. Exact own histories,
+actual world transitions, live diary expiry, accounting and fresh-process replay are recorded
+in the [results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
 
-Independent PR #21 review found and fixed stale instructions after role changes,
-behavioural scoring after replay/ledger integrity failures, incomplete-run verification,
-and JSON-export replay failure. Current verification also replays exported records in a
-fresh Node process in both runs. JSON-compatible genesis changes state hashes without
-changing actions or economic outcomes; the results below remain historical pre-fix
-evidence. Current evidence and experimental limits:
-[PR21_REVIEW_2026-10-20](recovery/PR21_REVIEW_2026-10-20.md).
+There are three paths: the original offline Inspect fixtures, the separately paused
+seven-actor authority study, and the live continuation runner. Counts from one path are not
+results for another. [Scope, evidence and development](EVALUATION_SCOPE_AND_DEVELOPMENT.md)
+distinguishes findings, current configurations and further work.
 
-## Architecture
+The historical PR #21 fixes and fixture totals below retain their source revisions. They
+validate infrastructure, not claims about models that were not part of those fixture runs.
+
+## Original offline Inspect architecture
 
 The Node stays the deterministic multi-agent society and simulation engine. Nothing in its
 mechanics, validators, roles, economics or visibility rules was changed for evaluation.
@@ -41,14 +40,29 @@ Inspect AI task (evals/inspect_node/tasks.py)
   JSON schema and the 32 KiB ceiling are byte-identical to what a real provider would receive.
 - **Notices** (`src/eval/scenarios.ts`) are the only thing the evaluation layer adds. They sit
   beside the observation, labelled as untrusted game data, and never reach the kernel.
-- **No transcript is carried between turns.** The rules context promises that "no archived
-  prompt … is supplied", so each turn sends only the system instructions and the current
-  observation. Continuity can only come from the game's own memory mechanics.
+- **Current-view condition in this path.** The original offline fixture path and frozen Study 1
+  send the current authorized view without an archived transcript. The separate continuation
+  experiment explicitly retains each actor's own transcript; do not apply this condition to it.
 - **The validator decides, the kernel acts.** An agent's text is parsed, then judged by the real
   `validateDecision`. Rejection reasons come from probing that same validator one field at a
   time, never from re-implementing its rules. A rejected proposal admits nothing that tick.
 - **Every episode is replayable.** The runner builds the existing replay tape and re-runs the
   kernel from genesis at the end. `replayVerified` must be true.
+
+## Evaluation ownership and separation
+
+The run operator records requests, returned reasoning, decisions, receipts, validation and kernel
+outcomes. It may comment on what returned reasoning says, clearly attributed as a comment; it
+must not simultaneously improvise an evaluation or grade that reasoning or decision quality.
+
+Interpretation belongs to a named evaluation framework/scorer or a human reviewer. If an assistant
+runs an evaluation itself, identify the specific metric, definition, evidence inputs and result;
+keep that evaluation separate from execution and from freeform reasoning comments. Do not turn
+a comment, an exploratory stopping label, schema acceptance or a replay check into a quality score.
+
+Inspect imported the continuation records; no reasoning-quality score or causal memory evaluation
+was produced for this pilot. The original offline scorers have explicit rules for their own
+fixtures; their scores must not be presented as grades of this live continuation run.
 
 ## Observed, inferred, simulation failure
 
@@ -163,37 +177,36 @@ machine-readable contract is `src/eval/constructs/authorityAttribution.ts`, snap
 - **The classifier** is a pure function of an exported record plus the contract. The bridge's `classify` command re-derives it in a fresh process, and a contract-hash mismatch is refused.
 - **Commands:** `inspect eval node_tasks.py@node_authority_attribution --model mockllm/model`, and `python -m inspect_node.constructs --out <dir>`. The latter runs two runs, the determinism check, exported replay, exported re-classification and the fixture rate checks.
 
-Reachability evidence and limits are in
+Reachability evidence and follow-up work are in
 `docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md` §5. That includes the finding that controlled
 actors are coupled through real role transitions, so the statistical unit is the episode × arm.
 
-## Live models
+## Live continuation and the separate authority study
 
-**Through Inspect: still refused.** `solver.agent_model` refuses every model that is not Inspect's
-offline `mockllm`, with no override.
+The original Inspect solver still refuses non-mock models. This is a deliberate routing choice:
+paid calls use the TypeScript accounting authority. Inspect imports verified live records.
 
-**Through the accounted study runner: built (2026-10-20), not yet run.** Live calls go only through
-TypeScript, where the single accounting authority lives:
+The continuation path is implemented and ran successfully through:
 
-- `src/eval/accountedRunner.ts` and `src/agent/experimentBudget.ts`;
-- the scripts `build-study-runtime`, `prepare-experiment-budget`, `run-accounted-study` and `settle-failed-call`.
+`ContinuationHost → authorized observation → ContinuationConversations → ExperimentBudget`
+`→ Anthropic worker → exact receipt/validation evidence → real kernel tick → parent-linked ledger`.
 
-Each call follows the same order:
+`src/eval/continuationRunner.ts` and `continuationLedger.ts` preserve the original world,
+actor-scoped histories, source revisions and accounting provenance. Independent verification
+reconstructs every request and transition. Failed/partial calls are retained without automatic
+retry; sealed complete-tick checkpoints can resume only against the matching latest journal.
 
-1. The request bytes are built with the task and notices inside them (`src/eval/evaluationRequest.ts`).
-2. A durable reservation is made.
-3. The request is dispatched through the existing PowerShell worker.
-4. Usage is booked before the response can affect anything.
-5. Validation, then the kernel step.
+The separate `src/eval/accountedRunner.ts` implements authority-attribution Study 1. Its frozen
+manifest remains paused pending owner reactivation. It does not become the completed
+continuation pilot merely because both use Haiku and ExperimentBudget. The original production
+`assertLiveAdmission` gate also remains unchanged; it is not the experimental runner's gate.
 
-Unknown usage keeps its hold and stops the run until the operator settles it at the full ceiling.
+Reserve final bytes before dispatch, book known usage before action, validate, then step the
+kernel. Unknown usage preserves its hold. Python analysis and Inspect imports do not dispatch
+provider calls. See the [continuation runbook](research/REASONING_CONTINUATION_2026-10-23.md)
+and [Study 1 runbook](research/RUNBOOK_AUTHORITY_STUDY_1.md).
 
-Python never calls a provider. It analyses the resulting records (`python -m inspect_node.analyze_study`).
-The owner runs the first study (USD 5 cap, `claude-haiku-5-5` since owner decision D11 on 2026-10-22; originally `gpt-5.4-nano-2026-03-17`) when they reactivate it (postponed on 2026-10-21), following
-`docs/research/RUNBOOK_AUTHORITY_STUDY_1.md`. The production `assertLiveAdmission` gate is unchanged
-and stays closed.
-
-## Future modules (not implemented)
+## Further development and research
 
 - **ControlArena and AgentDojo packages.** The control and injection tasks reimplement their
   *patterns* (main/side task with a trusted monitor; user task vs injection task with attack
@@ -201,8 +214,17 @@ and stays closed.
 - **Concordia**: optional, for later comparative research; not integrated.
 - **Model-graded scorers and an LLM monitor.** All scorers and the monitor are deterministic
   rules. A model monitor would need the same accounting as any live call.
-- **Multi-agent episodes beyond the anchored construct.** Built for the authority-attribution
-  contract only (see “Construct contracts” above). The 29-sample suite still controls one Baker.
+- **Broader multi-agent conditions.** The seven-actor authority driver and shared-world continuation
+  host are built. Live evidence so far covers two Bakers; broader roles and conditions are further work.
 - **Held-out seeds, epochs and statistical treatment** for real-model comparisons.
 - **Other roles' decisions.** The schema exposes a price override only for Bakers, so other
-  roles can be evaluated for movement and communication only.
+  roles can currently submit movement, communication and eligible diary actions under v2.
+  Additional discretionary role inputs are development work, not a limit on future experiments.
+
+## Realtime examination interface
+
+The [Claude Design handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
+identifies the evidence tail, world/Godot projection and framework-result adapters to build.
+Inspect continuation import is available; a live dashboard and continuation-specific reasoning
+scores are not claimed implemented. Execution, attributed reasoning comments, framework metrics
+and human interpretation must remain separate in the interface.
