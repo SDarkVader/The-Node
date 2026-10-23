@@ -5,7 +5,7 @@
 # -Endpoint messages      POST /v1/messages              (paid)
 # -Endpoint count_tokens  POST /v1/messages/count_tokens (free, rate limited)
 param([Parameter(Mandatory=$true)][string]$KeyPath, [Parameter(Mandatory=$true)][string]$ArtifactDirectory,
-      [Parameter(Mandatory=$true)][ValidateSet('messages', 'count_tokens')][string]$Endpoint)
+      [Parameter(Mandatory=$true)][ValidateSet('messages', 'count_tokens')][string]$Endpoint, [switch]$ArchiveAllResponses)
 $ErrorActionPreference = 'Stop'
 $keyValue = $null
 $credentialText = $null
@@ -56,6 +56,9 @@ try {
   }
   $raw = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
   if ($raw.Contains($keyValue)) { throw 'unsafe_response' }
+  if ($ArchiveAllResponses) {
+    [IO.File]::WriteAllText((Join-Path $ArtifactDirectory 'response.json'), $raw, [Text.UTF8Encoding]::new($false))
+  }
   if ($response.IsSuccessStatusCode) {
     $parsed = $raw | ConvertFrom-Json -Depth 40
     if ($Endpoint -eq 'messages' -and $parsed.type -ne 'message') { throw 'response_envelope' }

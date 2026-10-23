@@ -1,0 +1,29 @@
+{
+  "schema": "node-reasoning-continuation-v1",
+  "id": "reasoning-continuation-pilot",
+  "model": "claude-haiku-5-5",
+  "seed": 103,
+  "actors": [
+    {
+      "actorId": "baker-0",
+      "role": "Baker",
+      "ordinal": 0
+    },
+    {
+      "actorId": "baker-1",
+      "role": "Baker",
+      "ordinal": 1
+    }
+  ],
+  "maxTicks": 2,
+  "maxCalls": 4,
+  "deadlineMs": 16000,
+  "minIntervalMs": 4000,
+  "memory": "own_append_only_transcript",
+  "allowance": {
+    "maxRequests": 4,
+    "limitMicroUsd": 100000,
+    "perRequestMicroUsd": 20000,
+    "windowHours": 24
+  }
+}

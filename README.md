@@ -101,23 +101,19 @@ are built. On the owner's PC the check accepted the real study schema and return
 decision in 3.8 s. Local, free models are preferred where suitable, alongside paid ones; testing
 them comes later.
 
-The implementation is currently validated using scripted offline policies through
-Inspect's `mockllm` provider. The next stage is the
-[accounted-agent integration](docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md),
-which designs how model-generated decisions, bounded decision justifications and
-inference accounting will connect to this same evidence pipeline. The
-[evaluation infrastructure guide](docs/EVAL_INFRASTRUCTURE.md) describes the current
-tasks, scenarios, scorers and exported records in detail.
+Current implementation, **2026-10-23**: a separate [reasoning-continuation path](docs/research/REASONING_CONTINUATION_2026-10-23.md)
+connects each actor's exact prior provider blocks and decisions to new authorized observations
+from the evolving real engine. A two-Baker, two-tick offline proof changes prices and wealth;
+10/20/50-call configurations across seven actors replay independently. A real-kernel test shows
+old diary exposure and thinking remain historical while the current diary expires. The owner's
+transcript-memory condition applies to this separate experiment; frozen Study 1 is unchanged.
 
-PC preflight on 2026-10-22 at `b1a1646` passed TypeScript, all 105 Vitest files
-(1,315 tests passed; one POSIX-only fixture skipped on Windows), eight recovery tests and
-the offline runtime build with PowerShell 7.6.5. The closed October allowance was validated from
-a copy and preserved unchanged. The owner-directed reasoning-enabled repeat then passed: a returned
-summary, 315/2,048 output tokens, 5.493 s and a valid Baker decision, at USD 0.0015665. The
-[results and corrected diagnostic cost ceiling](docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md)
-are recorded. The diagnostic now uses the same input bound as the study; TypeScript and 45 targeted
-tests passed at `acfff4e`, with no paid repeat or change to the 2,048 output cap. Study 1 remains
-paused ([handover](docs/recovery/CODEX_HANDOVER_2026-10-22.md)).
+The implementation tree based on reviewed main `c2ac4c3` passed TypeScript, 1,340 Vitest tests
+across 106 files (one existing Windows skip), eight recovery checks and 29 Python tests.
+These are simulated-provider results. No new paid API call or real allowance was created.
+The prepared two-tick live pilot requires separate explicit approval for four calls under a
+USD 0.10 ceiling. Behavioural metrics and real-model decision quality remain unvalidated.
+The [checkpoint](docs/recovery/CURRENT_SESSION.md) identifies the review branch and exact next step.
 
 ## Run the suite
 
