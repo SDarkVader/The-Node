@@ -108,7 +108,7 @@ from the evolving real engine. A two-Baker, two-tick offline proof changes price
 old diary exposure and thinking remain historical while the current diary expires. The owner's
 transcript-memory condition applies to this separate experiment; frozen Study 1 is unchanged.
 
-The implementation tree based on reviewed main `c2ac4c3` passed TypeScript, 1,340 Vitest tests
+The continuation source at `cf99476` and final tests passed TypeScript, 1,341 Vitest tests
 across 106 files (one existing Windows skip), eight recovery checks and 29 Python tests.
 These are simulated-provider results. No new paid API call or real allowance was created.
 The prepared two-tick live pilot requires separate explicit approval for four calls under a

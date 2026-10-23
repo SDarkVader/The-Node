@@ -1,0 +1,274 @@
+{
+  "schema": "node-continuation-offline-evidence-v1",
+  "date": "2026-10-23",
+  "provider": "simulated; signatures, reasoning and usage are synthetic; engine is real",
+  "runs": [
+    {
+      "requestedCalls": 4,
+      "sourceRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+      "mode": "offline_simulated_provider",
+      "calls": 4,
+      "ticks": 2,
+      "ledgerRoot": "e29ab0df64d7108a01479696ecc0c30684eea632bb255587e26367d75753e534",
+      "finalStateHash": "4014058147545968f10e75b151734504c5726c0e89ca8738e1aa732a335f1a17",
+      "historyHash": "975d1e6e352117ebd9882348d6ed4ccda05c83a41c6006c4328e7fb9cef24f13",
+      "independentlyVerified": true,
+      "inspectSamples": 4,
+      "inspectExecuted": 4,
+      "inspectExportSha256": "bff36fc8cf3dd6e6ec0b4c22b51273d034a3c5f0338146b1dea368b28004ba42",
+      "realProviderCalls": 0,
+      "behaviouralMetrics": "not_validated",
+      "worldTransitions": [
+        {
+          "tick": 0,
+          "nextTick": 1,
+          "beforeHash": "fc07616e02457fcb9f7b8fdbf9f66566aa1275d1354a2ac66d44dfa6331041af",
+          "afterHash": "b8055cfeb83780e71d2dfe7bb007195ef9fe3c34a94e6d54276fdbd7319918e9",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ],
+          "ownChanges": [
+            {
+              "actorId": "baker-0",
+              "before": {
+                "price": 0.5092880466487258,
+                "wealth": 0
+              },
+              "after": {
+                "price": 0.5,
+                "wealth": 0.9250024116963622
+              }
+            },
+            {
+              "actorId": "baker-1",
+              "before": {
+                "price": 0.5169624920468777,
+                "wealth": 0
+              },
+              "after": {
+                "price": 0.5,
+                "wealth": 0.4092931025205143
+              }
+            }
+          ]
+        },
+        {
+          "tick": 1,
+          "nextTick": 2,
+          "beforeHash": "b8055cfeb83780e71d2dfe7bb007195ef9fe3c34a94e6d54276fdbd7319918e9",
+          "afterHash": "4014058147545968f10e75b151734504c5726c0e89ca8738e1aa732a335f1a17",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ],
+          "ownChanges": [
+            {
+              "actorId": "baker-0",
+              "before": {
+                "price": 0.5,
+                "wealth": 0.9250024116963622
+              },
+              "after": {
+                "price": 0.55,
+                "wealth": 1.1964764561922565
+              }
+            },
+            {
+              "actorId": "baker-1",
+              "before": {
+                "price": 0.5,
+                "wealth": 0.4092931025205143
+              },
+              "after": {
+                "price": 0.55,
+                "wealth": 0.96275838707467
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requestedCalls": 10,
+      "sourceRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+      "mode": "offline_simulated_provider",
+      "calls": 10,
+      "ticks": 2,
+      "ledgerRoot": "306eba8b8a4e421cc180fe7ae5fa9fe15bdfe3a079696cc1c721c57660c27bd8",
+      "finalStateHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+      "historyHash": "a562baaa2fe9ce85f7d8144a0d8de1dba82e4fa8a05afce83e552c45ec354578",
+      "independentlyVerified": true,
+      "inspectSamples": 10,
+      "inspectExecuted": 10,
+      "inspectExportSha256": "2a7b49efdf4ce3723ae24c9a111f92ee520c69ad1b65f34f5ccac7be4117ab4f",
+      "realProviderCalls": 0,
+      "behaviouralMetrics": "not_validated",
+      "worldTransitions": [
+        {
+          "tick": 0,
+          "nextTick": 1,
+          "beforeHash": "fc07616e02457fcb9f7b8fdbf9f66566aa1275d1354a2ac66d44dfa6331041af",
+          "afterHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 1,
+          "nextTick": 2,
+          "beforeHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "afterHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        }
+      ]
+    },
+    {
+      "requestedCalls": 20,
+      "sourceRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+      "mode": "offline_simulated_provider",
+      "calls": 20,
+      "ticks": 3,
+      "ledgerRoot": "da50c4077629d2c7de0af7b20eac3ea956e91b17c5be95d64ae2de4134484016",
+      "finalStateHash": "a4d63bf7555537193684e68c7c674f89f1e3cf2a6cd945e058a3df299d313a73",
+      "historyHash": "016989605d8e091e3f9853e05009a710d57db90471050fbbc93229dd2969026f",
+      "independentlyVerified": true,
+      "inspectSamples": 20,
+      "inspectExecuted": 20,
+      "inspectExportSha256": "7f083cdbdf2f891bbea0e733695b6ae3bd1f601064159b24e405aa0d770d2cda",
+      "realProviderCalls": 0,
+      "behaviouralMetrics": "not_validated",
+      "worldTransitions": [
+        {
+          "tick": 0,
+          "nextTick": 1,
+          "beforeHash": "fc07616e02457fcb9f7b8fdbf9f66566aa1275d1354a2ac66d44dfa6331041af",
+          "afterHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 1,
+          "nextTick": 2,
+          "beforeHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "afterHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 2,
+          "nextTick": 3,
+          "beforeHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+          "afterHash": "a4d63bf7555537193684e68c7c674f89f1e3cf2a6cd945e058a3df299d313a73",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        }
+      ]
+    },
+    {
+      "requestedCalls": 50,
+      "sourceRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+      "mode": "offline_simulated_provider",
+      "calls": 50,
+      "ticks": 8,
+      "ledgerRoot": "4aebf9388d5aa41b507ddc77e6ca7cca237e247e40c18ae5108f75fd8037c625",
+      "finalStateHash": "557d87cecc999570b36444bd4eabe17cb203ad26acc33b840cd54dbe8caf3504",
+      "historyHash": "551df561fe3ee655f9d1715e9996749283158a120a33d9ba807c8a8edd9c4a57",
+      "independentlyVerified": true,
+      "inspectSamples": 50,
+      "inspectExecuted": 50,
+      "inspectExportSha256": "d9ef1ede02d0faa3fd5dd3d088d57f68144b9ba04a0a04d625daa0da840bafd4",
+      "realProviderCalls": 0,
+      "behaviouralMetrics": "not_validated",
+      "worldTransitions": [
+        {
+          "tick": 0,
+          "nextTick": 1,
+          "beforeHash": "fc07616e02457fcb9f7b8fdbf9f66566aa1275d1354a2ac66d44dfa6331041af",
+          "afterHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 1,
+          "nextTick": 2,
+          "beforeHash": "35b354d7ed0311a15f5b3abe54e2370ffb32c6ec9a968bf39ada03d96d9b4d70",
+          "afterHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 2,
+          "nextTick": 3,
+          "beforeHash": "5fd08d45134c063e69569a42653ee5c770a7966c4294753e16350e5ef1d97d8e",
+          "afterHash": "a4d63bf7555537193684e68c7c674f89f1e3cf2a6cd945e058a3df299d313a73",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 3,
+          "nextTick": 4,
+          "beforeHash": "a4d63bf7555537193684e68c7c674f89f1e3cf2a6cd945e058a3df299d313a73",
+          "afterHash": "30d13b41fbbe10e55e8414561ca6383322668fc34e1d2a2e2e7acf0173ddc82f",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 4,
+          "nextTick": 5,
+          "beforeHash": "30d13b41fbbe10e55e8414561ca6383322668fc34e1d2a2e2e7acf0173ddc82f",
+          "afterHash": "a7fdae0ae411356bfea50b9042e9837f2f979d28e2c16e2af542c014114a45c0",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 5,
+          "nextTick": 6,
+          "beforeHash": "a7fdae0ae411356bfea50b9042e9837f2f979d28e2c16e2af542c014114a45c0",
+          "afterHash": "85535f14a3a81ef3de0c10eaeae4da6ee06b7e68456b688a3469f8353811d7d1",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 6,
+          "nextTick": 7,
+          "beforeHash": "85535f14a3a81ef3de0c10eaeae4da6ee06b7e68456b688a3469f8353811d7d1",
+          "afterHash": "6aa8f403365f0529692f4b05f377bbb670bdbd41893c8ba280235addf3055fc0",
+          "executedEffects": [
+            "bakerPrice",
+            "bakerPrice"
+          ]
+        },
+        {
+          "tick": 7,
+          "nextTick": 8,
+          "beforeHash": "6aa8f403365f0529692f4b05f377bbb670bdbd41893c8ba280235addf3055fc0",
+          "afterHash": "557d87cecc999570b36444bd4eabe17cb203ad26acc33b840cd54dbe8caf3504",
+          "executedEffects": []
+        }
+      ]
+    }
+  ]
+}

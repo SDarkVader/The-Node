@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { join, resolve } from 'node:path';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { continuationPlan, continuationGenesis, continuationBudget, simulatedContinuationProvider } from './fixtures/continuationFixture.js';
 import { root, cleanup } from './fixtures/accountingFixture.js';
@@ -227,6 +227,18 @@ describe('stateful continuation — simulated provider, real Node host', () => {
     expect(newest[0]!.diary).toEqual(old[0]!.diary);
     expect(newest.at(-1)!.diary).toHaveLength(0);
     expect(JSON.parse(received[2]!.body).messages[1].content[0].signature).toBe('TEST-ONLY-diary-0');
+  });
+
+  it('refuses paid entry without approval and rejects private artifacts inside dot-prefixed checkout folders', () => {
+    for (const script of ['scripts/run-continuation.mjs', 'scripts/prepare-continuation-budget.mjs']) {
+      expect(() => execFileSync(process.execPath, [script], { windowsHide: true, stdio: 'pipe' })).toThrow();
+    }
+    const parent = mkdtempSync(join(resolve('.'), '..continuation-boundary-'));
+    try {
+      expect(() => execFileSync(process.execPath, ['scripts/run-continuation.mjs', 'MISSING-RUNTIME', 'MISSING-ALLOWANCE',
+        join(parent, 'new-private-artifacts'), 'UNREAD-CREDENTIAL', 'UNREAD-PLAN', '--dispatch-authorized-pilot'],
+        { windowsHide: true, stdio: 'pipe' })).toThrow('private_artifacts_must_be_outside_checkout');
+    } finally { rmdirSync(parent); } // empty directory created by this test only
   });
 
   it('will not overwrite a prior trace or accept a torn append', async () => {

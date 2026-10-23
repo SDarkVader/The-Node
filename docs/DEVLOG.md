@@ -1,7 +1,7 @@
 > 2026-10-23 — Stateful reasoning continuation implemented offline (review branch codex/stateful-continuation-2026-10-23, base c2ac4c3).
 >
 > Exact own provider blocks/signatures, decisions and authorized observations persist across actual shared-world ticks. The owner permits transcript memory while diary degradation continues. Frozen Study 1 and protected broker/kernel/accounting/replay sources are preserved.
-> Two-tick and 10/20/50-call real-engine rehearsals replay. Full regression: TypeScript; 106 files / 1,340 Vitest passed plus one existing Windows skip; 8 recovery; 29 Python. New coverage includes actual diary expiry, information boundaries, failures, holds and tampering.
+> Two-tick and 10/20/50-call real-engine rehearsals replay. Full regression: TypeScript; 106 files / 1,341 Vitest passed plus one existing Windows skip; 8 recovery; 29 Python. New coverage includes actual diary expiry, information boundaries, failures, holds and tampering.
 > Initial longer probes hit the request bound; lossless encoding resolved the scripted 50-call case without changing bounds. Long real signatures may still stop. A synthetic fixture initially included an extra authorization field and was corrected. The first Python command used the wrong directory; the corrected run passed.
 > A private append-only ledger and Inspect import are implemented. Four-call/two-tick pilot awaits separate approval for a proposed USD 0.10 allowance. No paid call or real accounting mutation. See research/REASONING_CONTINUATION_2026-10-23.md.
 

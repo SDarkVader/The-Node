@@ -152,3 +152,20 @@ flag archives non-2xx response bodies too; default Study 1 worker behaviour is u
 
 No live pilot has been dispatched by this implementation session. No new real allowance has
 been initialized, and no existing accounting record has been modified.
+
+## Verified offline evidence, 2026-10-23
+
+Committed runtime/source: `cf9947630d4164950b93d03b0b6b6b8c8dc99881` (implementation `7ab821a`, followed by whitespace and private-directory hardening). Sanitized [evidence manifest](evidence/reasoning-continuation-2026-10-23.json) records every transition hash, final state, history hash, ledger root and Inspect export hash. Private raw ledgers remain outside GitHub.
+
+| Simulated provider calls | Actors | Actual kernel ticks | Fresh-process replay | Inspect samples loaded |
+| --- | --- | --- | --- | --- |
+| 4 | 2 Bakers | 2 | passed | 4 |
+| 10 | all 7 | 2 | passed | 10 |
+| 20 | all 7 | 3 | passed | 20 |
+| 50 | all 7 | 8 | passed | 50 |
+
+In the two-tick proof, both admitted prices change to 0.5, then 0.55 from the synthetic provider's continued history. Actual Baker 0 wealth is `0 -> 0.9250024116963622 -> 1.1964764561922565`; Baker 1 wealth is `0 -> 0.4092931025205143 -> 0.96275838707467`. Four kernel `bakerPrice` effects were recorded. Final state hash: `4014058147545968f10e75b151734504c5726c0e89ca8738e1aa732a335f1a17`.
+
+Final implementation regression: **1,341 Vitest tests passed across 106 files; one existing Windows skip**, including 24 continuation tests. TypeScript, eight recovery checks and 29 Python evaluation tests passed. An added boundary regression first failed in its empty-directory cleanup; that cleanup was corrected and the complete suite rerun successfully. Real Inspect **0.3.282** loaded all four verified exports without model calls. The live entry and allowance-preparation scripts refuse without their explicit pilot flags.
+
+Actual paid provider requests in this session: **0**. Live receipts: **none**. No real allowance was created, no Study 1 run started and the original October 18 accounting journal hash remains unchanged. Additional transcript degradation/limits and scientific behaviour metrics remain future work; live signed-continuation acceptance and model interpretation require the separately approved pilot.
