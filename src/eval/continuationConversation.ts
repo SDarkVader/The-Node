@@ -14,7 +14,7 @@ export const CONTINUATION_MEMORY = 'This continuation experiment retains your ow
 const ENCODING = 'Observation patches are lossless: start with observation on the first user turn; for each later turn apply observationPatch in order. pathAdditions appends paths to a zero-based dictionary: [prefixLength,...suffix] copies that many keys/indexes from the preceding dictionary path, then appends suffix (first path uses prefixLength=0). Each observationPatch tuple [pathId,0,value] replaces that path; [pathId,1] deletes it; [pathId,2,index,deleteCount,items] splices that array. An empty path replaces the whole value. Unchanged fields retain their values. hearing.peopleRows lists row indexes into the current city.people table (ref column), losslessly encoding who can hear you. Only current legalMoves, hearing and recognition authorize actions.';
 export type Patch = { path: (string | number)[]; value?: unknown; remove?: true; splice?: { index: number; deleteCount: number; items: unknown[] } };
 export type Message = { role: 'user' | 'assistant'; content: unknown[] };
-interface History { system: string; messages: Message[]; observation: unknown; lastTick: number; selfRef: string; paths: Patch['path'][]; roleRule: string }
+export interface History { system: string; messages: Message[]; observation: unknown; lastTick: number; selfRef: string; paths: Patch['path'][]; roleRule: string }
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const object = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x);
 
@@ -106,6 +106,15 @@ export function unpackContinuationObservation(packed: unknown) {
 }
 export class ContinuationConversations {
   #histories = new Map<string, History>();
+  constructor(readonly maxRequestBytes = 32768) {
+    if (!Number.isSafeInteger(maxRequestBytes) || maxRequestBytes < 32768 || maxRequestBytes > 95000) throw Error('continuation_request_profile');
+  }
+  /** Only the independent ledger verifier supplies this reconstructed export to the runner. */
+  static restoreVerified(histories: [string, History][], maxRequestBytes = 32768) {
+    const restored = new ContinuationConversations(maxRequestBytes);
+    restored.#histories = new Map(structuredClone(histories));
+    return restored;
+  }
   prepare(actorId: string, observation: AuthorizedObservation, model: string): AnthropicRequest {
     const base = toAnthropicRequest(buildResponsesRequest(observation, model), model);
     const wire = JSON.parse(base.body);
@@ -138,7 +147,7 @@ export class ContinuationConversations {
       : { roleRule, observation: packed };
     const messages: Message[] = [...structuredClone(h?.messages ?? []), { role: 'user', content: [{ type: 'text', text: JSON.stringify(turn) }] }];
     const body = JSON.stringify({ ...wire, system, messages }), size = Buffer.byteLength(body, 'utf8');
-    if (size > 32_768) throw Error('continuation_request_bound'); // never truncate or alter accounting
+    if (size > this.maxRequestBytes) throw Error('continuation_request_bound'); // never truncate signed history
     const { max_tokens: _, output_config: __, ...count } = JSON.parse(body);
     return Object.freeze({ model, context: c, body, sha256: sha256(body), countBody: JSON.stringify(count),
       maxInputTokens: size + 4096, maxOutputTokens: 2048 as const });

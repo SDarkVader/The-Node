@@ -6,7 +6,7 @@
 import { createParticipantState, stepParticipantState, type Genesis, type CanonicalAction } from '../agent/participantWorld.js';
 import { observe, personBody } from '../server/observer.js';
 import { validateDecision } from '../agent/protocol.js';
-import { evidenceHash, digest, newTape, type ReplayTape } from '../agent/replay.js';
+import { evidenceHash, digest, newTape, replay, type ReplayTape } from '../agent/replay.js';
 import type { AuthorizedObservation } from '../agent/responsesRequest.js';
 import type { ActorSpec } from './constructs/authorityAttribution.js';
 import { rejectionReasons, type Verdict } from './episode.js';
@@ -38,6 +38,13 @@ export class ContinuationHost {
     this.#tape = newTape(this.#state);
   }
   get tick() { return this.#state.world.tick; }
+  /** Reconstruct RNG lineage and identities through the original kernel, never a state patch. */
+  static restore(tape: ReplayTape, actors: readonly ActorSpec[]) {
+    const host = new ContinuationHost(tape.genesis, actors);
+    host.#state = replay(tape, tape.genesis.sourceRevision);
+    host.#tape = structuredClone(tape);
+    return host;
+  }
   get hash() { return evidenceHash(this.#state); }
   identities() { return structuredClone(this.#people); }
   tape() { return structuredClone(this.#tape); }

@@ -1,5 +1,6 @@
 // LIVE PAID runner. Requires a separately authorized unused plan-bound allowance, plus an
-// explicit --dispatch-authorized-pilot flag. No retries, no automatic resumption or resets.
+// explicit --dispatch-authorized-pilot flag. No retries or resets. Resumption requires a
+// verified sealed parent ledger matching the exact current allowance journal.
 // Args: <runtime> <allowance dir> <NEW artifacts dir> <approved .env file> <plan.json>
 //       --dispatch-authorized-pilot
 import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, fsyncSync, existsSync, realpathSync } from 'node:fs';
@@ -9,7 +10,14 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { assertPowerShell7 } from './pwsh-preflight.mjs';
 const args = process.argv.slice(2);
-if (args.length !== 6 || args[5] !== '--dispatch-authorized-pilot') throw Error('separate_paid_pilot_authorization_required');
+if (![6, 8, 10].includes(args.length) || args[5] !== '--dispatch-authorized-pilot') throw Error('separate_paid_pilot_authorization_required');
+const flags = new Map();
+for (let i = 6; i < args.length; i += 2) {
+  if (!['--resume-ledger', '--stop-at-tick'].includes(args[i]) || flags.has(args[i]) || !args[i + 1]) throw Error('continuation_cli_flags');
+  flags.set(args[i], args[i + 1]);
+}
+const stopAtTick = flags.has('--stop-at-tick') ? Number(flags.get('--stop-at-tick')) : undefined;
+if (stopAtTick !== undefined && (!Number.isSafeInteger(stopAtTick) || stopAtTick < 1)) throw Error('continuation_stage_bound');
 const [runtime, allowance, directory, keyPath, planPath] = args.slice(0, 5).map(x => resolve(x));
 const checkout = realpathSync(fileURLToPath(new URL('..', import.meta.url)));
 const inside = relative(checkout, realpathSync(resolve(directory, '..')));
@@ -25,6 +33,8 @@ const { DEFAULT_WORLD_CONFIG } = await load('world/world.js');
 const plan = JSON.parse(readFileSync(planPath, 'utf8')); validateContinuationPlan(plan);
 const sourceRevision = readFileSync(join(runtime, 'REVISION'), 'utf8').trim();
 if (!/^[a-f0-9]{40}$/.test(sourceRevision)) throw Error('runtime_revision_required');
+const parent = flags.has('--resume-ledger') ? readContinuationLedger(resolve(flags.get('--resume-ledger'))) : undefined;
+if (parent && !verifyContinuation(parent, parent[0]?.data.sourceRevision).complete) throw Error('continuation_parent_incomplete');
 // Preflight before reservation or credential read.
 const powershellMajor = assertPowerShell7(hostProcessEnvironment(process.env));
 mkdirSync(directory, { mode: 0o700 });
@@ -43,7 +53,7 @@ const send = async (input, signal) => {
   write(join(call, 'attempt.json'), { requestId: input.requestId, actorId: input.actorId, tick: input.tick, sha256: input.sha256, noRetry: true });
   report.paidDispatches++;
   await promisify(execFile)('pwsh', ['-NoProfile', '-NonInteractive', '-File', worker, '-KeyPath', keyPath,
-    '-ArtifactDirectory', call, '-Endpoint', 'messages', '-ArchiveAllResponses'], { env: hostProcessEnvironment(process.env), windowsHide: true, signal, timeout: 15000, maxBuffer: 8192 });
+    '-ArtifactDirectory', call, '-Endpoint', 'messages', '-ArchiveAllResponses', '-MaxRequestBytes', String(plan.maxRequestBytes ?? 32768)], { env: hostProcessEnvironment(process.env), windowsHide: true, signal, timeout: 15000, maxBuffer: 8192 });
   const network = JSON.parse(readFileSync(join(call, 'network.json'), 'utf8'));
   // Even non-2xx provider bodies are preserved in the ledger. The response parser will refuse
   // their use and retain the accounting hold; transport failures without bytes remain failures.
@@ -54,8 +64,8 @@ let budget;
 try {
   budget = ExperimentBudget.open(allowance);
   const config = JSON.parse(JSON.stringify({ ...DEFAULT_WORLD_CONFIG, recognition: 'v2' }));
-  const genesis = { ...fixtureGenesis(plan.seed, config), sourceRevision };
-  report.summary = await runContinuation(plan, genesis, budget, send, ledger, { sourceRevision, mode: 'live' });
+  const genesis = parent ? parent[0].data.genesis : { ...fixtureGenesis(plan.seed, config), sourceRevision };
+  report.summary = await runContinuation(plan, genesis, budget, send, ledger, { sourceRevision, mode: 'live', parent, stopAtTick });
 } catch (error) {
   report.error = /^[a-z_]{1,100}$/.test(error?.message) ? error.message : 'run_failed_do_not_retry';
 } finally { ledger.close(); budget?.close(); }
@@ -66,4 +76,4 @@ try {
 } catch { report.verification = { verified: false }; }
 write(join(directory, 'report.json'), report);
 console.log(JSON.stringify({ ...report, verification: report.verification && { verified: report.verification.verified, complete: report.verification.complete } }, null, 2));
-if (report.error || report.summary?.status !== 'completed' || !report.verification?.verified) process.exitCode = 1;
+if (report.error || !['completed', 'checkpoint'].includes(report.summary?.status) || !report.verification?.verified) process.exitCode = 1;

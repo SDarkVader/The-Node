@@ -1,6 +1,6 @@
 /**
  * Separate continuation run, never a Study 1 manifest. No provider client lives here.
- * ExperimentBudget remains the sole admission/usage authority, unchanged.
+ * ExperimentBudget remains the sole admission/usage authority.
  */
 import type { Genesis } from '../agent/participantWorld.js';
 import { sha256 } from '../agent/accountingStore.js';
@@ -13,7 +13,7 @@ import { ContinuationHost } from './continuationHost.js';
 import { ContinuationConversations } from './continuationConversation.js';
 import type { ActorSpec } from './constructs/authorityAttribution.js';
 import type { Sender } from './accountedRunner.js';
-import type { ContinuationLedger } from './continuationLedger.js';
+import { recoverContinuation, type ContinuationEvent, type ContinuationLedger } from './continuationLedger.js';
 
 export interface ContinuationPlan {
   schema: 'node-reasoning-continuation-v1';
@@ -21,6 +21,8 @@ export interface ContinuationPlan {
   actors: ActorSpec[]; maxTicks: number; maxCalls: number;
   deadlineMs: number; minIntervalMs: number;
   memory: 'own_append_only_transcript';
+  /** Explicit opt-in for this continuation experiment; legacy/default requests stay at 32 KiB. */
+  maxRequestBytes?: number;
   allowance: { maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number; windowHours: number };
 }
 export const continuationPlanHash = (p: ContinuationPlan) => sha256(JSON.stringify(p));
@@ -36,23 +38,43 @@ export function validateContinuationPlan(p: ContinuationPlan): void {
       !positive(p.allowance.maxRequests, 5000) || p.allowance.maxRequests < p.maxCalls ||
       !positive(p.allowance.limitMicroUsd, 25_000_000) || !positive(p.allowance.perRequestMicroUsd, p.allowance.limitMicroUsd) ||
       !positive(p.allowance.windowHours, 168)) throw Error('continuation_plan_invalid');
+  if (p.maxRequestBytes !== undefined && (!positive(p.maxRequestBytes, 95000) || p.maxRequestBytes < 32768)) throw Error('continuation_plan_request_bound');
 }
 export interface RunSummary { status: string; calls: number; ticks: number; finalStateHash: string; historyHash: string; bookedMicroUsd: string; heldMicroUsd: string }
-export interface StartEvidence { plan: ContinuationPlan; genesis: Genesis; sourceRevision: string; runId: string; mode: 'offline_simulated_provider' | 'live'; prices: AccountingPrices; budgetHistoryHash: string; identities: { actorId: string; person: string }[] }
+export interface StartEvidence {
+  plan: ContinuationPlan; genesis: Genesis; sourceRevision: string; runId: string; mode: 'offline_simulated_provider' | 'live'; prices: AccountingPrices; budgetHistoryHash: string; identities: { actorId: string; person: string }[];
+  parent?: { events: ContinuationEvent[]; ledgerRoot: string };
+  carriedFingerprint?: string; baseline?: { calls: number; booked: string; held: string }; stopAtTick?: number;
+}
 
-/** The caller must supply an already authorized, plan-bound, unused allowance. Never creates one. */
+/** The caller supplies an authorized plan-bound allowance. Used allowances require the exact
+ * verified last checkpoint and matching journal hash. Never creates or extends an authorization. */
 export async function runContinuation(plan: ContinuationPlan, genesis: Genesis, budget: ExperimentBudget,
-    send: Sender, ledger: ContinuationLedger, options: { sourceRevision: string; mode: StartEvidence['mode']; forbiddenSubstrings?: readonly string[]; signal?: AbortSignal }): Promise<RunSummary> {
+    send: Sender, ledger: ContinuationLedger, options: { sourceRevision: string; mode: StartEvidence['mode']; forbiddenSubstrings?: readonly string[]; signal?: AbortSignal; parent?: ContinuationEvent[]; stopAtTick?: number }): Promise<RunSummary> {
   validateContinuationPlan(plan);
   const initial = budget.view(), auth = initial.authorization;
   if (!auth || auth.manifestSha256 !== continuationPlanHash(plan) || auth.model !== plan.model ||
       auth.maxRequests !== plan.allowance.maxRequests || auth.limitMicroUsd !== plan.allowance.limitMicroUsd ||
-      auth.perRequestMicroUsd !== plan.allowance.perRequestMicroUsd || initial.requests.length) throw Error('continuation_separate_unused_allowance_required');
-  if (genesis.seed !== plan.seed || genesis.sourceRevision !== options.sourceRevision || genesis.config.recognition !== 'v2') throw Error('continuation_genesis_mismatch');
-  const host = new ContinuationHost(genesis, plan.actors), histories = new ContinuationConversations();
-  ledger.append('start', { plan, genesis, sourceRevision: options.sourceRevision, runId: auth.runId, mode: options.mode, prices: auth.prices, budgetHistoryHash: initial.historyHash, identities: host.identities() } satisfies StartEvidence);
-  let calls = 0, status = 'completed', lastDispatch = -Infinity;
+      auth.perRequestMicroUsd !== plan.allowance.perRequestMicroUsd) throw Error('continuation_separate_unused_allowance_required');
+  const parent = options.parent ? recoverContinuation(options.parent, options.parent[0]?.data.sourceRevision) : null;
+  if (parent && !parent.recovery.resumable) throw Error('continuation_parent_not_resumable');
+  const sameBudget = parent?.recovery.runId === auth.runId;
+  if (sameBudget) {
+    if (continuationPlanHash(parent!.recovery.plan) !== continuationPlanHash(plan) || initial.historyHash !== parent!.recovery.budgetHistoryHash ||
+      initial.requests.length !== parent!.summary!.calls || initial.booked.toString() !== parent!.summary!.bookedMicroUsd || initial.held !== 0n) throw Error('continuation_resume_budget');
+  } else if (initial.requests.length || parent && budget.carriedFingerprint() !== parent.recovery.budgetHistoryHash) throw Error('continuation_separate_unused_allowance_required');
+  if (genesis.seed !== plan.seed || (!parent && genesis.sourceRevision !== options.sourceRevision) || genesis.config.recognition !== 'v2') throw Error('continuation_genesis_mismatch');
+  if (parent && digest([genesis, plan.actors, plan.model, plan.memory, options.mode]) !== digest([parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.mode])) throw Error('continuation_parent_contract');
+  const host = parent ? ContinuationHost.restore(parent.recovery.tape, plan.actors) : new ContinuationHost(genesis, plan.actors);
+  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes) : new ContinuationConversations(plan.maxRequestBytes);
+  if (host.tick >= plan.maxTicks || options.stopAtTick !== undefined && (!Number.isSafeInteger(options.stopAtTick) || options.stopAtTick <= host.tick || options.stopAtTick > plan.maxTicks)) throw Error('continuation_stage_bound');
+  const baseline = sameBudget ? { calls: initial.requests.length, booked: initial.booked.toString(), held: initial.held.toString() } : { calls: 0, booked: '0', held: '0' };
+  ledger.append('start', { plan, genesis, sourceRevision: options.sourceRevision, runId: auth.runId, mode: options.mode, prices: auth.prices, budgetHistoryHash: initial.historyHash, identities: host.identities(),
+    ...(parent ? { parent: { events: options.parent!, ledgerRoot: parent.ledgerRoot }, carriedFingerprint: budget.carriedFingerprint(), baseline } : {}),
+    ...(options.stopAtTick !== undefined ? { stopAtTick: options.stopAtTick } : {}) } satisfies StartEvidence);
+  let calls = baseline.calls, status = 'completed', lastDispatch = -Infinity;
   tickLoop: while (host.tick < plan.maxTicks) {
+    if (options.stopAtTick !== undefined && host.tick >= options.stopAtTick) { status = 'checkpoint'; break; }
     if (options.signal?.aborted) { status = 'cancelled'; break; }
     const views = host.views(), remainingCalls = plan.maxCalls - calls;
     if (!views.length) { status = 'all_departed'; break; }

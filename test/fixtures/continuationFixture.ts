@@ -39,7 +39,7 @@ export function continuationBudget(plan: ContinuationPlan, directory = join(root
   return budget;
 }
 export function simulatedContinuationProvider(options: { invalidAt?: number; failAt?: number; wrongModelAt?: number; missingUsageAt?: number;
-    refusalAt?: number; redacted?: boolean; largeSignature?: boolean; hangAt?: number; overrunAt?: number; transformedAt?: number } = {}) {
+    refusalAt?: number; redacted?: boolean; largeSignature?: boolean; hangAt?: number; overrunAt?: number; transformedAt?: number; receiptPrefix?: string } = {}) {
   const requests: Parameters<Sender>[0][] = [];
   const send: Sender = async (input, signal) => {
     requests.push(input);
@@ -59,7 +59,7 @@ export function simulatedContinuationProvider(options: { invalidAt?: number; fai
       signature: options.largeSignature ? 'TEST-ONLY-' + 'x'.repeat(28000) : 'TEST-ONLY-signature-' + input.actorId + '-' + input.tick }];
     if (options.redacted) content.push({ type: 'redacted_thinking', data: 'TEST-ONLY-opaque-redaction-' + input.actorId + '-' + input.tick });
     content.push({ type: 'text', text: JSON.stringify(decision) });
-    const response: Record<string, unknown> = { type: 'message', role: 'assistant', id: 'msg_test_' + input.index, model: input.index === options.wrongModelAt ? 'other-model' : 'claude-haiku-5-5',
+    const response: Record<string, unknown> = { type: 'message', role: 'assistant', id: 'msg_test_' + (options.receiptPrefix ?? '') + input.index, model: input.index === options.wrongModelAt ? 'other-model' : 'claude-haiku-5-5',
       stop_reason: input.index === options.refusalAt ? 'refusal' : 'end_turn', content,
       usage: { input_tokens: input.index === options.overrunAt ? 100000 : 1200, output_tokens: 100 } };
     if (input.index === options.transformedAt) response.input_transformations = [{ type: 'thinking_dropped', reason: 'organization_binding_mismatch' }];

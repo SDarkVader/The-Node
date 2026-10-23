@@ -5,18 +5,26 @@
  */
 import { openSync, closeSync, fsyncSync, writeFileSync, readFileSync, mkdirSync, lstatSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { digest, replay, evidenceHash } from '../agent/replay.js';
+import { digest, replay, evidenceHash, type ReplayTape } from '../agent/replay.js';
 import { sha256 } from '../agent/accountingStore.js';
 import { usageCost } from '../agent/accountingLedger.js';
 import { parseAnthropicResponse } from '../agent/anthropicResponse.js';
 import { PRICED_MODELS } from '../agent/modelPricing.js';
 import { validateDecision } from '../agent/protocol.js';
 import { ContinuationHost } from './continuationHost.js';
-import { ContinuationConversations } from './continuationConversation.js';
-import { validateContinuationPlan, type StartEvidence, type RunSummary } from './continuationRunner.js';
+import { ContinuationConversations, type History } from './continuationConversation.js';
+import { validateContinuationPlan, continuationPlanHash, type StartEvidence, type RunSummary } from './continuationRunner.js';
 
 export const CONTINUATION_LEDGER_FILE = 'continuation.ledger.jsonl';
 export interface ContinuationEvent { seq: number; previous: string; kind: string; data: any; hash: string }
+interface RecoveredSegment {
+  verified: true; complete: boolean; ledgerRoot: string; sourceRevision: string; mode: StartEvidence['mode'];
+  calls: number; transitions: number; finalStateHash: string; historyHash: string; summary: RunSummary | null;
+  tickEvidence: { tick: number; nextTick: number; beforeHash: string; afterHash: string; effects: unknown; ownChanges: unknown }[];
+  metrics: 'not_validated';
+  recovery: { tape: ReplayTape; histories: [string, History][]; plan: StartEvidence['plan']; runId: string;
+    budgetHistoryHash: string; seenRequests: string[]; receipts: string[]; resumable: boolean };
+}
 const ROOT = '0'.repeat(64);
 const equal = (a: unknown, b: unknown, code: string) => { if (digest(a) !== digest(b)) throw Error(code); };
 export class ContinuationLedger {
@@ -46,6 +54,15 @@ export function readContinuationLedger(path: string): ContinuationEvent[] {
   return bytes.trimEnd().split('\n').map(line => JSON.parse(line));
 }
 export function verifyContinuation(events: readonly ContinuationEvent[], expectedSourceRevision: string) {
+  const { recovery: _, ...result } = recoverContinuation(events, expectedSourceRevision);
+  return result;
+}
+/** Internal recovery material is reconstructed from evidence, never imported from a stop snapshot. */
+export function recoverContinuation(events: readonly ContinuationEvent[], expectedSourceRevision: string, depth = 0): RecoveredSegment {
+  if (depth > 64) throw Error('continuation_parent_depth');
+  return verifySegment(events, expectedSourceRevision, depth);
+}
+function verifySegment(events: readonly ContinuationEvent[], expectedSourceRevision: string, depth: number): RecoveredSegment {
   if (!events.length) throw Error('continuation_empty');
   let previous = ROOT;
   events.forEach((event, i) => {
@@ -58,18 +75,37 @@ export function verifyContinuation(events: readonly ContinuationEvent[], expecte
   validateContinuationPlan(plan);
   equal(start.prices, PRICED_MODELS[plan.model], 'continuation_prices_mismatch');
   if (!['live', 'offline_simulated_provider'].includes(start.mode)) throw Error('continuation_mode');
-  if (start.sourceRevision !== expectedSourceRevision || genesis.sourceRevision !== expectedSourceRevision ||
+  if (start.sourceRevision !== expectedSourceRevision || (!start.parent && genesis.sourceRevision !== expectedSourceRevision) ||
       plan.seed !== genesis.seed || genesis.config.recognition !== 'v2') throw Error('continuation_source_mismatch');
-  const host = new ContinuationHost(genesis, plan.actors), histories = new ContinuationConversations();
+  // Parent events make each sealed segment self-contained in a fresh environment. Their own
+  // runner revision is distinct from the immutable original world's genesis revision.
+  const parent = start.parent ? recoverContinuation(start.parent.events, start.parent.events[0]?.data.sourceRevision, depth + 1) : null;
+  if (parent) {
+    if (!parent.recovery.resumable || start.parent!.ledgerRoot !== parent.ledgerRoot) throw Error('continuation_parent_not_resumable');
+    equal([genesis, plan.actors, plan.model, plan.memory, start.mode],
+      [parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.mode], 'continuation_parent_contract');
+    if (plan.maxTicks <= parent.summary!.ticks) throw Error('continuation_parent_tick_limit');
+  }
+  const sameBudget = parent?.recovery.runId === start.runId;
+  if (sameBudget) {
+    if (continuationPlanHash(plan) !== continuationPlanHash(parent!.recovery.plan) || start.budgetHistoryHash !== parent!.recovery.budgetHistoryHash) throw Error('continuation_resume_budget');
+  } else if (parent && start.carriedFingerprint !== parent.recovery.budgetHistoryHash) throw Error('continuation_carried_budget');
+  const baseline = sameBudget ? { calls: parent!.summary!.calls, booked: parent!.summary!.bookedMicroUsd, held: parent!.summary!.heldMicroUsd } : { calls: 0, booked: '0', held: '0' };
+  if (parent) equal(start.baseline, baseline, 'continuation_baseline');
+  const host = parent ? ContinuationHost.restore(parent.recovery.tape, plan.actors) : new ContinuationHost(genesis, plan.actors);
+  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes) : new ContinuationConversations(plan.maxRequestBytes);
+  const startTick = host.tick;
+  if (start.stopAtTick !== undefined && (!Number.isSafeInteger(start.stopAtTick) || start.stopAtTick <= startTick || start.stopAtTick > plan.maxTicks)) throw Error('continuation_stage_bound');
   equal(start.identities, host.identities(), 'continuation_identity_mapping');
   const pending = new Map<string, { request: any; wire: ReturnType<ContinuationConversations['prepare']>; response?: any; recorded?: ReturnType<typeof parseAnthropicResponse>; receipt?: boolean; validated?: boolean }>();
-  const seenRequests = new Set<string>(), receipts = new Set<string>();
-  let intent: any = null, stopped = false, calls = 0, booked = 0, held = 0, transitions = 0;
+  const seenRequests = new Set<string>(parent?.recovery.seenRequests ?? []), receipts = new Set<string>(parent?.recovery.receipts ?? []);
+  let intent: any = null, stopped = false, calls = baseline.calls, booked = Number(baseline.booked), held = Number(baseline.held), transitions = 0, budgetHistoryHash = start.budgetHistoryHash;
   const tickEvidence: { tick: number; nextTick: number; beforeHash: string; afterHash: string; effects: unknown; ownChanges: unknown }[] = [];
   let summary: RunSummary | null = null;
   for (const event of events.slice(1)) {
     if (stopped) throw Error('continuation_after_stop');
     const d = event.data;
+    if (typeof d.budgetHistoryHash === 'string') budgetHistoryHash = d.budgetHistoryHash;
     if (event.kind === 'request') {
       if (intent || [...pending.values()].some(q => !q.validated)) throw Error('continuation_request_order');
       const scheduled = host.views().slice(0, plan.maxCalls - calls + pending.size);
@@ -141,14 +177,18 @@ export function verifyContinuation(events: readonly ContinuationEvent[], expecte
         [calls, host.tick, host.hash, digest(histories.export()), String(booked), String(held)], 'continuation_summary_mismatch');
       equal(d.histories, histories.export(), 'continuation_history_mismatch');
       equal(d.tape, host.tape(), 'continuation_tape_mismatch');
-      if (evidenceHash(replay(d.tape, expectedSourceRevision)) !== host.hash) throw Error('continuation_replay_mismatch');
+      if (evidenceHash(replay(d.tape, genesis.sourceRevision)) !== host.hash) throw Error('continuation_replay_mismatch');
       if (summary.status === 'completed' && host.tick !== plan.maxTicks) throw Error('continuation_premature_completion');
+      if (summary.status === 'checkpoint' && (host.tick !== start.stopAtTick || host.tick >= plan.maxTicks || pending.size || intent)) throw Error('continuation_bad_checkpoint');
       stopped = true;
     } else throw Error('continuation_event_kind');
   }
   return { verified: true as const, complete: stopped, ledgerRoot: previous, sourceRevision: expectedSourceRevision,
     mode: start.mode, calls, transitions, finalStateHash: host.hash, historyHash: digest(histories.export()), summary,
-    tickEvidence, metrics: 'not_validated' as const };
+    tickEvidence, metrics: 'not_validated' as const,
+    recovery: { tape: host.tape(), histories: histories.export(), plan, runId: start.runId, budgetHistoryHash,
+      seenRequests: [...seenRequests], receipts: [...receipts],
+      resumable: stopped && !!summary && ['completed', 'checkpoint', 'call_limit'].includes(summary.status) && !pending.size && !intent && held === 0 && booked <= plan.allowance.limitMicroUsd } };
 }
 /** Native Inspect dataset rows: observed artifacts only; no fabricated explanations or scores. */
 export function continuationInspectSamples(events: readonly ContinuationEvent[], sourceRevision: string) {

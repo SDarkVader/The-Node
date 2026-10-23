@@ -113,8 +113,11 @@ across 106 files (one existing Windows skip), eight recovery checks and 29 Pytho
 The separately approved live pilot then completed: four Haiku 5.5 responses, two actual world
 ticks, exact own signed-block continuation, independent replay and four live Inspect samples.
 Aggregate use was 46,706 input / 984 output tokens; estimated list cost USD 0.0051626 and
-conservative accounting USD 0.010327, with zero held. The four-call allowance is consumed; no
-additional paid execution is authorized. Raw responses and game data remain private.
+conservative accounting USD 0.010327, with zero held. The four-call allowance is consumed.
+The owner subsequently authorized an extension, capped here at USD 1: the same world and
+exact histories resume through verified complete-tick checkpoints. Its explicit 95,000-byte
+history profile leaves Study 1 and the original pilot limits unchanged. New live results are
+pending. Raw responses, game data and accounting remain private.
 [Sanitized live evidence](docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json)
 records the provenance. Causal memory benefit and behavioural metrics remain unvalidated.
 The [checkpoint](docs/recovery/CURRENT_SESSION.md) identifies the review branch and exact next step.

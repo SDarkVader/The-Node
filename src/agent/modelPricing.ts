@@ -23,7 +23,8 @@ export const PRICE_EVIDENCE_FILES: Readonly<Record<string, string>> = {
 
 export const PRICED_MODELS: Readonly<Record<string, AccountingPrices>> = Object.freeze({
   // List $0.10 / $0.50 per MTok for prompts up to 100,000 tokens (evidence excerpt, retrieved
-  // 2026-10-22). Requests are capped at 36,864 input tokens, so the higher band cannot apply.
+  // 2026-10-22). Study 1 remains capped at 36,864 input tokens. The explicit continuation
+  // extension admits at most 100,000; larger inputs are refused before dispatch.
   'claude-haiku-5-5': Object.freeze({ model: 'claude-haiku-5-5', inputMicroUsdPerMillionTokens: 200_000, outputMicroUsdPerMillionTokens: 1_000_000,
     evidenceSha256: '047daf84d023e17190bde34847982fab9e1f33e46492057c88334332fb2f30d0' }),
 });

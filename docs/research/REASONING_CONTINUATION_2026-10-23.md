@@ -2,7 +2,9 @@
 
 Implemented 2026-10-23 on `codex/stateful-continuation-2026-10-23`, based on reviewed main `c2ac4c3`.
 This is a separate experiment path. Frozen Study 1, its current-view memory condition,
-four-field action contract, validator, broker, kernel, replay and accounting sources are unchanged.
+four-field action contract, validator, broker, kernel and replay are unchanged. The separately
+authorized extension below adds narrowly scoped accounting admission support; old journals and
+price entries remain unchanged.
 
 The owner explicitly permits transcript memory and wants earlier thinking reconsidered as the
 world changes and diary entries degrade. Each actor retains only its own received conversation.
@@ -54,7 +56,7 @@ Hearing references are losslessly encoded as row indexes into that actor's curre
 The unchanged action schema still uses the actual observer references. Every reconstructed view
 is checked against the real observer during independent replay. No evaluator truth is added.
 
-The 32,768-byte request, 36,864-input-token admission and 2,048-output limits remain.
+The original pilot retains its 32,768-byte request, 36,864-input admission and 2,048-output limits.
 Large live signatures or histories may hit the request bound earlier than scripted fixtures.
 That stops before another reservation; nothing is truncated, summarized away or silently reset.
 The model's comprehension of the compact presentation is not established by scripted tests.
@@ -178,3 +180,51 @@ Aggregate usage: 46,706 input / 984 output tokens, including 812 reported thinki
 The original Oct 18 journal hash is unchanged; its complete history was carried from a verified exact private copy. No broker, kernel, contract, manifest or pricing source changed. Hosted CI on implementation bc00e6e passed. [Sanitized live evidence](evidence/reasoning-continuation-live-pilot-2026-10-23.json) records counts and hash anchors; raw requests/responses, signatures, game states, decisions, provider receipt IDs and accounting remain private.
 
 This establishes a working live continuation loop and independently verified world evolution. It does not establish a causal benefit of reasoning memory or validated decision-quality/adaptation scores. Live diary expiry was not tested by this two-tick pilot; real diary expiry with preserved earlier exposure is covered offline. New transcript limits/degradation and a controlled longer-run design remain next topics. Do not repeat this completed pilot, reinitialize its allowance or activate frozen Study 1 as routine setup.
+
+## Authorized staged extension, 2026-10-23
+
+The owner subsequently requested extending the same pilot until memory-related or interesting
+behavior appears, allowing USD 1 or more. The chosen extension cap is **USD 1**, with up to
+100 new calls and absolute tick 52 as outer bounds. This is exploratory stopping, not a
+pre-registered statistical test or proof of memory benefit. Stop early for useful evidence,
+a failure or a bound; never manufacture a behavioral change. The same two Bakers, Haiku 5.5,
+medium effort, 2,048 output cap, original observer and action schema continue unchanged.
+
+The explicit [extension plan](../../evals/manifests/reasoning_continuation_extension.json) permits
+at most 95,000 UTF-8 request bytes and therefore at most 99,096 admitted input tokens. The
+worker default remains 32,768 bytes; its larger limit is passed only by this opted-in plan.
+ExperimentBudget now admits the priced Haiku model up to 100,000 input tokens (other models
+remain at 36,864). Price entries/evidence hashes remain unchanged; the higher pricing band
+above 100,000 tokens cannot be admitted. No history is truncated or summarized.
+
+A new authorization carries the complete four-call pilot journal from a verified exact private
+copy. A count-exhausted prior experiment can close before its timestamp expiry only with
+known receipts, zero holds and no overrun. An open, ambiguous or overrun prior is refused.
+Neither its authorization, expiry, charges nor the original October 18 journal is rewritten.
+
+Each continuation segment embeds its sealed parent evidence and root. Independent verification
+reconstructs every authorized view, request, exact signed history and kernel transition. The
+world retains its original genesis source revision; each new runner has its own revision.
+Resumption requires a clean completed/checkpoint/call-limit parent, zero holds, the same
+identities/model/seed/memory condition, and the exact matching budget history. A used allowance
+can resume only its exact latest checkpoint. New-grant resumption additionally checks that the
+carried fingerprint equals the parent journal hash. Failed or partial ticks cannot auto-resume.
+
+Use new private artifact directories for each stage. After the explicitly authorized extension
+grant has been prepared with `--from-experiment`, the staged command is:
+
+```powershell
+node scripts/run-continuation.mjs <committed-runtime> <extension-allowance> <NEW-private-stage> <approved-env> evals/manifests/reasoning_continuation_extension.json --dispatch-authorized-pilot --resume-ledger <verified-parent-ledger> --stop-at-tick <absolute-next-checkpoint>
+node scripts/verify-continuation.mjs <committed-runtime> <new-stage-ledger> <NEW-inspect-jsonl>
+```
+
+Checkpoint stops occur after complete real ticks. Inspect exports contain this segment's
+new requests; the embedded parent preserves all earlier evidence. Journal totals and call
+indexes remain cumulative within the extension. No retry or implicit paid continuation occurs.
+
+Before new live dispatch: TypeScript passed; 1,346 Vitest tests across 107 files passed with
+one existing Windows skip; eight recovery checks passed. Five new tests cover fresh-process
+resumption, exact prior signatures, cumulative spending, separately authorized count-closed
+carry, unexhausted/held/overrun refusals, tampered/failed/stale parents and the larger bound.
+The actual saved pilot also replays and reconstructs tick 2 with its original state/history
+hashes. New live results are pending. Original pilot and October 18 journal hashes are verified.
