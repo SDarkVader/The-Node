@@ -406,6 +406,11 @@ never go on the wire.
 | `IsoView.tscn` *(main)* | `IsoView.gd`, `GlowLayer.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, courier routes |
 | `WorldView.tscn` | `WorldView.gd` | 2D top-down. Same protocol, same palette |
 | `Main.tscn` | `Main.gd` | Legacy MVP-scenario scaffold (`NODE_LEGACY_MVP=1`) |
+| `PerceptionWorker.tscn` | `PerceptionWorker.gd`, `Perception.gd` | Headless agent perception (2026-10-23): first person through camera frustums, raycasts and fog; isometric district overview. Answers the Node's requests; holds no world state |
+
+`NodeGeometry.gd` holds the building, person and Wall geometry that IsoView and perception share,
+so an agent is hidden by exactly what the client draws. Both clients take their endpoint from
+`--world-url` / `NODE_WORLD_URL` and read the observatory's frame metadata when present.
 
 **Signal → visual mapping** (identical rules across the terminal renderer, 2D and 3D clients):
 
@@ -456,6 +461,15 @@ Checked by tests, and load-bearing:
     `resources.today`; each Courier's deliveries split exactly its own parcels; passive
     channels never resolve; pressure tension is unchanged by any recognition ledger.
     `test/world.recognitionV2.test.ts`.
+13. **Perception never widens what an agent knows** (2026-10-23). A perception request carries
+    no real id, secret or private economic state, and only bodies within the perspective's
+    reach. Every returned item must exist in the request with the same public facts and lie
+    within the perspective's limits. No body is seen through walls, and an isometric answer
+    holds no references. Each record is bound to its agent, tick, request and world hash.
+    `test/perception.test.ts`.
+14. **The observatory is read-only** (2026-10-23) — displaying, scrubbing, reconnecting or
+    refreshing causes no provider call and no kernel step; frames are re-derived from verified
+    ledgers with every hash re-checked. `test/observatory.test.ts`.
 
 ---
 
@@ -474,6 +488,9 @@ evals/: python -m inspect_node.verify --out <dir>   Inspect suite twice offline 
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
+Observatory: `npm run observatory -- verify|serve|evaluate|export-frames <registration.json>`;
+`npm run observatory:demo -- <new dir>` (synthetic). Perception with the real client:
+`NODE_GODOT_BIN=<godot> npx vitest run test/perception.test.ts`. See `docs/observatory/README.md`.
 
 ---
 

@@ -12,6 +12,7 @@ This index separates current guidance, original design sources and dated evidenc
 - [Scope, evidence and development](EVALUATION_SCOPE_AND_DEVELOPMENT.md)
 - [Architecture and path map](BLUEPRINT.md)
 - [Evaluation infrastructure](EVAL_INFRASTRUCTURE.md)
+- [Observatory and agent perception runbook](observatory/README.md)
 - [Claude Design realtime observatory handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
 - [Documentation audit and complete inventory](research/DOCUMENTATION_AUDIT_2026-10-23.md)
 

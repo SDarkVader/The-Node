@@ -3,6 +3,13 @@
 Prepared 2026-10-23 for the owner's web interface and Godot connection.
 This is a build handover, not a claim that the dashboard or the proposed adapters already exist.
 
+> **Status, later on 2026-10-23.** Implemented on branch `ccr-8d64b59c-a4puhv` (built on this
+> branch) and verified offline. A1-A5 and A7-A9 are built; A6's classifier part runs in TypeScript.
+> The Python importer for Inspect and Study 1 outputs is further work: no genuine scored output
+> for a continuation run exists yet to import. Agent-specific perception through the Godot client
+> was added on the same branch. Read the [observatory runbook](../observatory/README.md) for what
+> exists. The text below is the original handover, unchanged.
+
 ## Start here
 
 Read [CURRENT_EXPERIMENT](CURRENT_EXPERIMENT.md), [sanitized results](CONTINUATION_PILOT_RESULTS_2026-10-23.md)

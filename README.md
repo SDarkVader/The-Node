@@ -39,10 +39,20 @@ with one existing Windows skip, eight recovery checks and hosted Windows/Linux C
 All three live checkpoint segments replayed independently; Inspect 0.3.282 imported the 32 new
 samples without extra calls. These are recorded results, not new runs implied by a docs update.
 
-The owner is preparing a realtime web/Godot observatory. The
-[Claude Design handover](docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
-maps existing evidence, provider summaries, world frames and framework outputs to proposed adapters.
-It distinguishes implemented interfaces from development work; no dashboard or new run is claimed.
+**Observatory and agent perception (2026-10-23)** are on branch `ccr-8d64b59c-a4puhv`, built on
+PR #38's branch. [Runbook](docs/observatory/README.md).
+
+- **Observatory**: a read-only web view and Godot stream over the continuation ledgers. It shows
+  the exact provider summaries, decisions, validation, committed world frames, telemetry,
+  separately produced framework results and attributed human annotations. It never dispatches a
+  call or steps a host.
+- **Agent perception**: the Godot client derives what one agent can perceive at each tick, from
+  a first-person or isometric perspective, and the Node validates it before the agent receives
+  it. First person: camera frustums, raycasts against the client's own buildings and Wall, fog.
+  Isometric: broad district conditions, no person references.
+- **Verification**: offline with synthetic runs, and against real Godot 4.3 headless on Linux,
+  including a body disclosed only after the agent's own kernel-applied move made it observable.
+  Not yet run against the private tick-18 archive or a live model.
 
 ## How the environment and evaluation work
 
