@@ -121,8 +121,9 @@ after 32 new accepted decisions and 16 additional ticks when behavior worth insp
 All three checkpoint segments replayed independently; Inspect loaded 32 new samples. Estimated
 list cost was USD 0.0613495 (conservative booking USD 0.122711; zero held). Live diary expiry
 with preserved historical exposure is verified; causal memory benefit remains unestablished.
-[Extension evidence](docs/research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
-contains aggregate results and hash anchors. Extension source `d237eff` passed TypeScript,
+[Read the sanitized pilot results](docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md)
+directly in the repository, with links to aggregate evidence and hash anchors. These results
+are on `codex/stateful-continuation-2026-10-23` while PR #38 is open. Extension source `d237eff` passed TypeScript,
 1,346 Vitest tests (one existing Windows skip), eight recovery checks and hosted Windows/Linux CI.
 Raw responses, game data and accounting stay private.
 [Sanitized live evidence](docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json)

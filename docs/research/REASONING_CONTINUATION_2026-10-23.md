@@ -231,6 +231,9 @@ hashes. Original pilot and October 18 journal hashes are verified. The completed
 
 ## Extension stopped after behavior worth inspecting
 
+See the [sanitized results page](CONTINUATION_PILOT_RESULTS_2026-10-23.md) for a
+readable repository summary and links to the underlying aggregate evidence.
+
 Runtime **d237effcc129c7757e382a3af8ecc0e95307ebc4** completed **32 new paid decisions** over
 **16 additional real ticks**, taking the same world from tick 2 to tick 18 (36 calls including
 the original pilot). Every new response was HTTP 200/end_turn and passed the original validator.

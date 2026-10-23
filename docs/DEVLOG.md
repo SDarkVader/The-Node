@@ -1,3 +1,7 @@
+> 2026-10-23 — Repository access to sanitized pilot results corrected.
+>
+> Added a readable results page at research/CONTINUATION_PILOT_RESULTS_2026-10-23.md, linked from the root README and runbook. Verified the existing evidence file through GitHub on the development branch and replaced PR-relative links with full branch URLs. Documentation only; main, runtime, private evidence and journals unchanged. No new paid calls.
+
 > 2026-10-23 — Live extension completed at exploratory stopping goal (source d237eff).
 >
 > 32 new accepted HTTP 200/end_turn decisions, 16 additional real ticks, exact prior world/history continued to tick 18. Hosted Windows and both Linux CI checks passed at d237eff. Three fresh-process replay checks and Inspect imports (8/8/16 samples) passed. Earned recognition preceded changed diary behavior, and actual diary expiry with preserved historical exposure was verified. No causal memory benefit is claimed. Estimated list USD 0.0613495 / conservative booking USD 0.122711, zero held, within USD 1 cap. Original journals unchanged; raw data remain private. No retry, forced outcome, reset or background run. See research/evidence/reasoning-continuation-live-extension-2026-10-23.json.
