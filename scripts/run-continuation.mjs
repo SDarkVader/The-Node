@@ -3,7 +3,7 @@
 // Args: <runtime> <allowance dir> <NEW artifacts dir> <approved .env file> <plan.json>
 //       --dispatch-authorized-pilot
 import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, fsyncSync, existsSync, realpathSync } from 'node:fs';
-import { resolve, join, relative, isAbsolute } from 'node:path';
+import { resolve, join, relative, isAbsolute, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -13,7 +13,7 @@ if (args.length !== 6 || args[5] !== '--dispatch-authorized-pilot') throw Error(
 const [runtime, allowance, directory, keyPath, planPath] = args.slice(0, 5).map(x => resolve(x));
 const checkout = realpathSync(fileURLToPath(new URL('..', import.meta.url)));
 const inside = relative(checkout, realpathSync(resolve(directory, '..')));
-if (inside === '' || (!inside.startsWith('..') && !isAbsolute(inside))) throw Error('private_artifacts_must_be_outside_checkout');
+if (inside === '' || (inside !== '..' && !inside.startsWith('..' + sep) && !isAbsolute(inside))) throw Error('private_artifacts_must_be_outside_checkout');
 if (existsSync(directory)) throw Error('new_artifact_directory_required');
 const load = file => import(pathToFileURL(join(runtime, file)).href);
 const { runContinuation, validateContinuationPlan } = await load('eval/continuationRunner.js');
