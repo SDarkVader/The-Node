@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Offline provider contract and host verification
 
 17 October 2026. Implemented in a fresh checkout on local branch `broker-provider-offline-2026-10-17`, starting at `deede499ceaf59b61f734ad599162ff5c5bc535f`. The previous reconstruction checkout, preserved recovery checkout, main branches and validated four-file broker core remain unchanged. No remote write was made.

@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Synthetic cumulative accounting and mocked dispatch
 
 > Subsequent stage: [the broker and account-specific recovery ledger](BROKER_ACCOUNTING_REBUILD.md) supersedes the synthetic-only stopping point. This file remains the historical fixture-mechanics record. The newer journal carries actual documentary liabilities without executing an operator settlement or enabling live transport.

@@ -11,7 +11,7 @@ import { authorizedPrices, PRICED_MODELS } from './modelPricing.js';
  * the declared actors of a study manifest, and changes nothing else:
  *
  * - the complete prior allowance document is carried unchanged; nothing is reset or forgiven,
- *   and the prior allowance must already be closed (expired) when this one is authorised;
+ *   and the prior allowance must already be expired or have exhausted its request count;
  * - prices are the carried authorisation's conservative rates and rate evidence, never new claims.
  *   A different model (owner decision D11, 2026-10-22: study 1 on claude-haiku-5-5) may only use
  *   its reviewed, evidence-backed entry in `modelPricing.ts`, never operator-supplied rates;
@@ -109,14 +109,14 @@ function replay(d: Document) {
         !integer(a.perRequestMicroUsd) || a.perRequestMicroUsd < 1 || a.perRequestMicroUsd > a.limitMicroUsd ||
         // The prior allowance must be closed before new spending opens. Its rate evidence is reused
         // unchanged for the same model; a different model may only use its reviewed price entry.
-        carried.expiresAt === null || a.authorizedAt < carried.expiresAt || carried.prices === null ||
+        carried.expiresAt === null || (a.authorizedAt < carried.expiresAt && !countClosed(d.carried, a.authorizedAt)) || carried.prices === null ||
         !checkPrices(a.prices, a.model) || !same(a.prices, authorizedPrices(a.model, carried.prices))) return fail('experiment_budget_authorization');
       authorization = a;
     } else if (event.kind === 'reservation') {
       const q = event.value, a = authorization;
       if (!exact(event, ['kind', 'value', 'at']) || !object(q) || !exact(q, ['id', 'episodeId', 'actorId', 'inputSha256', 'participant', 'model', 'maxInputTokens', 'maxOutputTokens']) || !a || !iso(event.at) ||
         event.at < a.authorizedAt || event.at >= a.expiresAt || !id(q.id) || requests.has(q.id) || !id(q.episodeId) || !id(q.actorId) || !hash(q.inputSha256) || q.model !== a.model ||
-        !integer(q.maxInputTokens) || q.maxInputTokens < 1 || q.maxInputTokens > 36864 || !integer(q.maxOutputTokens) || q.maxOutputTokens < 1 || q.maxOutputTokens > 2048 ||
+        !integer(q.maxInputTokens) || q.maxInputTokens < 1 || q.maxInputTokens > (q.model === 'claude-haiku-5-5' ? 100000 : 36864) || !integer(q.maxOutputTokens) || q.maxOutputTokens < 1 || q.maxOutputTokens > 2048 ||
         !participant(q.participant) || overrun || requests.size >= a.maxRequests || [...requests.values()].some(x => x.bookedMicroUsd === null)) return fail('experiment_budget_admission');
       const key = JSON.stringify([q.episodeId, q.actorId]), stream = streams.get(key);
       if (stream && (stream.selfRef !== q.participant.selfRef || stream.tick >= q.participant.tick)) return fail('experiment_budget_stream');
@@ -147,6 +147,17 @@ function replay(d: Document) {
   return { requests: [...requests.values()], authorization, overrun, ...totals() };
 }
 function validate(v: unknown): Document { replay(v as Document); return structuredClone(v) as Document; }
+
+/** checkCarried has already replayed this document. A count-exhausted grant cannot admit
+ * another request. Require known receipts, zero holds and no overrun; do not alter its expiry. */
+function countClosed(c: CarriedAllowance, authorizedAt: string): boolean {
+  if (c.kind !== 'node-experiment-budget-v1' || c.summary.heldMicroUsd !== '0' || c.summary.overrun) return false;
+  const d = c.document as Document, a = d.events.find(e => e.kind === 'authorization')?.value;
+  const reservations = d.events.filter(e => e.kind === 'reservation');
+  const usage = d.events.filter(e => e.kind === 'usage');
+  return !!a && authorizedAt >= a.authorizedAt && reservations.length >= a.maxRequests &&
+    usage.length === reservations.length && d.events.every(e => e.kind !== 'reservation' || e.at <= authorizedAt);
+}
 
 export class ExperimentBudget {
   private constructor(private store: AccountingStore<Document>) {}

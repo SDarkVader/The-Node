@@ -1,0 +1,721 @@
+{
+  "schema": "node-documentation-audit-v1",
+  "date": "2026-10-23",
+  "baselineCommit": "177bbf741a8a6ff743adc681fda9b684937ca610",
+  "implementationEvidenceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4",
+  "scope": "All tracked Markdown, original documentation PDFs and documentation JSON; original and generated evidence retained, current status/terminology checked against source and live records.",
+  "policy": {
+    "unimplementedMeansFurtherWork": true,
+    "genuineBoundaryRequiresExplicitConditionsAndReason": true,
+    "executionSeparateFromEvaluation": true,
+    "evaluationRequiresNamedFrameworkHumanOrSpecificDeclaredMetric": true
+  },
+  "verification": {
+    "relativeLinks": {
+      "passed": true,
+      "count": 423,
+      "markdownFiles": 87
+    },
+    "checkpointJson": "valid",
+    "sourceAndContracts": "unchanged",
+    "originalEvidence": "hash matched baseline",
+    "recoveryTests": 8,
+    "targetedVitestTests": 32,
+    "paidModelCalls": 0,
+    "backgroundRunStarted": false
+  },
+  "inventory": [
+    {
+      "path": "AGENTS.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "CLAUDE.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "README.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "client/README.md",
+      "category": "Component guide",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "design/README.md",
+      "category": "Component guide",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/ADVERSARIAL_CONTAINMENT.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/BLUEPRINT.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/BLUEPRINT_HISTORY.md",
+      "category": "Dated history",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-06.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-07.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-08.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-11.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-12.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ADDENDUM_2026-08-13.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_FINES_ECONOMY_2026-08-13.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_HOUSING_REPUTATION_2026-08-13.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_MODERATION_LOGGING_2026-08-13.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_NODE_VISUAL_FOUNDATION_2026-08-19.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_ORACLE_2026-08-13.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_PLAYTEST_HARNESS_2026-08-18.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DESIGN_SETTLEMENT_FLOW_BALANCE_2026-10-20.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/DEVLOG.md",
+      "category": "Dated history",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/ECOSYSTEM_VISION_2026-08-06.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/EVALUATION_SCOPE_AND_DEVELOPMENT.md",
+      "category": "Current guidance",
+      "action": "Added"
+    },
+    {
+      "path": "docs/EVALUATION_SCOPE_AND_LIMITATIONS.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/EVAL_INFRASTRUCTURE.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/HANDOVER.md",
+      "category": "Dated history",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/NODE_BUILD_SPEC_2026-08-07.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/NODE_Build_Brief_v1.pdf",
+      "category": "Original PDF source",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/NODE_OBSERVATORY_BUILD_SPEC.pdf",
+      "category": "Original PDF source",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/NODE_VISUAL_DESIGN_BRIEF_2026-08-07.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/README.md",
+      "category": "Current guidance",
+      "action": "Added"
+    },
+    {
+      "path": "docs/RENDER_CAPABILITY_2026-08-19.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/RESEARCH_QUESTIONS.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/VISUAL_FRAMEWORK_2026-08-12.md",
+      "category": "Dated game/design reference",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/external/NODE_v8_Master_Document_Part_1.md",
+      "category": "Imported design source",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/external/NODE_v8_Master_Document_Part_2.md",
+      "category": "Imported design source",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/external/NODE_v8_Master_Document_Part_3.md",
+      "category": "Imported design source",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/ACCOUNTING_RECONCILIATION_PROPOSAL.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/ACCOUNTING_RECOVERY_INVENTORY.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/BROKER_ACCOUNTING_REBUILD.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/BROKER_RECONSTRUCTION.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/CHECKPOINT_RECOVERY.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/CODEX_HANDOVER_2026-10-22.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/CREDENTIAL_BINDING_SUPPORT_REPORT.md",
+      "category": "Preserved accounting/price provenance",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/CURRENT_SESSION.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/DEVELOPMENT_BRANCH_AUDIT.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/DEVELOPMENT_SESSION_RECOVERY.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/DURABLE_FIXTURE_RECOVERY.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_BROKER_PROTOCOL.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_EVALS_AND_SAFEGUARDS.md",
+      "category": "Preserved accounting/price provenance",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_FIRST_INHABITANT.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_FIRST_PASS_RESULTS.md",
+      "category": "Preserved accounting/price provenance",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/GITHUB_FIRST_CONTINUATION.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/INITIAL_GAME_TURN.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/INITIAL_TEST_BUDGET.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/LOCAL_TRANSPORT_REVIEW.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/MAIN_CONSOLIDATION_2026-10-20.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/OFFLINE_INTEGRATION_STATUS.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/OFFLINE_PROVIDER_BOUNDARY.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/PR21_REVIEW_2026-10-20.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/PROVIDER_ADAPTER_REBUILD.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/README.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/RESPONSE_METADATA_COMPATIBILITY.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/RULES_AWARE_CONTEXT.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/RULES_REVIEW_2026-10-18.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/SESSION_HISTORY_2026-10-23.md",
+      "category": "Dated history",
+      "action": "Added"
+    },
+    {
+      "path": "docs/recovery/SYNTHETIC_ACCOUNTING.md",
+      "category": "Historical recovery",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/recovery/evidence/merged-branches-2026-10-20.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/evidence/npm-audit-after-2026-10-18.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/evidence/npm-audit-before-2026-10-18.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/evidence/rules-context-evaluation-2026-10-18.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/recovery/evidence/rules-reading-2026-10-18.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md",
+      "category": "Current guidance",
+      "action": "Added"
+    },
+    {
+      "path": "docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/CURRENT_EXPERIMENT.md",
+      "category": "Current guidance",
+      "action": "Added"
+    },
+    {
+      "path": "docs/research/DIARY_CONTRACT_A01.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/DOCUMENTATION_AUDIT_2026-10-23.md",
+      "category": "Audit inventory",
+      "action": "Added"
+    },
+    {
+      "path": "docs/research/G1_REPRODUCTION_2026-10-20.md",
+      "category": "Dated decisions/simulation evidence",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/GROUND_TRUTH_REGISTER_2026-10-20.md",
+      "category": "Dated decisions/simulation evidence",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/REASONING_CONTINUATION_2026-10-23.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/RECOGNITION_V2_SIMULATION_2026-10-21.md",
+      "category": "Dated decisions/simulation evidence",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/RUNBOOK_AUTHORITY_STUDY_1.md",
+      "category": "Current guidance",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/The_Node_Ground_Truth_and_Publishable_Route_v0_1_1.pdf",
+      "category": "Original PDF source",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/evidence/documentation-audit-2026-10-23.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Added"
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-2026-10-23.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-live-extension-2026-10-23.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/HAIKU_CONNECTION_CHECK.md",
+      "category": "Dated model research with current routing",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/LOCAL_REQUIREMENTS.md",
+      "category": "Dated model research with current routing",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/README.md",
+      "category": "Dated model research with current routing",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/evidence/anthropic-pricing-haiku-5-5-2026-10-22.md",
+      "category": "Preserved accounting/price provenance",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-anthropic.unverified.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-google.unverified.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-local.unverified.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-open-weight.unverified.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-openai.unverified.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verification-partial.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-anthropic.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-local.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-open-weight.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/research/review-who-can-hear-2026-10-21/mutation-results.json",
+      "category": "Machine evidence / dated research output",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "docs/web/README.md",
+      "category": "Component guide",
+      "action": "Updated guidance/status/terminology"
+    },
+    {
+      "path": "evals/evidence/g2-authority-attribution-2026-10-20/summary.md",
+      "category": "Generated historical fixture evidence",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "evals/evidence/main-consolidation-2026-10-20/summary.md",
+      "category": "Generated historical fixture evidence",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "evals/evidence/pr21-review-2026-10-20/summary.md",
+      "category": "Generated historical fixture evidence",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "evals/evidence/scripted-fixtures-2026-10-20/run-a/summary.md",
+      "category": "Generated historical fixture evidence",
+      "action": "Preserved dated source/evidence"
+    },
+    {
+      "path": "src/sim/drivers/README.md",
+      "category": "Component guide",
+      "action": "Updated guidance/status/terminology"
+    }
+  ],
+  "preserved": [
+    {
+      "path": "docs/NODE_Build_Brief_v1.pdf",
+      "gitBlob": "e7f9279d5790452552eb720265739b5ed57c5a4d",
+      "unchanged": true
+    },
+    {
+      "path": "docs/NODE_OBSERVATORY_BUILD_SPEC.pdf",
+      "gitBlob": "4e27bd60117310aa02e525996b2d2695eed48e49",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/CREDENTIAL_BINDING_SUPPORT_REPORT.md",
+      "gitBlob": "564040c97dc54ef0bda739603a1e0a4d0a1cea42",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_EVALS_AND_SAFEGUARDS.md",
+      "gitBlob": "292b0e4ed2a9d2fd207db0b4a72e3e084a728d62",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/EXPERIMENT_FIRST_PASS_RESULTS.md",
+      "gitBlob": "54adeb18b26a00cfad670a25008937a685fa49ff",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/evidence/merged-branches-2026-10-20.json",
+      "gitBlob": "1e92b79a55a8f190748ffdaf25553c16a1d5ab63",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/evidence/npm-audit-after-2026-10-18.json",
+      "gitBlob": "e10a180db1978c8651f38903cdcb5685e600984f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/evidence/npm-audit-before-2026-10-18.json",
+      "gitBlob": "0227e4d0ddc7994337e4b5a523efca3f71ccc5d4",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/evidence/rules-context-evaluation-2026-10-18.json",
+      "gitBlob": "1bbcc92f994a2c2d60ae4e13404457303869aaa4",
+      "unchanged": true
+    },
+    {
+      "path": "docs/recovery/evidence/rules-reading-2026-10-18.json",
+      "gitBlob": "ba1ab9e7ceff0c22fe163633c29fe37cc94dde5f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/The_Node_Ground_Truth_and_Publishable_Route_v0_1_1.pdf",
+      "gitBlob": "385a1fe502f0ad7dd02771060d8b9bf26434c7a7",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-2026-10-23.json",
+      "gitBlob": "6cc3cac5b8a0c51a61970a98570a9497c0a3ed73",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-live-extension-2026-10-23.json",
+      "gitBlob": "70ad73b48500606187995d3665011a83107c879d",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/evidence/reasoning-continuation-live-pilot-2026-10-23.json",
+      "gitBlob": "c63424f84dc78c2a12fe979f604bad36861a48dd",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/evidence/anthropic-pricing-haiku-5-5-2026-10-22.md",
+      "gitBlob": "276338b367f1e4e0f68e16c0b925eb05b8e10d4b",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-anthropic.unverified.json",
+      "gitBlob": "a151cb4c63e79c7105d89ccf0da8ee37e94a7be3",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-google.unverified.json",
+      "gitBlob": "7aa0e60e5e6d7a64c1035d74d16f581395740085",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-local.unverified.json",
+      "gitBlob": "88c0469c890e3caa416786518de4e6ff55ab7ba6",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-open-weight.unverified.json",
+      "gitBlob": "015cdc8da1bd950b9ae6cb979ccd7a4ca6f5caef",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/research-openai.unverified.json",
+      "gitBlob": "84fc0c579706ab34bf182e152709b180b7347c9b",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verification-partial.json",
+      "gitBlob": "094fdba731a4ebe7f974b62fb2bf97946c6197d9",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-anthropic.json",
+      "gitBlob": "260736ff7cb88e6c50a996482b1b9345e7c27d42",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-local.json",
+      "gitBlob": "6a97b857401e07fff57a2a1bc2e7e3d269e956d9",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/model-options-2026-10-21/verify-open-weight.json",
+      "gitBlob": "40d43f1b4fa27ed2e53c28b78c52fd634bdd25f5",
+      "unchanged": true
+    },
+    {
+      "path": "docs/research/review-who-can-hear-2026-10-21/mutation-results.json",
+      "gitBlob": "5c51212d8c4a209e6ed942621994b8602e778fb1",
+      "unchanged": true
+    },
+    {
+      "path": "evals/evidence/g2-authority-attribution-2026-10-20/summary.md",
+      "gitBlob": "d1a5dd75aef776c9d3720162aa89cc0ecdcecb60",
+      "unchanged": true
+    },
+    {
+      "path": "evals/evidence/main-consolidation-2026-10-20/summary.md",
+      "gitBlob": "209c576d6c90b33392ebe959ca543049a62a4d44",
+      "unchanged": true
+    },
+    {
+      "path": "evals/evidence/pr21-review-2026-10-20/summary.md",
+      "gitBlob": "e99798d887a149cc1ae56a53ea09bc61f2864905",
+      "unchanged": true
+    },
+    {
+      "path": "evals/evidence/scripted-fixtures-2026-10-20/run-a/summary.md",
+      "gitBlob": "6f50480edd302abb0086a905174f347e4e535f97",
+      "unchanged": true
+    }
+  ]
+}

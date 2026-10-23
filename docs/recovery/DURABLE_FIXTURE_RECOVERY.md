@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Durable offline fixture execution authority
 
 17 October 2026. Extends the game checkpoint implementation after the [development audit](DEVELOPMENT_BRANCH_AUDIT.md) reproduced repeated/overlapping fixture execution across restart. No broker-core changes or financial accounting are involved.

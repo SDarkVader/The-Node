@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Main consolidation and branch audit — 2026-10-20
 
 Status: PR #22 merged into main at `acb3b2d` on 2026-10-20. Its tracked tree equals verified PR head `1b6684a`. All 23 approved merged remote branches are now deleted; deletion protection is restored. Main and the two separate Godot/Vitest 5 branches remain.

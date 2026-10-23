@@ -42,3 +42,7 @@ evals/evidence/**/logs/
 # Temporary git worktrees created by Claude Code workflow agents (isolated mutation/review runs).
 # Never commit them: each is a separate checkout of this repository.
 .claude/worktrees/
+
+# Private reasoning-continuation traces and Inspect inputs.
+continuation.ledger.jsonl
+inspect-samples.jsonl

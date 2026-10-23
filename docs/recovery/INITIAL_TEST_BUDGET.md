@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Initial testing budget — 18 October 2026
 
 The user clarified that the API dashboard provides billing and that the task is to set a reasonable budget for initial testing. This supersedes the unexecuted proposal to add a historical diagnostic provision. No historical cost is forgiven, invented, settled or newly charged.

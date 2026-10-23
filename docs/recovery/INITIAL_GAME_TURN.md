@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Initial budgeted game turn
 
 > Rules-review correction: both archived live schemas forced `diary` to null because recognition was empty. The model did not choose to omit an available marking action. The older composed-entry adapter also does not implement the user's automatic mechanical memory/non-editing event-mark contract. The two turns establish execution and replay, not full game compliance. See [complete rules review](RULES_REVIEW_2026-10-18.md).

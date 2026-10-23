@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Empty reasoning-content compatibility — 18 October 2026
 
 Continues provider-adapter commit `0a1bffb069a1d43fbd001a2db6fc111351b792e1` in the separate `broker-response-compatibility-2026-10-18` checkout/branch. The earlier checkout and four protected core/test files remain unchanged.

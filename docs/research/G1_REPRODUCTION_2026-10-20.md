@@ -1,3 +1,5 @@
+> Historical reproduction evidence. The offline results below remain source-specific; [current live evidence](CURRENT_EXPERIMENT.md) is recorded separately and must not be mixed into these fixture totals.
+
 # G1 reproduction record: pinned `main` at `afdf390`
 
 Gate G1 of the [ground-truth register](GROUND_TRUTH_REGISTER_2026-10-20.md). This record reproduces

@@ -1,3 +1,5 @@
+> Current status, 2026-10-23: recognition v2 and individual dealings are implemented and used by the [current live experiment](CURRENT_EXPERIMENT.md). The pre-build/second-pass simulations below retain their original assumptions and findings; their proposed work is not a current claim that v2 is unbuilt.
+
 # Recognition model v2: pre-build simulation
 
 2026-10-21. A follow-up to the [A01 diary contract](DIARY_CONTRACT_A01.md). Constraint 1 says to

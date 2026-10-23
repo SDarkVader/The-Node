@@ -5,11 +5,14 @@ against tagged source, Hugging Face metadata or vendor docs (`verify-local.json`
 is an **estimate** or **unmeasured** is labelled. Assumed hardware: RTX 4070 Ti Super (16 GiB =
 17.18 GB VRAM), Ryzen 7 7800X3D, 64 GB RAM, Windows.
 
-## Hard limits set by our code
+## Selected-path configuration and local benchmark work
 
-- **12,000 ms per call**, prefill plus output, enforced in protected `broker.ts` and `httpBody.ts`.
-- **Request body ≤ 32,768 bytes** (about 9k tokens), plus up to 2,048 output tokens. Use a
-  **16,384-token context**.
+- The **legacy protected broker** uses 12,000 ms. The current continuation runner plan uses
+  16,000 ms, with a 12-second worker timeout. These are path-specific engineering choices.
+- The original request profile uses 32,768 bytes; the continuation extension explicitly uses
+  up to 95,000 bytes, with a 2,048 output cap. The **16,384-token context** below belongs to the
+  original local benchmark proposal, not a verified fit for a full continued history. Size
+  and test context/KV memory against the actual selected requests before a future local run.
 - **The schema is strict and rebuilt on every call.** The id enums change per call, so a new grammar
   is compiled each time; its cost is unmeasured.
 - **Number `minimum`/`maximum` is silently ignored** by llama.cpp grammars. Our validator still
@@ -98,8 +101,9 @@ Gemma-4-26B-A4B (borderline fit, no speed data).
    - the quant;
    - `-c`, `-np`, `-fa`, the KV cache type, the seed;
    - the GPU driver version.
-6. **Unchanged:** the 12,000 ms deadline and the request ceiling live in protected core files.
-   They stay as they are unless you decide otherwise.
+6. Preserve protected legacy deadlines and select a declared profile for any new local path.
+   Context fit, timeouts and throughput need measurement; configurable values are not
+   limitations on the experiment's eventual scope.
 
 ## Measure before any study call (no API cost)
 

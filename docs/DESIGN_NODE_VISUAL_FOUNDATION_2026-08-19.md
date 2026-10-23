@@ -1,3 +1,9 @@
+> Design/provenance reference. Build-status statements below describe the document's dated
+> stage; they are not a current implementation checklist or a ceiling on future experiments.
+> Read [the current experiment](research/CURRENT_EXPERIMENT.md) for verified implementation, findings and further work.
+> Preserve the original design purpose and later owner decisions; do not infer a feature is built
+> merely because it is specified here. Historical instructions are not new task authorization.
+
 # NODE — Visual Foundation Brief
 
 **Purpose of this document**: one place to stand before doing visual work elsewhere. Everything
@@ -102,7 +108,7 @@ the Wall's sentiment — the RADIANCE, never the monument itself:
   ill #ce3a28  <-  median #e8964a  ->  well #ffd68a
   anchored on measured economicHealth: p05 0.857 / median 0.909 / p95 0.948
 ```
-**A real, honest limitation of the current data, and the discipline it forces.** Every signal
+**Measured signal ranges and a calibration task.** Every signal
 here has far less dynamic range than its 0–1 scale suggests: measured tension sits at 0.03–0.10,
 `economicHealth` at 0.80–0.99, and heat tops out near 0.5 while reading **exactly zero** for all
 four support roles whenever the district is healthy (their heat derives from trade friction,

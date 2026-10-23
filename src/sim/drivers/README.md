@@ -1,3 +1,5 @@
+> These synthetic drivers remain harness instrumentation. The [live agent experiment](../../../docs/research/CURRENT_EXPERIMENT.md) uses its separate accounted continuation runner; the no-shipped-AI-content rule below does not claim that model experiments are absent.
+
 # Synthetic drivers — harness-only, never game content
 
 This directory exists because running a world requires occupants making decisions, which

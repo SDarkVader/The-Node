@@ -1,22 +1,26 @@
-> Rules context map: rulesAwareContext.ts applies the existing responsesObservation whitelist, then rulesContext.ts adds versioned public mechanic explanations and deductions from current role/signal fields. responsesRequest.ts renders the compact guide; observationTables.ts losslessly packs repeated public arrays only when object form exceeds the existing 32 KiB bound. Final bytes/hash/token reservation remain authoritative. offlineRulesEvaluation.ts scores explicit interpretation/evidence answers and reports core validity separately from intended diary-rule compatibility; it has no provider or history access. test/fixtures/rulesScenario.ts is mechanical test instrumentation using real Wall hearing and legacy diary admission, never shipped world actors or an automatic-memory implementation.
+# Current experiment integration map — 2026-10-23
 
-> Current implementation boundary: the diary adapter exposes optional composed diaryEntry slots; the kernel only consumes queued writes. Automatic event-to-connection memory, grounded non-editing event marks, individual abode assignments and a complete restricted trespass transaction are absent from this broker path. Existing participant tick-bound ageing/replay and owner-only current-memory projection do not implement those missing actions. See [rules/code map](recovery/RULES_REVIEW_2026-10-18.md). Test toolchain: Vitest 4.1.11, Vite 8.3.4, Node 20.19/22.12 or 24+; repository CI uses Node 24. The dependency-audit workflow runs all-dependency npm audit on manifest changes; private credentials and provider execution are not part of it.
+[Current experiment](research/CURRENT_EXPERIMENT.md) · [Results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
+The live pilot is stopped after 36 decisions / 18 ticks. Further development is not a limitation
+on what the experiment may become. Older detailed map entries below describe particular paths;
+the following map distinguishes the current live path from legacy server and fixture paths.
 
-> Provider integration map: responsesRequest.ts serializes final bounded stateless structured-output JSON from an explicit nested observer whitelist; responsesTransport.ts owns fixed-endpoint verified HTTPS/CONNECT with a shared connection/header/body deadline and no retries; providerCredential.ts is a lazy local reader, not a process-env loader. responsesBroker.ts reserves final-wire evidence before transport and records usage before core validation. isolatedHost.ts/isolatedHostChild.ts host the existing deterministic kernel over bounded private IPC with an OS-only environment allowlist. AccountedBroker supports asynchronous latest-host reads after durable receipts/claims. Production entrypoints call the unchanged unconditional gate before reservation/key/socket. Local fixture transport has a fixed fake bearer and loopback-only endpoints. See [contracts](recovery/PROVIDER_ADAPTER_REBUILD.md).
+| Layer | Current implementation |
+| --- | --- |
+| Identity and authorized context | participantWorld/observer stable people, actor-scoped references, rulesAwareContext/rulesContext and exact action schema |
+| Shared-world experiment | continuationHost uses existing observer, validator and deterministic kernel |
+| Own transcript | continuationConversation preserves original user/assistant prefixes and opaque provider blocks; lossless observation patches |
+| Accounted dispatch | continuationRunner + ExperimentBudget + Anthropic worker; reserve before dispatch, usage before validation/action |
+| Durable evidence | continuationLedger embeds verified parent events, world genesis revision, complete histories and exact journal binding |
+| Replay and analysis | independent request/world/history verification, original ReplayTape replay, Inspect import without further calls |
+| Separate paths | offline Inspect fixtures; paused frozen Study 1; original production broker gate remains unchanged |
+| Diary and recognition | A01 authored menu entries, two-day retention/drift, v2 direct address/repeated dealings, v2 Grifter permission |
+| Further work | Realtime observatory adapters (see handover), transcript bounds/degradation, separate framework evaluation, broader live conditions, complete trespass and abodes |
 
-> Broker accounting map: accountingStore.ts owns accounting.journal.json and exclusive .accounting.* locks; accountingLedger.ts replays pinned documentary origin and append-only evidence/operator/reservation/receipt/cancellation/decision events. Account origin retains 19114 microUSD held, nine combined admissions and unbounded diagnostics. accountedBroker.ts prepares a bounded authorized policy document, commits reserve first and usage before validation, claims each response once and uses unchanged core/host authority. recordedResponse.ts reads local archive bytes only. Actual billing remains null; no automatic financial reconciliation or live transport. See [state/invariants](recovery/BROKER_ACCOUNTING_REBUILD.md).
-
-> Latest, 2026-10-17: syntheticBudget.ts derives cumulative fixture counts/costs/holds from durable events, while budgetedMock.ts orders reservation before in-memory dispatch and settlement before success. This is a strictly synthetic fixture component, with no real-account importer, historical settlement or provider permission. Game evidence and spending fixtures remain separate journals; partial failures preserve costs/holds. See [contract and remaining production boundaries](recovery/SYNTHETIC_ACCOUNTING.md).
-
-> Latest reconstruction, 2026-10-17: broker execution authority now persists alongside game evidence in version-2 checkpoints. Pending work and permanent fixture halts survive restart, same-tick consumed work cannot repeat, and legacy v1 history never implies unused fixture admission. This is not spending accounting. The audited upstream core is unchanged; all 956 checks and TypeScript pass. See [audit](recovery/DEVELOPMENT_BRANCH_AUDIT.md) and [execution-state contract](recovery/DURABLE_FIXTURE_RECOVERY.md).
-
-> Durable trial mode: checkpoint.ts owns exclusive locks, bounded checksummed canonical records and atomic intent/result replacement; durableHost.ts restores through verified replay into OfflineParticipantHost. Status states are running/prepared/closed/halted. Socket reply order is preserved and positive admissions follow completed persistence. No accounting/provider capability. See [invariants and limits](recovery/CHECKPOINT_RECOVERY.md).
-
-> Local participant transport: participantSocket.ts wraps OfflineParticipantHost on 127.0.0.1 only, with authenticate-first sessions, exact Origin/path admission, bounded frames/rate/queues/output, heartbeat, safe per-tick host admission and deterministic cleanup. No remote tick or provider command. See [bounds and verified scope](recovery/LOCAL_TRANSPORT_REVIEW.md).
-
-> Participant mode: optional exact transition hooks in stepWorld; stable person/role-episode registry; HMAC observer references; in-memory lease/tick-bound admission; same-district movement and bounded Baker input before demand; isolated diary aging; ordered complete-state replay. Legacy mode retains its seeded trajectory. See [module map and limits](recovery/OFFLINE_INTEGRATION_STATUS.md).
-
-> Offline broker modules: protocol.ts validates closed four-slot decisions from a trusted minimal context; broker.ts runs fixtures only and denies live admission; httpBody.ts reads bounded streams with pre-destruction error handling. No participant host, live provider, ledger or replay integration. See [scope](recovery/BROKER_RECONSTRUCTION.md).
+The original account-origin journal and experimental grants are distinct provenance. Later zero
+holds in a new grant do not erase original liabilities or establish invoice reconciliation.
+The extension's 95,000-byte profile, 99,096 admitted-input bound, 2,048 output cap and USD 1 grant
+are selected run settings. Original 32 KiB request paths and their contracts remain unchanged.
 
 # NODE — System Blueprint
 
@@ -32,11 +36,12 @@ is right and this file is stale — fix it.
 
 ---
 
-**Hosted-inhabitant integration state (2026-10-20):** `src/agent/` now contains the
+**Historical integration note (2026-10-20):** `src/agent/` now contains the
 participant identity/host, owner-only observer boundary, durable checkpoints, replay,
 accounting and bounded Responses transport. `src/eval/` and `evals/` provide the offline
-Inspect harness merged through PR #21. These implementations do not recover missing
-private account/runtime evidence or enable paid inference; the live gate stays closed.
+Inspect harness merged through PR #21. Those original production entrypoints retain their gate. The separate accounted experiment
+runners now support live inference and verified continuation; private original evidence is not
+recreated by the implementation. See the current experiment map above.
 See `docs/recovery/CURRENT_SESSION.md`, `docs/recovery/PR21_REVIEW_2026-10-20.md` and
 `docs/DESIGN_ACCOUNTED_AGENT_EVALUATION_2026-10-20.md`.
 
@@ -330,11 +335,12 @@ validates wire shape + enum membership only (total, never throws); semantic vali
 (self-reference, unresolved subject, absent referent) is NOT duplicated here —
 `writeDiaryEntry`/`composeUtterance` and `stepWorld`'s own `lastDiaryRejections`/
 `lastProximityRejections` already own that. Applied to `world.pendingX` BEFORE `stepWorld`
-runs each tick. No role's economic mechanic (Miller/Baker/Courier/Investigator/Import-Export)
-takes real player input yet — see §9.
+runs each tick. On this ordinary server action path those social verbs are dispatched.
+The participant/evaluation path additionally admits a Baker price before demand; other
+discretionary economic role inputs remain further development — see §9.
 
-**Presence/session primitive** (`src/engine/presence.ts`, 2026-08-24) — the foundation, not
-yet consumed by anything. `World.currentlyOnline: ReadonlySet<PlayerId>` is a LIVE SNAPSHOT
+**Presence/session primitive** (`src/engine/presence.ts`) — consumed by eligibility helpers
+and distinct from participant-host online snapshots. `World.currentlyOnline: ReadonlySet<PlayerId>` is a LIVE SNAPSHOT
 the caller keeps current (`startWorldServer` sets it fresh each tick from the same
 `identities` map the action vocabulary uses) — unlike `pendingX` fields, `stepWorld` does NOT
 drain/clear it. `World.presence: Record<PlayerId, PresenceRecord>` (`online`,
@@ -342,7 +348,7 @@ drain/clear it. `World.presence: Record<PlayerId, PresenceRecord>` (`online`,
 post-tick FILLED role-slot set, keyed by buildingId — role-holders only, grifters out of
 scope. Daily-tick granularity: "online" means "connected at all on the tick observed," not
 session start/end times — this kernel has no finer resolution (see `dayCycle.ts`'s own scope
-note for the same limitation elsewhere). Not exposed on the wire — see "Withheld" below. Real
+note for the same current time-resolution choice elsewhere). Not exposed on the wire — see "Withheld" below. Real
 consumers as of 2026-08-25: trespass and arson eligibility (both below). Still not consumed:
 the login-buffer postcard system, Shift Cover, and Import/Export automation-if-offline.
 
@@ -542,3 +548,7 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   holders — it has NO data for grifters or vacated slots, which is why arson's eligibility
   gate could only ever be half-wired (see above and §5's "Arson eligibility"). `player.ts` is
   still 22 lines, unchanged; presence lives entirely in `World`, not there.
+
+The [Claude Design observatory handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
+maps the existing ledger, framework and Godot interfaces to proposed telemetry adapters. The
+current standalone world server creates its own world; it must not be labelled the experiment.

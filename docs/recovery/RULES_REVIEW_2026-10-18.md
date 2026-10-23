@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Game rules review and dependency security repair
 
 Reviewed source: `1f40ed61ec9be77a93f6fa8e72564c544d20e54b`. Dependency repair: `31f84c68ca54c409e27caa1d5d5a0e91e4416766`. Work is isolated in `outputs/broker-rules-security`, branch `broker-rules-security-2026-10-18`. No paid model requests ran during this review.
@@ -47,7 +52,7 @@ The turn-2 move back to the starting plot is an observed reversal. It is neither
 2. **Verify memory and disclosure.** Test day-0 creation, day-1 deterministic drift and day-2 expiry; repeated observation/restart must not produce additional drift. Expired originals and hidden distortion flags never reach policy input. Actor input contains only its current legitimate view; saved diagnostics cannot become perfect recall. Keep identity/context reliability and isolate memory RNG from the economic trajectory.
 3. **Complete the abode and restricted-read transaction in prerequisite order.** Bind homes to real people/buildings, resolve absence from authoritative state, then add the crafted-key/witness/consequence path. Test owner present, owner away, owner offline, ordinary visitor, missing/wrong/used key, repeated reveal, caught attempt and resource conservation. A successful trespass reveals only the allowed current connections snapshot and never edits or refreshes the owner's diary.
 4. **Exercise a meaningful offline social scenario.** Introduce only legitimate test interactions, not hidden prompt hints or artificial rewards. Confirm automatic memory, earned recognition, marks, expiry and privacy across host and ledger restarts, with complete-state replay. Keep mechanical backstops and basic participation intact.
-5. **Resume a bounded live decision only after its actual action/observation contract is verified.** Use the same authorized model and budget, distinguish available from unavailable actions, and report real effects and limitations. No new provider request or allowance reset was needed for this review.
+5. **Resume a bounded live decision only after its actual action/observation contract is verified.** Use the same authorized model and budget, distinguish available from unavailable actions, and report real effects, evidence scope and further work. No new provider request or allowance reset was needed for this review.
 
 The smallest first component is the grounded, versioned event-to-diary/marking contract. Implementing break-in access before that would expose the wrong memory representation.
 

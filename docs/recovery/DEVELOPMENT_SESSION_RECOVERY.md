@@ -1,3 +1,5 @@
+> Current experiment handover: [CURRENT_EXPERIMENT](../research/CURRENT_EXPERIMENT.md) and [CURRENT_SESSION](CURRENT_SESSION.md). Development snapshots below preserve local edits; live-world/history continuation uses the separate verified parent ledger and matching allowance.
+
 # Development-session continuity
 
 Codex sessions can resume without earlier conversation history by reading the

@@ -1,3 +1,5 @@
+> Client guide. The [current agent experiment](../docs/research/CURRENT_EXPERIMENT.md) runs through the accounted host; this Godot guide is a separate visual interface, not its dispatch or recovery procedure.
+
 # NODE — Godot client (PC)
 
 Renders the live settlement from the running simulation. Two processes: the Node server holds
@@ -25,10 +27,19 @@ health as hue.
 Still unverified by anyone but me: whether it *feels* right to move around in, and the per-role
 palette, which is a first proposal rather than a derived decision.
 
+## Experiment observatory integration
+
+See the [Claude Design handover](../docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md).
+The existing hello/tick renderer is reusable, but npm run server creates a separate timed world.
+A projection/stream adapter must supply the continuation experiment's actual committed world and
+cursor. Reasoning, private observations and framework results use a separate researcher channel;
+do not broadcast them in the ordinary player world stream. Godot currently handles hello/tick,
+not the protocol's optional identity-resolution/lapse messages. Those handlers are further work.
+
 ## What you need
 
 - **Godot 4.3+**, standard build (not .NET/Mono — there is no C# here). https://godotengine.org
-- **Node 20+** and this repo's deps: `npm install` at the repo root.
+- **Node 24** for the recorded repository setup and locked dependencies: `npm ci` at the repo root.
 
 ## Run it
 

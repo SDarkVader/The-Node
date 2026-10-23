@@ -1,3 +1,8 @@
+> Historical recovery record. Its status, branch, budget and no-call statements apply to the
+> named source/date below. Current status: [the live continuation experiment](../research/CURRENT_EXPERIMENT.md),
+> stopped after 36 decisions / 18 ticks. Later reconstruction and successful live calls do not
+> replace original missing evidence. Unimplemented work is further work, not a programme limitation.
+
 # Development branch audit and broker continuation
 
 17 October 2026. Audited GitHub `SDarkVader/The-Node`, branch `broker-reconstruction-2026-10-17`, at **`c1238dee340c1d551907348ec38944344ea3e4fe`**. No remote branch named `development` was advertised, so the active reconstruction branch was used as the development branch. Git access was verified with `git ls-remote`; no GitHub connector/API or model/provider request was used.

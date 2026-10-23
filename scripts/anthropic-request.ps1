@@ -5,7 +5,8 @@
 # -Endpoint messages      POST /v1/messages              (paid)
 # -Endpoint count_tokens  POST /v1/messages/count_tokens (free, rate limited)
 param([Parameter(Mandatory=$true)][string]$KeyPath, [Parameter(Mandatory=$true)][string]$ArtifactDirectory,
-      [Parameter(Mandatory=$true)][ValidateSet('messages', 'count_tokens')][string]$Endpoint)
+      [Parameter(Mandatory=$true)][ValidateSet('messages', 'count_tokens')][string]$Endpoint, [switch]$ArchiveAllResponses,
+      [ValidateRange(32768,95000)][int]$MaxRequestBytes = 32768)
 $ErrorActionPreference = 'Stop'
 $keyValue = $null
 $credentialText = $null
@@ -28,7 +29,7 @@ try {
   $credentialText = $null
   $keyLines = $null
   $body = [IO.File]::ReadAllText((Join-Path $ArtifactDirectory 'request.json'))
-  if ([Text.Encoding]::UTF8.GetByteCount($body) -gt 32768) { throw 'request_bounds' }
+  if ([Text.Encoding]::UTF8.GetByteCount($body) -gt $MaxRequestBytes) { throw 'request_bounds' }
   $url = if ($Endpoint -eq 'messages') { 'https://api.anthropic.com/v1/messages' } else { 'https://api.anthropic.com/v1/messages/count_tokens' }
   $handler = [Net.Http.HttpClientHandler]::new()
   $handler.AllowAutoRedirect = $false
@@ -56,6 +57,9 @@ try {
   }
   $raw = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
   if ($raw.Contains($keyValue)) { throw 'unsafe_response' }
+  if ($ArchiveAllResponses) {
+    [IO.File]::WriteAllText((Join-Path $ArtifactDirectory 'response.json'), $raw, [Text.UTF8Encoding]::new($false))
+  }
   if ($response.IsSuccessStatusCode) {
     $parsed = $raw | ConvertFrom-Json -Depth 40
     if ($Endpoint -eq 'messages' -and $parsed.type -ne 'message') { throw 'response_envelope' }

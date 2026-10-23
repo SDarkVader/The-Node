@@ -1,3 +1,10 @@
+> Current research orientation, 2026-10-23: the [reasoning-continuation experiment](research/CURRENT_EXPERIMENT.md)
+> now investigates use and reconsideration of prior thinking as world and diary change. Its
+> pilot is stopped after 36 decisions / 18 ticks. The questions below retain their original
+> human-player calibration purpose and dated measurements; they do not exhaust the programme's
+> research scope or impose its future limits. Memory comparisons, interpretation checks and
+> richer conditions are further work, without an invented directional prediction.
+
 # Open research questions — where external evidence would stabilise the core
 
 **Purpose.** The simulation is internally consistent and heavily tested, but a number of its

@@ -34,7 +34,7 @@ on GitHub. No paid model calls or budget reset without explicit authorization.
 1. **Primary orientation:** `AGENTS.md` →
    `docs/recovery/GITHUB_FIRST_CONTINUATION.md` →
    `docs/recovery/CURRENT_SESSION.md`. These define the active branch, completed
-   work, current gaps, evidence boundaries and next steps. Read the relevant
+   work, further work, scoped evidence and next steps. Read the relevant
    implementation and scoped evidence before continuing.
 2. **Historical orientation:** `docs/HANDOVER.md` is valuable background, not a
    competing current-session authority. Resolve older status claims against the
@@ -56,6 +56,15 @@ on GitHub. No paid model calls or budget reset without explicit authorization.
    can preserve unpublished machine-specific work but are not prerequisites
    for GitHub-first continuation. Never publish secrets, private game state,
    experimental inputs or accounting journals in tracked documentation.
+
+## Experiment documentation (owner clarification, 2026-10-23)
+
+Read `docs/research/CURRENT_EXPERIMENT.md`. The current pilot is live continuation,
+stopped after 36 decisions / 18 ticks; Study 1 and the original mock fixtures are separate.
+Unimplemented work, issues to diagnose, unanswered questions and chosen caps are further work,
+not limitations of the programme. Any genuine limitation needs explicit conditions and a
+reason the boundary cannot be crossed. Keep historical snapshots clearly dated; do not
+rewrite old evidence as if it were a new run.
 
 ## Build order
 
@@ -81,7 +90,10 @@ checked every session:
    modelable, at every scale, by default — this is why the vacancy backstop and the Oracle
    are both mechanical, not behavioral.
 4. **Personal memory is mortal; civic memory is immortal — and nothing in between gets
-   invented.** (Rewritten 2026-08-08 to resolve a real contradiction — see
+   invented.** For ordinary game memory this remains the design principle. The owner explicitly
+   permits own transcript memory in the current continuation experiment while the world diary
+   ages normally; do not apply an older no-archive condition to that separate experiment.
+   Added transcript bounds/degradation are further work, not grounds to erase current histories. (Rewritten 2026-08-08 to resolve a real contradiction — see
    `docs/BLUEPRINT.md`'s "Open deviations" for the full reasoning; do not silently
    re-read this as "nothing whatsoever persists," that reading is now wrong.) The test
    to apply: does this record capture an event the node collectively witnessed, or does
@@ -121,3 +133,11 @@ npm test         # regression tests
 npm run sim      # prints a stability-curve sweep to stdout
 npm run typecheck
 ```
+
+## Evaluation responsibilities (owner clarification, 2026-10-23)
+
+Keep execution and evaluation separate. The operator can record facts and make clearly
+attributed comments on returned reasoning, but cannot simultaneously grade it by freeform
+judgment. Interpretation belongs to named evaluation frameworks/scorers and humans. An
+assistant-run evaluation must identify specific metrics, definitions, evidence and results
+and be reported as a separate evaluation step. Import/replay/schema checks do not grade reasoning.
