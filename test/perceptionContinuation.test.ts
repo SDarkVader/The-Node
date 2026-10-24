@@ -16,7 +16,7 @@ import type { Sender } from '../src/eval/accountedRunner.js';
 const handles: { close(): void }[] = [];
 afterEach(() => { for (const h of handles.splice(0)) h.close(); cleanup(); });
 const A = 'a'.repeat(40), B = 'b'.repeat(40);
-async function fixture(ticks = 2) {
+async function fixture(ticks = 2, counted = false) {
   const dir = root(), legacy = continuationPlan(), priorPath = join(dir, 'prior');
   const prior = continuationBudget(legacy, priorPath); handles.push(prior);
   const source = new ContinuationLedger(join(dir, 'parent')); handles.push(source);
@@ -24,7 +24,8 @@ async function fixture(ticks = 2) {
   source.close(); prior.close();
   const parent = readContinuationLedger(source.path);
   const plan: PerceptionContinuationPlan = { schema: 'node-accounted-perception-continuation-v1', id: 'TEST-ONLY-perception-transition', model: 'claude-haiku-5-5', ticks,
-    maxCalls: 2 * ticks, condition: structuredClone(DEFAULT_PERCEPTION_CONDITION), perspective: 'first_person', memory: 'retain_exact_own_legacy_then_perception', maxRequestBytes: 95000,
+    maxCalls: 2 * ticks, condition: structuredClone(DEFAULT_PERCEPTION_CONDITION), perspective: 'first_person', memory: 'retain_exact_own_legacy_then_perception', maxRequestBytes: counted ? 200000 : 95000,
+    ...(counted ? { inputProfile: 'counted_100k_input_v1' as const } : {}),
     deadlineMs: 2000, minIntervalMs: 0, allowance: { maxRequests: 2 * ticks, limitMicroUsd: 1000000, perRequestMicroUsd: 30000, windowHours: 24 } };
   const budget = ExperimentBudget.carryFromExperiment(join(dir, 'new-allowance'), priorPath); handles.push(budget);
   budget.authorize({ runId: 'TEST-ONLY-perception', authorizedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString(),
@@ -107,5 +108,23 @@ describe('accounted live perception transition, offline simulated provider only'
     const f = await fixture(); f.plan.condition.firstPerson.maxRange = 5;
     await expect(runPerceptionContinuation(f.plan, f.parent, f.budget, f.sender(), f.ledger, f.workers, B)).rejects.toThrow('allowance');
     expect(f.budget.view().requests).toHaveLength(0); expect(f.sent).toHaveLength(0);
+  });
+  it('binds free count evidence to the exact input and reserves the unchanged 100k input ceiling in the larger body profile', async () => {
+    const f = await fixture(1, true); let counts = 0;
+    const summary = await runPerceptionContinuation(f.plan, f.parent, f.budget, f.sender(), f.ledger, f.workers, B,
+      { mode: 'offline_simulated_provider', countTokens: async input => { counts++; expect(JSON.parse(input.body)).not.toHaveProperty('output_config'); return Buffer.from('{"input_tokens":1200}'); } });
+    f.ledger.close(); expect(summary.completedTicks).toBe(1); expect(counts).toBe(2);
+    expect(f.budget.view().requests.every(r => r.request.maxInputTokens === 100000)).toBe(true);
+    const events = readContinuationLedger(f.ledger.path); expect(verifyPerceptionContinuation(events).verified).toBe(true);
+    const count = events.find(e => e.kind === 'perception_count')!; count.data.body += ' ';
+    expect(() => verifyPerceptionContinuation(rehash(events))).toThrow();
+  });
+  it('fails an oversized counted input before any paid dispatch or reservation', async () => {
+    const f = await fixture(1, true);
+    const summary = await runPerceptionContinuation(f.plan, f.parent, f.budget, f.sender(), f.ledger, f.workers, B,
+      { mode: 'offline_simulated_provider', countTokens: async () => Buffer.from('{"input_tokens":99999}') });
+    f.ledger.close(); expect(summary).toMatchObject({ calls: 0, completedTicks: 0, status: 'perception_token_count_failed' });
+    expect(f.sent).toHaveLength(0); expect(f.budget.view().requests).toHaveLength(0);
+    expect(verifyPerceptionContinuation(readContinuationLedger(f.ledger.path)).verified).toBe(true);
   });
 });

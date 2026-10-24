@@ -19,6 +19,7 @@ export interface PerceptionContinuationPlan {
   schema: 'node-accounted-perception-continuation-v1'; id: string; model: 'claude-haiku-5-5';
   ticks: number; maxCalls: number; condition: PerceptionCondition; perspective: 'first_person';
   memory: 'retain_exact_own_legacy_then_perception'; maxRequestBytes: number;
+  inputProfile?: 'counted_100k_input_v1';
   deadlineMs: number; minIntervalMs: number;
   allowance: { maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number; windowHours: number };
 }
@@ -27,7 +28,8 @@ export function validatePerceptionPlan(p: PerceptionContinuationPlan) {
   if (p?.schema !== 'node-accounted-perception-continuation-v1' || !/^[A-Za-z0-9._:-]{1,100}$/.test(p.id) || p.model !== 'claude-haiku-5-5' ||
     p.perspective !== 'first_person' || p.memory !== 'retain_exact_own_legacy_then_perception' ||
     ![p.ticks, p.maxCalls, p.maxRequestBytes, p.deadlineMs, p.minIntervalMs, ...Object.values(p.allowance ?? {})].every(Number.isSafeInteger) ||
-    p.ticks < 1 || p.ticks > 100 || p.maxCalls < 1 || p.maxCalls > 700 || p.maxRequestBytes < 32768 || p.maxRequestBytes > 95000 ||
+    p.ticks < 1 || p.ticks > 100 || p.maxCalls < 1 || p.maxCalls > 700 || p.maxRequestBytes < 32768 || p.maxRequestBytes > 200000 ||
+    (p.maxRequestBytes > 95000 ? p.inputProfile !== 'counted_100k_input_v1' : p.inputProfile !== undefined) ||
     p.deadlineMs < 1 || p.deadlineMs > 20000 || p.minIntervalMs < 0 || p.minIntervalMs > 600000 ||
     p.allowance.maxRequests !== p.maxCalls || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > 25000000 ||
     p.allowance.perRequestMicroUsd < 1 || p.allowance.perRequestMicroUsd > p.allowance.limitMicroUsd || p.allowance.windowHours < 1 || p.allowance.windowHours > 168) throw Error('perception_live_plan');
@@ -57,9 +59,9 @@ export class PerceptionConversations {
     const messages = [...structuredClone(h.messages), { role: 'user' as const, content: [{ type: 'text', text: JSON.stringify(turn) }] }];
     const body = JSON.stringify({ ...JSON.parse(base.body), messages });
     const size = Buffer.byteLength(body);
-    if (size > this.maxBytes || size + 4096 > 100000) throw Error('perception_history_request_bound');
+    if (size > this.maxBytes || this.maxBytes <= 95000 && size + 4096 > 100000) throw Error('perception_history_request_bound');
     const { max_tokens: _, output_config: __, ...count } = JSON.parse(body);
-    return Object.freeze({ ...base, body, sha256: sha256(body), countBody: JSON.stringify(count), maxInputTokens: size + 4096 });
+    return Object.freeze({ ...base, body, sha256: sha256(body), countBody: JSON.stringify(count), maxInputTokens: this.maxBytes > 95000 ? 100000 : size + 4096 });
   }
   accept(actorId: string, wire: AnthropicRequest, input: PerceptionAgentInput, bytes: Buffer, requestId: string) {
     const h = this.#histories.get(actorId)!, sent = JSON.parse(wire.body), returned = JSON.parse(bytes.toString());
@@ -87,14 +89,25 @@ function auditBinding(request: ReturnType<typeof perceptionRequest>, record: Per
     audit.workers.some(w => w.observationSha256 !== digest(record.observation)) || audit.workers[0]!.responseSha256 !== record.responseSha256) throw Error('perception_live_audit');
 }
 
+/** Count endpoint omits output_config: allow all its UTF-8 bytes as schema tokens plus 4,096
+ * overhead. Reserve the unchanged full 100k ceiling; fail before paid dispatch if it cannot fit. */
+export function assertCountedInput(wire: AnthropicRequest, bytes: Buffer): number {
+  if (bytes.length > 262144) throw Error('perception_count_bounds');
+  const count = JSON.parse(bytes.toString()).input_tokens;
+  const overhead = Buffer.byteLength(JSON.stringify(JSON.parse(wire.body).output_config)) + 4096;
+  if (!Number.isSafeInteger(count) || count < 1 || count + overhead > wire.maxInputTokens) throw Error('perception_count_input_bound');
+  return count;
+}
+
 export async function runPerceptionContinuation(plan: PerceptionContinuationPlan, parentEvents: ContinuationEvent[], budget: ExperimentBudget,
   send: Sender, ledger: ContinuationLedger, workers: [PerceptionAuditWorker, PerceptionAuditWorker], sourceRevision: string,
-  options: { signal?: AbortSignal; mode?: 'live' | 'offline_simulated_provider' } = {}) {
+  options: { signal?: AbortSignal; mode?: 'live' | 'offline_simulated_provider'; countTokens?: Sender } = {}) {
   const initialSetup = setup(parentEvents, plan), { parent, host, histories } = initialSetup; let mirror = initialSetup.mirror;
   const initial = budget.view(), auth = initial.authorization;
   if (!auth || auth.manifestSha256 !== perceptionPlanHash(plan) || auth.model !== plan.model || auth.maxRequests !== plan.maxCalls ||
     auth.limitMicroUsd !== plan.allowance.limitMicroUsd || auth.perRequestMicroUsd !== plan.allowance.perRequestMicroUsd || initial.requests.length ||
     budget.carriedFingerprint() !== parent.recovery.budgetHistoryHash || !initial.canReserve) throw Error('perception_live_allowance');
+  if (plan.inputProfile && !options.countTokens) throw Error('perception_count_provider_required');
   const startTick = host.tick, endTick = startTick + plan.ticks;
   ledger.append('perception_start', { schema: plan.schema, plan, parent: { events: parentEvents, root: parent.ledgerRoot }, sourceRevision,
     mode: options.mode ?? 'live', runId: auth.runId, prices: auth.prices, carriedFingerprint: budget.carriedFingerprint(), budgetHistoryHash: initial.historyHash,
@@ -116,11 +129,19 @@ export async function runPerceptionContinuation(plan: PerceptionContinuationPlan
         wire = histories.prepare(view.actorId, input, perceptionDecisionContext(view.observation.context), plan.model);
       } catch (error) { status = error instanceof Error && /^[a-z_]+$/.test(error.message) ? error.message : 'perception_preflight_failed'; break run; }
       if (wire.body.includes(mirror.genesis.observerSecret)) throw Error('perception_live_secret');
+      const requestId = sha256(JSON.stringify([auth.runId, plan.id, view.actorId, host.tick, request.requestId]));
+      if (plan.inputProfile) {
+        const controller = new AbortController(), timer = setTimeout(() => controller.abort(), plan.deadlineMs);
+        try {
+          const counted = await options.countTokens!({ requestId, body: wire.countBody, sha256: sha256(wire.countBody), episodeId: plan.id, actorId: view.actorId, tick: host.tick, index: calls, provider: 'anthropic' }, controller.signal);
+          ledger.append('perception_count', { requestId, actorId: view.actorId, tick: host.tick, body: wire.countBody, raw: counted.toString('base64'), sha256: sha256(counted) });
+          assertCountedInput(wire, counted);
+        } catch { status = 'perception_token_count_failed'; break run; } finally { clearTimeout(timer); }
+      }
       const ceiling = usageCost(wire.maxInputTokens, wire.maxOutputTokens, auth.prices), state = budget.view();
       if (!state.canReserve || ceiling > auth.perRequestMicroUsd || BigInt(ceiling) > state.remainingMicroUsd!) { status = 'budget_stopped'; break run; }
       const wait = lastDispatch + plan.minIntervalMs - performance.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait));
       if (options.signal?.aborted) { status = 'cancelled'; break run; }
-      const requestId = sha256(JSON.stringify([auth.runId, plan.id, view.actorId, host.tick, request.requestId]));
       const reservation = { id: requestId, episodeId: plan.id, actorId: view.actorId, inputSha256: wire.sha256,
         participant: { tick: host.tick, selfRef: wire.context.selfRef, role: wire.context.role, roleEpoch: wire.context.roleEpoch },
         model: plan.model, maxInputTokens: wire.maxInputTokens, maxOutputTokens: wire.maxOutputTokens };
@@ -175,10 +196,15 @@ export function verifyPerceptionContinuation(events: ContinuationEvent[]) {
   eq(start.prices, parentEventsPrices(start.parent.events, plan.model));
   const pending = new Map<string, { d: any; wire: AnthropicRequest; input: PerceptionAgentInput; raw?: Buffer; latency?: number; parsed?: ReturnType<typeof parseAnthropicResponse>; received?: boolean; valid?: boolean }>();
   let calls = 0, booked = 0, held = 0, stopped = false, intent: any = null, summary: any = null;
+  let counted: { requestId: string; actorId: string; tick: number; body: string; raw: string; sha256: string } | null = null;
   const seen = new Set<string>(), receipts = new Set<string>();
   for (const e of events.slice(1)) {
     if (stopped) throw Error('perception_live_after_stop'); const d = e.data;
-    if (e.kind === 'perception_request') {
+    if (e.kind === 'perception_count') {
+      const view = host.views()[pending.size];
+      if (!plan.inputProfile || counted || !view || view.actorId !== d.actorId || d.tick !== host.tick || calls >= plan.maxCalls || host.tick >= start.startTick + plan.ticks || [...pending.values()].some(p => !p.valid)) throw Error('perception_count_order');
+      eq(sha256(Buffer.from(d.raw, 'base64')), d.sha256); counted = d;
+    } else if (e.kind === 'perception_request') {
       const view = host.views()[pending.size];
       if (!view || view.actorId !== d.actorId || intent || [...pending.values()].some(p => !p.valid) || seen.has(d.requestId) || calls >= plan.maxCalls || host.tick >= start.startTick + plan.ticks) throw Error('perception_live_order');
       const person = host.identities().find(p => p.actorId === view.actorId)!.person;
@@ -187,6 +213,10 @@ export function verifyPerceptionContinuation(events: ContinuationEvent[]) {
       const input = buildPerceptionAgentInput(req, d.record, view.observation), wire = histories.prepare(d.actorId, input, perceptionDecisionContext(view.observation.context), plan.model);
       eq([d.tick, d.worldHash, d.body, d.sha256], [host.tick, host.hash, wire.body, wire.sha256]);
       const requestId = sha256(JSON.stringify([start.runId, plan.id, d.actorId, host.tick, req.requestId])); eq(requestId, d.requestId);
+      if (plan.inputProfile) {
+        if (!counted) throw Error('perception_count_required');
+        eq([counted.requestId, counted.body], [requestId, wire.countBody]); assertCountedInput(wire, Buffer.from(counted.raw, 'base64')); counted = null;
+      }
       eq(d.reservation, { id: requestId, episodeId: plan.id, actorId: d.actorId, inputSha256: wire.sha256,
         participant: { tick: host.tick, selfRef: wire.context.selfRef, role: wire.context.role, roleEpoch: wire.context.roleEpoch }, model: plan.model, maxInputTokens: wire.maxInputTokens, maxOutputTokens: wire.maxOutputTokens });
       eq(d.ceiling, usageCost(wire.maxInputTokens, wire.maxOutputTokens, start.prices));

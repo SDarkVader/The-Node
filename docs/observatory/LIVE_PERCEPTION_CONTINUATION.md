@@ -23,8 +23,13 @@ summary or other actor's conversation. This is a condition-transition pilot, not
 comparison of perception or memory benefit.
 
 `max_tokens` remains 2,048, adaptive summarized thinking/medium effort and model remain the
-previously selected settings. The request limit remains 95,000 bytes, and accounting reserves
-the conservative byte-based input ceiling plus 4,096 overhead. A bound failure stops before
+previously selected settings. The original 95,000-byte profile remains supported unchanged.
+The actual tick-28 history preflight reached 88,305 bytes for one actor, so the new run explicitly
+selects `counted_100k_input_v1`, permitting up to 200,000 request bytes. Each request first uses
+the free count endpoint; counted input plus every output-schema UTF-8 byte and 4,096 overhead
+must fit the unchanged 100,000-input-token ceiling. Accounting reserves that full ceiling.
+A separate bounded PowerShell worker supports this profile; the original worker is unchanged.
+A count failure or bound failure stops before
 another paid dispatch; a non-actionable, invalid, transformed, late, wrong-model or unaccounted
 response stops without a retry or fabricated action. Missing returned thinking stays missing.
 
@@ -66,7 +71,7 @@ Credentials remain inside the existing isolated PowerShell request worker.
 Offline coverage in `test/perceptionContinuation.test.ts`: same-world restoration, exact own
 signed prefixes, packet patches, real kernel actions/replay, rehashed evidence tampering,
 transport/unknown-usage/wrong-model/overrun stops and changed-plan refusal before reservation.
-The seven new tests and 43 related perception/context/pricing tests passed; TypeScript and CLI
-syntax passed. Initial fixture authorization failed because its disposable test authorization
+The nine new tests, 43 related perception/context/pricing tests and four frozen Study 1 tests
+passed; TypeScript and CLI syntax passed. Initial fixture authorization failed because its disposable test authorization
 included an extra field and predated its prior reservations; the test fixture was corrected
 without altering accounting validation. Live results are recorded only after actual dispatch.

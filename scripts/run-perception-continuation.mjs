@@ -43,7 +43,7 @@ if (parent.recovery.plan.actors.length * plan.ticks !== plan.maxCalls) throw Err
 mkdirSync(directory, {mode:0o700});
 const write = (name,value) => { const fd=openSync(join(directory,name),'wx',0o600); try { writeFileSync(fd,typeof value==='string'?value:JSON.stringify(value,null,2)+'\n'); fsyncSync(fd); } finally { closeSync(fd); } };
 const bridges=[], processes=[], workers=[]; let budget, ledger;
-const report = { sourceRevision, preflightOnly, paidDispatches:0, preflight:null, summary:null, verification:null, error:null, originalSourcesUnchanged:null };
+const report = { sourceRevision, preflightOnly, paidDispatches:0, freeTokenCountRequests:0, preflight:null, summary:null, verification:null, error:null, originalSourcesUnchanged:null };
 try {
   for(let i=0;i<2;i++) {
     const bridge=await startPerceptionBridge({timeoutMs:15000}); bridges.push(bridge);
@@ -68,21 +68,23 @@ try {
     budget.authorize({runId:plan.id+'-'+sha256(directory+now).slice(0,12),authorizedAt:new Date(now).toISOString(),expiresAt:new Date(now+plan.allowance.windowHours*3600000).toISOString(),
       expectedCarriedFingerprint:budget.carriedFingerprint(),instruction,scope:'accounted_experiment_spending_only',manifestSha256:perceptionPlanHash(plan),model:plan.model,
       maxRequests:plan.maxCalls,limitMicroUsd:plan.allowance.limitMicroUsd,perRequestMicroUsd:plan.allowance.perRequestMicroUsd,prices});
-    mkdirSync(join(directory,'calls'),{mode:0o700});
-    const send=async(input,signal)=>{
-      if(report.paidDispatches>=plan.maxCalls) throw Error('perception_cli_call_limit');
-      const call=join(directory,'calls',String(input.index).padStart(5,'0')); mkdirSync(call,{mode:0o700});
+    mkdirSync(join(directory,'calls'),{mode:0o700}); mkdirSync(join(directory,'counts'),{mode:0o700});
+    const dispatch=async(endpoint,input,signal)=>{
+      if(endpoint==='messages' && report.paidDispatches>=plan.maxCalls) throw Error('perception_cli_call_limit');
+      const call=join(directory,endpoint==='messages'?'calls':'counts',String(input.index).padStart(5,'0')); mkdirSync(call,{mode:0o700});
       writeFileSync(join(call,'request.json'),input.body,{flag:'wx',mode:0o600});
       writeFileSync(join(call,'attempt.json'),JSON.stringify({requestId:input.requestId,actorId:input.actorId,tick:input.tick,sha256:input.sha256,noRetry:true}),{flag:'wx',mode:0o600});
-      report.paidDispatches++;
-      await promisify(execFile)('pwsh',['-NoProfile','-NonInteractive','-File',fileURLToPath(new URL('./anthropic-request.ps1',import.meta.url)),
-        '-KeyPath',keyPath,'-ArtifactDirectory',call,'-Endpoint','messages','-ArchiveAllResponses','-MaxRequestBytes',String(plan.maxRequestBytes)],
+      if(endpoint==='messages') report.paidDispatches++; else report.freeTokenCountRequests++;
+      const workerScript=plan.inputProfile?'./anthropic-perception-request.ps1':'./anthropic-request.ps1';
+      await promisify(execFile)('pwsh',['-NoProfile','-NonInteractive','-File',fileURLToPath(new URL(workerScript,import.meta.url)),
+        '-KeyPath',keyPath,'-ArtifactDirectory',call,'-Endpoint',endpoint,'-ArchiveAllResponses','-MaxRequestBytes',String(plan.maxRequestBytes)],
         {env:hostProcessEnvironment(process.env),windowsHide:true,signal,timeout:15000,maxBuffer:8192});
       if(!existsSync(join(call,'response.json'))) throw Error('provider_response_failed');
       return readFileSync(join(call,'response.json'));
     };
     ledger=new ContinuationLedger(join(directory,'trace'));
-    report.summary=await runPerceptionContinuation(plan,parentEvents,budget,send,ledger,workers,sourceRevision);
+    report.summary=await runPerceptionContinuation(plan,parentEvents,budget,(input,signal)=>dispatch('messages',input,signal),ledger,workers,sourceRevision,
+      plan.inputProfile?{countTokens:(input,signal)=>dispatch('count_tokens',input,signal)}:{});
     ledger.close();
     report.verification=verifyPerceptionContinuation(readContinuationLedger(ledger.path));
     const actual=budget.view();
@@ -95,6 +97,6 @@ finally {
   report.originalSourcesUnchanged=sha256(readFileSync(parentPath))===sha256(parentBytes)&&sha256(readFileSync(join(priorPath,'accounting.journal.json')))===sha256(oldJournal);
   write('report.json',report);
 }
-console.log(JSON.stringify({sourceRevision,preflightOnly,paidDispatches:report.paidDispatches,preflight:report.preflight,summary:report.summary,
+console.log(JSON.stringify({sourceRevision,preflightOnly,paidDispatches:report.paidDispatches,freeTokenCountRequests:report.freeTokenCountRequests,preflight:report.preflight,summary:report.summary,
   verified:report.verification?.verified??null,error:report.error,originalSourcesUnchanged:report.originalSourcesUnchanged},null,2));
 if(report.error || !report.originalSourcesUnchanged || !preflightOnly && report.summary?.status!=='completed') process.exitCode=1;
