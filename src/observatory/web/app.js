@@ -55,6 +55,7 @@ async function refreshRun() {
   $('tick').max = String(state.latest);
   await showTick(summary.display.tick, false);
   renderChips(); renderMetrics(); renderEvals(); renderSampleEvals(); renderNotes(); renderEvidence();
+  if (typeof initThinkingViewer === 'function') initThinkingViewer();
   if (summary.error) banner(`Evidence stopped verifying: ${summary.error}. Showing what had been verified.`); else banner('');
 }
 
@@ -68,6 +69,7 @@ async function showTick(tick, publish) {
   $('tickLabel').textContent = `tick ${tick} of ${state.latest}`;
   $('frameHash').textContent = `world ${short(state.frame.worldHash)} · ${state.frame.segmentId} · ${state.frame.verification}`;
   renderTimeline(); renderShard(); renderActors(); renderEvals(); renderChips();
+  if (typeof renderThinkingViewer === 'function') renderThinkingViewer();
 }
 
 function renderChips() {
