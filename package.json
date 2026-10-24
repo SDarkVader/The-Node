@@ -50,7 +50,8 @@
     "server": "tsx src/server/ws.ts",
     "observatory": "tsx src/observatory/cli.ts",
     "observatory:acceptance": "tsx src/observatory/acceptanceCli.ts",
-    "observatory:demo": "tsx scripts/observatory-demo.ts"
+    "observatory:demo": "tsx scripts/observatory-demo.ts",
+    "perception:verify": "tsx scripts/perception-readiness.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

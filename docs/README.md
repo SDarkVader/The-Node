@@ -1,6 +1,6 @@
 # The Node documentation
 
-Updated 2026-10-23. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
+Updated 2026-10-24. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
 This index separates current guidance, original design sources and dated evidence.
 
 ## Current experiment and results
@@ -13,10 +13,12 @@ This index separates current guidance, original design sources and dated evidenc
 - [Architecture and path map](BLUEPRINT.md)
 - [Evaluation infrastructure](EVAL_INFRASTRUCTURE.md)
 - [Observatory and agent perception runbook](observatory/README.md)
+- [Current observatory readiness and Claude interface handover](observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+- [Inspect and Study 1 sample-result importer](observatory/SAMPLE_EVALUATION_IMPORT.md)
 - [Claude Design realtime observatory handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
 - [Documentation audit and complete inventory](research/DOCUMENTATION_AUDIT_2026-10-23.md)
 
-The completed live pilot contains 36 decisions across 18 ticks. The chosen two actors, model,
+The completed live pilot contains 56 decisions across 28 ticks. The chosen two actors, model,
 caps and USD 1 extension allowance describe this pilot, not the eventual scope of the programme.
 Unimplemented work, defects and unanswered questions are further work. A genuine limitation needs
 explicit conditions and a concrete reason a boundary cannot be crossed.

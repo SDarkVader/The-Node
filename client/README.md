@@ -69,6 +69,10 @@ NODE_GODOT_BIN=<godot binary> npx vitest run test/perception.test.ts
 
 Contract, information limits and further work are in
 [docs/observatory](../docs/observatory/README.md#agent-perception).
+The [current interface handover](../docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+adds the mechanics-aware policy packet, scoped actions, verified movement and independent-worker
+audit. `npm run perception:verify -- --out <NEW private directory>` runs two real Godot workers
+with scripted policies and verifies the exact move and replay; it makes no model call.
 
 ## What you need
 

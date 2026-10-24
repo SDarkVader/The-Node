@@ -5,7 +5,7 @@
 
 const API = '/observatory/v1';
 const state = { token: null, runs: [], run: null, tick: 0, latest: 0, mode: 'live_following', timeline: [], hello: null,
-  frame: null, snapshot: null, telemetry: null, evals: null, notes: [], actor: null, selected: null, stream: null };
+  frame: null, snapshot: null, telemetry: null, evals: null, sampleEvals: null, notes: [], actor: null, selected: null, stream: null };
 
 function readToken() {
   const fromHash = new URLSearchParams(location.hash.slice(1)).get('token');
@@ -48,12 +48,13 @@ async function selectRun(id) {
 
 async function refreshRun() {
   const id = encodeURIComponent(state.run);
-  const [summary, tl, tel, evals, notes] = await Promise.all([api(`/runs/${id}`), api(`/runs/${id}/timeline`), api(`/runs/${id}/telemetry`), api(`/runs/${id}/evaluations`), api(`/runs/${id}/annotations`)]);
-  state.summary = summary; state.timeline = tl.ticks; state.telemetry = tel; state.evals = evals; state.notes = notes.annotations;
+  const [summary, tl, tel, evals, notes, sampleEvals] = await Promise.all([api(`/runs/${id}`), api(`/runs/${id}/timeline`), api(`/runs/${id}/telemetry`), api(`/runs/${id}/evaluations`), api(`/runs/${id}/annotations`),
+    api(`/runs/${id}/sample-evaluations`).catch(error => ({ records: [], error: error.message }))]);
+  state.summary = summary; state.timeline = tl.ticks; state.telemetry = tel; state.evals = evals; state.notes = notes.annotations; state.sampleEvals = sampleEvals;
   state.latest = summary.verifiedThroughTick; state.mode = summary.display.mode;
   $('tick').max = String(state.latest);
   await showTick(summary.display.tick, false);
-  renderChips(); renderMetrics(); renderEvals(); renderNotes(); renderEvidence();
+  renderChips(); renderMetrics(); renderEvals(); renderSampleEvals(); renderNotes(); renderEvidence();
   if (summary.error) banner(`Evidence stopped verifying: ${summary.error}. Showing what had been verified.`); else banner('');
 }
 
@@ -184,6 +185,26 @@ function renderEvals() {
       : el('div', { class: 'dim' }, 'No framework evaluation has been produced for this run.'),
     el('div', { class: 'dim small' }, 'Rows dimmed: evaluated through an earlier tick than the one selected. ' + (e.rejected ? `${e.rejected} malformed record(s) refused. ` : '')),
     el('div', { class: 'dim small' }, 'not_evaluated: ' + e.notEvaluated.map(m => m.metricId).join(', ') + ' — no declared metric or framework result.'));
+}
+
+function renderSampleEvals() {
+  const data = state.sampleEvals;
+  if (!data) return;
+  const target = $('sampleEvals');
+  if (data.error) { target.replaceChildren(el('div', { class: 'dim' }, `Sample results refused: ${data.error}`)); return; }
+  const groups = new Map();
+  for (const record of data.records) {
+    const key = record.collectionId;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  }
+  target.replaceChildren(...(groups.size ? [...groups].map(([collection, records]) => el('details', {},
+    el('summary', {}, `${collection} · ${records.length} imported results · independent sample scope`),
+    el('table', {}, el('thead', {}, el('tr', {}, ['sample', 'metric', 'producer', 'status', 'value', 'source'].map(h => el('th', {}, h)))),
+      el('tbody', {}, records.map(r => el('tr', {}, el('td', {}, r.scope.sampleId), el('td', {}, r.metricId),
+        el('td', {}, `${r.producer.name} ${r.producer.version}`), el('td', {}, r.status), el('td', {}, r.value === null ? '—' : String(r.value)),
+        el('td', { class: 'small' }, `${short(r.sourceArtifact.sha256)} ${r.sourceArtifact.jsonPointer}`)))))))
+    : [el('div', { class: 'dim' }, 'No independent sample collection is configured.')]));
 }
 
 function renderNotes() {

@@ -6,7 +6,14 @@ Authority, cooperation, information asymmetry and economic behaviour are part of
 programme. The current experiment studies reasoning continuity as world state and diary contents
 change. Its present implementation is a stage of development, not a ceiling on the programme.
 
-## Current experiment — 2026-10-23
+## Current experiment — 2026-10-24
+
+**Observatory readiness:** the new perception policy guide explains District Weather, visibility,
+role relationships and legal actions from the actual mechanics. A scoped schema preserves hidden
+social references; real movement and two-process perception auditing pass offline. A6 now imports
+existing Inspect/Study 1 sample results into a separate researcher collection without inventing
+continuation scores. [Current implementation, verification and Claude interface handover](docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md).
+No model was called for this development work; the original live pilot remains stopped below.
 
 **Latest checkpoint: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
 replay, journal binding, Inspect import and observatory acceptance. New estimated list cost
@@ -57,6 +64,13 @@ archive acceptance. [Runbook](docs/observatory/README.md).
   a first-person or isometric perspective, and the Node validates it before the agent receives
   it. First person: camera frustums, raycasts against the client's own buildings and Wall, fog.
   Isometric: broad district conditions, no person references.
+- **Policy readiness**: the per-agent rules guide and output schema explain actual tension and
+  action semantics. The audited episode compares two separately launched workers before policy
+  delivery and retains proposal/admission/effect distinctions. `npm run perception:verify -- --out <NEW private directory>`
+  produces synthetic, scripted readiness evidence. No live perception result is claimed.
+- **Framework sample imports**: `inspect_node.observatory_export` imports existing results with
+  producer/metric/status and exact source anchors. The researcher-only `sample-evaluations` route
+  and separate web panel do not attach those samples to continuation ticks.
 - **Verification**: the private tick-18 archive passed replay, latest-journal binding, HTTP
   scopes, cursor resumption and web/Godot frame synchronization on Windows. At `49a496b`,
   66 selected Vitest tests and TypeScript passed, including all four real-Godot tests using

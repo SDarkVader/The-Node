@@ -300,3 +300,21 @@ export function validatePerception(request: PerceptionRequest, response: Percept
     observation: structuredClone(r.observation),
   };
 }
+
+/** Revalidate records at policy/audit boundaries too, including injected offline callbacks.
+ * responseSha256 remains the bridge's raw-byte provenance; this checks content and request
+ * binding, not a claim to reconstruct those bytes from a parsed record. */
+export function assertPerceptionRecord(request: PerceptionRequest, record: PerceptionRecord): PerceptionRecord {
+  validateCondition(request.condition);
+  if (!exactKeys(record, ['schema', 'requestId', 'episodeId', 'agentId', 'tick', 'worldHash', 'perspective',
+    'conditionId', 'conditionDigest', 'profile', 'engine', 'requestSha256', 'responseSha256', 'observation']) ||
+      record.schema !== PERCEPTION_RECORD_SCHEMA || record.episodeId !== request.episodeId ||
+      record.conditionId !== request.condition.id || record.conditionDigest !== digest(request.condition) ||
+      record.requestSha256 !== sha256(JSON.stringify(request)) || !/^[a-f0-9]{64}$/.test(record.responseSha256))
+    refuse('perception_record_binding');
+  const response: PerceptionResponse = { type: 'perception', schema: PERCEPTION_SCHEMA, profile: record.profile,
+    requestId: record.requestId, agentId: record.agentId, tick: record.tick, worldHash: record.worldHash,
+    perspective: record.perspective, engine: record.engine, observation: record.observation };
+  validatePerception(request, response, JSON.stringify(response));
+  return structuredClone(record);
+}

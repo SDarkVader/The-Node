@@ -126,6 +126,10 @@ export async function startObservatoryServer(registrations: readonly ExperimentR
       return json(res, 200, { records, rejected, notEvaluated: NOT_EVALUATED.filter(m => !records.some(x => x.metricId === m))
         .map(metricId => ({ metricId, status: 'not_evaluated', reason: 'No declared metric or framework result exists for this measure.' })) });
     }
+    if (req.method === 'GET' && route === 'sample-evaluations') {
+      try { return json(res, 200, { scope: 'independent_sample_collections', records: service.sampleEvaluations(id), notAttachedToTimeline: true }); }
+      catch { return deny(409, 'observatory_sample_evaluation_invalid'); }
+    }
     if (req.method === 'GET' && parts[2] === 'decisions' && parts[3]) {
       try { return json(res, 200, decisionRecord(r.experiment, parts[3])); } catch { return deny(404, 'observatory_unknown_request'); }
     }

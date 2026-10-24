@@ -1,6 +1,6 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-23. A fresh phone, PC or cloud session can recover development context from GitHub.
+Updated 2026-10-24. A fresh phone, PC or cloud session can recover development context from GitHub.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
@@ -12,6 +12,9 @@ and perception work. [PR #38](https://github.com/SDarkVader/The-Node/pull/38) ha
 the shared integration line `main` at `afbdec7`. The observatory review branch remains separate;
 do not silently switch, reset, merge or discard work. See the
 [Windows acceptance record](../observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
+The [current Claude interface handover](../observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+records the mechanics-aware perception contract, independent-worker audit, movement readiness
+and implemented Inspect/Study 1 sample-result import. No new live condition has run.
 
 The live continuation pilot is stopped at tick 28 after 56 paid decisions, including 52 extension
 calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports

@@ -82,6 +82,8 @@ export interface ExperimentRegistration {
   segments: SegmentRegistration[];
   /** Separately produced EvaluationRecord JSONL files. */
   evaluations?: string[];
+  /** Independent fixture/Study samples; never assigned a continuation cursor or tick. */
+  sampleEvaluations?: string[];
   /** Append-only annotation JSONL file for this experiment. */
   annotations?: string;
 }
@@ -97,6 +99,7 @@ export function validateRegistration(r: ExperimentRegistration): ExperimentRegis
         (s.sourceRevision === undefined || /^[a-f0-9]{40}$/.test(s.sourceRevision))) ||
       typeof r.segments.at(-1)!.ledger !== 'string' ||
       (r.evaluations !== undefined && !(Array.isArray(r.evaluations) && r.evaluations.every(p => typeof p === 'string'))) ||
+      (r.sampleEvaluations !== undefined && !(Array.isArray(r.sampleEvaluations) && r.sampleEvaluations.length <= 100 && r.sampleEvaluations.every(p => typeof p === 'string' && p.length > 0))) ||
       (r.annotations !== undefined && typeof r.annotations !== 'string')) throw Error('observatory_registration_invalid');
   return r;
 }

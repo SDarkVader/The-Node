@@ -232,7 +232,7 @@ describe('perception episode', () => {
     expect(inputs.map(i => [i.agentId, i.tick, i.perspective])).toEqual([
       ['baker-0', 0, 'first_person'], ['grifter-0', 0, 'isometric'], ['baker-0', 1, 'isometric'], ['grifter-0', 1, 'isometric']]);
     for (const input of inputs) {
-      expect(Object.keys(input).sort()).toEqual(['agentId', 'legalMoves', 'perception', 'perspective', 'requestId', 'self', 'tick', 'worldHash']);
+      expect(Object.keys(input).sort()).toEqual(['agentId', 'decisionSchema', 'legalMoves', 'perception', 'perspective', 'requestId', 'rules', 'self', 'tick', 'worldHash']);
       expect(Object.keys(input.self).sort()).toEqual(['role', 'roleEpoch', 'x', 'y']);
       const own = result.ticks[input.tick]!.records.find(r => r.agentId === input.agentId)!;
       expect(input.perception).toEqual(own.observation);

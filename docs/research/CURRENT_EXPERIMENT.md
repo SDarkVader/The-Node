@@ -4,7 +4,7 @@
 
  Current experiment — reasoning continuity in The Node
 
-Updated 2026-10-23. This page describes the current experiment and its further work.
+Updated 2026-10-24. This page describes the current experiment and its further work.
 The programme can develop beyond the configuration and evidence recorded here.
 
 ## Purpose
@@ -87,7 +87,7 @@ fixtures; their scores must not be presented as grades of this live continuation
 
 | Work | Evidence of progress |
 | --- | --- |
-| Realtime web/Godot observatory | See the [Claude Design handover](CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md); one authoritative world, synchronized evidence and separately attributed evaluations |
+| Realtime web/Godot observatory | Archive viewing/acceptance, mechanics-aware perception rules and action schema, independent-worker audits, real movement and framework sample import are implemented. See the [current Claude interface handover](../observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md); interface expansion and later accounted live perception integration remain separate tasks. |
 | Compare memory conditions | Matched authorized views/mechanics, explicit history conditions and provenance, replay and reported differences without assuming an outcome |
 | Add transcript bounds and degradation | Declared retention policy, tested expiry/information exposure, provider-compatible continuation and preserved audit evidence |
 | Investigate interpretation and decision quality | Mechanics-grounded checks separating legal actions, supported beliefs and subjective diary claims |

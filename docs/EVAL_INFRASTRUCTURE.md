@@ -223,8 +223,10 @@ and [Study 1 runbook](research/RUNBOOK_AUTHORITY_STUDY_1.md).
 
 ## Realtime examination interface
 
-The [Claude Design handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
-identifies the evidence tail, world/Godot projection and framework-result adapters to build.
-Inspect continuation import is available; a live dashboard and continuation-specific reasoning
-scores are not claimed implemented. Execution, attributed reasoning comments, framework metrics
+The [current interface handover](observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+maps the implemented read-only ledger tail, world/Godot projection, mechanics-aware perception
+packet, independent-worker audit and Inspect/Study 1 sample-result adapters. The original
+[design handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md) remains provenance.
+No continuation-specific reasoning score or live perception condition is claimed. Execution,
+attributed reasoning comments, framework metrics
 and human interpretation must remain separate in the interface.

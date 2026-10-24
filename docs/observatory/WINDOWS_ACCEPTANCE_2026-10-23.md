@@ -84,7 +84,9 @@ The runbook also describes the renderer URL. Opening either view does not resume
 
 ## Further work
 
-Independent visibility re-derivation, provider-facing perception rules and tests, declared
-reasoning/decision metrics, Inspect/Study 1 result import contracts, and transcript-memory
-degradation remain separate development/research tasks. These acceptance checks establish
+Subsequent implementation of independent-worker re-derivation, perception rules/action packets
+and Inspect/Study 1 sample imports is recorded in the
+[2026-10-24 interface handover](CLAUDE_INTERFACE_HANDOVER_2026-10-24.md). Separate live
+perception integration, declared continuation reasoning/decision metrics and transcript-memory
+degradation remain development/research tasks. These dated acceptance checks establish
 archive integrity and interface behaviour; they do not score reasoning or establish memory benefit.

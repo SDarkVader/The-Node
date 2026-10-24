@@ -1,3 +1,15 @@
+> 2026-10-24 — Observatory readiness beyond Claude's perception handover.
+>
+> Added the mechanics-aware perception context, scoped output schema, provider-neutral bounded packet, strict record revalidation at policy boundaries, independent-worker audit and audited episode. District Weather was already in the kernel; its aggregate meaning, band edges and consequences now reach policies. Movement remains optional, current legal destinations are explicit, and real kernel movement/next position/replay pass. No production broker, kernel, observer, accounting, replay, frozen contract or model configuration changed.
+>
+> A6 now imports existing Inspect/Study 1 sample outputs with producer/metric/status and exact source hashes/pointers, in a separate schema and researcher collection. It invents neither continuation ticks nor scores and refuses unvalidated continuation exports. UI/API sample scope stays separate from the selected world tick.
+>
+> Verification: full Vitest 1,454 passed across 114 files, one existing Windows PowerShell preflight skip; TypeScript plus explicit CLI typecheck; eight recovery checks; all 39 Python tests in the established Inspect environment. Two actual Windows Godot 4.7.2 processes agreed for all eight requests in the four-tick scripted readiness run; the exact submitted move matched the next position and replay. Actual private tick-28 archive acceptance passed again, including unchanged ledger/journal fingerprints. Zero model calls and no behavioural evaluation.
+>
+> Failures diagnosed and resolved: default Python lacked inspect_ai, so the existing venv was located and used without dependency changes; new API tests initially needed unknown-JSON narrowing; review corrected version-specific Courier pay/move timing and tightened readiness to the exact proposed destination. Worker startup cleanup now covers synchronous failures. The full suite rewrote a snapshot's line endings without a Git content diff; refreshing its index metadata left no snapshot change to commit. Browser automation had no available browser, so interactive visual verification is unclaimed.
+>
+> Current handover: observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md. Continue interface work from this branch; keep later live perception/history/accounting integration explicit rather than silently changing the original pilot.
+
 > 2026-10-23 — Agent-specific perception through the Godot client (branch ccr-8d64b59c-a4puhv, source c611e10).
 >
 > The owner asked for perception derived by the existing Godot client: first-person and isometric, with real information limits, bound to the right agent, tick and world-state snapshot, and the Node staying authoritative.

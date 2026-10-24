@@ -1,11 +1,13 @@
-#Latest archive: the [subsequent 20-call batch](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) reached tick 28 and
+# Observatory and agent perception
+
+Latest archive: the [subsequent 20-call batch](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) reached tick 28 and
 passed observatory acceptance over five segments and 29 frames. Use its new private registration
 and matching advanced journal for current acceptance. The tick-18 measurements below describe
 the earlier checkpoint; its old parent no longer matches the advanced journal for dispatch.
 
- Observatory and agent perception
-
-Updated 2026-10-23. Code: [`src/observatory`](../../src/observatory), Godot scripts in
+Updated 2026-10-24. See the [current readiness and Claude interface handover](CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+for resolved Windows/archive, policy-context, movement, independent-audit and A6 import work.
+Code: [`src/observatory`](../../src/observatory), Godot scripts in
 [`client/scripts`](../../client/scripts). This page is the runbook for both parts:
 
 - **Observatory**: a read-only evidence view over continuation ledgers, in a web page and the Godot
@@ -53,6 +55,7 @@ repository.
     { "segmentId": "extension-3", "ledger": "<private ledger path>", "sourceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4" }
   ],
   "evaluations": ["<private evaluations.jsonl>"],
+  "sampleEvaluations": ["<private independent sample-results.jsonl>"],
   "annotations": "<private annotations.jsonl>"
 }
 ```
@@ -118,19 +121,14 @@ execution timeline never contains a score.
 The web view lists no-score statuses as `not_evaluated` and dims results whose evaluated-through
 tick is behind the selected tick.
 
-**Further work: importing Inspect and Study 1 outputs (handover A6).** The Python importer
-`evals/inspect_node/observatory_export.py` was not built, because nothing genuine for a
-continuation run exists to import:
-
-- `inspect_node.export`'s `results.json` scores scripted-fixture Episode samples.
-- Study 1's `analyze_study` produces per-arm aggregates for a study that has not run live.
-- The Inspect continuation import is explicitly `behaviouralMetrics: not_validated`.
-
-None of these carries the ledger cursor or tick scope an evaluation record states. Two routes are
-open:
-
-- An owner-chosen contract for records about non-ledger samples.
-- A continuation scorer declared with its metric, definition, denominator and exclusions first.
+**A6 sample import is implemented.** `evals/inspect_node/observatory_export.py` copies existing
+Inspect and accounted Study 1 sample results into `node-observatory-sample-evaluation-v1` records,
+with exact source SHA-256/JSON pointers, producer/metric definitions and honest score statuses.
+The strict reader, researcher-only `/sample-evaluations` route and separate web panel keep these
+collections independent of continuation ticks. [Contract and command](SAMPLE_EVALUATION_IMPORT.md).
+The importer performs no scoring or model call. It refuses the historical continuation export's
+`behaviouralMetrics: not_validated` status and empty Study 1 analysis. A genuine continuation
+reasoning metric still needs its own declaration and verified ledger binding.
 
 ## Agent perception
 
@@ -141,10 +139,17 @@ continuation experiment's own host (`ContinuationHost`) without changing it. At 
 agent's policy receives exactly:
 
 ```
-{ agentId, tick, worldHash, requestId, perspective, perception, self: { role, roleEpoch, x, y }, legalMoves }
+{ agentId, tick, worldHash, requestId, perspective, perception, self: { role, roleEpoch, x, y }, legalMoves, rules, decisionSchema }
 ```
 
 That is its own validated perception record, its own position and role, and its legal moves. It
+also receives a public mechanics guide and an action schema narrowed to that perception condition.
+The guide explains District Weather, heat, health, roles, visibility and movement timing from the
+actual implementation. No hidden hearing/recognized-person references appear in schema enums.
+Only Wall/room speech where permitted, listed movement and own Baker price are exposed; diary
+and targeted speech need social observations this condition does not supply. The broader broker
+rules remain unchanged. The episode records original proposals and exposure-level rejections
+before using the host's authoritative validator. It
 receives no people list, references, rumours, diary or dealings from the omniscient authorized
 observation. The episode also keeps a mirror of the committed state, stepped from each tape tick
 and checked against the host's evidence hash. Every request is built from that mirror, so each
@@ -192,11 +197,13 @@ is a declared **condition** recorded with every observation. Godot's exponential
 Godot may select and measure. It cannot invent, alter or widen. A refusal fails the tick; it is
 never repaired.
 
-**What validation does not establish.** The Node does not re-derive visibility: a second physics
-engine in the Node would be a second source of truth. So a worker that left out a visible body
-would pass. Determinism, the pinned profile and the request/response hashes in every record make
-an independent re-derivation check possible: replaying recorded requests through a second
-worker. That check is further work.
+**Independent re-derivation.** The base validator checks reported items and does not itself prove
+completeness. `auditPerception` now checks the same immutable request through two declared
+separate workers, fully validates both records, then compares canonical observations.
+`runAuditedPerceptionEpisode` requires this gate before policy delivery and retains audit hashes.
+An omitted visible body fails when the second worker reports it. The readiness CLI actually
+launches two fresh Godot processes. Agreement does not detect a shared implementation error;
+the recorded engine/profile/condition and mutation tests scope this reproducibility evidence.
 
 ### Bridge and worker
 
@@ -224,6 +231,7 @@ The token goes in `NODE_PERCEPTION_TOKEN`, never on the command line.
 ```
 npx vitest run test/perception.test.ts                                  # 27 run, 4 skipped without Godot
 NODE_GODOT_BIN=<path to Godot 4.3+ binary> npx vitest run test/perception.test.ts   # all 31
+npm run perception:verify -- --out <NEW private directory>  # requires NODE_GODOT_BIN; two real workers
 ```
 
 Without Godot, these run:
@@ -262,9 +270,10 @@ The CI image has no Godot, so CI runs the unit layer only.
 - **Portability evidence.** Verified with Godot 4.3 headless on Linux and Godot 4.7.2-stable on
   Windows. All four real-Godot tests passed on the owner's PC; no launcher change was needed.
   Other engine/platform combinations remain further verification work.
-- **Live use.** No live model has been given perception. Policies in the tests are scripted.
-  Wiring perception into a provider request is a separate experiment design, with its own
-  rules text and tests.
+- **Live use.** Mechanics-aware rules, scoped action schema, bounded provider-neutral packet,
+  audited episode and offline readiness evidence are implemented. No live model has received
+  them. A later accounted live adapter must declare its own perception/history condition;
+  it must not reuse the old global-observer transcript or relabel the tick-28 pilot.
 - **Facing.** Bodies have no facing in the Node world, so first person looks all around. A
   facing direction would be a new world mechanic, not a camera setting.
 - **Roleless people on building plots.** The kernel can house a roleless person on a building's

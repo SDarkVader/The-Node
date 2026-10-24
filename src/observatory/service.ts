@@ -10,6 +10,7 @@ import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { validateEvaluationRecord, type EvaluationRecord, type ExperimentRegistration, type ObservatoryEvent } from './contracts.js';
 import { ObservatoryExperiment } from './ledgerTail.js';
 import { WorldProjection } from './worldProjection.js';
+import { readSampleEvaluations } from './sampleEvaluations.js';
 
 export interface Display { mode: 'live_following' | 'replay'; tick: number | null }
 export interface RunHandle {
@@ -91,6 +92,11 @@ export class ObservatoryService {
       }
     }
     return { records, rejected };
+  }
+
+  /** Separate collections, deliberately neither filtered nor joined by world tick. */
+  sampleEvaluations(id: string) {
+    return readSampleEvaluations(this.run(id).experiment.registration.sampleEvaluations ?? []);
   }
 
   start(pollMs = 1000) {
