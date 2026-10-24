@@ -1,0 +1,20 @@
+{
+  "schema": "node-native-archive-view-verification-v1",
+  "sourceRevision": "69d6a8a200f8b4b16f16a5848d2750f8ac7a80cc",
+  "date": "2026-10-24",
+  "engine": "Godot 4.7.2-stable on Windows",
+  "archiveStatus": "stopped",
+  "verifiedThroughTick": 28,
+  "displayedTicksChecked": [28, 14, 28],
+  "nativeHudHashPrefixesMatchedApiFrames": true,
+  "nativeCameraRotationVerified": true,
+  "finalDisplayTick": 28,
+  "recordedCalls": 56,
+  "recordedExecutedDecisions": 56,
+  "latestLedgerAndJournalFingerprintsUnchanged": true,
+  "newModelCalls": 0,
+  "experimentAdvanced": false,
+  "securitySettingsChanged": false,
+  "privateInputsIncluded": false,
+  "scope": "Native read-only archive viewing, display-cursor synchronization and camera control. This does not establish live model perception, reasoning quality or complete browser interface correctness."
+}

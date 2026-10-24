@@ -27,8 +27,15 @@ current client opened `IsoView.tscn`, and selecting `Camera3D` displayed its ins
 original checkout and tracked source were not changed. Existing two-worker headless tests remain
 the programmatic-control evidence. A combined private archive/renderer launcher was rejected by
 automatic approval review with only `blocked by policy`; that command did not execute. Native
-editor launch/inspection succeeded through the supported desktop/CLI route. No new archive
-connection or complete native archive visual review is claimed from that editor inspection.
+editor launch/inspection succeeded through the supported desktop/CLI route.
+
+The archive connection subsequently passed through the standard read-only observatory CLI and
+a separate Godot invocation. Native IsoView displayed the real stopped archive at tick 28,
+followed the shared replay cursor to tick 14, then returned to tick 28; both displayed hash
+prefixes matched the corresponding API frames. Native Q/E camera rotation also passed.
+The latest ledger/journal fingerprints and 56 recorded calls/decisions stayed unchanged.
+No security settings, accounting records, world state or model requests were changed.
+[Sanitized native-view verification](evidence/native-archive-view-2026-10-24.json).
 
 ## Progress since Claude's handover
 
@@ -129,9 +136,11 @@ existing fixture results, not grades of the live Bakers. All 39 Python tests pas
 established environment. The initial default Python could not import `inspect_ai`; locating the
 existing environment resolved that verification failure without changing dependencies.
 
-Interactive visual review was attempted here, but the browser tool inventory was empty. HTTP
-scope/integrity tests, JavaScript syntax and the static interface wiring passed; an interactive
-browser/native-renderer visual check is not claimed. Claude can do that alongside interface work.
+The initial browser tool inventory was empty. Native Godot control and archive viewing were
+subsequently verified through the available Windows controller: camera rotation, replay cursor
+14 to 28 and matching API frame hashes. This is a scoped native renderer check; an interactive
+browser UI review remains part of Claude's interface work. HTTP scope/integrity tests, JavaScript
+syntax and static interface wiring already passed.
 
 Agreement between two processes is a reproducibility check, not proof against a shared renderer
 implementation error. A different implementation, additional mutation/geometry cases or human
