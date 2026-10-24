@@ -103,4 +103,6 @@ the current URL for policy enforcement. Interactive browser review remains furth
 Source and suite totals are anchored in [the current checkpoint](../recovery/CURRENT_SESSION.md).
 Integration source: `1f7901de1cef4aa69a1223cf1cdd9f60376a33fa`.
 [Sanitized verification record](evidence/thinking-history-2026-10-24.json).
+After publication at `472d709`, a fresh GitHub clone of the review branch verified the tracked
+recovery checkpoint successfully, with no local snapshot, previous conversation or private data.
 Claude continues interface presentation; Codex owns backend/Godot integration.
