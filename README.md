@@ -15,6 +15,8 @@ authorized observations and historical views load on demand. Renderer access is 
 The real archive matches all 56 decisions and 22 decisions with nonempty returned text; original
 ledgers/journal are unchanged. External evaluation remains unconnected; no model was called.
 [Contract, tests and remaining interface work](docs/observatory/THINKING_HISTORY_INTERFACE.md).
+The owner confirmed the visual display on the PC on 2026-10-24; this is human verification,
+separate from the automated browser check that stopped earlier.
 At integration source `1f7901d`: 1,461 full-suite tests passed with two workers and one existing
 platform skip; three additional client tests, TypeScript and eight recovery tests passed.
 [Scoped verification evidence](docs/observatory/evidence/thinking-history-2026-10-24.json).

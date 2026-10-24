@@ -97,8 +97,12 @@ These client tests do not claim visual browser verification.
 The real private archive was checked locally: 56 decisions across 28 ticks, 22 decisions with
 nonempty summary text, exact matches to the existing evidence package, and registered ledger/
 journal bytes preserved. Private records, credentials and paths are not committed.
-Native browser verification stopped when the Windows controller could not confidently verify
-the current URL for policy enforcement. Interactive browser review remains further work.
+The owner subsequently confirmed visual verification on the PC on 2026-10-24. This is recorded
+as human visual verification. The earlier automated browser attempt stopped when the Windows
+controller could not confidently verify the current URL for policy enforcement. That automation
+result remains historical; it does not negate the owner's visual confirmation. The owner did
+not itemize individual filter, observation-expansion or download checks, so no extra interaction
+results are inferred.
 
 Source and suite totals are anchored in [the current checkpoint](../recovery/CURRENT_SESSION.md).
 Integration source: `1f7901de1cef4aa69a1223cf1cdd9f60376a33fa`.

@@ -35,9 +35,16 @@
   "rendererHistory": 403,
   "unauthenticatedHistory": 401,
   "protectedCoreUnchangedFrom": "0d7080306d94e2837a0e27480b2e0e8cc1ba3e15",
-  "interactiveBrowserVerified": false,
-  "browserFurtherWork": "Windows controller could not confidently establish the current URL for policy enforcement; Computer Use stopped. No bypass.",
+  "browserFurtherWork": "Owner confirmed visual display on PC. Automated browser attempt stopped for URL-confidence enforcement; specific filter, observation-expansion and download results were not itemized.",
   "modelCalls": 0,
   "outboundWebhooks": 0,
-  "privateRecordsIncluded": false
+  "privateRecordsIncluded": false,
+  "automatedInteractiveBrowserVerified": false,
+  "ownerVisualVerification": {
+    "date": "2026-10-24",
+    "status": "confirmed",
+    "source": "direct owner message",
+    "scope": "visual display on PC",
+    "individualInteractionResultsSpecified": false
+  }
 }

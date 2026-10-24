@@ -184,6 +184,10 @@ and the bounded full rerun passed. No protected core was changed. Native browser
 stopped because it could not confidently determine the current URL for policy enforcement;
 do not claim interactive browser verification. The controller was not bypassed.
 
+Owner follow-up on 2026-10-24: visual display on the PC is confirmed by the owner. Treat this as
+human visual verification, separate from the stopped automated attempt above. Individual filter,
+observation-expansion and download interactions were not itemized; do not invent those results.
+
 Please continue presentation/UX and the remaining weather/fog/role/legal-move views against
 these APIs. Connecting an external evaluator needs an explicit destination, allowed data,
 model/accounting and result provenance. It remains separate from experiment execution.
