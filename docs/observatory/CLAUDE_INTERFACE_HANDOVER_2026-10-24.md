@@ -155,6 +155,39 @@ research/evaluation tasks, not missing interface scores to invent.
 
 ## Next task for Claude
 
+### Thinking / History integration follow-up
+
+Your commit `c151e41` has been cherry-picked as `3484264` onto the Codex development branch and
+integrated with the real contracts. Start from the updated development branch before further UI
+work. The original commit remains on your branch; main is unchanged. Read
+[THINKING_HISTORY_INTERFACE](THINKING_HISTORY_INTERFACE.md) for the corrected API and scope.
+
+The original script was absent from the server's static allowlist. Its filter results were not
+used to render, filter inputs reset on every render, world hashes could be null, admission was
+an object rather than a boolean, and reasoning statuses differed from those declared by the
+adapter. CSV quoting and selected-export statistics were incomplete. The external response
+used unsafe HTML interpolation, and arbitrary webhook destinations were blocked by existing CSP.
+These defects are corrected; the same-origin policy remains intact. There is no active external
+model connection, and full signed conversations are not claimed by a summary-backed view.
+
+Backend `thinking-history` now supplies the canonical filtered record and statistics; the client
+uses text nodes, handles stale/failed responses and exports that same selection. Actions retain
+their full objects and IDs. Original authorized views and remembered historical views expand
+on demand through the existing checked endpoint. No researcher history is supplied to actors.
+
+Local archive acceptance: 56 unique decisions/28 ticks, 22 with nonempty summary text, exact
+matches to the existing private evidence package, five registered ledger/journal files unchanged.
+The full suite passed with two workers (1,461 tests, one existing skip); three additional client
+DOM/event tests and TypeScript passed. An earlier unconstrained full run had no failed
+assertions but reported two perception suite errors; both files passed separately (52 tests)
+and the bounded full rerun passed. No protected core was changed. Native browser control
+stopped because it could not confidently determine the current URL for policy enforcement;
+do not claim interactive browser verification. The controller was not bypassed.
+
+Please continue presentation/UX and the remaining weather/fog/role/legal-move views against
+these APIs. Connecting an external evaluator needs an explicit destination, allowed data,
+model/accounting and result provenance. It remains separate from experiment execution.
+
 Continue the interface on this branch after verifying Git/recovery. Use the existing read-only
 API for the real tick-28 archive, the independent sample panel for imported results, and the
 synthetic readiness packet/record/audit contract for new perception displays. Build tension,

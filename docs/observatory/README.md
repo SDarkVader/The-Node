@@ -28,6 +28,14 @@ and the owner's perception request of the same day.
 
 ## Observatory
 
+### Thinking / History
+
+The integrated researcher panel groups exact recorded summaries and complete actions by tick,
+with request/evidence IDs, combined filters, local exports and on-demand authorized/current and
+historical observations. See the [contract and verification](THINKING_HISTORY_INTERFACE.md).
+The server serves its script explicitly. Renderer tokens cannot read history; there is no
+outbound webhook connection or model dispatch. Interactive browser review remains further work.
+
 ### Replay and live tail
 
 The observatory reads registered ledger segments and nothing else. A sealed segment is

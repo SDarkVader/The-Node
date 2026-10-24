@@ -8,6 +8,17 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current experiment — 2026-10-24
 
+**Thinking / History integration:** Claude's `c151e41` interface work is incorporated on
+`codex/observatory-windows-2026-10-23` with corrected static serving, actual reasoning/admission
+contracts, working combined filters and local exports. Returned summaries stay verbatim; exact
+authorized observations and historical views load on demand. Renderer access is refused.
+The real archive matches all 56 decisions and 22 decisions with nonempty returned text; original
+ledgers/journal are unchanged. External evaluation remains unconnected; no model was called.
+[Contract, tests and remaining interface work](docs/observatory/THINKING_HISTORY_INTERFACE.md).
+At integration source `1f7901d`: 1,461 full-suite tests passed with two workers and one existing
+platform skip; three additional client tests, TypeScript and eight recovery tests passed.
+[Scoped verification evidence](docs/observatory/evidence/thinking-history-2026-10-24.json).
+
 **Observatory readiness:** the new perception policy guide explains District Weather, visibility,
 role relationships and legal actions from the actual mechanics. A scoped schema preserves hidden
 social references; real movement and two-process perception auditing pass offline. A6 now imports

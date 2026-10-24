@@ -1,0 +1,43 @@
+{
+  "schema": "node-thinking-history-integration-verification-v1",
+  "sourceCommit": "1f7901de1cef4aa69a1223cf1cdd9f60376a33fa",
+  "date": "2026-10-24",
+  "claudeSourceCommit": "c151e41fcb976125d1aef6e32abc19fac3e9df75",
+  "cherryPickCommit": "3484264",
+  "suite": {
+    "passed": 1461,
+    "files": 115,
+    "existingPlatformSkipped": 1,
+    "maxWorkers": 2,
+    "success": true,
+    "additionalClientTestsPassed": 3,
+    "additionalClientTestsInFullRun": false
+  },
+  "typecheck": true,
+  "javascriptSyntax": true,
+  "recoveryTestsPassed": 8,
+  "realGodotCases": 6,
+  "initialRun": {
+    "assertionsFailed": 0,
+    "suiteFileErrors": 2,
+    "resolution": "Both affected perception files passed separately (52 tests); bounded full rerun passed."
+  },
+  "archive": {
+    "decisions": 56,
+    "ticks": 28,
+    "decisionsWithReturnedText": 22,
+    "exactOriginalSummaryMatch": true,
+    "filteredSingleActorExtensionDecisions": 10,
+    "registeredFilesChecked": 5,
+    "registeredFilesUnchanged": true
+  },
+  "researcherHistory": 200,
+  "rendererHistory": 403,
+  "unauthenticatedHistory": 401,
+  "protectedCoreUnchangedFrom": "0d7080306d94e2837a0e27480b2e0e8cc1ba3e15",
+  "interactiveBrowserVerified": false,
+  "browserFurtherWork": "Windows controller could not confidently establish the current URL for policy enforcement; Computer Use stopped. No bypass.",
+  "modelCalls": 0,
+  "outboundWebhooks": 0,
+  "privateRecordsIncluded": false
+}
