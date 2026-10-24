@@ -8,6 +8,12 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current experiment — 2026-10-24
 
+**Authorized environmental run:** a separate accounted first-person continuation adapter is
+implemented and tested for the owner's ten-tick request. It preserves the same world/identities
+and exact own historical conversations, explicitly declares the observation change, audits two
+Godot workers and preserves the original journal. [Contract and entry point](docs/observatory/LIVE_PERCEPTION_CONTINUATION.md).
+No live result is claimed before dispatch.
+
 **Thinking / History integration:** Claude's `c151e41` interface work is incorporated on
 `codex/observatory-windows-2026-10-23` with corrected static serving, actual reasoning/admission
 contracts, working combined filters and local exports. Returned summaries stay verbatim; exact
