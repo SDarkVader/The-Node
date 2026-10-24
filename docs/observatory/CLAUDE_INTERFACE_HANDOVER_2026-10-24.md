@@ -5,6 +5,31 @@ Updated 2026-10-24. Branch: `codex/observatory-windows-2026-10-23`, extending Cl
 [`CURRENT_SESSION`](../recovery/CURRENT_SESSION.md), then verify actual Git refs/worktree.
 The original checkout, main, private live-run files and accounting remain separate.
 
+## Owner assigned responsibilities
+
+The owner assigned Claude the interface/presentation work and Codex the backend and Godot
+integration on the PC. This handover was delivered to Claude's existing observatory conversation;
+the session accepted the message and showed working status. This does not claim that interface
+implementation is complete.
+
+| Responsibility | Owner |
+|---|---|
+| Web interface, UX, evidence panels and display adapters over existing contracts | Claude |
+| Broker/experiment integration, accounting, replay, game mechanics, Godot worker/client integration and PC verification | Codex |
+
+Claude should base interface work on this development line in a separate branch and record any
+contract requests in a committed handover. Coordinate shared files instead of editing backend
+or Godot integration modules concurrently. No security/credential changes or new experiment
+calls follow from this assignment.
+
+Codex verified native desktop access to the installed Godot editor: an isolated copy of the
+current client opened `IsoView.tscn`, and selecting `Camera3D` displayed its inspector. The
+original checkout and tracked source were not changed. Existing two-worker headless tests remain
+the programmatic-control evidence. A combined private archive/renderer launcher was rejected by
+automatic approval review with only `blocked by policy`; that command did not execute. Native
+editor launch/inspection succeeded through the supported desktop/CLI route. No new archive
+connection or complete native archive visual review is claimed from that editor inspection.
+
 ## Progress since Claude's handover
 
 | Item in the earlier handover | Current implementation and evidence |

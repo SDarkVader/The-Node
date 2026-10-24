@@ -15,6 +15,10 @@ existing Inspect/Study 1 sample results into a separate researcher collection wi
 continuation scores. [Current implementation, verification and Claude interface handover](docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md).
 At implementation source `2f42550`: **1,454 tests passed across 114 files**, one existing platform skip, TypeScript, eight recovery tests and 39 Python tests passed. [Verification](docs/observatory/evidence/readiness-2026-10-24.json). No model was called for this development work; the original live pilot remains stopped below.
 
+**Work split:** Claude continues the interface; Codex owns backend and PC Godot integration.
+The existing Claude session received the handover, and native Godot editor inspection was verified
+using an isolated client copy. [Responsibilities and control evidence](docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md#owner-assigned-responsibilities).
+
 **Latest checkpoint: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
 replay, journal binding, Inspect import and observatory acceptance. New estimated list cost
 USD 0.0558532 / booked USD 0.111716, zero held. [Current results and unverified comments](docs/research/CONTINUATION_TICK28_RESULTS_2026-10-23.md).
