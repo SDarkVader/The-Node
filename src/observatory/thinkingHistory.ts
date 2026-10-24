@@ -1,335 +1,118 @@
-/**
- * Thinking/History display adapter (2026-10-24).
- * Longitudinal reasoning organization with external model access.
- *
- * Organizes decision reasoning by tick and agent, preserves full transcripts,
- * provides export for analysis and allows queries from authorized external models.
- * No sanitization — shows actual reasoning from API calls.
- */
+/** Researcher-only, longitudinal presentation of recorded provider summaries. No inference. */
+import type { DecisionRecord, ReasoningDisplayStatus } from './reasoning.js';
+import type { TimelineCall, TimelineTick } from './timeline.js';
 
-export interface ReasoningRecord {
-  tick: number;
-  requestId: string;
-  actorId: string;
-  status: 'pending' | 'received' | 'accepted' | 'rejected' | 'unavailable';
-  source?: string; // e.g., model identifier
+export interface ReasoningRecord extends DecisionRecord {
+  status: ReasoningDisplayStatus;
+  stage: TimelineCall['stage'];
+  admissionStatus: 'pending' | 'admitted' | 'rejected';
   summaries: string[];
-  redactedBlocks?: number;
-  proposed?: { role?: string; [key: string]: unknown };
-  admitted?: boolean;
-  executed?: boolean;
-  stopReason?: string;
-  latencyMs?: number;
 }
-
 export interface TickThinking {
-  tick: number;
-  worldHash: string;
-  nextWorldHash: string;
+  tick: number; segmentId: string; committed: boolean; verification: string;
+  worldHash: string | null; nextWorldHash: string | null; transitionCursor: string | null;
   decisions: ReasoningRecord[];
-  metadata?: {
-    totalLatencyMs?: number;
-    decidedCount: number;
-    pendingCount: number;
-    rejectedCount: number;
-  };
 }
-
+export interface ThinkingQuery {
+  actorId?: string; tickFrom?: number; tickTo?: number; status?: string; summaryKeyword?: string;
+}
 export interface ThinkingHistory {
+  schema: 'node-observatory-thinking-history-v1';
   experimentId: string;
-  runId: string;
+  evidenceKind: 'provider_returned_summaries';
+  scope: 'researcher';
+  selection: ThinkingQuery;
   ticks: TickThinking[];
   stats: {
-    totalDecisions: number;
-    totalTicks: number;
-    decisionsByStatus: Record<string, number>;
-    avgLatencyMs?: number;
-    tokenMetrics?: { input: number; output: number };
+    totalDecisions: number; totalTicks: number; decisionsByStatus: Record<string, number>;
+    admitted: number; rejected: number; pendingAdmission: number; executed: number;
+    avgLatencyMs: number | null;
   };
 }
 
-/**
- * Build longitudinal thinking history from timeline and decision records.
- * Preserves full reasoning transcripts without modification.
- */
-export function buildThinkingHistory(
-  experimentId: string,
-  timeline: Array<{
-    tick: number;
-    worldHashBefore: string;
-    worldHashAfter?: string;
-    calls: Array<{ actorId: string; requestId: string }>;
-  }>,
-  decisions: Map<string, ReasoningRecord>
-): ThinkingHistory {
-  const ticks: TickThinking[] = [];
-  const statusCounts: Record<string, number> = {};
-  let totalLatency = 0;
-  let latencyCount = 0;
+function stats(ticks: TickThinking[]): ThinkingHistory['stats'] {
+  const rows = ticks.flatMap(t => t.decisions), times = rows.flatMap(d => d.latencyMs === null ? [] : [d.latencyMs]);
+  const counts: Record<string, number> = {};
+  for (const d of rows) counts[d.status] = (counts[d.status] ?? 0) + 1;
+  return { totalDecisions: rows.length, totalTicks: ticks.length, decisionsByStatus: counts,
+    admitted: rows.filter(d => d.admissionStatus === 'admitted').length,
+    rejected: rows.filter(d => d.admissionStatus === 'rejected').length,
+    pendingAdmission: rows.filter(d => d.admissionStatus === 'pending').length,
+    executed: rows.filter(d => d.executed).length,
+    avgLatencyMs: times.length ? times.reduce((sum, t) => sum + t, 0) / times.length : null };
+}
 
-  for (const tick of timeline) {
-    const tickDecisions: ReasoningRecord[] = [];
-    let tickLatencyTotal = 0;
-    let tickLatencyCount = 0;
-
-    for (const call of tick.calls) {
-      const decision = decisions.get(call.requestId);
-      if (decision) {
-        tickDecisions.push(decision);
-        statusCounts[decision.status] = (statusCounts[decision.status] || 0) + 1;
-        if (decision.latencyMs !== undefined) {
-          tickLatencyTotal += decision.latencyMs;
-          tickLatencyCount++;
-          totalLatency += decision.latencyMs;
-          latencyCount++;
-        }
+/** Join verified timeline requests to the existing decision reader; refuse missing/mismatched rows. */
+export function buildThinkingHistory(experimentId: string, timeline: readonly TimelineTick[], decisions: ReadonlyMap<string, DecisionRecord>): ThinkingHistory {
+  const seen = new Set<string>();
+  const ticks = [...timeline].sort((a, b) => a.tick - b.tick).map(t => ({
+    tick: t.tick, segmentId: t.segmentId, committed: t.committed, verification: t.verification,
+    worldHash: t.worldHashBefore, nextWorldHash: t.worldHashAfter, transitionCursor: t.transitionCursor,
+    decisions: t.calls.map(call => {
+      const d = decisions.get(call.requestId);
+      if (!d || d.requestId !== call.requestId || d.actorId !== call.actorId || d.tick !== t.tick || seen.has(d.requestId)) {
+        throw Error('observatory_thinking_join_mismatch');
       }
-    }
-
-    ticks.push({
-      tick: tick.tick,
-      worldHash: tick.worldHashBefore,
-      nextWorldHash: tick.worldHashAfter || '',
-      decisions: tickDecisions,
-      metadata: {
-        totalLatencyMs: tickLatencyCount > 0 ? tickLatencyTotal : undefined,
-        decidedCount: tickDecisions.length,
-        pendingCount: tickDecisions.filter(d => d.status === 'pending').length,
-        rejectedCount: tickDecisions.filter(d => d.status === 'rejected').length,
-      },
-    });
-  }
-
-  return {
-    experimentId,
-    runId: experimentId, // same as experimentId in observatory context
-    ticks,
-    stats: {
-      totalDecisions: decisions.size,
-      totalTicks: ticks.length,
-      decisionsByStatus: statusCounts,
-      avgLatencyMs: latencyCount > 0 ? Math.round(totalLatency / latencyCount) : undefined,
-    },
-  };
+      seen.add(d.requestId);
+      return { ...d, reasoning: { ...d.reasoning, summaries: [...d.reasoning.summaries] },
+        status: d.reasoning.status, summaries: [...d.reasoning.summaries], stage: call.stage,
+        admissionStatus: (call.stage === 'rejected' ? 'rejected' : d.admitted !== null ? 'admitted' : 'pending') as ReasoningRecord['admissionStatus'] };
+    }),
+  }));
+  return { schema: 'node-observatory-thinking-history-v1', experimentId,
+    evidenceKind: 'provider_returned_summaries', scope: 'researcher', selection: {}, ticks, stats: stats(ticks) };
 }
 
-/**
- * Export thinking history as JSON. Can be sliced by tick range.
- */
-export function exportThinkingJSON(
-  history: ThinkingHistory,
-  tickRange?: { from: number; to: number }
-): string {
-  const ticks = tickRange
-    ? history.ticks.filter(t => t.tick >= tickRange.from && t.tick <= tickRange.to)
-    : history.ticks;
-
-  const export_data = {
-    experimentId: history.experimentId,
-    exportedAt: new Date().toISOString(),
-    tickRange: tickRange || { from: history.ticks[0]?.tick, to: history.ticks[history.ticks.length - 1]?.tick },
-    stats: history.stats,
-    ticks,
-  };
-
-  return JSON.stringify(export_data, null, 2);
+export function filterThinkingHistory(history: ThinkingHistory, query: ThinkingQuery): ThinkingHistory {
+  for (const n of [query.tickFrom, query.tickTo]) if (n !== undefined && (!Number.isSafeInteger(n) || n < 0)) throw Error('observatory_thinking_tick_range');
+  if (query.tickFrom !== undefined && query.tickTo !== undefined && query.tickFrom > query.tickTo) throw Error('observatory_thinking_tick_range');
+  const needle = query.summaryKeyword?.toLocaleLowerCase();
+  const ticks = history.ticks.filter(t => (query.tickFrom === undefined || t.tick >= query.tickFrom) && (query.tickTo === undefined || t.tick <= query.tickTo))
+    .map(t => ({ ...t, decisions: t.decisions.filter(d => (!query.actorId || d.actorId === query.actorId) && (!query.status || d.status === query.status) &&
+      (!needle || d.actorId.toLocaleLowerCase().includes(needle) || d.requestId.toLocaleLowerCase().includes(needle) || d.summaries.some(s => s.toLocaleLowerCase().includes(needle)))) }))
+    .filter(t => t.decisions.length > 0);
+  return { ...history, selection: { ...query }, ticks, stats: stats(ticks) };
 }
 
-/**
- * Export thinking history as CSV (per-decision rows).
- * Useful for analysis and comparison across ticks/actors.
- */
-export function exportThinkingCSV(
-  history: ThinkingHistory,
-  tickRange?: { from: number; to: number }
-): string {
-  const ticks = tickRange
-    ? history.ticks.filter(t => t.tick >= tickRange.from && t.tick <= tickRange.to)
-    : history.ticks;
-
-  const rows: string[] = [
-    'tick,requestId,actorId,status,proposed.role,admitted,executed,summaries,latencyMs,source',
-  ];
-
-  for (const tick of ticks) {
-    for (const decision of tick.decisions) {
-      const summaryText = decision.summaries.map(s => JSON.stringify(s)).join(' | ');
-      rows.push(
-        [
-          tick.tick,
-          decision.requestId,
-          decision.actorId,
-          decision.status,
-          decision.proposed?.role || '—',
-          decision.admitted ? 'yes' : decision.admitted === false ? 'no' : '—',
-          decision.executed ? 'yes' : '—',
-          JSON.stringify(summaryText),
-          decision.latencyMs || '—',
-          decision.source || '—',
-        ].join(',')
-      );
-    }
-  }
-
-  return rows.join('\n');
+export function searchThinking(history: ThinkingHistory, query: ThinkingQuery): ReasoningRecord[] {
+  return filterThinkingHistory(history, query).ticks.flatMap(t => t.decisions);
 }
-
-/**
- * Search thinking history by actor, tick range, or reasoning status.
- */
-export function searchThinking(
-  history: ThinkingHistory,
-  query: {
-    actorId?: string;
-    tickFrom?: number;
-    tickTo?: number;
-    status?: string;
-    summaryKeyword?: string;
-  }
-): ReasoningRecord[] {
-  const results: ReasoningRecord[] = [];
-
-  for (const tick of history.ticks) {
-    if (query.tickFrom !== undefined && tick.tick < query.tickFrom) continue;
-    if (query.tickTo !== undefined && tick.tick > query.tickTo) continue;
-
-    for (const decision of tick.decisions) {
-      if (query.actorId && decision.actorId !== query.actorId) continue;
-      if (query.status && decision.status !== query.status) continue;
-      if (query.summaryKeyword) {
-        const hasKeyword = decision.summaries.some(s =>
-          s.toLowerCase().includes(query.summaryKeyword!.toLowerCase())
-        );
-        if (!hasKeyword) continue;
-      }
-
-      results.push(decision);
-    }
-  }
-
-  return results;
+export function exportThinkingJSON(history: ThinkingHistory, range?: { from: number; to: number }): string {
+  return JSON.stringify(range ? filterThinkingHistory(history, { tickFrom: range.from, tickTo: range.to }) : history, null, 2);
 }
-
-/**
- * Prepare thinking history for external model interaction.
- * Structures data for query, analysis, or streaming to other systems.
- */
+/** RFC 4180 quoting; formula-like text is inert in spreadsheet applications. JSON stays verbatim. */
+function csv(value: unknown): string {
+  let s = value === null || value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value);
+  if (/^[\s\u0000-\u001f]*[=+@-]/u.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+export function exportThinkingCSV(history: ThinkingHistory, range?: { from: number; to: number }): string {
+  const selected = range ? filterThinkingHistory(history, { tickFrom: range.from, tickTo: range.to }) : history;
+  const rows: unknown[][] = [['tick', 'segmentId', 'worldHash', 'nextWorldHash', 'requestId', 'cursor', 'actorId', 'reasoningStatus', 'stage', 'admissionStatus', 'proposed', 'admitted', 'executed', 'summaries', 'latencyMs', 'source', 'redactedBlocks', 'signedBlocks', 'stopReason']];
+  for (const t of selected.ticks) for (const d of t.decisions) rows.push([t.tick, t.segmentId, t.worldHash, t.nextWorldHash, d.requestId, d.cursor, d.actorId,
+    d.status, d.stage, d.admissionStatus, d.proposed, d.admitted, d.executed, d.summaries.join('\n\n'), d.latencyMs, d.reasoning.source,
+    d.reasoning.redactedBlocks, d.reasoning.signedBlocks, d.stopReason]);
+  return rows.map(row => row.map(csv).join(',')).join('\r\n') + '\r\n';
+}
+export function formatForExternalModel(history: ThinkingHistory, format: 'json' | 'markdown' | 'text' = 'markdown'): string {
+  if (format === 'json') return exportThinkingJSON(history);
+  // A long enough fence keeps returned text and complete actions literal when Markdown is viewed.
+  const body = JSON.stringify(history, null, 2);
+  if (format === 'text') return body;
+  const fence = '`'.repeat(Math.max(3, ...Array.from(body.matchAll(/`+/g), m => m[0].length + 1)));
+  return '# Recorded thinking history\n\nProvider-returned summaries and execution evidence. No inferred internal thoughts or evaluation scores.\n\n' + fence + 'json\n' + body + '\n' + fence + '\n';
+}
 export interface ExternalModelRequest {
-  type: 'query' | 'analyze' | 'export' | 'stream';
-  thinkingHistory: ThinkingHistory;
-  query?: string; // natural language query for analysis
-  tickRange?: { from: number; to: number };
-  actorIds?: string[];
-  format?: 'json' | 'csv' | 'markdown' | 'text';
+  type: 'query' | 'analyze' | 'export' | 'stream'; thinkingHistory?: ThinkingHistory; query?: string;
+  tickRange?: { from: number; to: number }; actorIds?: string[]; format?: 'json' | 'csv' | 'markdown' | 'text';
 }
-
-export interface ExternalModelResponse {
-  type: string;
-  queryProvided?: string;
-  analysis?: string; // structured analysis result from external model
-  findings?: Array<{ tick: number; actorId: string; insight: string }>;
-  metadata?: Record<string, unknown>;
-  timestamp: string;
-}
-
-/**
- * Format thinking history for streaming to an external model.
- * Provides full transcript context without redaction.
- */
-export function formatForExternalModel(
-  history: ThinkingHistory,
-  format: 'json' | 'markdown' | 'text' = 'markdown'
-): string {
-  if (format === 'json') {
-    return JSON.stringify(history, null, 2);
+/** Offline payload preparation only. This function never sends a request or starts an evaluator. */
+export function buildExternalModelPayload(history: ThinkingHistory, request: ExternalModelRequest): ExternalModelRequest & { thinkingHistory: ThinkingHistory } {
+  let selected = request.tickRange ? filterThinkingHistory(history, { tickFrom: request.tickRange.from, tickTo: request.tickRange.to }) : history;
+  if (request.actorIds) {
+    const ids = new Set(request.actorIds);
+    const ticks = selected.ticks.map(t => ({ ...t, decisions: t.decisions.filter(d => ids.has(d.actorId)) })).filter(t => t.decisions.length);
+    selected = { ...selected, ticks, stats: stats(ticks) };
   }
-
-  if (format === 'markdown') {
-    let md = `# Thinking History: ${history.experimentId}\n\n`;
-    md += `**Total Decisions:** ${history.stats.totalDecisions}  \n`;
-    md += `**Ticks:** ${history.stats.totalTicks}  \n`;
-    md += `**Status Distribution:** ${Object.entries(history.stats.decisionsByStatus)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ')}\n\n`;
-
-    if (history.stats.avgLatencyMs) {
-      md += `**Average Latency:** ${history.stats.avgLatencyMs} ms\n\n`;
-    }
-
-    for (const tick of history.ticks) {
-      md += `## Tick ${tick.tick}\n\n`;
-      md += `- **World Hash:** \`${tick.worldHash.slice(0, 12)}\`\n`;
-      md += `- **Decisions:** ${tick.metadata?.decidedCount || 0} decided, ${tick.metadata?.pendingCount || 0} pending, ${tick.metadata?.rejectedCount || 0} rejected\n\n`;
-
-      for (const decision of tick.decisions) {
-        md += `### ${decision.actorId} · ${decision.requestId.slice(0, 8)}\n\n`;
-        md += `**Status:** ${decision.status}  \n`;
-        if (decision.source) md += `**Source:** ${decision.source}  \n`;
-        if (decision.latencyMs) md += `**Latency:** ${decision.latencyMs} ms  \n`;
-        md += `**Proposed:** ${decision.proposed?.role || 'N/A'}  \n`;
-        md += `**Admitted:** ${decision.admitted ? 'yes' : decision.admitted === false ? 'no' : '—'}  \n`;
-        md += `**Executed:** ${decision.executed ? 'yes' : '—'}\n\n`;
-
-        if (decision.summaries.length) {
-          md += `**Reasoning:**\n`;
-          for (const summary of decision.summaries) {
-            md += `> ${summary}\n\n`;
-          }
-        }
-
-        if (decision.redactedBlocks) {
-          md += `*${decision.redactedBlocks} redacted block(s)*\n\n`;
-        }
-      }
-    }
-
-    return md;
-  }
-
-  // Plain text format
-  let text = `THINKING HISTORY: ${history.experimentId}\n`;
-  text += `Decisions: ${history.stats.totalDecisions} | Ticks: ${history.stats.totalTicks}\n`;
-  text += `Status: ${Object.entries(history.stats.decisionsByStatus)
-    .map(([k, v]) => `${k}=${v}`)
-    .join(' | ')}\n\n`;
-
-  for (const tick of history.ticks) {
-    text += `\n=== TICK ${tick.tick} ===\n`;
-    text += `World: ${tick.worldHash.slice(0, 12)}\n`;
-
-    for (const decision of tick.decisions) {
-      text += `\n${decision.actorId} [${decision.requestId.slice(0, 8)}]\n`;
-      text += `  Status: ${decision.status}\n`;
-      if (decision.source) text += `  Source: ${decision.source}\n`;
-      text += `  Proposed: ${decision.proposed?.role || 'N/A'}\n`;
-      text += `  Admitted: ${decision.admitted ? 'yes' : decision.admitted === false ? 'no' : '—'}\n`;
-
-      if (decision.summaries.length) {
-        text += `  Reasoning:\n`;
-        for (const summary of decision.summaries) {
-          text += `    ${summary}\n`;
-        }
-      }
-    }
-  }
-
-  return text;
-}
-
-/**
- * Build a webhook payload for streaming thinking history to external systems.
- * Includes request/response structure for bidirectional communication.
- */
-export function buildExternalModelPayload(
-  history: ThinkingHistory,
-  request: ExternalModelRequest
-): ExternalModelRequest {
-  return {
-    type: request.type,
-    thinkingHistory: history,
-    query: request.query,
-    tickRange: request.tickRange,
-    actorIds: request.actorIds,
-    format: request.format,
-  };
+  return { ...request, thinkingHistory: selected };
 }

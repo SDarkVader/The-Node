@@ -19,6 +19,7 @@ import { actorObservation, decisionRecord } from './reasoning.js';
 import { ObservatoryService } from './service.js';
 import { telemetry } from './telemetryMetrics.js';
 import { timeline } from './timeline.js';
+import { buildThinkingHistory, exportThinkingCSV, filterThinkingHistory, formatForExternalModel, type ThinkingQuery } from './thinkingHistory.js';
 import { frameMetadata } from './worldProjection.js';
 
 export const API = '/observatory/v1';
@@ -31,6 +32,7 @@ const WEB = new URL('./web/', import.meta.url);
 const STATIC: Record<string, [string, string]> = {
   '/observatory/': ['index.html', 'text/html; charset=utf-8'],
   '/observatory/app.js': ['app.js', 'text/javascript; charset=utf-8'],
+  '/observatory/thinkingViewer.js': ['thinkingViewer.js', 'text/javascript; charset=utf-8'],
   '/observatory/style.css': ['style.css', 'text/css; charset=utf-8'],
 };
 
@@ -120,6 +122,29 @@ export async function startObservatoryServer(registrations: readonly ExperimentR
         researcher: r.projection.researcherSnapshot(tick), public: r.projection.publicTick(tick, 'observatory-web-' + id) });
     }
     if (req.method === 'GET' && route === 'timeline') return json(res, 200, { ticks: timeline(r.experiment.events()) });
+    if (req.method === 'GET' && route === 'thinking-history') {
+      const q: ThinkingQuery = {};
+      for (const key of ['actorId', 'status', 'summaryKeyword'] as const) {
+        const value = url.searchParams.get(key);
+        if (value) { if (value.length > 1000) deny(400, 'observatory_thinking_query'); q[key] = value; }
+      }
+      for (const key of ['tickFrom', 'tickTo'] as const) {
+        const value = url.searchParams.get(key);
+        if (value !== null) {
+          if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) deny(400, 'observatory_thinking_tick_range');
+          q[key] = Number(value);
+        }
+      }
+      if (q.tickFrom !== undefined && q.tickTo !== undefined && q.tickFrom > q.tickTo) deny(400, 'observatory_thinking_tick_range');
+      const format = url.searchParams.get('format') ?? 'json';
+      if (!['json', 'csv', 'markdown'].includes(format)) deny(400, 'observatory_thinking_format');
+      const ticks = timeline(r.experiment.events());
+      const decisions = new Map(ticks.flatMap(t => t.calls.map(c => [c.requestId, decisionRecord(r.experiment, c.requestId)] as const)));
+      const full = buildThinkingHistory(id, ticks, decisions);
+      const history = Object.keys(q).length ? filterThinkingHistory(full, q) : full;
+      if (format === 'json') return json(res, 200, history);
+      return json(res, 200, { format, content: format === 'csv' ? exportThinkingCSV(history) : formatForExternalModel(history, 'markdown') });
+    }
     if (req.method === 'GET' && route === 'telemetry') return json(res, 200, telemetry(r.experiment.events()));
     if (req.method === 'GET' && route === 'evaluations') {
       const { records, rejected } = service.evaluations(id);

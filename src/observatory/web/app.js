@@ -55,7 +55,7 @@ async function refreshRun() {
   $('tick').max = String(state.latest);
   await showTick(summary.display.tick, false);
   renderChips(); renderMetrics(); renderEvals(); renderSampleEvals(); renderNotes(); renderEvidence();
-  if (typeof initThinkingViewer === 'function') initThinkingViewer();
+  if (typeof initThinkingViewer === 'function') await initThinkingViewer();
   if (summary.error) banner(`Evidence stopped verifying: ${summary.error}. Showing what had been verified.`); else banner('');
 }
 
