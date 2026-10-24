@@ -13,7 +13,7 @@ role relationships and legal actions from the actual mechanics. A scoped schema 
 social references; real movement and two-process perception auditing pass offline. A6 now imports
 existing Inspect/Study 1 sample results into a separate researcher collection without inventing
 continuation scores. [Current implementation, verification and Claude interface handover](docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md).
-No model was called for this development work; the original live pilot remains stopped below.
+At implementation source `2f42550`: **1,454 tests passed across 114 files**, one existing platform skip, TypeScript, eight recovery tests and 39 Python tests passed. [Verification](docs/observatory/evidence/readiness-2026-10-24.json). No model was called for this development work; the original live pilot remains stopped below.
 
 **Latest checkpoint: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
 replay, journal binding, Inspect import and observatory acceptance. New estimated list cost

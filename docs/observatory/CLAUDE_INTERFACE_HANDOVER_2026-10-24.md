@@ -90,6 +90,8 @@ For existing live data, repeat `observatory:acceptance` using the latest private
 expectations and matching journal, as described in the [runbook](README.md). Do not resume the
 tick-18 parent against the advanced tick-28 journal, create a new allowance, or repeat paid calls.
 
+Implementation source: `2f425507d454eabf3337f9651ef200b3c4af1bd6`. [Sanitized verification record](evidence/readiness-2026-10-24.json).
+
 ## Verified results and remaining work
 
 Full suite: **1,454 passed across 114 files**, one existing platform skip, zero failures.

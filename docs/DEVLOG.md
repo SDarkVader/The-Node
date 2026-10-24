@@ -1,4 +1,4 @@
-> 2026-10-24 — Observatory readiness beyond Claude's perception handover.
+> 2026-10-24 — Observatory readiness beyond Claude's perception handover (implementation source 2f425507d454eabf3337f9651ef200b3c4af1bd6).
 >
 > Added the mechanics-aware perception context, scoped output schema, provider-neutral bounded packet, strict record revalidation at policy boundaries, independent-worker audit and audited episode. District Weather was already in the kernel; its aggregate meaning, band edges and consequences now reach policies. Movement remains optional, current legal destinations are explicit, and real kernel movement/next position/replay pass. No production broker, kernel, observer, accounting, replay, frozen contract or model configuration changed.
 >
