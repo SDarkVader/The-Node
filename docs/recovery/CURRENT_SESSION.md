@@ -1,6 +1,7 @@
 # Current development and experiment checkpoint
 
 Updated 2026-10-25. Development branch: `codex/cloud-observatory-2026-10-25`; integration branch: `main`.
+[PR #39](https://github.com/SDarkVader/The-Node/pull/39) is open; no merge to main was performed.
 PR #38 is merged at afbdec7. The historical live pilot remains stopped at tick 18, and Study 1 remains paused.
 
 [Current workflow](../research/OBSERVATORY_RUNBOOK.md) · [Current experiment](../research/CURRENT_EXPERIMENT.md) ·

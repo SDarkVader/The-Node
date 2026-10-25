@@ -21,7 +21,8 @@ refinement passed all 21 targeted tests; desktop/mobile and both native parser c
 The final Vitest 4.1.12 dependency update also passes all 1,363 tests and TypeScript,
 with zero vulnerabilities from `npm audit --audit-level=low`.
 
-Development branch: `codex/cloud-observatory-2026-10-25`, based on main `afbdec7` (merged PR #38).
+Development branch: `codex/cloud-observatory-2026-10-25`, in
+[PR #39](https://github.com/SDarkVader/The-Node/pull/39), based on main `afbdec7` (merged PR #38).
 The offline rehearsal uses seven roles, 140 scripted decisions and 20 kernel ticks, including a
 sealed-checkpoint restart. Synthetic reasoning/accounting are explicitly labelled. No paid
 provider call or Study 1 reactivation is part of this work. Real pilot evidence remains private.
