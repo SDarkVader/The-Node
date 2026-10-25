@@ -1,6 +1,6 @@
 # Observatory readiness and interface handover
 
-Updated 2026-10-24. Branch: `codex/observatory-windows-2026-10-23`, extending Claude's
+Updated 2026-10-24. Review foundation branch: `codex/observatory-interface-review`, extending Claude's
 `ccr-8d64b59c-a4puhv` at `0d70803`. Start with this file and
 [`CURRENT_SESSION`](../recovery/CURRENT_SESSION.md), then verify actual Git refs/worktree.
 The original checkout, main, private live-run files and accounting remain separate.

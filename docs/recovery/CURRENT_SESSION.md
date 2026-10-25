@@ -4,7 +4,7 @@ Updated 2026-10-24. The live reasoning-continuation pilot is stopped at tick 28 
 Start with [CURRENT_EXPERIMENT](../research/CURRENT_EXPERIMENT.md), [documentation index](../README.md)
 and [sanitized results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
 
-Current review branch: `codex/observatory-windows-2026-10-23`, extending Claude's
+Current review branch: `codex/observatory-interface-review`, extending Claude's
 `ccr-8d64b59c-a4puhv` observatory and perception with repeatable Windows archive acceptance.
 PR 38 has merged into main at `afbdec7`; this review branch remains separate. Read the
 [runbook](../observatory/README.md) and [Windows acceptance record](../observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
@@ -21,6 +21,7 @@ Latest development: Claude's Thinking / History commit `c151e41` is incorporated
   "branch": "main",
   "verifiedBaseCommit": "1f7901de1cef4aa69a1223cf1cdd9f60376a33fa",
   "completedWork": [
+    "2026-10-25 review split: this read-only observatory/interface/perception layer is based on3723a49. It includes Claude foundation, Windows acceptance, mechanics context, independent workers, A6 import and corrected Thinking History. Accounted live environmental continuation and tick38results are in the dependent codex/observatory-windows-2026-10-23 layer. No code or historical evidence changed for this split. Separate existing cloud PR39 overlaps and needs reconciliation before final main integration.",
     "2026-10-24 owner confirmed visual verification on the PC after the displayed observatory/Godot screenshot. Recorded as human visual verification, not a successful rerun of the stopped automated browser attempt. No individual filter/expansion/download outcomes were specified. Documentation-only update; no runtime, model call or experimental record change.",
     "2026-10-24 Thinking / History integration at 1f7901de1cef4aa69a1223cf1cdd9f60376a33fa: Claude c151e41 cherry-picked as 3484264; corrected static script serving, canonical researcher history API, actual reasoning/admission types, complete action evidence, combined filters and filtered exports, literal rendering and stale/error handling. On-demand original authorized/remembered views use the existing checked endpoint. Arbitrary webhook UI removed; offline evaluator payload selection remains available without transmission. Main, original checkout and protected broker/kernel/accounting/replay unchanged. See docs/observatory/THINKING_HISTORY_INTERFACE.md.",
     "2026-10-24 native Godot archive connection verified at source 69d6a8a using standard read-only observatory CLI and separate renderer invocation. Real stopped archive displayed at tick28; shared cursor14 then28 matched native HUD/API hash prefixes. Q/E camera control passed. Recorded calls/decisions remained56; latest ledger/journal fingerprint bytes unchanged; zero new model calls and no security setting changes. Sanitized evidence docs/observatory/evidence/native-archive-view-2026-10-24.json.",
@@ -66,6 +67,7 @@ Latest development: Claude's Thinking / History commit `c151e41` is incorporated
     "The separate authority-attribution Study 1 is paused with its frozen recognition-v2 manifest, contract 1.1.0 and current-view memory condition. Its reactivation is not implied by a docs edit or by the completed continuation pilot."
   ],
   "nextSteps": [
+    "Review this read-only foundation first, then dependent environmental runtime/results. Reconcile overlapping cloud PR39 deliberately before main integration; no automatic merge or inference.",
     "Claude: continue interface work from codex/observatory-windows-2026-10-23 including Thinking / History integration source 1f7901de1cef4aa69a1223cf1cdd9f60376a33fa, not the uncorrected c151e41 alone. Read THINKING_HISTORY_INTERFACE and the updated interface handover. Owner visual verification is recorded; build remaining environmental/action panels without enabling external model traffic or changing experiment evidence.",
     "Codex: preserve accounted experiment/history condition and protected core; next backend task is an explicitly declared accounted live-perception adapter and own-history contract, with offline tests before any separately authorized model run. Do not give actors global researcher history.",
     "For offline perception readiness set NODE_GODOT_BIN and run npm run perception:verify -- --out <NEW private directory>. For current archive display/acceptance use the actual latest private tick-28 registration, expectations and matching journal. Never substitute the old tick-18 parent against the advanced journal.",
@@ -73,6 +75,6 @@ Latest development: Claude's Thinking / History commit `c151e41` is incorporated
     "Preserve main, the original checkout (including its pre-existing untracked file), private parent ledgers/journals and unrelated history. Keep private evidence, local paths, tokens and generated readiness artifacts out of GitHub."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/observatory-windows-2026-10-23"
+  "reviewBranch": "codex/observatory-interface-review"
 }
 NODE_SESSION_CHECKPOINT -->
