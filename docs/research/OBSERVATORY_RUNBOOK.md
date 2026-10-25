@@ -272,5 +272,10 @@ and `perception_fresh_start` archives as well as original continuation archives.
 selected committed world cursor drives web and native Godot. Exact returned summaries and
 missing blocks remain distinct; historical financial state is carried without model history.
 A01 diary adherence is not applicable where the declared first-person schema requires
-`diary=null`; execution-share evaluation remains separate. The actual latest journal and
-separate owner approval are still required before any provider request or new allowance.
+`diary=null`; execution-share evaluation remains separate. The owner supplied the actual
+journal and separately approved the ready test. It completed 20 ticks / 40 paid calls,
+with 7/20 summary turns per Baker, USD 0.100100 booked and zero held. It is stopped and its
+forty-request limit is consumed. See [live results](FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+Any further paid run requires new approval and readiness against the resulting new cloud
+journal, which is now the latest snapshot. Viewing the owner's private completed-run bundle
+requires no provider key, API calls or new allowance.

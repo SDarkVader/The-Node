@@ -15,10 +15,16 @@ The dated Git-tracked pilot results describe tick 18 after 36 paid decisions. Th
 supplied private evidence through tick 38: the complete legacy parent independently verifies to
 tick 28, and the later perception segment's archived bytes, exact own histories and world tape
 check through tick 38. Full perception-runner reconstruction now passes using exact source `47291c8`, available in
-PR #41. Current accounting-journal binding is still pending. See the
+PR #41. The supplied actual journal now passes full replay and exact tick-38 ledger binding. See the
 [reasoning audit](../research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md) for the precise scope.
-The owner's requested fresh first-person Godot 20-tick test remains stopped until readiness and separate explicit
-approval. The authority-attribution Study 1 is still paused and frozen.
+After readiness and separate explicit owner approval, the fresh first-person Godot run
+completed 20 ticks / 40 paid calls with 7/20 summary turns per Baker, USD 0.100100 booked and
+zero held. Its forty-request authorization is consumed; it is stopped. The new cloud
+run's journal is now the latest accounting snapshot. The older uploaded journal is preserved
+history and must not be reused as the current balance. See the
+[fresh live results](../research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+The owner merged #41 into #40; #39 and #40 remain open with main unchanged as last verified.
+The authority-attribution Study 1 is still paused and frozen.
 
 [Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and
 [sanitized evidence](../research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
@@ -56,7 +62,8 @@ current journal, and independent verification before dispatch. The runner recons
 the world through original replay and preserves exact signed own histories. Reusing an older
 checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to
 retain and diagnose, not an instruction to retry or erase a hold.
-The current owner request is a fresh run from genesis, not a resumption of this historical world.
+The approved fresh genesis run is complete. Any further run needs a new explicit instruction
+and readiness against the latest new journal; this guide grants no additional spending.
 
 Do not infer permission, missing records or a zero balance from a fresh clone. Do not create a
 replacement allowance or repeat paid calls as setup. This guide does not authorize a run.

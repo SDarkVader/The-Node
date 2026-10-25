@@ -50,6 +50,8 @@ The synthetic demo needs Node/npm and no provider key or Godot installation. To 
 actual completed run, use the owner's private viewing bundle and its relative registration;
 viewing does not dispatch a model or advance the experiment. The PR does not provision a
 public host. [Synthetic screenshots and proof](docs/research/evidence/first-person-offline-2026-10-25.json).
+The [GitHub-first handover](docs/recovery/GITHUB_FIRST_CONTINUATION.md) records the completed
+run and the requirement to use its new latest journal for any separately authorized follow-up.
 
 ## Recorded live experiment — 2026-10-23
 
