@@ -6020,3 +6020,15 @@ hit milestones. Daily market assumptions, resource/settlement equations, current
 source-preserved older experiments and the explicit paid approval workflow are documented in
 research/SECURE_AGENT_SOCIETY_2026-10-25.md. Current tests are mechanical/security/accounting
 checks, not reasoning-quality grades. Final source-scoped totals follow in recovery evidence.
+
+### 2026-10-25 — file-based recovery correction
+
+The committed42591f4 implementation passed its full suite and80 native checks, but opening
+the saved CLI tape/prepared plan in a separate process caught a real gap: plain JSON dropped
+undefined optional config properties that the canonical genesis hash distinguishes. In-memory
+replay alone had not caught it. Added a lossless evidence envelope with exact digest checking,
+explicit special-value paths and tests reopening both the tape and prepared plan. Earlier
+private plain-JSON trial files are preserved as failed evidence, not relabelled successful.
+The initial unconfigured direct native test invocation failed two harness setup checks;
+the documented compiled/baseline runner then passed all80 checks, plus8 recovery tests.
+No existing private journal, provider credential or actual model call was involved.

@@ -7,10 +7,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { Society, verifySocietyTape, type SocietyTape } from '../src/society/runtime.js';
 import { autonomousPolicy } from '../src/society/policy.js';
+import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'}}});
 if(values.verify){
-  console.log(JSON.stringify(verifySocietyTape(JSON.parse(readFileSync(resolve(values.verify),'utf8')) as SocietyTape),null,2));
+  console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
   if(!Number.isSafeInteger(ticks)||ticks<1||ticks>100||!Number.isSafeInteger(seed))throw Error('society_bounded_ticks_and_seed_required');
@@ -40,7 +41,7 @@ if(values.verify){
     }
   }catch(error){failure=error;}finally{
     terminal?.close();
-    writeFileSync(output,JSON.stringify(society.exportTape(),null,2)+'\n',{flag:'wx',mode:0o600});
+    writeFileSync(output,stringifySocietyEvidence(society.exportTape()),{flag:'wx',mode:0o600});
   }
   if(failure)throw failure;
   const tape=society.exportTape(),verification=verifySocietyTape(tape);

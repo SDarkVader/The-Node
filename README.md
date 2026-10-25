@@ -47,7 +47,8 @@ npm run society -- --interactive --ticks 3 --output .codex/session-recovery/soci
 The first commands use deterministic model fixtures; interactive play supervises local JSON
 choices. Neither bills a model. The new accounted model runner requires separately reviewed
 approval, a matching carried allowance and private evidence paths; it has only been exercised
-with synthetic senders. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
+with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
+configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
 Current work is local on `codex/secure-agent-society-2026-10-25`, based on `4196b79`; no remote push
 or paid call is part of this work. Source-anchored final verification is recorded in the recovery checkpoint.
 

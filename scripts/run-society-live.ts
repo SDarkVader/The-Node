@@ -15,6 +15,7 @@ import { hostProcessEnvironment } from '../src/agent/isolatedHost.js';
 import { digest } from '../src/agent/replay.js';
 import { sha256 } from '../src/agent/accountingStore.js';
 import type { Genesis } from '../src/agent/participantWorld.js';
+import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
 
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
@@ -43,11 +44,11 @@ if(values.prepare){
   const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex')});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan)};
   const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});
-  mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,JSON.stringify(bundle,null,2)+'\n',{flag:'wx',mode:0o600});
+  mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,stringifySocietyEvidence(bundle),{flag:'wx',mode:0o600});
   console.log(JSON.stringify({bundle:bundlePath,planSha256:bundle.planSha256,plan,initialPackets:packets,
     dispatchApproved:false,allowanceCreated:false,providerCalls:0,next:'Review the plan. A later owner approval and a separately authorised allowance carrying the latest actual journal are required.'},null,2));
 }else{
-  const bundle=JSON.parse(readFileSync(bundlePath,'utf8')) as Bundle;validateSocietyPlan(bundle.plan);
+  const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
@@ -79,13 +80,13 @@ if(values.prepare){
         return readFileSync(join(call,'response.json'));
       },{plan:bundle.plan,ownerApproved:true,instruction:approval.instruction,expectedCarriedFingerprint:values['carried-fingerprint'],signal:controller.signal,
         sink:event=>{
-          writeFileSync(events,JSON.stringify(event)+'\n');fsyncSync(events);
+          writeFileSync(events,JSON.stringify(JSON.parse(stringifySocietyEvidence(event)))+'\n');fsyncSync(events);
           if(event.kind==='decision'){
             const d=event.data as {person:string;tick:number;phase:string};
             console.log(JSON.stringify({event:'decision_admitted',person:d.person,day:d.tick+1,phase:d.phase}));
           }
         }});
-      const tape=society.exportTape();writeFileSync(join(output,'society.json'),JSON.stringify(tape,null,2)+'\n',{flag:'wx',mode:0o600});
+      const tape=society.exportTape();writeFileSync(join(output,'society.json'),stringifySocietyEvidence(tape),{flag:'wx',mode:0o600});
       const replay=summary.status==='completed'?verifySocietyTape(tape,revision):null;
       writeFileSync(join(output,'summary.json'),JSON.stringify({summary,replay,originalBundleUnchanged:sha256(readFileSync(bundlePath))===originalBundle},null,2)+'\n',{flag:'wx',mode:0o600});
       console.log(JSON.stringify({summary,replay,output},null,2));if(summary.status!=='completed')process.exitCode=1;

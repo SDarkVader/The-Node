@@ -23,6 +23,11 @@ suggestion, a JSON object supplies another legal choice, and `q` stops. This is 
 not a billed model experiment. All decisions and complete reproducible transitions are retained in
 the private tape, including the exact legal menu and schema. Tape verification reconstructs a fresh
 world, compares every view and action, and compares the complete resulting evidence and state hashes.
+Files use the lossless `node-society-evidence-v1` envelope: readable observations/actions are under
+`value`; `specialValues` retains hash-significant optional undefined fields and negative zero.
+Plain JSON was found to drop those configuration fields during file-based verification and was
+replaced before delivery. Codec tests reopen both a full tape and a prepared plan. Earlier private
+`42591f4` plain-JSON trial artifacts are retained as failed serialization evidence, not final proof.
 
 For natural environmental changes without event injection, use the same unmodified configuration
 and seed `20261025` for 60 ticks. Its first 14 ticks have calm District Weather; the longer test
@@ -135,6 +140,7 @@ Node 24+ is required for this proxy-aware worker. The provider credential is rea
 separate one-shot worker after the real reservation. No API call, free token count, allowance
 creation, approval file or credential read was performed here. Actual funding/approval for this
 new plan has not been supplied; the existing consumed grants are not authorization.
+The terminal reports each admitted model decision; Ctrl+C stops further dispatch without retry.
 
 ## Evidence and further work
 
