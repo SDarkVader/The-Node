@@ -14,5 +14,5 @@ mkdirSync(directory,{mode:0o700});
 const write=(name:string,value:unknown)=>writeFileSync(join(directory,name),JSON.stringify(value,null,2)+'\n',{flag:'wx',mode:0o600});
 write('diary-results.json',diary.result);write('evaluations.json',diary.records);
 write('inspect-input.json',{snapshot:source.snapshot(null,'evaluation-private',true),evidence:points(events).map(p=>({segmentId:p.segmentId,seq:p.event.seq,eventHash:p.event.hash}))});
-console.log(JSON.stringify({producer:'NODE A01 classifyDiary',contractHash:diary.result.contract.hash,actors:diary.result.actors.length,
+console.log(JSON.stringify({producer:diary.records[0]?.producer.name??'NODE A01 classifyDiary',contractHash:diary.result.contract.hash,actors:diary.result.actors.length,
   eligibleDays:diary.result.actors.reduce((n,a)=>n+a.eligibleDays,0),writtenDays:diary.result.actors.reduce((n,a)=>n+a.writtenDays,0),modelCalls:0},null,2));

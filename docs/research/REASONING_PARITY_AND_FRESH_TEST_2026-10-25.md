@@ -140,6 +140,21 @@ and accounting. It does not verify Haiku emission. Missing accounting is never a
 The original-observer checks remain separately named `reasoning-test:observer-rehearse`
 and `reasoning-test:observer-readiness` for their historical scope.
 
+At committed source `be8a3b4652a58e4740a8fb310143223e176e72dc`, all 1,458 Vitest tests
+across 116 files passed with real Godot enabled, plus eight recovery checks. Two native
+workers agreed on all forty delivered packets in a twenty-tick synthetic rehearsal;
+independent compiled replay and the observatory matched its final world. Separate Inspect
+AI 0.3.282 evaluation reported execution share 40/40, with zero model calls; A01 records
+explicitly report non-applicability. On a cloud host with read-only home, put Inspect's
+`XDG_DATA_HOME` in a private writable directory.
+
+The follow-up desktop/mobile browser check verifies timeline selection, both native Godot
+views, applicable evaluation visibility, the exact fresh-template hash and download, and
+rejection of a stale validation response after an edit. No browser errors or mobile overflow
+were observed; ledger and journal byte hashes stayed unchanged. See the
+[sanitized first-person proof](evidence/first-person-offline-2026-10-25.json) and its linked
+screenshots. These synthetic checks do not establish actual Haiku summary emission.
+
 Build from committed source using `node scripts/build-study-runtime.mjs <NEW-runtime>`.
 The bundle contains committed client/plan/transport files and its locked WebSocket dependency.
 The fresh CLI verifies its own code against that bundle. A preflight can then use:

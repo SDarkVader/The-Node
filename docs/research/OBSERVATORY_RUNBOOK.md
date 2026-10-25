@@ -72,6 +72,53 @@ Generate two different random tokens (at least 32 characters), store them privat
 environment. No provider API credential is needed. Do not put tokens in URLs, source, public
 logs or tracked registration files.
 
+### Open the interface on your PC or in a private Codespace
+
+Use a **new checkout and new demo directory**, so existing PC work and experiment files stay
+intact. Until PR #39 merges, select `codex/cloud-observatory-2026-10-25` rather than main.
+Node 24 is recommended. The seven-role synthetic demo needs no provider key, Python or Godot.
+
+Windows PowerShell:
+
+```powershell
+git clone --branch codex/cloud-observatory-2026-10-25 https://github.com/SDarkVader/The-Node.git The-Node-cloud-review
+cd The-Node-cloud-review
+npm ci
+npm run observatory:demo -- ../node-interface-demo
+$env:NODE_OBSERVATORY_RESEARCHER_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+$env:NODE_OBSERVATORY_WORLD_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+Write-Host "Interface login token: $env:NODE_OBSERVATORY_RESEARCHER_TOKEN"
+npm run observatory -- ../node-interface-demo/registration.json
+```
+
+Keep that terminal running, open `http://127.0.0.1:8090/`, and paste the **interface login
+token** it printed. This token is local observatory access, not an Anthropic credential.
+Select decisions, move the shared timeline, inspect synthetic reasoning/admission/accounting,
+and load, edit, validate or download the fresh first-person plan. Viewing and configuration
+do not advance the world or authorize spending. The demo initially has no imported evaluation;
+the separate evaluation commands above populate that panel.
+
+For browser-only use, if GitHub Codespaces is available on your account, create a Codespace
+on this branch, then run in its terminal:
+
+```sh
+npm ci
+npm run observatory:demo -- ../node-interface-demo
+export NODE_OBSERVATORY_RESEARCHER_TOKEN="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
+export NODE_OBSERVATORY_WORLD_TOKEN="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
+printf 'Interface login token: %s\n' "$NODE_OBSERVATORY_RESEARCHER_TOKEN"
+npm run observatory -- ../node-interface-demo/registration.json
+```
+
+In **Ports**, forward **8090**, keep its visibility **Private**, then choose **Open in Browser**.
+Use the printed interface token. The server remains in that Codespace; this Codex workspace
+does not currently have a public preview URL. A private Codespace uses your GitHub access
+and its usual account allowance. Do not upload provider credentials for this demo.
+
+To display a native first-person rehearsal instead, install Godot and use
+`reasoning-test:rehearse` from the [selected-test workflow](REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md),
+then pass its generated `registration.json` to the same observatory command.
+
 ```sh
 npm run observatory -- ../node-demo/registration.json
 ```

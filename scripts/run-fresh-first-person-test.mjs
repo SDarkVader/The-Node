@@ -68,8 +68,8 @@ try{
       writeFileSync(join(call,'attempt.json'),JSON.stringify({requestId:input.requestId,actorId:input.actorId,tick:input.tick,sha256:input.sha256,noRetry:true}),{flag:'wx',mode:0o600});
       if(endpoint==='messages')report.paidDispatches++;else report.freeTokenCountRequests++;
       const env=hostProcessEnvironment(process.env);
-      for(const name of ['HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','NODE_USE_ENV_PROXY','NODE_EXTRA_CA_CERTS','NODE_USE_SYSTEM_CA','SSL_CERT_FILE'])if(process.env[name])env[name]=process.env[name];
-      await promisify(execFile)(process.execPath,[join(runtime,'scripts','anthropic-perception-request.mjs'),keyPath,call,String(plan.maxRequestBytes),endpoint],{env,windowsHide:true,signal,timeout:25000,maxBuffer:8192});
+      for(const name of ['HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy','NODE_EXTRA_CA_CERTS','NODE_USE_SYSTEM_CA','SSL_CERT_FILE'])if(process.env[name])env[name]=process.env[name];
+      await promisify(execFile)(process.execPath,['--use-env-proxy',join(runtime,'scripts','anthropic-perception-request.mjs'),keyPath,call,String(plan.maxRequestBytes),endpoint],{env,windowsHide:true,signal,timeout:25000,maxBuffer:8192});
       if(!existsSync(join(call,'response.json')))throw Error('provider_response_failed');return readFileSync(join(call,'response.json'));
     };
     ledger=new ContinuationLedger(join(directory,'trace'));

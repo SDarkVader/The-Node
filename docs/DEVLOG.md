@@ -1,3 +1,19 @@
+# 2026-10-25 — fresh first-person integration and interface verification
+
+Integrated the needed PR #40/#41 perception/context/worker components into PR #39 and preserved
+legacy request verification. Exact source 47291c8 now verifies the actual tick-38 archive;
+14/28 versus 8/28 summaries, then 2/10 versus 1/10, had equal controls and complete own histories.
+The selected fresh condition uses common high effort and per-turn deliberation guidance with
+no old model/world context; financial history must still carry independently.
+At committed source be8a3b4, all 1,458 Vitest tests / 116 files passed with native Godot enabled,
+plus eight recovery checks. Two actual workers agreed on all forty packets in the twenty-tick
+synthetic rehearsal; compiled replay/observatory matched, Inspect execution share was 40/40,
+and A01 was explicitly not applicable. The follow-up desktop/mobile browser and both native
+views agree on selected history. Fixed stale plan validation and cloud proxy settings;
+eleven targeted fresh/transport checks pass. No real provider/count request or allowance.
+Latest actual journal and separate owner execution approval are still required. Added PC and
+private-Codespace launch recipes. See [first-person proof](research/evidence/first-person-offline-2026-10-25.json).
+
 # 2026-10-25 — reasoning-condition follow-up and fresh-test preparation
 
 Audited the owner-supplied private tick-18 archive: exact system/controls are equal, with
@@ -5953,5 +5969,5 @@ branch, a distinct fresh-start memory condition and common high-effort/per-turn 
 Added counted-input Node transport, journal/ledger binding checks, bundled approval/preflight
 gates, and verified perception-prefix observatory support. Development native rehearsal:
 40 synthetic decisions / 20 real ticks, two actual Godot workers agreed on all packets, same
-final world hash in replay and observatory. Final committed checks remain to record.
+final world hash in replay and observatory. At be8a3b4: all 1458 tests / 116 files passed with real Godot, eight recovery tests, committed runtime/native20 and independent replay passed. Inspect execution share 40/40 was evaluated separately. Browser/native-view proof is being finalized.
 The actual latest journal is pending; no provider call or new allowance activation occurred.

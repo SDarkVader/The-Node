@@ -18,7 +18,7 @@ Both agents receive common high effort, a 2,048-token output cap and explicit gu
 turn. Perception components from #40/#41 are integrated into the cloud branch; fresh and
 historical perception ledgers feed the same verified web/Godot observatory. Two actual workers
 agree before delivery. The development offline rehearsal completed 40 synthetic decisions /
-20 real ticks; committed-runtime verification is the next check.
+20 real ticks; the committed runtime and independent replay also pass.
 [Diagnosis, selected plan and readiness workflow](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
 
 **The paid run remains stopped until readiness and separate owner approval.** The encrypted
@@ -34,11 +34,17 @@ read-only recovery preflight and credential-separated Node execution work remote
 [Run the integrated workflow](docs/research/OBSERVATORY_RUNBOOK.md).
 [Verified results and screenshots](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
 
-At runner source `0bdb48a`: 1,363 Vitest tests, 32 Python tests, eight recovery tests,
-80 native checks and G1–G3 passed. All 29 archived hashes match. The later observer
-refinement passed all 21 targeted tests; desktop/mobile and both native parser checks pass.
-The final Vitest 4.1.12 dependency update also passes all 1,363 tests and TypeScript,
-with zero vulnerabilities from `npm audit --audit-level=low`.
+At first-person source `be8a3b4652a58e4740a8fb310143223e176e72dc`, all **1,458 Vitest tests /
+116 files** passed with actual Godot enabled. Eight recovery tests passed. The bundled
+preflight makes zero provider/count requests and activates no allowance. Two real workers
+agreed on all forty perception packets in the committed twenty-tick synthetic rehearsal;
+independent compiled replay and observatory world hashes matched. Separate Inspect AI 0.3.282
+execution share is 40/40; A01 is not applicable to the diary-null condition. Earlier seven-role
+society evidence remains scoped in the linked cloud results.
+The follow-up Chromium check passed on desktop/mobile, with both native Godot views matching
+the selected historical cursor. Fresh plan validation/download and stale-response protection
+passed; source ledgers/journals stayed unchanged.
+[First-person proof and screenshots](docs/research/evidence/first-person-offline-2026-10-25.json).
 
 Development branch: `codex/cloud-observatory-2026-10-25`, in
 [PR #39](https://github.com/SDarkVader/The-Node/pull/39), based on main `afbdec7` (merged PR #38).
@@ -52,6 +58,12 @@ npm run observatory:evaluate -- ../node-demo/registration.json synthetic-rehears
 # Configure private access tokens, then:
 npm run observatory -- ../node-demo/registration.json
 ```
+
+For a complete Windows or browser-only launch recipe, including access-token setup, see
+[Open the interface](docs/research/OBSERVATORY_RUNBOOK.md#open-the-interface-on-your-pc-or-in-a-private-codespace).
+The demo needs Node and npm, with no provider key or Godot installation. The separate native
+first-person rehearsal also requires Godot. The PR is source for review; it does not host a
+public interface or activate an experiment.
 
 ## Recorded live experiment — 2026-10-23
 

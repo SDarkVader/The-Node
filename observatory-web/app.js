@@ -1,6 +1,6 @@
 /* No provider client, credentials, raw ledger or experiment clock in this browser. */
 const $ = id => document.getElementById(id);
-let snapshot, timeline = [], stream, selectedCall = '', planLoaded = false;
+let snapshot, timeline = [], stream, selectedCall = '', planLoaded = false, planVersion = 0;
 const base = () => `/observatory/v1/runs/${encodeURIComponent($('run').value)}`;
 async function api(path, options = {}) {
   const res = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
@@ -20,7 +20,7 @@ async function loadRuns() {
   if (runs.length) await openRun();
 }
 async function openRun() {
-  stream?.close(); planLoaded = false;
+  stream?.close(); planLoaded = false; planVersion++; $('validate').disabled=false; $('plan-status').textContent='';
   timeline = await api(base() + '/timeline');
   render(await api(base() + '/snapshot'));
   stream = new EventSource(base() + '/events');
@@ -69,7 +69,10 @@ function render(s) {
     if (!records.length) { $('evaluations').textContent = 'Not evaluated at this cursor. No reasoning-quality score has been produced.'; return; }
     for (const r of records) { const box=document.createElement('article'); const h=document.createElement('h3'); h.textContent=`${r.producer.name} ${r.producer.version} · ${r.metricId}`; const p=document.createElement('p'); p.textContent=`${r.status}: ${r.value ?? '—'} · through tick ${r.evaluatedThroughTick}`; const d=document.createElement('details'); const summary=document.createElement('summary'); summary.textContent='Definition and provenance'; const pre=document.createElement('pre'); pre.textContent=JSON.stringify(r,null,2); d.append(summary,pre); box.append(h,p,d); $('evaluations').append(box); }
   }).catch(showError);
-  if (!planLoaded) api(base() + '/configuration').then(p => { $('plan').value=JSON.stringify(p.plan,null,2); planLoaded=true; }).catch(showError);
+  if (!planLoaded) {
+    planLoaded=true; const version=++planVersion;
+    api(base() + '/configuration').then(p => { if(version===planVersion){$('plan').value=JSON.stringify(p.plan,null,2);$('plan-status').textContent='';} }).catch(e=>{if(version===planVersion)showError(e);});
+  }
 }
 function renderCall() {
   const c = snapshot.calls.find(c => c.requestId === selectedCall);
@@ -90,7 +93,8 @@ function draw(s) {
   for(const p of s.frame.people){ctx.fillStyle=colors[p.role]??'#eee3d2';ctx.beginPath();ctx.arc(x(p.x),y(p.y),Math.max(2,scale*.13),0,Math.PI*2);ctx.fill();}
   ctx.strokeStyle='#f2c776';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x(hub.x),y(hub.y),scale*.35,0,Math.PI*2);ctx.stroke();
 }
-$('validate').onclick=async()=>{try{const p=await api('/observatory/v1/configuration/validate',{method:'POST',body:JSON.stringify({plan:JSON.parse($('plan').value)})});$('plan-status').textContent=`Valid · SHA-256 ${p.planSha256} · no allowance created`;}catch(e){$('plan-status').textContent=e.message;}};
-$('fresh-first-person').onclick=async()=>{try{const p=await api('/observatory/v1/configuration/fresh-first-person');$('plan').value=JSON.stringify(p.plan,null,2);planLoaded=true;$('plan-status').textContent='Fresh first-person plan loaded · pending readiness and approval';}catch(e){$('plan-status').textContent=e.message;}};
+$('plan').oninput=()=>{planVersion++;planLoaded=true;$('validate').disabled=false;$('plan-status').textContent='Edited plan · validate before review';};
+$('validate').onclick=async()=>{const version=planVersion,draft=$('plan').value;$('validate').disabled=true;$('plan-status').textContent='Validating…';try{const p=await api('/observatory/v1/configuration/validate',{method:'POST',body:JSON.stringify({plan:JSON.parse(draft)})});if(version===planVersion&&draft===$('plan').value)$('plan-status').textContent=`Valid · SHA-256 ${p.planSha256} · no allowance created`;}catch(e){if(version===planVersion)$('plan-status').textContent=e.message;}finally{if(version===planVersion)$('validate').disabled=false;}};
+$('fresh-first-person').onclick=async()=>{const version=++planVersion;planLoaded=true;$('fresh-first-person').disabled=true;$('validate').disabled=true;$('plan-status').textContent='Loading fresh first-person plan…';try{const p=await api('/observatory/v1/configuration/fresh-first-person');if(version===planVersion){$('plan').value=JSON.stringify(p.plan,null,2);$('plan-status').textContent='Fresh first-person plan loaded · pending readiness and approval';}}catch(e){if(version===planVersion)$('plan-status').textContent=e.message;}finally{$('fresh-first-person').disabled=false;if(version===planVersion)$('validate').disabled=false;}};
 $('download').onclick=()=>{try{const plan=JSON.parse($('plan').value),data=JSON.stringify(plan,null,2)+'\n';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=plan.schema==='node-accounted-perception-fresh-v1'?'first-person-plan.json':'continuation-plan.json';a.click();URL.revokeObjectURL(a.href);}catch{$('plan-status').textContent='Invalid JSON';}};
 api('/session').then(s => { if (s.authenticated) return loadRuns(); }).catch(showError);
