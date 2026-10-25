@@ -8,6 +8,12 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current development — 2026-10-25
 
+The follow-up reasoning audit found identical controls in the supplied historical ledger.
+A versioned per-turn deliberation condition and fresh 20-tick two-Baker plan are being verified.
+**The new paid run must not start until the owner approves after readiness.**
+For Termux credential transfer, `scripts/credential-envelope.mjs` encrypts locally for the cloud
+recipient; plaintext keys never belong in chat, Git or logs.
+
 The cloud observatory connects web and native Godot to one replay-verified continuation world,
 with a shared timeline, exact returned summaries, actor-specific observations, admission/effect
 records, read-only accounting and separately attributed A01/Inspect evaluations. Configuration,
