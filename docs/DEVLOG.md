@@ -6,6 +6,8 @@ records, read-only accounting and separately produced A01/Inspect results. Added
 validation/preflight and a credential-separated Node transport. Seven-role offline rehearsal
 resumes a sealed checkpoint and exercises society actions. The historical pilot/charges,
 protected core, contracts and paused Study 1 remain preserved. No paid provider call.
+Patched the locked Vitest 4.1.11 advisories to 4.1.12; all 1,363 tests and TypeScript pass,
+and the dependency audit reports zero vulnerabilities. Hosted Linux G1–G4 passed.
 See [runbook](research/OBSERVATORY_RUNBOOK.md) and [checkpoint](recovery/CURRENT_SESSION.md)
 for scoped verification; earlier entries below retain their historical results.
 

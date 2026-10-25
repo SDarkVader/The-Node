@@ -13,6 +13,13 @@ with a shared timeline, exact returned summaries, actor-specific observations, a
 records, read-only accounting and separately attributed A01/Inspect evaluations. Configuration,
 read-only recovery preflight and credential-separated Node execution work remotely.
 [Run the integrated workflow](docs/research/OBSERVATORY_RUNBOOK.md).
+[Verified results and screenshots](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
+
+At runner source `0bdb48a`: 1,363 Vitest tests, 32 Python tests, eight recovery tests,
+80 native checks and G1–G3 passed. All 29 archived hashes match. The later observer
+refinement passed all 21 targeted tests; desktop/mobile and both native parser checks pass.
+The final Vitest 4.1.12 dependency update also passes all 1,363 tests and TypeScript,
+with zero vulnerabilities from `npm audit --audit-level=low`.
 
 Development branch: `codex/cloud-observatory-2026-10-25`, based on main `afbdec7` (merged PR #38).
 The offline rehearsal uses seven roles, 140 scripted decisions and 20 kernel ticks, including a

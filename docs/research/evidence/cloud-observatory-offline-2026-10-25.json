@@ -1,0 +1,175 @@
+{
+  "schema": "node-cloud-observatory-verification-v1",
+  "date": "2026-10-25",
+  "baseMain": "afbdec7ec2e5278dc2d813433139d9f763bc249f",
+  "runnerAndRuntimeSourceRevision": "0bdb48ac1c6991993fb0dca1360a632f24cb9e5b",
+  "observatoryAndFrontendSourceRevision": "dc87115da9a138da67ccb6b7f8b4a9ea6bc6792b",
+  "workingEnvironment": "Independent Codex Linux cloud; Node 24.19.0, Python 3.12.14, Inspect AI 0.3.282, Godot 4.6.3, PowerShell 7.6.5",
+  "tests": {
+    "fullVitest": {
+      "sourceRevision": "0bdb48ac1c6991993fb0dca1360a632f24cb9e5b",
+      "files": 109,
+      "passed": 1363
+    },
+    "laterObservatoryTargeted": {
+      "sourceRevision": "1cce703",
+      "files": 3,
+      "passed": 21
+    },
+    "python": {
+      "passed": 32
+    },
+    "sessionRecovery": {
+      "passed": 8
+    },
+    "nativeBrokerAndParticipant": {
+      "baseline": "320592efdee5073a16d447f1c2f33eacebb86e24",
+      "passed": 80
+    },
+    "g1": {
+      "samples": 29,
+      "independentReplay": 29,
+      "deterministic": 29,
+      "archivedHashesEqual": 29
+    },
+    "g2": {
+      "samples": 9,
+      "fixtureChecksPassed": 12,
+      "fixtureChecksTotal": 12
+    },
+    "g3": {
+      "rehearsalChecksPassed": 10,
+      "failureHoldSettlementResumeAnalysis": true
+    },
+    "finalFullVitest": {
+      "sourceRevision": "ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e",
+      "version": "4.1.12",
+      "files": 109,
+      "passed": 1363
+    }
+  },
+  "rehearsal": {
+    "mode": "offline_simulated_provider",
+    "actors": 7,
+    "calls": 140,
+    "ticks": 20,
+    "checkpointRestartAtTick": 1,
+    "readOnlyPreflightCanResume": true,
+    "complete": true,
+    "independentFreshProcessReplay": true,
+    "ledgerRoot": "a94d5a3aa247a40a699a1284b0b00acfe24a1851c22e2cb521f04291dc949987",
+    "finalWorldHash": "804cdc82b2f189e7d9f7039afa6e64566a4b03db32b994922f352de928c76fb6",
+    "historyHash": "50740b6d45fc3af408be3b09e6edddd927f87fb3fbebd610659756821b570906",
+    "syntheticBookedMicroUsd": "47600",
+    "syntheticHeldMicroUsd": "0",
+    "actualProviderCalls": 0
+  },
+  "separateEvaluations": {
+    "a01": {
+      "producer": "NODE A01 classifyDiary",
+      "contractHash": "d0a8f2498d574081bfddc93c544b696679b43a881e8d566dee8dc301c2c30ad3",
+      "eligibleActorDays": 25,
+      "writtenActorDays": 25,
+      "exclusions": {
+        "written": 25,
+        "admitted_without_effect": 0,
+        "attempted_but_rejected": 0,
+        "not_written": 0,
+        "unparseable": 0,
+        "not_applicable": 115,
+        "not_scorable": 0,
+        "budget_stopped": 0,
+        "censored_by_departure": 0
+      },
+      "grounding": {
+        "written": 25,
+        "subjectGrounded": 10,
+        "observationSupported": 0,
+        "observationUnsupported": 0,
+        "observationUnverifiable": 25
+      }
+    },
+    "inspect": {
+      "producer": {
+        "kind": "framework",
+        "name": "Inspect AI / node.observatory.execution_share",
+        "version": "0.3.282"
+      },
+      "metricId": "execution_share",
+      "metricVersion": "1",
+      "definition": "Number of requests joined to an actual committed transition divided by all recorded requests through the declared cursor. Pending, failed and rejected requests remain in the denominator. No exclusions. Units: fraction. This measures execution, not reasoning quality or causal memory benefit.",
+      "value": 1.0,
+      "numerator": 140,
+      "denominator": 140,
+      "exclusions": {}
+    },
+    "reasoningQuality": "not_evaluated"
+  },
+  "browserAndNative": {
+    "schema": "node-observatory-browser-proof-v1",
+    "sourceRevision": "0bdb48ac1c6991993fb0dca1360a632f24cb9e5b",
+    "tick": 20,
+    "worldHash": "804cdc82b2f189e7d9f7039afa6e64566a4b03db32b994922f352de928c76fb6",
+    "cursor": "abc45b937d2498e77fe6c9608c992efcf05cf428014d98e92fa69148be61650f:571:a94d5a3aa247a40a699a1284b0b00acfe24a1851c22e2cb521f04291dc949987",
+    "recordedRequests": 140,
+    "decisionRoundCalls": 7,
+    "evaluationRecords": 8,
+    "historicalEvaluationHidden": true,
+    "planValidationAndDownload": true,
+    "desktopAndMobile": true,
+    "mobileOverflow": false,
+    "browserErrors": [],
+    "evidenceAndJournalUnchanged": true,
+    "native": [
+      {
+        "scene": "WorldView",
+        "tick": 1,
+        "worldHash": "59ca37e8c5b904277cb41810a99eab4ea13c590d7ce835fe94207d57079af417",
+        "cursor": "4060166edccfb6af1a91d6bf5e48c60c7967328263826310aaa6cd9705ce74fc:30:1b4f84bd3ccd56ddf1eff36dbdd60cd5219765ac54239cfda0718cc5fc6ed20c",
+        "parserPassed": true
+      },
+      {
+        "scene": "IsoView",
+        "tick": 1,
+        "worldHash": "59ca37e8c5b904277cb41810a99eab4ea13c590d7ce835fe94207d57079af417",
+        "cursor": "4060166edccfb6af1a91d6bf5e48c60c7967328263826310aaa6cd9705ce74fc:30:1b4f84bd3ccd56ddf1eff36dbdd60cd5219765ac54239cfda0718cc5fc6ed20c",
+        "parserPassed": true
+      }
+    ],
+    "providerCalls": 0
+  },
+  "preservation": {
+    "protectedFilesChanged": [],
+    "frozenContractsAndManifestChanged": false,
+    "reviewedPricesChanged": false,
+    "historicalTrackedEvidenceChanged": false,
+    "originalPrivateEvidenceTransferred": false,
+    "privateHistoricalEvidenceInvented": false,
+    "study1": "paused",
+    "paidCallsInitiated": 0
+  },
+  "furtherWork": [
+    "Full A04 key/abode transactions require a separately versioned action contract; the existing frozen four-field contract was preserved.",
+    "Transcript-memory degradation/comparison conditions, human annotation authoring, browser-embedded Godot and further framework adapters remain development work.",
+    "The real stopped tick-18 pilot can only be viewed/resumed after securely transferring its actual latest private parent and matching journal, with separate spending authorization before any paid call."
+  ],
+  "dependencyAudit": {
+    "sourceRevision": "ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e",
+    "vulnerabilities": 0,
+    "patchedFrom": "4.1.11",
+    "patchedTo": "4.1.12",
+    "advisories": [
+      "GHSA-qxg6-89mg-rqv8",
+      "GHSA-xp26-3454-mjgp"
+    ]
+  },
+  "hostedVerification": [
+    {
+      "sourceRevision": "dc87115da9a138da67ccb6b7f8b4a9ea6bc6792b",
+      "workflow": "Research conformance (G1-G3), including G4 observatory rehearsal",
+      "runId": 40167757966,
+      "conclusion": "success",
+      "url": "https://github.com/SDarkVader/The-Node/actions/runs/40167757966"
+    }
+  ]
+}

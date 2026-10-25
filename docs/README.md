@@ -6,6 +6,7 @@ This index separates current guidance, original design sources and dated evidenc
 ## Current experiment and results
 
 - [Implemented shared-world observatory and remote workflow](research/OBSERVATORY_RUNBOOK.md)
+- [Verified cloud workflow and screenshots](research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md)
 
 - [Current experiment: reasoning continuity](research/CURRENT_EXPERIMENT.md)
 - [Readable sanitized pilot results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md)
