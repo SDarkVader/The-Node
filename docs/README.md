@@ -5,6 +5,8 @@ This index separates current guidance, original design sources and dated evidenc
 
 ## Current experiment and results
 
+- [Latest environmental continuation: tick 38, twenty new calls](research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md)
+- [Accounted first-person continuation contract](observatory/LIVE_PERCEPTION_CONTINUATION.md)
 - [Current experiment: reasoning continuity](research/CURRENT_EXPERIMENT.md)
 - [Readable sanitized pilot results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md)
 - [Sanitized extension evidence](research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
@@ -18,7 +20,8 @@ This index separates current guidance, original design sources and dated evidenc
 - [Claude Design realtime observatory handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
 - [Documentation audit and complete inventory](research/DOCUMENTATION_AUDIT_2026-10-23.md)
 
-The completed live pilot contains 56 decisions across 28 ticks. The chosen two actors, model,
+The latest world checkpoint is tick 38: 56 original-observer decisions through tick 28 and twenty
+additional first-person-condition decisions over ten ticks. The chosen two actors, model,
 caps and USD 1 extension allowance describe this pilot, not the eventual scope of the programme.
 Unimplemented work, defects and unanswered questions are further work. A genuine limitation needs
 explicit conditions and a concrete reason a boundary cannot be crossed.

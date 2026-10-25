@@ -4,6 +4,13 @@
 calls for the existing two actors, with returned reasoning supplied privately. This authorizes
 that run; earlier offline handovers did not authorize inference.
 
+The run has completed at source `47291c8`: twenty calls, ten ticks, final tick38. See the
+[sanitized results and verification](../research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md).
+Its stopped tape/histories and matching new journal are the latest private checkpoint. The
+current entry point accepts an original continuation parent; support for resuming its new
+`perception_*` parent and displaying that schema is next development work. Do not repeat the
+tick28 dispatch or use the old viewer as evidence that this newer record is displayed.
+
 `perceptionContinuation.ts` is a separate adapter, not a change to the validated continuation
 runner, broker, kernel, accounting classes or replay. It restores the verified original tape and
 identities, derives first-person observations through two separate Godot workers, checks their

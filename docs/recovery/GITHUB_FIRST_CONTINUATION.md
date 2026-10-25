@@ -14,9 +14,11 @@ do not silently switch, reset, merge or discard work. See the
 [Windows acceptance record](../observatory/WINDOWS_ACCEPTANCE_2026-10-23.md).
 The [current Claude interface handover](../observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
 records the mechanics-aware perception contract, independent-worker audit, movement readiness
-and implemented Inspect/Study 1 sample-result import. No new live condition has run.
+and implemented Inspect/Study 1 sample-result import. The subsequent owner-authorized
+[environmental run](../research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md) completed twenty
+first-person-condition calls over ten additional ticks, reaching the same world's tick 38.
 
-The live continuation pilot is stopped at tick 28 after 56 paid decisions, including 52 extension
+The original-observer pilot is sealed at tick 28 after 56 paid decisions, including 52 extension
 calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
 passed. Latest 20-call estimated list cost USD 0.0558532 / conservative booking USD 0.111716, zero holds.
 No inference run is active; the PC observatory serves a read-only archive view. The separate authority-attribution Study 1 is still paused and frozen.
@@ -51,9 +53,13 @@ responses, signatures, world observations, runtime state, credentials or allowan
 Those bytes cannot be reconstructed from a clone that never contained them. Secure transfer and
 recovery mechanisms can be developed; do not confuse missing data with a ceiling on future work.
 
-A later authorized live continuation requires the actual latest private tick-28 parent, its
-matching current journal, and independent verification before dispatch. The runner reconstructs
-the world through original replay and preserves exact signed own histories. Reusing an older
+The latest world checkpoint is now tick 38 in the new `perception_*` ledger, with its own stopped
+tape/histories and matching consumed twenty-request journal. Fresh-process verification passed.
+Recovery/resumption and observatory display adapters for that schema are further development:
+the old entry point accepts the original continuation parent, not this new checkpoint. Do not
+silently rerun tick 28 or substitute the original observatory archive. A later authorized live
+continuation must verify the actual latest private tape, own histories and matching journal.
+The world is reconstructed through original replay with exact signed own histories. Reusing an older
 checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to
 retain and diagnose, not an instruction to retry or erase a hold.
 

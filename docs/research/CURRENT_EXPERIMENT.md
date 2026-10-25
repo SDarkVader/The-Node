@@ -1,8 +1,10 @@
-#Latest owner-authorized continuation: **56 total decisions through tick 28**. The additional
-20 calls, costs, verification and explicitly unverified operator comments are recorded in
-[the tick-28 report](CONTINUATION_TICK28_RESULTS_2026-10-23.md). No inference run remains active.
+# Current experiment — reasoning continuity in The Node
 
- Current experiment — reasoning continuity in The Node
+Latest owner-authorized continuation: **76 total decisions through tick 38**, across the original
+observer condition (56 through tick 28) and the new explicitly declared first-person environmental
+condition (20 more over ten ticks). See [the environmental results](ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md)
+and the preserved [original tick-28 report](CONTINUATION_TICK28_RESULTS_2026-10-23.md).
+No inference run remains active.
 
 Updated 2026-10-24. This page describes the current experiment and its further work.
 The programme can develop beyond the configuration and evidence recorded here.
@@ -20,7 +22,7 @@ may become. The programme is exploratory; this documentation imposes no directio
 
 ## Earlier checkpoint evidence through tick 18
 
-The live pilot is stopped at a verified checkpoint after 18 real ticks and 36 paid decisions:
+At this earlier checkpoint the live pilot stopped after 18 real ticks and 36 paid decisions:
 an initial four-call pilot plus 32 additional decisions over 16 ticks. The extension stopped
 at the recorded exploratory checkpoint before its USD 1 cap. Nothing is running in the background.
 
@@ -58,7 +60,7 @@ The world retains genesis source `cf9947630d4164950b93d03b0b6b6b8c8dc99881`.
 
 | Path | Current role |
 | --- | --- |
-| Live continuation | Current exploratory experiment; own transcript plus evolving authorized observations; stopped at tick 28; see latest report |
+| Live continuation | Same world through tick 38; exact own history retained, explicit first-person observation transition after tick 28; inference stopped; see latest report |
 | Authority-attribution Study 1 | Separate seven-actor study; frozen contract 1.1.0 and manifest; paused pending owner reactivation; current-view memory condition unchanged |
 | Original Inspect fixtures | Offline `mockllm` infrastructure and scoring checks; historical fixture counts are not live-model observations |
 | Protected production broker | Original live-admission gate remains closed; accounted experiment runners are separate |

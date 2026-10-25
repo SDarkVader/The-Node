@@ -1,0 +1,77 @@
+{
+  "schema": "node-live-environmental-result-v1",
+  "sourceRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+  "model": "claude-haiku-5-5",
+  "condition": {
+    "schema": "node-perception-condition-v1",
+    "id": "perception-default-clear-v1",
+    "firstPerson": {
+      "fovDegrees": 92,
+      "maxRange": 6
+    },
+    "isometric": {
+      "pitchDegrees": 35.264,
+      "yawDegrees": 45,
+      "span": 9
+    },
+    "weather": {
+      "kind": "clear"
+    },
+    "bands": {
+      "health": [
+        0.5,
+        0.8
+      ],
+      "tension": [
+        0.06,
+        0.1
+      ],
+      "heat": [
+        0.15,
+        0.35
+      ]
+    }
+  },
+  "perspective": "first_person",
+  "memory": "retain_exact_own_legacy_then_perception",
+  "summary": {
+    "status": "completed",
+    "calls": 20,
+    "startTick": 28,
+    "finalTick": 38,
+    "completedTicks": 10,
+    "finalWorldHash": "659cc5d9115866dc6bf13de333ec2b3796716b6df086675214631b96385e2c86",
+    "historyHash": "29e8c628df9fae6559d855749a730d0a65af8b4d3676fa099c8cab2b8950b288",
+    "budgetHistoryHash": "c8ccc9b6ef7871b3083413765642398f04c0ebbec46cbdf7224807c81adbcb86",
+    "bookedMicroUsd": "139250",
+    "heldMicroUsd": "0"
+  },
+  "paidCalls": 20,
+  "freeTokenCounts": 20,
+  "returnedTextDecisions": 3,
+  "admitted": 20,
+  "executed": 20,
+  "tokens": {
+    "input": 692520,
+    "output": 738
+  },
+  "estimatedListUsd": 0.069621,
+  "bookedUsd": 0.13925,
+  "heldUsd": 0,
+  "verifiedFreshProcess": true,
+  "journalBound": true,
+  "originalSourcesUnchanged": true,
+  "ledgerRoot": "76d36db2f1aa6d17b13189ac0b615152be50d47a5f1e70be6cd87eb5c8a29ecc",
+  "evaluation": "not_evaluated",
+  "privateRecordsIncluded": false,
+  "offlineVerification": {
+    "sourceCommit": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "vitestPassed": 1473,
+    "filesPassed": 117,
+    "existingPlatformSkipped": 1,
+    "maxWorkers": 2,
+    "typecheck": true,
+    "cliSyntax": true,
+    "recoveryTestsPassed": 8
+  }
+}

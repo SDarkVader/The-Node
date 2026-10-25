@@ -8,11 +8,15 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current experiment — 2026-10-24
 
-**Authorized environmental run:** a separate accounted first-person continuation adapter is
-implemented and tested for the owner's ten-tick request. It preserves the same world/identities
-and exact own historical conversations, explicitly declares the observation change, audits two
-Godot workers and preserves the original journal. [Contract and entry point](docs/observatory/LIVE_PERCEPTION_CONTINUATION.md).
-No live result is claimed before dispatch.
+**Latest environmental run: tick 38.** The owner's ten-tick request completed 20 paid calls:
+all HTTP 200/end_turn, admitted and executed. First-person environmental packets and legal moves
+were audited by two Godot workers; exact own historical conversations persisted through an
+explicit observation-condition change. Three calls returned nonempty reasoning text. Estimated
+list cost USD 0.069621 / conservative booking USD 0.139250, zero holds. Fresh-process replay and
+journal binding passed; originals and protected core remain unchanged. Inference is stopped.
+[Results and continuation requirements](docs/research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md).
+At runtime source `47291c8`: 1,473 tests across 117 files passed, one existing platform skip,
+TypeScript and eight recovery tests passed. Matching source is published on the review branch.
 
 **Thinking / History integration:** Claude's `c151e41` interface work is incorporated on
 `codex/observatory-windows-2026-10-23` with corrected static serving, actual reasoning/admission
@@ -39,7 +43,7 @@ The existing Claude session received the handover. Native Godot now displays the
 archive; camera control and replay scrubbing 14 to 28 matched API frames, without new model calls
 or changed ledger/journal files. [Responsibilities and control evidence](docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md#owner-assigned-responsibilities).
 
-**Latest checkpoint: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
+**Original observation condition: tick 28, 56 decisions.** The owner-authorized additional 20 calls passed
 replay, journal binding, Inspect import and observatory acceptance. New estimated list cost
 USD 0.0558532 / booked USD 0.111716, zero held. [Current results and unverified comments](docs/research/CONTINUATION_TICK28_RESULTS_2026-10-23.md).
 Earlier tick-18 evidence remains linked from that report. Inference is stopped.
@@ -49,10 +53,11 @@ Start with [the current experiment](docs/research/CURRENT_EXPERIMENT.md) and
 They were merged into `main` through
 [PR #38](https://github.com/SDarkVader/The-Node/pull/38) at `afbdec7`.
 
-The live pilot has completed **56 paid decisions across 28 real world ticks**. The original
+Under the original observation condition, the live pilot completed **56 paid decisions across 28 real world ticks**. The original
 two Baker identities and world continued through another 20 calls; game mechanics changed both
-actors into Investigators. Exact own histories persisted. Inference is stopped at tick 28; the
-read-only PC observatory is open against that archive.
+actors into Investigators. Exact own histories persisted. The read-only PC observatory remains
+open against that original archive; the later first-person run above advanced the same world to
+tick 38, with 76 total decisions across both conditions.
 
 Agents received their own authorized observations, the rules and available action schema.
 Their exact previous messages and returned assistant blocks persisted, including thinking

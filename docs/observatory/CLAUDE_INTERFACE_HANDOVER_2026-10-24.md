@@ -5,6 +5,24 @@ Updated 2026-10-24. Branch: `codex/observatory-windows-2026-10-23`, extending Cl
 [`CURRENT_SESSION`](../recovery/CURRENT_SESSION.md), then verify actual Git refs/worktree.
 The original checkout, main, private live-run files and accounting remain separate.
 
+## Latest run for interface integration
+
+The owner subsequently authorized ten world ticks with the new environmental context. Runtime
+`47291c8` completed twenty first-person calls, advancing the same world/identities from tick28
+to38. All responses were HTTP200/end_turn, admitted and executed. Current perception came from
+two agreeing real Godot workers; exact own historical conversations persisted through an explicit
+condition transition. Three calls returned nonempty reasoning text; seventeen did not. Nothing
+fills missing summaries or grades reasoning. [Results](../research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md).
+
+The private new ledger uses `perception_*` events, described in
+[LIVE_PERCEPTION_CONTINUATION](LIVE_PERCEPTION_CONTINUATION.md), and embeds the verified original
+parent. It is not the old continuation schema and is not yet registered in the observatory.
+The current PC observatory therefore still shows the original tick28 archive. Next integration
+work is a verified resumption/display adapter for the new schema; do not merely point the old
+reader at it or falsely label the old archive tick38. Raw text remains local; this GitHub handover
+contains only sanitized aggregates. The new grant's twenty-request count is consumed; no further
+paid run is authorized by this handover.
+
 ## Owner assigned responsibilities
 
 The owner assigned Claude the interface/presentation work and Codex the backend and Godot
