@@ -127,3 +127,8 @@ Do not replace a working Termux LTS installation just for this helper. A newly i
 that cannot find C++ symbols may need its `libc++` package brought up to date before it can run.
 Neither the plaintext credential nor the cloud transfer private key belongs in Git or chat.
 Provisioning a credential does not approve or start the experiment.
+
+Run the helper's credential-free `check <cloud-public-key> [encrypted-output-file]` before
+entering a key if a device has failed to seal it. This tests crypto and the recipient and
+reports whether an encrypted file already exists; it reads no credential. Failures report
+only a stage and fixed error code, never the native error message, stack or secret value.

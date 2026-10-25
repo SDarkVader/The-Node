@@ -14,7 +14,8 @@ The opt-in per-turn deliberation condition now gives both Bakers identical high 
 offline rehearsal. [Audit and prepared test](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
 **The new paid run must not start until the owner approves after readiness.**
 For Termux credential transfer, `scripts/credential-envelope.mjs` encrypts locally for the cloud
-recipient; plaintext keys never belong in chat, Git or logs.
+recipient; plaintext keys never belong in chat, Git or logs. Its `check` command tests
+crypto and an existing encrypted output without reading a credential.
 
 The cloud observatory connects web and native Godot to one replay-verified continuation world,
 with a shared timeline, exact returned summaries, actor-specific observations, admission/effect
