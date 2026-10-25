@@ -7,7 +7,9 @@ export class LedgerTail {
   #prefix = Buffer.alloc(0);
   #events: ContinuationEvent[] = [];
   #failure = false;
+  #verified: ReturnType<typeof recoverContinuation> | null = null;
   constructor(readonly path: string, readonly sourceRevision: string) {}
+  get verified(): ReturnType<typeof recoverContinuation> | null { return this.#verified; }
   read(): readonly ContinuationEvent[] {
     if (this.#failure) throw Error('observatory_source_diverged');
     try {
@@ -20,8 +22,9 @@ export class LedgerTail {
       if (end === 0) return this.#events;
       const prefix = bytes.subarray(0, end);
       const events: ContinuationEvent[] = prefix.toString('utf8').trimEnd().split('\n').map(line => JSON.parse(line));
-      recoverContinuation(events, this.sourceRevision); // original wire, observer, accounting and kernel checks
+      const verified = recoverContinuation(events, this.sourceRevision); // original wire, observer, accounting and kernel checks
       this.#prefix = Buffer.from(prefix); this.#events = events;
+      this.#verified = verified;
       return this.#events;
     } catch (error) {
       if (!this.#prefix.length && (error as NodeJS.ErrnoException).code === 'ENOENT') return this.#events;

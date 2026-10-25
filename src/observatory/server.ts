@@ -36,7 +36,14 @@ export function startObservatory(options: Options) {
   };
   const sourceFor = (id: string) => { const s = sources.get(id); if (!s || failures.has(id) || !s.latestCursor) throw Error('source_unavailable'); return s; };
   const selection = (s: ObservatorySource) => selected.get(s.registration.id) ?? null;
-  const snapshot = (s: ObservatorySource, secret: string) => s.snapshot(selection(s), secret, true);
+  const snapshot = (s: ObservatorySource, secret: string, cursor: string | null = selection(s)) => {
+    const value = s.snapshot(cursor, secret, true);
+    if (!('calls' in value)) throw Error('observatory_research_projection');
+    // History is retrieved by selecting its cursor, rather than resending every actor's
+    // entire observation history on every SSE update. Telemetry retains the full prefix.
+    const tick = value.calls.at(-1)?.tick ?? null;
+    return { ...value, calls: value.calls.filter(c => c.tick === tick), callScope: { tick, basis: 'latest_decision_round_at_cursor' } };
+  };
   const eventWrite = (res: ServerResponse, type: string, data: unknown, id?: string) => {
     if (res.writableLength > 1024 * 1024) { res.end(); streams.delete(res); return; }
     res.write(`${id ? 'id: ' + id + '\n' : ''}event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -105,7 +112,7 @@ export function startObservatory(options: Options) {
       if (!match) return json(res, 404, { error: 'not_found' });
       const s = sourceFor(match[1]!), endpoint = match[2];
       if (req.method === 'GET' && endpoint === 'configuration') return json(res, 200, { plan: s.point().start.plan, spendingAuthorized: false });
-      if (req.method === 'GET' && endpoint === 'snapshot') return json(res, 200, s.snapshot(url.searchParams.get('cursor') ?? selection(s), 'researcher-http', true));
+      if (req.method === 'GET' && endpoint === 'snapshot') return json(res, 200, snapshot(s, 'researcher-http', url.searchParams.get('cursor') ?? selection(s)));
       if (req.method === 'GET' && endpoint === 'timeline') return json(res, 200, s.list());
       if (req.method === 'GET' && endpoint === 'evaluations') {
         const cursor = url.searchParams.get('cursor') ?? selection(s) ?? s.latestCursor!; s.point(cursor);

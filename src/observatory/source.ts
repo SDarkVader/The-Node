@@ -44,7 +44,7 @@ export class ObservatorySource {
   }
   snapshot(cursor: string | null, secret: string, researcher: boolean) {
     const p = this.point(cursor), selected = p.events.slice(0, p.index + 1);
-    let verified = this.#snapshot.get(p.cursor);
+    let verified = this.#snapshot.get(p.cursor) ?? (p.cursor === this.latestCursor ? this.tail.verified : null);
     if (!verified) {
       verified = recoverContinuation(selected, p.start.sourceRevision);
       // Bounded cache; a new viewer cannot create an unbounded state cache.

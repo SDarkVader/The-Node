@@ -108,6 +108,9 @@ and provenance, never diaries, wealth, raw identities or reasoning. The old stan
 `npm run server` remains a separate sandbox and is never labelled the experiment.
 
 The web timeline selects **one shared display cursor** for all connected world clients.
+Each researcher snapshot includes the most recent decision round at that cursor; select a
+historical cursor to retrieve its observations and summaries. Telemetry covers the full
+verified prefix. This avoids broadcasting the entire private observation history on each update.
 Selecting a past request shows the still-uncommitted world alongside that request's evidence;
 only a transition changes the world. Follow-latest restores following. Reconnect and playback
 cause zero provider calls and zero authoritative kernel ticks. Returned summaries appear

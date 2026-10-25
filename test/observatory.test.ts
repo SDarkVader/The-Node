@@ -143,6 +143,9 @@ it('authenticates research/world channels; synchronizes shared selection and nev
   expect(cookie).toContain('node_observatory=');expect(cookie).not.toContain(R);
   expect((await fetch(url+'/observatory/v1/runs',{headers:{Cookie:cookie}})).status).toBe(200);
   const headers={Authorization:'Bearer '+R,'Content-Type':'application/json'};
+  const current=await(await fetch(url+'/observatory/v1/runs/test/snapshot',{headers})).json() as any;
+  expect(current.calls).toHaveLength(2);expect(current.calls.every((c:any)=>c.tick===1)).toBe(true);
+  expect(current.telemetry.callAttemptCount).toBe(4);
   expect((await fetch(url+'/observatory/v1/configuration/validate',{method:'POST',headers,body:JSON.stringify({plan:f.plan})})).status).toBe(200);
   const ws=new WebSocket(`ws://127.0.0.1:${port}/observatory/v1/runs/test/world`,{headers:{Authorization:'Bearer '+W}});
   const frames: any[]=[];ws.on('message',bytes=>frames.push(JSON.parse(bytes.toString())));
