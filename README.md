@@ -6,6 +6,29 @@ Authority, cooperation, information asymmetry and economic behaviour are part of
 programme. The current experiment studies reasoning continuity as world state and diary contents
 change. Its present implementation is a stage of development, not a ceiling on the programme.
 
+## Open the interface
+
+In a terminal on the computer where you will open the browser:
+
+```sh
+git clone --branch main https://github.com/SDarkVader/The-Node.git The-Node-main-review
+cd The-Node-main-review
+npm ci
+npm run preview
+```
+
+Wait for **Observatory ready**, open the printed URL and paste the printed **interface login
+token**. Keep the terminal running. The default is a two-tick synthetic demo, with no provider
+key or paid calls. To view the owner's completed run, use
+`npm run preview -- <private-bundle>/registration.json` instead.
+
+For browser-only access, [open a private GitHub Codespace on main](https://codespaces.new/SDarkVader/The-Node?ref=main),
+wait for dependency setup, then run `npm run preview` in its terminal. Open the printed
+Codespaces HTTPS URL, keep port 8090 private, and use the printed interface token.
+`127.0.0.1` always refers to the device opening the browser; a cloud process is not reachable
+at that address from your phone or PC. `ERR_CONNECTION_REFUSED` means the server has not
+started on that device/forwarded port. This repository does not provision a public host.
+
 ## Current development — 2026-10-25
 
 The owner-approved **fresh first-person Godot run completed 20 ticks and 40 paid Haiku calls**.
@@ -39,11 +62,15 @@ At first-person source `be8a3b4652a58e4740a8fb310143223e176e72dc`, all **1,458 V
 runtime preflight and all hosted checks pass. The earlier seven-role synthetic society proof
 and separate evaluations remain scoped in the [cloud results](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
 
-Development branch: `codex/cloud-observatory-2026-10-25`, in
-[PR #39](https://github.com/SDarkVader/The-Node/pull/39), based on main `afbdec7` (merged PR #38).
-The owner merged #41 into #40 at `5f84cc0`; #39 and #40 remain open, with main unchanged.
-The needed perception components are integrated in #39; #40's richer presentation uses a
-different server/registration API and still needs reconciliation before combining branches.
+Shared recovery branch: `main`. [PR #39](https://github.com/SDarkVader/The-Node/pull/39)
+consolidates the cloud line with PR #40 at `5f84cc0`, including merged PR #41.
+The cloud interface and fresh first-person workflow stay the default. The original-observer
+Thinking/History interface, annotations and sample importer are retained under
+`src/observatory/legacy/`, with their original explicit registration/API contracts:
+`npm run observatory:legacy -- serve <legacy-registration.json>`. Original `observatory --
+serve|verify|evaluate|export-frames` commands remain compatible. Both viewers reconstruct
+recorded experiment worlds; neither runs a substitute simulation or dispatches a model.
+[Integration details and supported entry points](docs/recovery/MAIN_INTEGRATION_2026-10-25.md).
 
 **Open the interface:** follow the [Windows PC or private-Codespace recipe](docs/research/OBSERVATORY_RUNBOOK.md#open-the-interface-on-your-pc-or-in-a-private-codespace).
 The synthetic demo needs Node/npm and no provider key or Godot installation. To view the

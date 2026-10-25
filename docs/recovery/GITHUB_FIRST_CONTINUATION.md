@@ -6,8 +6,10 @@ Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 
 ## Active branch and current experiment
 
-Repository: `SDarkVader/The-Node`. Current development branch:
-`codex/cloud-observatory-2026-10-25`. PR #38 is merged into `main` at `afbdec7`.
+Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`. Consolidation review branch:
+`codex/cloud-observatory-2026-10-25`, named explicitly in the checkpoint until PR #39 merges.
+PR #39 integrates the cloud work and the PR #40/#41 ancestry without replacing either
+observatory registration contract. Use `npm run preview` for the default web interface.
 Read the [implemented cloud observatory runbook](../research/OBSERVATORY_RUNBOOK.md).
 Preserve unrelated work; do not silently reset or discard state.
 
@@ -23,7 +25,9 @@ zero held. Its forty-request authorization is consumed; it is stopped. The new c
 run's journal is now the latest accounting snapshot. The older uploaded journal is preserved
 history and must not be reused as the current balance. See the
 [fresh live results](../research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
-The owner merged #41 into #40; #39 and #40 remain open with main unchanged as last verified.
+The owner merged #41 into #40; PR #39 consolidates both lines for main. The original
+observer interface is preserved as an explicit compatibility mode; current cloud/perception
+evidence uses the default viewer. See [integration details](MAIN_INTEGRATION_2026-10-25.md).
 The authority-attribution Study 1 is still paused and frozen.
 
 [Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and

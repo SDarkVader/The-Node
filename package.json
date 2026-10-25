@@ -58,7 +58,12 @@
     "test:observatory": "vitest run test/observatory.test.ts test/anthropicNodeWorker.test.ts test/clientProtocolConformance.test.ts",
     "reasoning-test:observer-readiness": "tsx scripts/reasoning-test-readiness.ts",
     "reasoning-test:observer-rehearse": "tsx scripts/rehearse-reasoning-test.ts",
-    "reasoning-test:run": "node scripts/run-fresh-reasoning-test.mjs"
+    "reasoning-test:run": "node scripts/run-fresh-reasoning-test.mjs",
+    "observatory:legacy": "tsx src/observatory/legacy/cli.ts",
+    "observatory:legacy-demo": "tsx scripts/legacy-observatory-demo.ts",
+    "observatory:acceptance": "tsx src/observatory/legacy/acceptanceCli.ts",
+    "perception:verify": "tsx scripts/perception-readiness.ts",
+    "preview": "tsx scripts/preview-observatory.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

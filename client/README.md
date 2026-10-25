@@ -34,12 +34,50 @@ palette, which is a first proposal rather than a derived decision.
 
 ## Experiment observatory integration
 
-See the [Claude Design handover](../docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md).
-The existing hello/tick renderer is reusable, but npm run server creates a separate timed world.
-A projection/stream adapter must supply the continuation experiment's actual committed world and
-cursor. Reasoning, private observations and framework results use a separate researcher channel;
-do not broadcast them in the ordinary player world stream. Godot currently handles hello/tick,
-not the protocol's optional identity-resolution/lapse messages. Those handlers are further work.
+Built 2026-10-23; runbook in [docs/observatory](../docs/observatory/README.md).
+
+- **The same world as the experiment.** `npm run server` creates a separate timed world, so it
+  is not used here. The observatory reconstructs the continuation experiment's committed frames
+  from its verified ledgers and streams them in the same `hello`/`tick` shapes, plus metadata
+  keys (`experimentId`, `sourceTick`, `worldHash`, `mode`, `synthetic`, ...).
+- **Connecting.** Both clients take the endpoint from `--world-url=<url>` or `NODE_WORLD_URL`;
+  `npm run observatory -- serve` prints the URL. The HUD shows the experiment tick, world hash
+  and whether the frame is a replay.
+- **What stays off this stream.** Reasoning, private observations and framework results use the
+  separate researcher channel and never ride the world stream.
+- **Further work.** The clients handle `hello`/`tick` only, not the protocol's optional
+  identity-resolution/lapse messages.
+
+## Agent perception worker
+
+`scenes/PerceptionWorker.tscn` is a headless worker. It derives what one agent can perceive of
+the Node world from that agent's perspective; the Node then validates the result before the
+agent receives it.
+
+- **First person** uses camera frustums and physics raycasts against the buildings and Wall
+  IsoView draws (shared through `NodeGeometry.gd`), plus fog.
+- **Isometric** reports broad district conditions with no person references.
+
+It has no window and no world state of its own:
+
+```
+NODE_PERCEPTION_TOKEN=<token> godot --headless --path client res://scenes/PerceptionWorker.tscn -- --perception-url=ws://127.0.0.1:<port>/observatory/v1/perception
+```
+
+In practice `launchPerceptionWorker` (`src/observatory/perceptionBridge.ts`) starts it against a
+local bridge. The perception tests run it for real when `NODE_GODOT_BIN` points at a Godot 4.3+
+binary:
+
+```
+NODE_GODOT_BIN=<godot binary> npx vitest run test/perception.test.ts
+```
+
+Contract, information limits and further work are in
+[docs/observatory](../docs/observatory/README.md#agent-perception).
+The [current interface handover](../docs/observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+adds the mechanics-aware policy packet, scoped actions, verified movement and independent-worker
+audit. `npm run perception:verify -- --out <NEW private directory>` runs two real Godot workers
+with scripted policies and verifies the exact move and replay; it makes no model call.
 
 ## What you need
 
@@ -139,6 +177,9 @@ rendering. To exercise drawing without a monitor, run it under a virtual display
 ```
 client/scripts/WorldView.gd     the renderer + socket client
 client/scenes/WorldView.tscn    Node2D + Camera2D + HUD label
+client/scripts/NodeGeometry.gd  building, person and Wall geometry shared by IsoView and perception
+client/scripts/Perception.gd    agent perception: camera frustums, raycasts, fog, isometric overview
+client/scenes/PerceptionWorker.tscn + scripts/PerceptionWorker.gd   headless perception worker
 src/server/ws.ts                startWorldServer — sockets, timers, per-connection secrets
 src/server/worldProtocol.ts     what may go on the wire (READ THIS BEFORE CHANGING IT)
 ```

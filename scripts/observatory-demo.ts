@@ -9,15 +9,16 @@ import { ExperimentBudget } from '../src/agent/experimentBudget.js';
 import { runContinuation } from '../src/eval/continuationRunner.js';
 import { ContinuationLedger, readContinuationLedger, verifyContinuation, continuationInspectSamples } from '../src/eval/continuationLedger.js';
 import { ObservatorySource, points } from '../src/observatory/source.js';
-const [output] = process.argv.slice(2);
-if (!output || process.argv.length !== 3) throw Error('usage_demo_NEW_private_directory');
+const [output, mode] = process.argv.slice(2);
+if (!output || process.argv.length > 4 || mode !== undefined && mode !== '--quick') throw Error('usage_demo_NEW_private_directory_optional_quick');
 const directory = resolve(output), checkout = realpathSync('.'), inside = relative(checkout, realpathSync(dirname(directory)));
 if (inside === '' || inside !== '..' && !inside.startsWith('..' + sep) && !isAbsolute(inside)) throw Error('demo_output_must_be_outside_checkout');
 mkdirSync(directory, {mode:0o700});
 const write=(name:string,value:unknown)=>writeFileSync(join(directory,name),typeof value==='string'?value:JSON.stringify(value,null,2)+'\n',{flag:'wx',mode:0o600});
 const revision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-const plan={...continuationPlan(140),maxRequestBytes:95000,
-  allowance:{...continuationPlan(140).allowance,limitMicroUsd:1000000,perRequestMicroUsd:30000}}, allowance=join(directory,'TEST-ONLY-allowance');
+const fixturePlan=continuationPlan(mode === '--quick' ? 14 : 140);
+const plan={...fixturePlan,maxRequestBytes:95000,
+  allowance:{...fixturePlan.allowance,limitMicroUsd:1000000,perRequestMicroUsd:30000}}, allowance=join(directory,'TEST-ONLY-allowance');
 let budget=continuationBudget(plan,allowance);
 write('plan.json',plan);
 const genesis=continuationGenesis(revision);

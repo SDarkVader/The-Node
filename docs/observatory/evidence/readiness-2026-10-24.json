@@ -1,0 +1,93 @@
+{
+  "schema": "node-observatory-development-verification-v1",
+  "sourceRevision": "2f425507d454eabf3337f9651ef200b3c4af1bd6",
+  "date": "2026-10-24",
+  "branch": "codex/observatory-windows-2026-10-23",
+  "modelCalls": 0,
+  "behaviouralEvaluationPerformed": false,
+  "vitest": {
+    "files": 114,
+    "passed": 1454,
+    "failed": 0,
+    "skipped": 1,
+    "skip": "existing PowerShell preflight platform condition"
+  },
+  "typecheck": {
+    "project": true,
+    "readinessScriptExplicit": true
+  },
+  "sessionRecoveryTests": {
+    "passed": 8
+  },
+  "pythonTests": {
+    "passed": 39,
+    "environment": "existing pinned Inspect environment"
+  },
+  "perceptionReadiness": {
+    "schema": "node-perception-readiness-v1",
+    "synthetic": true,
+    "policies": "scripted",
+    "engines": [
+      {
+        "name": "godot",
+        "version": "4.7.2-stable (official) ed1daf0bf001b61586d9930840f2f1394092c079"
+      },
+      {
+        "name": "godot",
+        "version": "4.7.2-stable (official) ed1daf0bf001b61586d9930840f2f1394092c079"
+      }
+    ],
+    "ticks": 4,
+    "decisions": 8,
+    "independentAgreements": 8,
+    "moved": true,
+    "nextPositionMatches": true,
+    "replayMatches": true,
+    "allAdmitted": true,
+    "modelCalls": 0,
+    "evaluationsRun": 0,
+    "finalWorldHash": "d2deadb829ec40d61fc0e4567c19ff4970091431f39d5b444512e520fc0c414a"
+  },
+  "existingFrameworkSampleImport": {
+    "records": 319,
+    "scored": 142,
+    "not_applicable": 167,
+    "not_scorable": 10,
+    "evaluationsRun": 0,
+    "ledgerBound": false
+  },
+  "latestPrivateArchiveAcceptance": {
+    "passed": true,
+    "counts": {
+      "segments": 5,
+      "requests": 56,
+      "decisions": 56,
+      "ticks": 28,
+      "frames": 29
+    },
+    "sourceFilesUnchanged": true,
+    "evaluationPerformed": false,
+    "modelCalls": 0
+  },
+  "protectedSource": {
+    "comparisonRevision": "0d7080306d94e2837a0e27480b2e0e8cc1ba3e15",
+    "unchanged": true,
+    "paths": [
+      "src/agent",
+      "src/world",
+      "src/engine",
+      "src/comms",
+      "src/server/observer.ts",
+      "src/eval/continuationHost.ts",
+      "src/eval/continuationRunner.ts",
+      "evals/contracts",
+      "evals/manifests"
+    ]
+  },
+  "interactiveVisualReview": {
+    "verified": false,
+    "reason": "No browser was available in the automation inventory."
+  },
+  "scope": "Offline infrastructure and request-contract checks. Existing fixture scores are imported, not newly evaluated. No live model has received this perception condition.",
+  "privateInputsIncluded": false
+}

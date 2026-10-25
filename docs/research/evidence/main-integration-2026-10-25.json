@@ -1,0 +1,83 @@
+{
+  "schema": "node-main-integration-verification-v1",
+  "date": "2026-10-25",
+  "sourceParents": [
+    "9f072bd6feeac68a3af3ee937e9a8c6b0e065fab",
+    "5f84cc0b08ae9374ae8fb1c46c27e3e54d9b8b85"
+  ],
+  "scope": "Combined implementation working tree; code content is preserved in the consolidation merge. Historical live source remains pinned at93f4a99.",
+  "tests": {
+    "vitestPassed": 1505,
+    "vitestFiles": 122,
+    "failed": 0,
+    "skipped": 0,
+    "actualGodotEnabled": true,
+    "pythonPassed": 42,
+    "recoveryPassed": 8,
+    "typecheckPassed": true
+  },
+  "browser": {
+    "mode": "merge_candidate",
+    "additionalProviderCalls": 0,
+    "interfaces": [
+      {
+        "name": "quick",
+        "loaded": true,
+        "day": 2,
+        "browserErrors": [],
+        "mobileOverflow": false,
+        "planValidated": true
+      },
+      {
+        "name": "live",
+        "loaded": true,
+        "day": 20,
+        "browserErrors": [],
+        "mobileOverflow": false,
+        "planValidated": true
+      },
+      {
+        "name": "legacy",
+        "loaded": true,
+        "day": 4,
+        "thinkingDecisions": 8,
+        "browserErrors": [],
+        "mobileOverflow": false
+      }
+    ],
+    "native": [
+      {
+        "scene": "WorldView",
+        "worldHash": "94c4834f8c42fac6e0251c787b421e1edf19cd36c43bf469c31011f106c584b1",
+        "cursorMatches": true
+      },
+      {
+        "scene": "IsoView",
+        "worldHash": "94c4834f8c42fac6e0251c787b421e1edf19cd36c43bf469c31011f106c584b1",
+        "cursorMatches": true
+      }
+    ],
+    "evidenceAndJournalUnchanged": true
+  },
+  "compatibility": {
+    "originalObservatoryPreserved": true,
+    "thinkingHistoryAndAnnotationsPreserved": true,
+    "originalPythonSampleImporterPreserved": true,
+    "currentPerceptionAndFreshContractsPreserved": true,
+    "nativeCloudAndOriginalEndpointsPreserved": true
+  },
+  "preview": {
+    "entryPoint": "npm run preview",
+    "default": "two_tick_synthetic_seven_role_fixture",
+    "providerCredentialRequired": false,
+    "readOnlyRegistrationSupported": true,
+    "codespacesConfigPresent": true,
+    "actualCodespaceProvisioned": false,
+    "devcontainerImageManifestVerified": "sha256:16eb68aa0d17eedaaf2566b180854fe4e506478e35aadf790fb02aa089024f13",
+    "publicHostProvisioned": false
+  },
+  "newPaidCalls": 0,
+  "newProviderCountRequests": 0,
+  "newRealAllowanceActivated": false,
+  "privateEvidencePublished": false
+}

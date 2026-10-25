@@ -1,3 +1,5 @@
+> Main interface startup: `npm run preview`. See [main integration and entry points](recovery/MAIN_INTEGRATION_2026-10-25.md) and [the interface runbook](research/OBSERVATORY_RUNBOOK.md).
+
 # The Node documentation
 
 Updated 2026-10-25. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).

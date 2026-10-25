@@ -3,6 +3,9 @@ import { resolve, dirname } from 'node:path';
 import { ObservatorySource, type Registration } from './source.js';
 import { startObservatory } from './server.js';
 
+if (['verify','serve','evaluate','export-frames'].includes(process.argv[2] ?? '')) {
+  await import('./legacy/cli.js');
+} else {
 const [configPath] = process.argv.slice(2);
 if (!configPath || process.argv.length !== 3) throw Error('usage_observatory_private_registration_json');
 const config = JSON.parse(readFileSync(configPath, 'utf8')) as { runs: Registration[]; host?: string; port?: number };
@@ -15,3 +18,5 @@ const app = startObservatory({ sources, host: config.host, port: config.port,
   secureCookie: process.env.NODE_OBSERVATORY_SECURE_COOKIE === '1' });
 console.log(JSON.stringify({ port: await app.ready, host: config.host ?? '127.0.0.1', mode: 'read_only_evidence_observatory', runs: config.runs.map(r => r.id) }));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => { void app.close(); });
+
+}

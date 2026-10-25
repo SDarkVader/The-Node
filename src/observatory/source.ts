@@ -59,7 +59,7 @@ export class ObservatorySource {
       cursor: p.cursor, eventHash: p.event.hash, sourceTick: state.world.tick, worldHash: verified.finalStateHash,
       segmentRoot: verified.complete ? verified.ledgerRoot : null, mode: p.start.mode,
       status: verified.summary?.status ?? 'recorded_prefix', verification: 'replay_verified',
-      following: cursor === null, providerReasoning: p.start.mode === 'live' ? 'provider_returned' : 'synthetic_test_only' };
+      following: cursor === null, synthetic: p.start.mode !== 'live', providerReasoning: p.start.mode === 'live' ? 'provider_returned' : 'synthetic_test_only' };
     const projected = projectWorld(state, secret);
     const result = { ...meta, hello: { ...projected.hello, ...meta, type: 'hello' }, frame: { ...projected.frame, ...meta, type: 'tick' } };
     if (!researcher) return result;

@@ -1,10 +1,11 @@
 # Current development and experiment checkpoint
 
-Updated 2026-10-25. Development branch: `codex/cloud-observatory-2026-10-25`; integration branch: `main`.
-[PR #39](https://github.com/SDarkVader/The-Node/pull/39) remains the cloud development PR.
+Updated 2026-10-25. Shared recovery branch: `main`; consolidation review: `codex/cloud-observatory-2026-10-25`.
+[PR #39](https://github.com/SDarkVader/The-Node/pull/39) consolidates the cloud and original interface lines for main.
 [PR #40](https://github.com/SDarkVader/The-Node/pull/40) supplies the perception/observatory foundation;
 [PR #41](https://github.com/SDarkVader/The-Node/pull/41) supplies its accounted environmental runtime.
-The owner merged #41 into #40 at 5f84cc0; #39 and #40 remain open, with main unchanged.
+The owner merged #41 into #40 at5f84cc0; both ancestries are retained in the consolidation.
+The current cloud interface is the default; original Thinking/History tools remain an explicit compatibility mode.
 The complete supplied archive now verifies through tick 38.
 The owner-approved fresh first-person test completed20 ticks/40 calls and is stopped.
 Each Baker returned7/20 summaries; Study1 remains paused.
@@ -15,9 +16,10 @@ Each Baker returned7/20 summaries; Study1 remains paused.
 {
   "format": "the-node-git-session-checkpoint",
   "version": 1,
-  "branch": "codex/cloud-observatory-2026-10-25",
-  "verifiedBaseCommit": "ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e",
+  "branch": "main",
+  "verifiedBaseCommit": "9f072bd6feeac68a3af3ee937e9a8c6b0e065fab",
   "completedWork": [
+    "Owner explicitly directed merge into main and asked to fix a blank/unreachable web preview. Consolidated PR40/41 ancestry into PR39 while preserving current cloud recovery/request contracts and the original interface under src/observatory/legacy. CLI dispatch and both Python exporter modes preserve existing commands. Native clients support cloud bearer/env endpoints and original CLI endpoints, including reconnects. Added npm run preview with quick synthetic startup, private-registration viewing and printed ready URL/login token, plus verified Node24 Codespaces devcontainer image. No new paid calls.",
     "GitHub-first guide and interface runbook now reflect the completed approved fresh run, its consumed forty-request cap and the new latest cloud journal. The older uploaded tick38 journal remains preserved history. No additional paid calls are authorized by the completed run or handover.",
     "Owner separately approved the ready fresh first-person20 run up toUSD1. Pinned runtime93f4a99 completed40 paid calls plus40 counts and20 ticks; each Baker returned7/20 nonempty summaries. All responses end_turn/actionable, no failures or retries. Booked100100 microUSD, held0; request limit consumed and run stopped. Original tick38 ledger/journal unchanged; new cloud journal is now latest. Private evidence and credential remain outside Git. See FIRST_PERSON_LIVE_RESULTS_2026-10-25.md.",
     "Fresh first-person implementation committed at be8a3b4652a58e4740a8fb310143223e176e72dc. Built an independent runtime containing committed client/plans/scripts and locked ws dependency. Both real workers agreed on all 40 packets; fresh 20-tick synthetic rehearsal, independent compiled replay, observatory final world hash and bundled preflight passed. Preflight uses only a TEST-ONLY journal/ledger and creates no allowance or provider/count request; it does not supply the missing actual journal.",
@@ -40,6 +42,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "Combined integration candidate from9f072bd and5f84cc0: TypeScript passes; all1505 Vitest tests/122 files pass with actual Godot enabled and0 skips,42 Python tests and8 recovery tests pass. Actual preview entrypoint tested on quick two-tick synthetic fixture and the exact extracted private20-tick viewing bundle; original Thinking/History entrypoint also passes. Chromium desktop/mobile has0 errors/overflow after fixing the legacy evaluation-table overflow; both native scenes match actual selected cursor/world. Ledger/journal byte hashes unchanged;0 new provider/count calls. See main-integration-2026-10-25.json for exact scope.",
     "Actual approved fresh run: fresh-process full verification, compiled observatory final world and current new journal binding pass. Native worker agreement40/40. Chromium desktop/mobile on actual evidence displays a returned summary verbatim; both native views match selected historical cursor/world; evaluation visibility, exact plan download/validation and stale-response check pass with no errors/overflow or evidence mutation. Separate Inspect0.3.282 execution_share40/40 with0 model calls; A01 applicability not_applicable for both. No reasoning-quality grade or causal effect is inferred.",
     "At source 93f4a9966cedd326e709b96bbdcbc9ee8b632026: TypeScript and eleven fresh/transport tests pass. Independent bundle built and native preflight passed with synthetic ledger/journal references unchanged, no credential/instruction file present, no provider/count call or allowance. Actual local first-person readiness: clean source, matching system hash, high effort/2048 cap and native agreement for both; credential format/permissions valid; funding actual_journal_not_provided and dispatchApproved false. Hosted Linux conformance 40184141140, Windows offline verification 40184141138 and audit 40184141134 passed.",
     "At committed runner/runtime 0bdb48a: TypeScript, 1,363 Vitest tests / 109 files, 32 Python tests, eight recovery tests, 80 native broker/participant tests, G1 29/29 replay/determinism/archive hash matches, G2 12/12 checks and nine deterministic samples, G3 10/10 failure/settlement/resume/analysis checks passed.",
@@ -55,14 +58,14 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   ],
   "unresolvedIssues": [
     "The authorized fresh20 run is complete and stopped; its40-call cap is consumed. No further paid/count calls or allowance activation without new explicit instruction. Future funding must carry the latest new cloud journal bound to this fresh ledger, not the preserved older uploaded tick38 journal. Equal7/20 summary counts in one fresh run do not prove causality or guarantee adaptive summary emission.",
-    "Owner merged PR #41 into the PR #40 foundation branch at 5f84cc0b08ae9374ae8fb1c46c27e3e54d9b8b85. PRs #39/#40 remain open; main is unchanged. The needed perception backend/worker components are integrated into #39. Overlap review confirms different observatory registration/server APIs and presentation layouts; do not merge the branches blindly or replace either request/evidence contract. The richer Thinking/History presentation needs an adapter to the cloud recovery/source API before consolidation. Owner is willing to merge if that improves long-term integration; no immediate main merge was performed.",
-    "Study 1 remains paused and frozen. Full A04 abode transactions, transcript degradation/comparison conditions, embedded-browser Godot and annotation authoring remain further work. No causal memory-benefit or reasoning-quality result is claimed."
+    "Study 1 remains paused and frozen. Full A04 abode transactions, transcript degradation/comparison conditions, embedded-browser Godot and annotation authoring remain further work. No causal memory-benefit or reasoning-quality result is claimed.",
+    "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
-    "Let the owner interact with the private completed-run viewing bundle or the synthetic interface using the PC/private-Codespace recipe. Keep private artifacts and credentials outside Git.",
-    "Consolidate PR40\u2019s richer Thinking/History presentation with PR39\u2019s cloud registration/recovery API before combining branches. Owner merged41 into40 at5f84cc0; main is unchanged as last verified. Do not replace or rewrite historical contracts/evidence.",
-    "Preserve the new latest journal and exact run evidence. Study1 stays paused. Any additional paid run requires new explicit owner authorization and readiness against current accounting."
+    "Use main as shared recovery source. Run npm run preview on the viewing PC or inside a private Codespace; wait for the ready URL and enter its interface token. Pass the private completed-run bundle registration to view actual evidence.",
+    "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
-  "privateCredentialsOrExperimentalInputsIncluded": false
+  "privateCredentialsOrExperimentalInputsIncluded": false,
+  "reviewBranch": "codex/cloud-observatory-2026-10-25"
 }
 NODE_SESSION_CHECKPOINT -->

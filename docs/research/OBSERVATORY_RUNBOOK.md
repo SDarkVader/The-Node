@@ -74,14 +74,19 @@ logs or tracked registration files.
 
 ### Open the interface on your PC or in a private Codespace
 
-Use a **new checkout and new demo directory**, so existing PC work and experiment files stay
-intact. Until PR #39 merges, select `codex/cloud-observatory-2026-10-25` rather than main.
+Use a **new checkout**, so existing PC work and experiment files stay intact. The integrated
+source is on `main`. The quickest path is `npm ci` followed by `npm run preview`: it creates
+a small private synthetic demo and distinct random interface tokens, starts the server, then
+prints the URL and login token only after the listener is ready. Keep the terminal running.
+For the actual completed run use `npm run preview -- <private-bundle>/registration.json`.
+A localhost URL is reachable only on the machine running that command; for another device
+use the private forwarded HTTPS URL, not `127.0.0.1`.
 Node 24 is recommended. The seven-role synthetic demo needs no provider key, Python or Godot.
 
 Windows PowerShell:
 
 ```powershell
-git clone --branch codex/cloud-observatory-2026-10-25 https://github.com/SDarkVader/The-Node.git The-Node-cloud-review
+git clone --branch main https://github.com/SDarkVader/The-Node.git The-Node-cloud-review
 cd The-Node-cloud-review
 npm ci
 npm run observatory:demo -- ../node-interface-demo
@@ -99,7 +104,9 @@ do not advance the world or authorize spending. The demo initially has no import
 the separate evaluation commands above populate that panel.
 
 For browser-only use, if GitHub Codespaces is available on your account, create a Codespace
-on this branch, then run in its terminal:
+on `main`, then run `npm run preview` in its terminal after automatic dependency setup.
+The provided devcontainer forwards port8090 privately; open the printed Codespaces HTTPS URL.
+If configuring it manually, the equivalent commands are:
 
 ```sh
 npm ci

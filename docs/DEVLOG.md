@@ -1,3 +1,16 @@
+# 2026-10-25 — main consolidation and usable preview startup
+
+Owner directed main integration. Consolidated PR40/41 ancestry into the cloud line, preserving
+both registration/API contracts: default cloud/perception viewer and explicit original-observer
+compatibility interface in src/observatory/legacy. Retained Thinking/History, annotations,
+sample imports, archive acceptance and historical docs/tests. Both Python exporter modes and
+native endpoint/reconnect paths remain supported. npm run preview starts a small synthetic
+viewer or opens a private cloud registration, prints URL/login only after ready, and never
+calls a provider. A verified Node24 devcontainer supports private Codespaces forwarding.
+Localhost refers to the viewing device, not this cloud host. No additional paid calls.
+See [integration details](recovery/MAIN_INTEGRATION_2026-10-25.md); foundation branch development
+notes are preserved in [their dated archive](observatory/FOUNDATION_DEVLOG_2026-10-24.md).
+
 # 2026-10-25 — approved fresh first-person live run completed
 
 After actual journal/native readiness and separate owner approval, pinned runtime93f4a99

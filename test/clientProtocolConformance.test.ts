@@ -21,6 +21,7 @@ import { root, cleanup } from './fixtures/accountingFixture.js';
 import { join } from 'node:path';
 import { ContinuationLedger } from '../src/eval/continuationLedger.js';
 import { runContinuation } from '../src/eval/continuationRunner.js';
+import { METADATA_KEYS } from '../src/observatory/legacy/worldProjection.js';
 import { ObservatorySource } from '../src/observatory/source.js';
 import { createWorld, stepWorld } from '../src/world/world.js';
 import { helloMessage, tickMessage } from '../src/server/worldProtocol.js';
@@ -67,7 +68,7 @@ describe('Godot client / wire protocol conformance', () => {
       const source = new ObservatorySource({ id: 'conformance', ledger: ledger.path, sourceRevision: revision }); source.refresh();
       observatory = source.snapshot(null, 'conformance', false);
     } finally { ledger.close(); budget.close(); cleanup(); }
-    const emitted = new Set([...keysOf(hello), ...keysOf(tick), ...keysOf(observatory)]);
+    const emitted = new Set([...keysOf(hello), ...keysOf(tick), ...keysOf(observatory), ...METADATA_KEYS]);
 
     // Literals that are VALUES rather than keys — the client compares against these, it does
     // not index with them. Listed explicitly so a genuine typo cannot hide among them.

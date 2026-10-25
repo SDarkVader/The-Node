@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Node Observatory</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">Node Observatory <span class="sub">read-only evidence view</span></div>
+    <label class="run">Run <select id="run"></select></label>
+    <div id="chips" class="chips"></div>
+  </header>
+
+  <section class="scrub">
+    <button id="follow" type="button" title="Follow the latest verified frame">Follow latest</button>
+    <input id="tick" type="range" min="0" max="0" value="0" aria-label="Selected tick">
+    <output id="tickLabel">tick 0</output>
+    <span id="frameHash" class="mono dim"></span>
+  </section>
+
+  <main class="grid">
+    <section class="panel timeline">
+      <h2>Timeline <span class="hint">observation → request → returned summary → proposal → validation → committed transition</span></h2>
+      <div id="timeline"></div>
+    </section>
+
+    <section class="panel shard">
+      <h2>Shard <span class="hint">committed frame only · same frame as Godot</span></h2>
+      <canvas id="shard" width="560" height="420"></canvas>
+      <div id="shardMeta" class="mono dim small"></div>
+    </section>
+
+    <section class="panel actor">
+      <h2>Actor <select id="actor"></select></h2>
+      <div id="actorBody"></div>
+    </section>
+
+    <section class="panel metrics">
+      <h2>Execution telemetry <span class="hint">counts, latency, tokens, money · not quality measures</span></h2>
+      <div id="metrics"></div>
+    </section>
+
+    <section class="panel evals">
+      <h2>Framework evaluations <span class="hint">separately produced · named producer, contract, evaluated-through tick</span></h2>
+      <div id="evals"></div>
+      <h3>Independent sample collections</h3>
+      <div class="hint">Imported framework outputs from fixtures or studies; not scores of the selected world tick.</div>
+      <div id="sampleEvals"></div>
+    </section>
+
+    <section class="panel notes">
+      <h2>Reviewer annotations <span class="hint">interpretation, not kernel truth</span></h2>
+      <div id="notes"></div>
+      <form id="noteForm" class="noteForm">
+        <input id="noteAuthor" placeholder="Your name" maxlength="80" required>
+        <textarea id="noteText" placeholder="Annotation about the selected decision" maxlength="8000" required></textarea>
+        <button type="submit">Add annotation</button>
+        <span id="noteStatus" class="dim small"></span>
+      </form>
+    </section>
+
+    <section class="panel evidence">
+      <h2>Evidence <span class="hint">segments, roots, verification, versions</span></h2>
+      <div id="evidence"></div>
+    </section>
+
+    <section class="panel thinking">
+      <h2>Thinking History <span class="hint">recorded provider summaries by tick · search and local export</span></h2>
+      <div id="thinkingViewer"></div>
+    </section>
+  </main>
+
+  <div id="banner" class="banner" hidden></div>
+  <script src="thinkingViewer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

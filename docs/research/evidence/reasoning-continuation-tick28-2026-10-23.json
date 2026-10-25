@@ -1,0 +1,60 @@
+{
+  "schema": "node-continuation-batch-evidence-v1",
+  "date": "2026-10-23",
+  "runtimeSourceRevision": "d237effcc129c7757e382a3af8ecc0e95307ebc4",
+  "orchestrationSourceRevision": "f946c725ac2ddd078f3b7f707314711085eb0fa4",
+  "model": "claude-haiku-5-5",
+  "requestedAdditionalCalls": 20,
+  "actual": {
+    "additionalCalls": 20,
+    "executedDecisions": 20,
+    "additionalTicks": 10,
+    "totalCalls": 56,
+    "finalTick": 28,
+    "http200": 20,
+    "endTurn": 20,
+    "validatorAdmitted": 20,
+    "inputTokens": 550492,
+    "outputTokens": 1608,
+    "estimatedListUsd": 0.0558532,
+    "additionalBookedMicroUsd": "111716",
+    "grantCumulativeBookedMicroUsd": "234427",
+    "allPilotBookedMicroUsd": "244754",
+    "combinedEstimatedListUsd": 0.1223653,
+    "remainingGrantMicroUsd": "765573",
+    "heldMicroUsd": "0",
+    "retries": 0,
+    "nonemptyReturnedSummaries": 3,
+    "allNullDecisions": 12,
+    "diarySubmissions": 4,
+    "requestByteRange": [
+      56469,
+      78670
+    ]
+  },
+  "checkpoint": {
+    "status": "checkpoint",
+    "ledgerRoot": "287c5dceb31c8e0dacaa2e4f4e7c3c33cc0295defdeeb1d646a191535fccd15e",
+    "finalStateHash": "6ecc50a02da314bdeb5ba086a7d4bd404f8ab4eec9df9ef10400e5db2a37009a",
+    "historyHash": "88513c79d8f710745464fde2430448c88e1492f71486b56f14f67f4acb612927"
+  },
+  "verification": {
+    "freshProcessReplay": true,
+    "complete": true,
+    "resumable": true,
+    "latestJournalMatches": true,
+    "priorAccountingEventsPreserved": true,
+    "otherOriginalEvidenceFilesUnchanged": 197,
+    "inspectSamples": 20,
+    "inspectAdditionalModelCalls": 0,
+    "observatoryAcceptance": true,
+    "observatoryFrames": 29
+  },
+  "evaluation": {
+    "performed": false,
+    "reasoningQuality": "not_evaluated",
+    "causalMemoryBenefit": "not_evaluated",
+    "operatorCommentsAreVerifiedInterpretations": false
+  },
+  "privacy": "Only aggregate execution results and hash anchors are published. Raw summaries, requests, responses, signatures, actor observations, actions, identities and accounting journals remain private."
+}

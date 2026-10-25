@@ -105,5 +105,11 @@ def main():
     print(json.dumps({"producer": result[0]["producer"], "metricId": "execution_share", "value": result[0]["value"], "denominator": result[0]["denominator"], "modelCalls": 0}))
 
 
+from .sample_observatory_export import import_results
+
 if __name__ == "__main__":
+    import sys
+    if "--input" in sys.argv[1:]:
+        from .sample_observatory_export import main as import_main
+        raise SystemExit(import_main())
     main()

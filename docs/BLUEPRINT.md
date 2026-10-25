@@ -15,7 +15,7 @@ the following map distinguishes the current live path from legacy server and fix
 | Replay and analysis | independent request/world/history verification, original ReplayTape replay, Inspect import without further calls |
 | Separate paths | offline Inspect fixtures; paused frozen Study 1; original production broker gate remains unchanged |
 | Diary and recognition | A01 authored menu entries, two-day retention/drift, v2 direct address/repeated dealings, v2 Grifter permission |
-| Further work | Realtime observatory adapters (see handover), transcript bounds/degradation, separate framework evaluation, broader live conditions, complete trespass and abodes |
+| Further work | Interface expansion and later live perception integration (see current observatory handover), transcript bounds/degradation, separately specified continuation metrics, broader live conditions, complete trespass and abodes |
 
 The original account-origin journal and experimental grants are distinct provenance. Later zero
 holds in a new grant do not erase original liabilities or establish invoice reconciliation.
@@ -406,6 +406,11 @@ never go on the wire.
 | `IsoView.tscn` *(main)* | `IsoView.gd`, `GlowLayer.gd` | Isometric 3D. Real height, lighting, emissive stations, fog, courier routes |
 | `WorldView.tscn` | `WorldView.gd` | 2D top-down. Same protocol, same palette |
 | `Main.tscn` | `Main.gd` | Legacy MVP-scenario scaffold (`NODE_LEGACY_MVP=1`) |
+| `PerceptionWorker.tscn` | `PerceptionWorker.gd`, `Perception.gd` | Headless agent perception (2026-10-23): first person through camera frustums, raycasts and fog; isometric district overview. Answers the Node's requests; holds no world state |
+
+`NodeGeometry.gd` holds the building, person and Wall geometry that IsoView and perception share,
+so an agent is hidden by exactly what the client draws. Both clients take their endpoint from
+`--world-url` / `NODE_WORLD_URL` and read the observatory's frame metadata when present.
 
 **Signal → visual mapping** (identical rules across the terminal renderer, 2D and 3D clients):
 
@@ -456,6 +461,17 @@ Checked by tests, and load-bearing:
     `resources.today`; each Courier's deliveries split exactly its own parcels; passive
     channels never resolve; pressure tension is unchanged by any recognition ledger.
     `test/world.recognitionV2.test.ts`.
+13. **Perception never widens what an agent knows** (2026-10-23). A perception request carries
+    no real id, secret or private economic state, and only bodies within the perspective's
+    reach. Every returned item must exist in the request with the same public facts and lie
+    within the perspective's limits. No body is seen through walls, and an isometric answer
+    holds no references. Each record is bound to its agent, tick, request and world hash.
+    Policy-boundary validation, scoped schema privacy, real kernel movement and independent-worker
+    agreement are covered by `test/perceptionContext.test.ts` and `test/perceptionAudit.test.ts`.
+    `test/perception.test.ts`.
+14. **The observatory is read-only** (2026-10-23) — displaying, scrubbing, reconnecting or
+    refreshing causes no provider call and no kernel step; frames are re-derived from verified
+    ledgers with every hash re-checked. `test/observatory.test.ts`.
 
 ---
 
@@ -474,6 +490,12 @@ evals/: python -m inspect_node.verify --out <dir>   Inspect suite twice offline 
 ```
 Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures a frame;
 `NODE_FORCE_TENSION=0.02` renders a forced weather value for palette review.
+Observatory: `npm run observatory -- verify|serve|evaluate|export-frames <registration.json>`;
+`npm run observatory:demo -- <new dir>` (synthetic). Perception with the real client:
+`NODE_GODOT_BIN=<godot> npx vitest run test/perception.test.ts`. See `docs/observatory/README.md`.
+Audited mechanics-aware readiness: `npm run perception:verify -- --out <NEW private directory>`.
+Existing framework sample imports: `python -m inspect_node.observatory_export` with `PYTHONPATH=evals`;
+see `docs/observatory/SAMPLE_EVALUATION_IMPORT.md`. The sample API is independent of world ticks.
 
 ---
 
@@ -549,6 +571,7 @@ Godot: `godot --path client` (GL Compatibility). `NODE_SHOT=/path.png` captures 
   gate could only ever be half-wired (see above and §5's "Arson eligibility"). `player.ts` is
   still 22 lines, unchanged; presence lives entirely in `World`, not there.
 
-The [Claude Design observatory handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
-maps the existing ledger, framework and Godot interfaces to proposed telemetry adapters. The
+The [current Claude interface handover](observatory/CLAUDE_INTERFACE_HANDOVER_2026-10-24.md)
+maps implemented ledger, framework, mechanics-aware policy and Godot interfaces. The original
+[design handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md) remains provenance. The
 current standalone world server creates its own world; it must not be labelled the experiment.
