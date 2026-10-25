@@ -8,14 +8,16 @@ import { Society, verifySocietyTape, societyConfig } from '../src/society/runtim
 import { autonomousPolicy } from '../src/society/policy.js';
 import { createSocietyPlan, runAccountedSociety, societyPlanHash, type SocietyRunEvent } from '../src/society/accounted.js';
 import type { Sender } from '../src/eval/accountedRunner.js';
+import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
+import { emptySocietyAction } from '../src/society/policy.js';
 
 const handles: { close(): void }[] = [];
 afterEach(() => { for (const h of handles.splice(0)) h.close(); cleanup(); });
 const instruction = 'TEST ONLY SYNTHETIC APPROVAL. No actual provider, financial authority, prior account or credential.';
-function fixture(ticks = 3, deadlineMs = 2000) {
+function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = false) {
   const config = { ...societyConfig(), pMonthly: 0, arrivalPDaily: 0, migrationK: 0, saboteurCount: 0 };
-  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config });
-  const plan = createSocietyPlan(society, { id: 'TEST-ONLY-safe-society', ticks, minIntervalMs: 0, deadlineMs });
+  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config: natural ? societyConfig() : config });
+  const plan = createSocietyPlan(society, { id: 'TEST-ONLY-safe-society', ticks, minIntervalMs, deadlineMs });
   const { ledger } = setup(), priorDirectory = join(root(), 'TEST-ONLY-initial-allowance');
   const prior = InitialTestBudget.create(priorDirectory, ledger.exportDocument()), now = Date.now(), day = 86_400_000;
   prior.authorize({ runId: 'TEST-ONLY-expired-prior', authorizedAt: new Date(now - 3 * day).toISOString(), expiresAt: new Date(now - 2 * day).toISOString(),
@@ -78,7 +80,7 @@ describe('accounted society, fake provider and disposable money fixtures only', 
   it('refuses absent approval, altered plan, instruction or carried provenance before reserving', async () => {
     const f = fixture();
     for (const change of [{ ownerApproved: false }, { instruction: 'unapproved instruction' }, { expectedCarriedFingerprint: 'f'.repeat(64) },
-      { plan: { ...f.plan, initialHash: 'f'.repeat(64) } }, { plan: { ...f.plan, ticks: 4, maxCalls: 24 } }]) {
+      { plan: { ...f.plan, initialHash: 'f'.repeat(64) } }, { plan: { ...f.plan, ticks: 21, maxCalls: 126 } }]) {
       await expect(runAccountedSociety(f.society, f.budget, f.sender(), { ...f.options, ...change })).rejects.toThrow();
     }
     expect(f.sent).toHaveLength(0); expect(f.budget.view().requests).toHaveLength(0);
@@ -139,5 +141,149 @@ describe('accounted society, fake provider and disposable money fixtures only', 
     } });
     expect(result).toMatchObject({ status: 'stopped', stoppedReason: 'TEST_ONLY_finish_failure', calls: 6, heldMicroUsd: '0' });
     expect(f.society.halted).toBe(true);
+  });
+
+  it('completes and losslessly reproduces twenty ticks with no more than120 calls and unchanged three-person control', async () => {
+    const f=fixture(20),second=fixture(20);
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),f.options);
+    const repeated=await runAccountedSociety(second.society,second.budget,second.sender(),second.options);
+    expect(result).toMatchObject({status:'completed',calls:120,finalTick:20,heldMicroUsd:'0'});
+    expect(repeated.finalHash).toBe(result.finalHash);
+    const tape=f.society.exportTape(),roundTrip=parseSocietyEvidence<typeof tape>(stringifySocietyEvidence(tape));
+    expect(second.society.exportTape()).toEqual(tape);
+    expect(verifySocietyTape(roundTrip)).toMatchObject({verified:true,ticks:20});
+    expect(tape.controlled).toEqual(f.plan.controlled);
+    for(const kind of ['request','reserved','dispatched','response','decision','outcome'])expect(f.events.filter(e=>e.kind===kind)).toHaveLength(120);
+    const outcomes=f.events.filter(e=>e.kind==='outcome').map(e=>e.data as {status:string;requestBooked:boolean});
+    expect(outcomes.every(o=>o.status==='submitted'&&o.requestBooked)).toBe(true);
+  },30_000);
+
+  it('keeps the same model-controlled people through ordinary twenty-day churn and never manufactures replacement model calls',async()=>{
+    const f=fixture(20,2000,0,true),initial=f.society.controlled;
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),f.options);
+    expect(result).toMatchObject({status:'completed',finalTick:20,heldMicroUsd:'0'});
+    expect(result.calls).toBeLessThanOrEqual(120);
+    expect(f.society.controlled).toEqual(initial);
+    expect(f.sent.every(s=>initial.includes(s.actorId))).toBe(true);
+    expect(verifySocietyTape(f.society.exportTape()).verified).toBe(true);
+  },20_000);
+
+  it('cancels before starting without reserving or sending',async()=>{
+    const f=fixture(1),abort=new AbortController();abort.abort();
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:abort.signal});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:0,finalTick:0,heldMicroUsd:'0'});
+    expect(f.budget.view().requests).toHaveLength(0);expect(f.sent).toHaveLength(0);
+  });
+
+  it('cancels pacing without a second reservation or provider attempt',async()=>{
+    const f=fixture(1,2000,500),abort=new AbortController();
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:abort.signal,sink:event=>{
+      f.options.sink(event);
+      if(event.kind==='request'&&(event.data as {index:number}).index===1)setImmediate(()=>abort.abort());
+    }});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:1,finalTick:0,heldMicroUsd:'0'});
+    expect(f.budget.view().requests).toHaveLength(1);expect(f.sent).toHaveLength(1);
+    expect((f.events.filter(e=>e.kind==='outcome').at(-1)!.data as {stage:string}).stage).toBe('prepared');
+  });
+
+  it('books a usable same-turn response after synchronous cancellation but executes no action',async()=>{
+    const f=fixture(1),abort=new AbortController(),send=f.sender();
+    const result=await runAccountedSociety(f.society,f.budget,async(input,signal)=>{
+      const response=await send(input,signal);abort.abort();return response;
+    },{...f.options,signal:abort.signal});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:1,finalTick:0,heldMicroUsd:'0'});
+    expect(BigInt(result.bookedMicroUsd)).toBeGreaterThan(0n);
+    expect(f.society.exportTape().decisions).toHaveLength(0);
+    expect((f.events.find(e=>e.kind==='outcome')!.data as {status:string}).status).toBe('cancelled');
+  });
+
+  it('cancels an in-flight sender that ignores abort and retains its unresolved hold',async()=>{
+    const f=fixture(1),abort=new AbortController();
+    const result=await runAccountedSociety(f.society,f.budget,async()=>{
+      setImmediate(()=>abort.abort());return new Promise<Buffer>(()=>{});
+    },{...f.options,signal:abort.signal});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:1,finalTick:0});
+    expect(BigInt(result.heldMicroUsd)).toBeGreaterThan(0n);
+    expect((f.events.find(e=>e.kind==='outcome')!.data as {requestBooked:boolean}).requestBooked).toBe(false);
+  });
+
+  it('checks cancellation again after the validated-decision evidence callback',async()=>{
+    const f=fixture(1),abort=new AbortController();
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:abort.signal,sink:event=>{
+      f.options.sink(event);if(event.kind==='decision')abort.abort();
+    }});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:1,finalTick:0,heldMicroUsd:'0'});
+    expect(f.society.exportTape().decisions).toHaveLength(0);
+    expect((f.events.find(e=>e.kind==='outcome')!.data as {stage:string}).stage).toBe('validated');
+  });
+
+  it('preserves the raw response and full outstanding hold when duplicate receipts cannot be booked',async()=>{
+    const f=fixture(1),send=f.sender();
+    const result=await runAccountedSociety(f.society,f.budget,async(input,signal)=>{
+      const parsed=JSON.parse((await send(input,signal)).toString());parsed.id='msg_TEST_ONLY_society_0';return Buffer.from(JSON.stringify(parsed));
+    },f.options);
+    expect(result).toMatchObject({status:'stopped',calls:2,finalTick:0});
+    expect(BigInt(result.heldMicroUsd)).toBeGreaterThan(0n);
+    const response=f.events.filter(e=>e.kind==='response').at(-1)!.data as {rawBase64:string;bookingError:string|null};
+    expect(response.rawBase64.length).toBeGreaterThan(0);expect(response.bookingError).not.toBeNull();
+    expect((f.events.filter(e=>e.kind==='outcome').at(-1)!.data as {status:string}).status).toBe('booking_failed');
+  });
+
+  it('detects a changed pending queue even when the world hash, day and phase are unchanged',async()=>{
+    const f=fixture(1),send=f.sender(),before=f.society.hash;
+    const result=await runAccountedSociety(f.society,f.budget,async(input,signal)=>{
+      const other=f.society.pendingPeople().find(p=>p!==input.actorId)!;
+      f.society.submit(other,emptySocietyAction());expect(f.society.hash).toBe(before);
+      return send(input,signal);
+    },f.options);
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_stale_response',calls:1,heldMicroUsd:'0'});
+    const tape=f.society.exportTape();expect(tape.decisions).toHaveLength(1);
+    expect(verifySocietyTape(tape,tape.genesis.sourceRevision,{allowPartial:true})).toMatchObject({verified:true,complete:false,ticks:0});
+    expect(()=>verifySocietyTape(tape)).toThrow('society_replay_mismatch');
+  });
+
+  it('recovers an undelivered raw response in finish evidence without changing its booked usage',async()=>{
+    const f=fixture(1),events:SocietyRunEvent[]=[];
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,sink:event=>{
+      if(event.kind==='response')throw Error('TEST_ONLY_response_sink_failed');events.push(event);
+    }});
+    expect(result).toMatchObject({status:'stopped',calls:1,heldMicroUsd:'0'});
+    const finish=events.find(e=>e.kind==='finish')!.data as {undeliveredEvents:SocietyRunEvent[]};
+    const recovered=finish.undeliveredEvents.find(e=>e.kind==='response')!.data as {rawBase64:string};
+    expect(JSON.parse(Buffer.from(recovered.rawBase64,'base64').toString()).usage.input_tokens).toBe(1200);
+  });
+
+  it('stops at the final twentieth-day decision boundary without advancing a cancelled day',async()=>{
+    const f=fixture(20),abort=new AbortController();
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:abort.signal,sink:event=>{
+      f.options.sink(event);
+      if(event.kind==='decision'&&(event.data as {index:number}).index===119)abort.abort();
+    }});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',calls:120,finalTick:19,heldMicroUsd:'0'});
+    const tape=f.society.exportTape();expect(tape.transitions).toHaveLength(19);
+    expect(verifySocietyTape(parseSocietyEvidence<typeof tape>(stringifySocietyEvidence(tape)),tape.genesis.sourceRevision,{allowPartial:true}))
+      .toMatchObject({verified:true,complete:false,ticks:19});
+    expect((f.events.filter(e=>e.kind==='outcome').at(-1)!.data as {status:string}).status).toBe('cancelled');
+  },20_000);
+
+  it('rejects evidence-callback pending-state mutation before reserving or dispatching',async()=>{
+    const f=fixture(1);
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,sink:event=>{
+      f.options.sink(event);
+      if(event.kind==='request'){
+        const person=(event.data as {actorId:string}).actorId;
+        f.society.submit(f.society.pendingPeople().find(p=>p!==person)!,emptySocietyAction());
+      }
+    }});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_stale_before_reservation',calls:0,heldMicroUsd:'0'});
+    expect(f.sent).toHaveLength(0);expect(f.budget.view().requests).toHaveLength(0);
+  });
+
+  it('detaches every operator inspection and tape snapshot from the live world and pending revision',()=>{
+    const f=fixture(1),hash=f.society.hash,revision=f.society.revision;
+    const person=f.society.pendingPeople()[0]!,before=f.society.view(person).visible,inspection=f.society.inspect(),tape=f.society.exportTape();
+    inspection.world.millers[0]!.wealth=123456;inspection.world.diary.clear();inspection.registry.people.clear();
+    inspection.genesis.observerSecret='not the real observer secret';tape.controlled.length=0;tape.genesis.config.rBaker=999;
+    expect(f.society.view(person).visible).toEqual(before);expect(f.society.hash).toBe(hash);expect(f.society.revision).toBe(revision);
   });
 });

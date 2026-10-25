@@ -116,7 +116,7 @@ escrow are conserved. No new permanent standing, tenure or cross-role resource i
 ## Separately approved model run
 
 The new accounted adapter is implemented and tested with a simulated sender and synthetic journals.
-It runs at most three ticks / eighteen calls for the three controlled inhabitants, with the
+Its default is three ticks/eighteen calls; explicit plans allow up to twenty ticks/120 calls for the three controlled inhabitants, with the
 same high-effort request and 2,048 output-token cap. It creates no allowance. It requires a reviewed
 plan, owner approval tied to its hash, and an already authorized empty allowance carrying the latest
 actual accounting history. There is no historical-world resume or budget-reset shortcut.
@@ -140,7 +140,9 @@ Node 24+ is required for this proxy-aware worker. The provider credential is rea
 separate one-shot worker after the real reservation. No API call, free token count, allowance
 creation, approval file or credential read was performed here. Actual funding/approval for this
 new plan has not been supplied; the existing consumed grants are not authorization.
-The terminal reports each admitted model decision; Ctrl+C stops further dispatch without retry.
+The terminal reports each validated proposal before submission; outcome events and the tape separately prove submission. Ctrl+C stops further dispatch without retry. All exits attempt partial tape, summary and raw dump writes.
+
+The owner subsequently authorized a twenty-tick run and supplied the latest actual journal. This request supersedes the earlier no-call status for that one bounded run. The requested deliverable is raw data only: `npm run society:dump -- --input <private-run> --output <new-private-dump> --raw`. Per-identity JSONL retains exact context, choices, provider-returned summaries, proposed/validated/submitted actions, shared transitions and explicit unavailable responses. No hidden reasoning is reconstructed.
 
 ## Evidence and further work
 

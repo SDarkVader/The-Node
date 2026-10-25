@@ -51,7 +51,10 @@ with synthetic senders. Saved tapes/plans use lossless evidence encoding, includ
 configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
 Implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42), targeting shared `main`.
 The owner has authorized merge when green followed by a new twenty-tick society run; no new paid
-call has occurred yet. The requested output is a raw chronological dump for each controlled inhabitant. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
+call has occurred yet. The requested output is a raw chronological dump for each controlled inhabitant. The live adapter
+accepts explicit plans up to twenty ticks/120 calls, preserving its three-tick default and USD1 cap.
+`npm run society:dump -- --input <private-run> --output <new-private-dump> --raw` exports exact
+contexts, legal choices, returned summaries, actions, transitions and failed or missing responses. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
 with seven explicit environment skips, plus TypeScript. **80 compiled native checks** against the
 original kernel and **eight recovery tests** also pass. Independent saved-file replay passes for
 14 and 60 ticks. The longer run records 889 decisions, 78 real bread orders, 306 diary writes,
