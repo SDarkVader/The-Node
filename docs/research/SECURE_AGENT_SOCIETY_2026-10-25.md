@@ -144,6 +144,8 @@ The terminal reports each validated proposal before submission; outcome events a
 
 The owner subsequently authorized a twenty-tick run and supplied the latest actual journal. This request supersedes the earlier no-call status for that one bounded run. The requested deliverable is raw data only: `npm run society:dump -- --input <private-run> --output <new-private-dump> --raw`. Per-identity JSONL retains exact context, choices, provider-returned summaries, proposed/validated/submitted actions, shared transitions and explicit unavailable responses. No hidden reasoning is reconstructed.
 
+For standalone execution, use `powershell -File scripts/start-society-live.ps1 -Config <private-launch.json>`. The `-CheckOnly` switch reads the pinned source, plan and journal without reading credential contents, creating an allowance or dispatching. Actual startup validates the literal existing credential, creates exactly one new capped allowance carrying the complete count-closed journal, and invokes the same secure live CLI. Existing execution directories are refused; no automatic retry or reset is provided. The PowerShell wrapper removes its new temporary raw-key copy and writes raw-only per-inhabitant dumps. The owner selected this path; execution has not started.
+
 ## Evidence and further work
 
 Automated tests cover leakage, role descriptions, illegal actions and halt, transaction constraints,
