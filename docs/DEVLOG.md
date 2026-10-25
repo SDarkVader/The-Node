@@ -1,3 +1,14 @@
+# 2026-10-25 — cloud shared-world observatory
+
+Built from main afbdec7 (merged PR #38). Web and native Godot project one verified continuation
+world with authenticated channels, shared cursors, exact returned summaries, admission/effect
+records, read-only accounting and separately produced A01/Inspect results. Added remote plan
+validation/preflight and a credential-separated Node transport. Seven-role offline rehearsal
+resumes a sealed checkpoint and exercises society actions. The historical pilot/charges,
+protected core, contracts and paused Study 1 remain preserved. No paid provider call.
+See [runbook](research/OBSERVATORY_RUNBOOK.md) and [checkpoint](recovery/CURRENT_SESSION.md)
+for scoped verification; earlier entries below retain their historical results.
+
 > 2026-10-23 — Documentation audit and realtime observatory handover.
 >
 > Current docs now distinguish the stopped 36-call/tick-18 continuation pilot, paused authority study and offline fixtures. Corrected stale provider/v2/resumption/cost claims; retained dated sources and moved old session context into SESSION_HISTORY. Missing work is further work, not a limitation on the experiment. Evaluation is separate from execution: named frameworks/humans or explicit metrics own judgments; operator reasoning comments do not become grades. Claude Design handover maps existing ledger/Inspect/Godot contracts to proposed adapters, telemetry definitions and ordered offline acceptance. No interface is claimed built; the standalone server's separate world must not replace the experiment.

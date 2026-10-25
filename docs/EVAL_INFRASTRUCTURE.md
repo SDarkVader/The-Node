@@ -1,3 +1,8 @@
+> 2026-10-25: the [shared-world observatory and remote workflow](research/OBSERVATORY_RUNBOOK.md) now connect
+> web and both native Godot views to replay-verified continuation evidence. The standalone
+> world server remains a separate sandbox. Set NODE_OBSERVATORY_URL and NODE_OBSERVATORY_TOKEN
+> for the experiment stream; no provider key is needed by either renderer.
+
 # Agent evaluation infrastructure
 
 Updated 2026-10-23. The current live experiment is [reasoning continuity](research/CURRENT_EXPERIMENT.md):

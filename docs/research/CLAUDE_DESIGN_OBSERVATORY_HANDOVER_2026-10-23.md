@@ -1,3 +1,6 @@
+> Historical handover. The [2026-10-25 runbook](OBSERVATORY_RUNBOOK.md) records implemented
+> adapters, commands and remaining work. PR #38 is merged; follow current refs/checkpoint.
+
 # Claude Design handover — realtime experiment observatory
 
 Prepared 2026-10-23 for the owner's web interface and Godot connection.

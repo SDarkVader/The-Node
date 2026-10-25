@@ -6,12 +6,31 @@ Authority, cooperation, information asymmetry and economic behaviour are part of
 programme. The current experiment studies reasoning continuity as world state and diary contents
 change. Its present implementation is a stage of development, not a ceiling on the programme.
 
-## Current experiment — 2026-10-23
+## Current development — 2026-10-25
+
+The cloud observatory connects web and native Godot to one replay-verified continuation world,
+with a shared timeline, exact returned summaries, actor-specific observations, admission/effect
+records, read-only accounting and separately attributed A01/Inspect evaluations. Configuration,
+read-only recovery preflight and credential-separated Node execution work remotely.
+[Run the integrated workflow](docs/research/OBSERVATORY_RUNBOOK.md).
+
+Development branch: `codex/cloud-observatory-2026-10-25`, based on main `afbdec7` (merged PR #38).
+The offline rehearsal uses seven roles, 140 scripted decisions and 20 kernel ticks, including a
+sealed-checkpoint restart. Synthetic reasoning/accounting are explicitly labelled. No paid
+provider call or Study 1 reactivation is part of this work. Real pilot evidence remains private.
+
+```sh
+npm run observatory:demo -- ../node-demo
+npm run observatory:evaluate -- ../node-demo/registration.json synthetic-rehearsal ../node-demo/a01-evaluation
+# Configure private access tokens, then:
+npm run observatory -- ../node-demo/registration.json
+```
+
+## Recorded live experiment — 2026-10-23
 
 Start with [the current experiment](docs/research/CURRENT_EXPERIMENT.md) and
 [read the sanitized results](docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
-They are on development branch `codex/stateful-continuation-2026-10-23` in
-[PR #38](https://github.com/SDarkVader/The-Node/pull/38), which is open.
+They were merged in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
 
 The live pilot completed **36 paid decisions across 18 real world ticks**, using two Bakers
 and Haiku 5.5. An initial four-call pilot was extended by 32 decisions over 16 ticks, continuing
@@ -39,10 +58,9 @@ with one existing Windows skip, eight recovery checks and hosted Windows/Linux C
 All three live checkpoint segments replayed independently; Inspect 0.3.282 imported the 32 new
 samples without extra calls. These are recorded results, not new runs implied by a docs update.
 
-The owner is preparing a realtime web/Godot observatory. The
-[Claude Design handover](docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
-maps existing evidence, provider summaries, world frames and framework outputs to proposed adapters.
-It distinguishes implemented interfaces from development work; no dashboard or new run is claimed.
+The [original observatory handover](docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
+is historical design context. The [current runbook](docs/research/OBSERVATORY_RUNBOOK.md) documents
+the implemented adapters and remaining development work.
 
 ## How the environment and evaluation work
 

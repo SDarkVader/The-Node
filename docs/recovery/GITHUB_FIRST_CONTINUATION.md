@@ -1,14 +1,15 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-23. A fresh phone, PC or cloud session can recover development context from GitHub.
+Updated 2026-10-25. A fresh phone, PC or cloud session can recover development context from GitHub.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
 ## Active branch and current experiment
 
-Repository: `SDarkVader/The-Node`. Current review branch:
-`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
-The shared integration line remains `main`; do not silently switch, reset, merge or discard work.
+Repository: `SDarkVader/The-Node`. Current development branch:
+`codex/cloud-observatory-2026-10-25`. PR #38 is merged into `main` at `afbdec7`.
+Read the [implemented cloud observatory runbook](../research/OBSERVATORY_RUNBOOK.md).
+Preserve unrelated work; do not silently reset or discard state.
 
 The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
 calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports

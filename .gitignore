@@ -46,3 +46,8 @@ evals/evidence/**/logs/
 # Private reasoning-continuation traces and Inspect inputs.
 continuation.ledger.jsonl
 inspect-samples.jsonl
+
+# Observatory registrations and access configuration are machine-private.
+observatory.private.json
+observatory-access.private.json
+client/scripts/*.gd.uid

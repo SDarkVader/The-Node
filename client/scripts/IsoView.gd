@@ -106,6 +106,9 @@ const JITTER_HEIGHT := 0.34
 const JITTER_FOOTPRINT := 0.16
 
 var socket := WebSocketPeer.new()
+var observatory_cursor := ""
+var retry_at := 0
+var retry_delay := 1000
 var logged := false
 var _frames := 0
 var _cam_yaw := PI * 0.25
@@ -153,11 +156,17 @@ func _ready() -> void:
 	_shot_path = OS.get_environment("NODE_SHOT")
 	_build_environment()
 	_build_vignette()
-	var err := socket.connect_to_url("%s/" % SERVER_HOST)
+	var endpoint := OS.get_environment("NODE_OBSERVATORY_URL")
+	if endpoint == "":
+		endpoint = "%s/" % SERVER_HOST
+	var token := OS.get_environment("NODE_OBSERVATORY_TOKEN")
+	if token != "":
+		socket.handshake_headers = PackedStringArray(["Authorization: Bearer " + token])
+	var err := socket.connect_to_url(endpoint)
 	if err != OK:
 		hud.text = "Failed to start connection (error %d)" % err
 		return
-	hud.text = "Connecting to %s..." % SERVER_HOST
+	hud.text = "Connecting to world stream..."
 
 
 ## Ambient light, sun, and the glow that makes emissive surfaces read as light sources rather
@@ -257,7 +266,14 @@ func _process(_delta: float) -> void:
 		while socket.get_available_packet_count() > 0:
 			_handle_message(socket.get_packet().get_string_from_utf8())
 	elif state == WebSocketPeer.STATE_CLOSED:
-		hud.text = "Disconnected (code %d) — is `npm run server` running?" % socket.get_close_code()
+		hud.text = "Disconnected (code %d) — reconnecting to configured world stream" % socket.get_close_code()
+		if Time.get_ticks_msec() >= retry_at:
+			retry_at = Time.get_ticks_msec() + retry_delay
+			retry_delay = mini(retry_delay * 2, 30000)
+			var endpoint := OS.get_environment("NODE_OBSERVATORY_URL")
+			if endpoint == "":
+				endpoint = "%s/" % SERVER_HOST
+			socket.connect_to_url(endpoint)
 
 
 func _handle_message(raw: String) -> void:
@@ -272,6 +288,8 @@ func _handle_message(raw: String) -> void:
 
 
 func _handle_hello(msg: Dictionary) -> void:
+	if have_geometry and buildings == msg.get("buildings", []):
+		return
 	plots = msg.get("plots", [])
 	buildings = msg.get("buildings", [])
 	var h: Dictionary = msg.get("hub", {"x": 0, "y": 0})
@@ -287,6 +305,10 @@ func _handle_hello(msg: Dictionary) -> void:
 
 func _handle_tick(msg: Dictionary) -> void:
 	day = int(msg.get("day", 0))
+	retry_delay = 1000
+	if msg.has("cursor") and str(msg["cursor"]) != observatory_cursor:
+		observatory_cursor = str(msg["cursor"])
+		print("[NODE observatory] tick=%d worldHash=%s cursor=%s mode=%s" % [day, str(msg.get("worldHash", "")), observatory_cursor, str(msg.get("mode", ""))])
 	economic_health = float(msg.get("economicHealth", 1.0))
 	people = msg.get("people", [])
 	stations.clear()
@@ -306,12 +328,14 @@ func _handle_tick(msg: Dictionary) -> void:
 	# scale looked warm. `NODE_FORCE_TENSION=0.02` renders a genuinely calm node on demand.
 	# Never read by anything but a human reviewing colour.
 	var forced := OS.get_environment("NODE_FORCE_TENSION")
-	if forced != "":
+	if forced != "" and not msg.has("cursor"):
 		mean_tension = float(forced)
 	_update_dynamic()
 	hud.text = "Day %d    health %.3f    tension %.3f    %d people" % [
 		day, economic_health, mean_tension, people.size()
 	]
+	if msg.has("worldHash"):
+		hud.text += "  | %s | %s" % [str(msg.get("mode", "")), str(msg["worldHash"]).substr(0, 12)]
 	if not logged:
 		logged = true
 		print("[NODE] first tick: day %d, %d people, %d stations, health %.3f" % [

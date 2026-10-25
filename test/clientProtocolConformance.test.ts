@@ -16,6 +16,12 @@
 
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { continuationBudget, continuationGenesis, continuationPlan, simulatedContinuationProvider } from './fixtures/continuationFixture.js';
+import { root, cleanup } from './fixtures/accountingFixture.js';
+import { join } from 'node:path';
+import { ContinuationLedger } from '../src/eval/continuationLedger.js';
+import { runContinuation } from '../src/eval/continuationRunner.js';
+import { ObservatorySource } from '../src/observatory/source.js';
 import { createWorld, stepWorld } from '../src/world/world.js';
 import { helloMessage, tickMessage } from '../src/server/worldProtocol.js';
 
@@ -49,10 +55,19 @@ function realMessages() {
 }
 
 describe('Godot client / wire protocol conformance', () => {
-  it('every key the client reads is a key the protocol actually sends', () => {
+  it('every key the client reads is a key the standalone or observatory protocol actually sends', async () => {
     const source = readFileSync(GD_PATH, 'utf8');
     const { hello, tick } = realMessages();
-    const emitted = new Set([...keysOf(hello), ...keysOf(tick)]);
+    const plan = continuationPlan(), revision = 'a'.repeat(40);
+    const budget = continuationBudget(plan), ledger = new ContinuationLedger(join(root(), 'trace'));
+    let observatory;
+    try {
+      await runContinuation(plan, continuationGenesis(revision), budget, simulatedContinuationProvider().send, ledger, { sourceRevision: revision, mode: 'offline_simulated_provider' });
+      ledger.close();
+      const source = new ObservatorySource({ id: 'conformance', ledger: ledger.path, sourceRevision: revision }); source.refresh();
+      observatory = source.snapshot(null, 'conformance', false);
+    } finally { ledger.close(); budget.close(); cleanup(); }
+    const emitted = new Set([...keysOf(hello), ...keysOf(tick), ...keysOf(observatory)]);
 
     // Literals that are VALUES rather than keys — the client compares against these, it does
     // not index with them. Listed explicitly so a genuine typo cannot hide among them.

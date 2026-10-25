@@ -1,3 +1,8 @@
+> 2026-10-25: the [shared-world observatory and remote workflow](../docs/research/OBSERVATORY_RUNBOOK.md) now connect
+> web and both native Godot views to replay-verified continuation evidence. The standalone
+> world server remains a separate sandbox. Set NODE_OBSERVATORY_URL and NODE_OBSERVATORY_TOKEN
+> for the experiment stream; no provider key is needed by either renderer.
+
 > Client guide. The [current agent experiment](../docs/research/CURRENT_EXPERIMENT.md) runs through the accounted host; this Godot guide is a separate visual interface, not its dispatch or recovery procedure.
 
 # NODE — Godot client (PC)

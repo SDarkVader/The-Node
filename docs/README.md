@@ -1,9 +1,11 @@
 # The Node documentation
 
-Updated 2026-10-23. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
+Updated 2026-10-25. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
 This index separates current guidance, original design sources and dated evidence.
 
 ## Current experiment and results
+
+- [Implemented shared-world observatory and remote workflow](research/OBSERVATORY_RUNBOOK.md)
 
 - [Current experiment: reasoning continuity](research/CURRENT_EXPERIMENT.md)
 - [Readable sanitized pilot results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md)
