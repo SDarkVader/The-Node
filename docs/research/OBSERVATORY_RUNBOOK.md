@@ -1,5 +1,10 @@
 # Shared-world observatory and remote execution
 
+> 25 October secure-society update: historical paid execution commands below are now gated
+> closed because their inhabitant contexts contain technical metadata. Archived viewing/replay
+> and offline fixtures remain available. Use the [new society contract and run commands](SECURE_AGENT_SOCIETY_2026-10-25.md)
+> for supervised play or preparation of a separately approved accounted model run.
+
 Updated 2026-10-25. Implementation: `src/observatory/`, `observatory-web/`.
 The observer verifies continuation evidence and reconstructs its committed participant world.
 It never creates a substitute simulation, submits a decision, calls a provider or opens a

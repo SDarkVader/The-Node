@@ -6001,3 +6001,47 @@ gates, and verified perception-prefix observatory support. Development native re
 40 synthetic decisions / 20 real ticks, two actual Godot workers agreed on all packets, same
 final world hash in replay and observatory. At be8a3b4: all 1458 tests / 116 files passed with real Godot, eight recovery tests, committed runtime/native20 and independent replay passed. Inspect execution share 40/40 was evaluated separately. Browser/native-view proof is being finalized.
 The actual latest journal is pending; no provider call or new allowance activation occurred.
+
+### 2026-10-25 — secure functioning inhabitant society
+
+Implemented an opt-in two-Baker/one-Miller society over the existing kernel, restricted
+contexts, phased commitments, real customer/supply transactions, deterministic other
+inhabitants and explicit Oracle entries with expiring escrow-backed vouchers. Investigation
+found source paths/technical and experiment metadata in historical perception requests;
+legacy real dispatch is closed while exact archived replay remains available. No package
+update provenance is claimed without the original private request. A boundary review removed
+raw global Wall post delivery and exact neighbour Miller quantity through heat; existing
+rumour degradation and coarse local heat now apply. Own newly committed price/quantity stay
+visible to self. Money comparisons reject near-insufficient balances without a tolerance.
+
+The fixed seed20261025 had calm District Weather for fourteen days; an unchanged sixty-day
+run produced natural churn and tensions0/.68/.16. No behavior/event/inventory was injected to
+hit milestones. Daily market assumptions, resource/settlement equations, current-view memory,
+source-preserved older experiments and the explicit paid approval workflow are documented in
+research/SECURE_AGENT_SOCIETY_2026-10-25.md. Current tests are mechanical/security/accounting
+checks, not reasoning-quality grades. Final source-scoped totals follow in recovery evidence.
+
+### 2026-10-25 — file-based recovery correction
+
+The committed42591f4 implementation passed its full suite and80 native checks, but opening
+the saved CLI tape/prepared plan in a separate process caught a real gap: plain JSON dropped
+undefined optional config properties that the canonical genesis hash distinguishes. In-memory
+replay alone had not caught it. Added a lossless evidence envelope with exact digest checking,
+explicit special-value paths and tests reopening both the tape and prepared plan. Earlier
+private plain-JSON trial files are preserved as failed evidence, not relabelled successful.
+The initial unconfigured direct native test invocation failed two harness setup checks;
+the documented compiled/baseline runner then passed all80 checks, plus8 recovery tests.
+No existing private journal, provider credential or actual model call was involved.
+
+### 2026-10-25 — final committed-source society verification
+
+At acb0d0b:1568 Vitest tests/131files passed,0 failed,7 explicit environment skips
+(six real-Godot cases need NODE_GODOT_BIN;one POSIX fake-pwsh case skips Windows),
+and TypeScript passed.80 compiled native broker/participant checks against4196b79 and
+8 recovery checks passed at42591f4;kernel/engine/participant bytes are identical at acb0d0b.
+No Python edits;the Python suite was not rerun without inspect_ai. Lossless14/60tick tapes
+reopened in separate CLI processes with exact hashes.60ticks:889decisions,374moves,716heard
+effects,306diary writes,78bread orders,75voucher redemptions,natural weather0/.68/.16;
+max conservation residual1.4477308241112041e-13. Paid prepare/reopen/preflight passes with
+zero credential/allowance/provider access and no funding. Full contexts remain private;
+sanitary scoped aggregate is research/evidence/secure-society-offline-2026-10-25.json.

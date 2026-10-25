@@ -575,3 +575,16 @@ The [current Claude interface handover](observatory/CLAUDE_INTERFACE_HANDOVER_20
 maps implemented ledger, framework, mechanics-aware policy and Godot interfaces. The original
 [design handover](research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md) remains provenance. The
 current standalone world server creates its own world; it must not be labelled the experiment.
+
+## Secure society opt-in (25 October 2026)
+
+The society contract adds no default WorldConfig switch: stepWorld's optional third trusted
+SocietyEconomyPlan argument supplies committed quotes, quantities, per-person customer choices
+and support work. Old callers follow the unchanged path. Participant state accepts that plan
+as an optional fourth argument. World.societyEconomy records actual receipts and physical
+flows only for this path. src/society/runtime.ts owns phase/commitment state, current-view
+projection, deterministic policies, explicit Oracle opportunities and exact private tapes.
+The full society hash binds world, registry, opportunities, phase, commitments and Wall state.
+
+See research/SECURE_AGENT_SOCIETY_2026-10-25.md for public role/action semantics and the
+bounded approval/accounting/egress contract. No provider or credential reaches the kernel.

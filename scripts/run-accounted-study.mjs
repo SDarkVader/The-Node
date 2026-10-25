@@ -16,6 +16,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { assertPowerShell7 } from './pwsh-preflight.mjs';
+import { assertLegacyLiveDispatchClosed } from './legacy-live-gate.mjs';
 
 const raw = process.argv.slice(2);
 const intervalAt = raw.indexOf('--min-interval-ms');
@@ -23,6 +24,7 @@ const minIntervalMs = intervalAt === -1 ? undefined : Number(raw[intervalAt + 1]
 if (intervalAt !== -1 && !Number.isSafeInteger(minIntervalMs)) throw Error('explicit_arguments_required');
 const args = intervalAt === -1 ? raw : [...raw.slice(0, intervalAt), ...raw.slice(intervalAt + 2)];
 if (args.length < 6 || !/^[a-f0-9]{40}$/.test(args[4]) || (args.length > 6 && (args[6] !== '--resume' || args.length < 8))) throw Error('explicit_arguments_required');
+assertLegacyLiveDispatchClosed();
 const priorRuns = args.slice(7).map((x) => resolve(x));
 const [runtime, budgetDirectory, directory, keyPath] = args.slice(0, 4).map((x) => resolve(x));
 const runnerRevision = args[4], manifestPath = resolve(args[5]);

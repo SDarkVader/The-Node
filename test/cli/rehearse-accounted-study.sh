@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# End-to-end rehearsal of the Thursday procedure with the real scripts and a TEST-ONLY fake
-# transport: compile runtime -> carry + authorise allowance -> run (HTTP 429 injected on call 50)
+# End-to-end rehearsal using real compiled accounting/runner/replay and a TEST-ONLY pure
+# response fixture: compile runtime -> carry + authorise allowance -> run (429 at index 50)
 # -> settle the failed call -> resume -> analyse. No network, credential or real ledger.
 # Usage (repo root, Linux/macOS): PYTHON=<python with evals/requirements.txt> test/cli/rehearse-accounted-study.sh
 set -euo pipefail
@@ -15,14 +15,13 @@ m.update(id='TEST-ONLY-rehearsal', episodes=m['episodes'][:3], minIntervalMs=20)
 json.dump(m, open(sys.argv[1] + '/manifest.json', 'w'), indent=2)
 PY
 echo "TEST ONLY rehearsal. Not a financial authorization." > "$W/instruction.txt"
-mkdir "$W/bin"; printf '#!/bin/sh\nexec node %s "$@" -FailAtFile %s\n' "$ROOT/test/cli/fake-transport-worker.mjs" "$W/fail-at.txt" > "$W/bin/pwsh"; chmod +x "$W/bin/pwsh"
-printf 'OPENAI_API_KEY=sk-TESTONLYnotarealkey\nANTHROPIC_API_KEY=sk-ant-TESTONLYnotarealkey\n' > "$W/fake.env"
 node scripts/prepare-experiment-budget.mjs "$W/runtime" "$W/initial" "$W/allowance" "$W/manifest.json" "$W/instruction.txt" > "$W/prepare.json"
-echo 00050 > "$W/fail-at.txt"
-if PATH="$W/bin:$PATH" node scripts/run-accounted-study.mjs "$W/runtime" "$W/allowance" "$W/run-1" "$W/fake.env" "$REV" "$W/manifest.json" > /dev/null; then
+if node scripts/run-accounted-study.mjs "$W/runtime" "$W/allowance" "$W/NEVER-CREATED" "$W/NEVER-READ-CREDENTIAL" "$REV" "$W/manifest.json" > "$W/gated.stdout" 2> "$W/gated.stderr"; then
+  echo "the historical production dispatch gate should remain closed"; exit 1; fi
+if node test/cli/run-offline-accounted-study.mjs "$W/runtime" "$W/allowance" "$W/run-1" "$REV" "$W/manifest.json" --fail-at 50 > /dev/null; then
   echo "run-1 should have stopped at the injected failure"; exit 1; fi
 node scripts/settle-failed-call.mjs "$W/runtime" "$W/allowance" outstanding "TEST-ONLY operator" "TEST ONLY: injected HTTP 429" > "$W/settle.json"
-PATH="$W/bin:$PATH" node scripts/run-accounted-study.mjs "$W/runtime" "$W/allowance" "$W/run-2" "$W/fake.env" "$REV" "$W/manifest.json" --resume "$W/run-1" > /dev/null
+node test/cli/run-offline-accounted-study.mjs "$W/runtime" "$W/allowance" "$W/run-2" "$REV" "$W/manifest.json" --resume "$W/run-1" > /dev/null
 (cd evals && "$PY" -m inspect_node.analyze_study --artifacts "$W/run-1" --artifacts "$W/run-2" --out "$W/analysis" > /dev/null)
 "$PY" - "$W" <<'PY'
 import glob, json, sys
@@ -40,7 +39,8 @@ checks = {
   'the interrupted attempt is excluded, not counted': [x['status'] for x in res['excludedAttempts']] == ['inference_failed'],
   'label-sensitive fixture gives contrast 1': res['contrast_council_minus_anonymous']['mean'] == 1,
   'the allowance carries the reviewed Haiku rates, not the carried nano ones': prepare['model'] == 'claude-haiku-5-5' and prepare['prices']['model'] == 'claude-haiku-5-5' and prepare['prices']['inputMicroUsdPerMillionTokens'] == 200000 and prepare['prices']['outputMicroUsdPerMillionTokens'] == 1000000,
-  'both runs sent Anthropic Messages bodies through the Anthropic worker after the PowerShell 7 check': all(r['provider'] == 'anthropic' and r['model'] == 'claude-haiku-5-5' and r['powershellMajor'] == 7 for r in (r1, r2)) and len(sent) > 0 and all('messages' in json.load(open(f)) for f in sent),
+  'both offline runs exercised Anthropic Messages adaptation with no network, credential or worker process': all(r['provider'] == 'anthropic' and r['model'] == 'claude-haiku-5-5' and r['transport'] == 'pure_scripted_fixture' and r['networkRequests'] == r['credentialReads'] == r['childProcesses'] == 0 for r in (r1, r2)) and len(sent) > 0 and all('messages' in json.load(open(f)) for f in sent),
+  'the historical real dispatch remains closed without touching a credential or output directory': 'legacy_live_context_security_gate_closed' in open(w + '/gated.stderr').read() and not __import__('os').path.exists(w + '/NEVER-CREATED') and not __import__('os').path.exists(w + '/NEVER-READ-CREDENTIAL'),
 }
 for k, v in checks.items(): print(('PASS ' if v else 'FAIL ') + k)
 sys.exit(0 if all(checks.values()) else 1)

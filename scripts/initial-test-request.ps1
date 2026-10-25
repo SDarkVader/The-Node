@@ -1,4 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$KeyPath, [Parameter(Mandatory=$true)][string]$ArtifactDirectory)
+# Historical context is replay-only. No credential or request file is read past this gate.
+throw 'legacy_live_context_security_gate_closed: a paid adapter must use the society information boundary; use npm run society -- --interactive --ticks 3 for supervised local play'
 $ErrorActionPreference = 'Stop'
 $keyValue = $null
 $credentialText = $null

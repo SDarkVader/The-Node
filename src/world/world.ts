@@ -76,6 +76,7 @@
 
 import { mulberry32, gaussian } from '../sim/rng.js';
 import type { ParticipantHooks } from '../engine/inhabitants.js';
+import { allocateSocietySupply, clearSocietyMarket, validateSocietyEconomyPlan, type SocietyEconomyPlan, type SocietyEconomyDay, type SocietyMarketResult } from '../engine/societyEconomy.js';
 import type { IndexedRoleEvent } from '../sim/multiRoleConscription.js';
 import {
   generateShardLayout,
@@ -595,6 +596,8 @@ export interface ProximityConversationHeardEvent {
 }
 
 export interface World {
+  /** Explicit society day receipts; absent for every established simulation/replay path. */
+  societyEconomy?: SocietyEconomyDay;
   seed: number;
   tick: number;
   rng: () => number;
@@ -1222,13 +1225,33 @@ function filledEntries(arrays: RoleArrays): { role: RoleType; index: number; bui
 }
 
 /** One deterministic tick. See this file's header comment for the pinned stage order. */
-export function stepWorld(world: World, participant?: ParticipantHooks): World {
+export function stepWorld(world: World, participant?: ParticipantHooks, society?: SocietyEconomyPlan): World {
+  const societyActors = society && participant ? new Map([
+    ...world.millers, ...world.bakers, ...world.couriers, ...world.investigators, ...world.importExporters,
+  ].filter((s) => s.slot.state === 'FILLED').map((s) => [s.buildingId, participant.identityFor(s.buildingId)])) : undefined;
+  if (society) {
+    validateSocietyEconomyPlan(society);
+    const filled = (slots: readonly { buildingId: string; slot: RoleSlot }[]) => new Set(slots.filter((s) => s.slot.state === 'FILLED').map((s) => s.buildingId));
+    const bakerSites = filled(world.bakers);
+    const millerSites = filled(world.millers);
+    const supportSites = new Set([...filled(world.couriers), ...filled(world.investigators), ...filled(world.importExporters)]);
+    const liveLocations = [...bakerSites, ...millerSites, ...supportSites, ...world.grifters.map((g) => g.id)];
+    const livePeople = new Set(liveLocations.map((site) => participant ? participant.identityFor(site) : site));
+    for (const site of society.bakerPrices.keys()) if (!bakerSites.has(site)) throw Error('invalid_society_baker');
+    for (const site of society.millerQuantities.keys()) if (!millerSites.has(site)) throw Error('invalid_society_miller');
+    for (const site of society.working ?? []) if (!supportSites.has(site)) throw Error('invalid_society_worker');
+    for (const [person, seller] of society.breadChoices) {
+      if (!livePeople.has(person) || (seller !== null && !bakerSites.has(seller))) throw Error('invalid_society_customer_choice');
+      if (seller !== null && (participant ? participant.identityFor(seller) : seller) === person) throw Error('invalid_society_self_purchase');
+    }
+  }
   const { rng, config } = world;
   const day = world.tick;
   // Recognition v2 (opt-in, see WorldConfig.recognition). Everything v2 adds is gated on this,
   // draws only from `hashUnit`, and is returned only when enabled, so v1 stays byte-identical.
   const v2 = config.recognition === 'v2' ? (world.recognitionV2 ?? emptyRecognitionV2()) : undefined;
   const identityOf = (location: string): string => (participant ? participant.identityFor(location) : location);
+  const sameSocietyActor = (site: string): boolean => !societyActors || societyActors.get(site) === identityOf(site);
   const dealings: DealingEvent[] = [];
   const regularsNext = v2 ? { ...v2.regulars } : undefined;
 
@@ -1666,6 +1689,14 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     millerExperienceFloor,
     allBuildingsById,
   );
+  // A new resident's legal generated default is retained for their next commitment.
+  // Only this replacement day's effective output is zero: they never submitted its plan.
+  const replacementMillerDefaults = society ? new Map(millers
+    .filter((m) => m.slot.state === 'FILLED' && !sameSocietyActor(m.buildingId)).map((m) => [m.buildingId, m.value])) : undefined;
+  // Keep the established reaction/RNG path, then apply the inhabitant's admitted quantity.
+  // Omission opts out for this day; it does not manufacture an autonomous production choice.
+  if (society) millers = millers.map((m) => m.slot.state === 'FILLED'
+    ? { ...m, value: sameSocietyActor(m.buildingId) ? society.millerQuantities.get(m.buildingId) ?? 0 : 0 } : m);
 
   // BACKSTOPPED millers participate mechanically, not competitively — this is the
   // specific unwired gap the spec named. See computeMillerSupply()'s doc comment.
@@ -1677,7 +1708,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // validated convergence behaviour is untouched while grain becomes a real bite. A
   // BACKSTOPPED Import/Export still supplies a reduced-but-real share (constraint 2 — an
   // unstaffed Import/Export squeezes the shard, it can never mill it to a dead stop).
-  const ieFilled = importExporters.filter((x) => x.slot.state === 'FILLED').length;
+  const ieFilled = importExporters.filter((x) => x.slot.state === 'FILLED' && (!society || society.working?.has(x.buildingId) && sameSocietyActor(x.buildingId))).length;
   const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED').length;
   const nodulesReceived = nodulesReceivedToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
   const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
@@ -1699,6 +1730,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     bakerExperienceFloor,
     allBuildingsById,
   );
+  // A retained quote is an explicit public default: all quotes lock before customers act.
+  if (society) bakers = bakers.map((b) => b.slot.state === 'FILLED'
+    && sameSocietyActor(b.buildingId)
+    ? { ...b, value: society.bakerPrices.get(b.buildingId) ?? world.bakers.find((old) => old.buildingId === b.buildingId)!.value } : b);
 
   // 'funded' settlement: every refill reset has now run, so balances that arrived with a
   // person today land in their new slot.
@@ -1764,9 +1799,40 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     return consolidationFrictionMultiplier(districtHealth[districtId]!, day);
   };
 
+  const isWorking = (buildingId: string): boolean => !society || society.working?.has(buildingId) === true && sameSocietyActor(buildingId);
+  let societyMarket: SocietyMarketResult | undefined;
+  if (society) {
+    const parties = (slots: readonly { slot: RoleSlot; buildingId: string; wealth: number }[]) => slots
+      .filter((s) => s.slot.state === 'FILLED').map((s) => ({ identity: identityOf(s.buildingId), site: s.buildingId, wealth: s.wealth }));
+    societyMarket = clearSocietyMarket({ seed: world.seed, day: day + 1, eventTick: day, cycleDays: config.purchaseCycleDays,
+      customers: [...parties(millers), ...parties(bakers), ...parties(couriers), ...parties(investigators), ...parties(importExporters),
+        ...grifters.map((g) => ({ identity: identityOf(g.id), site: g.id, wealth: g.wealth }))],
+      bakers: bakers.filter((b) => b.slot.state === 'FILLED').map((b) => ({ identity: identityOf(b.buildingId), site: b.buildingId, price: b.value,
+        available: sameSocietyActor(b.buildingId) })),
+      flour: millers.filter((m) => m.slot.state === 'FILLED' || m.slot.state === 'BACKSTOPPED').map((m) => ({
+        identity: m.slot.state === 'FILLED' ? identityOf(m.buildingId) : null, site: m.buildingId,
+        quantity: (m.slot.state === 'FILLED' ? m.value : BACKSTOP_PRODUCTIVITY) * grainFactor * DAILY_ACTIVITY_MULTIPLIER })),
+      choices: society.breadChoices });
+    dealings.push(...societyMarket.purchaseEvents);
+    const debit = <T extends { wealth: number }>(s: T, site: string): T => ({ ...s,
+      wealth: s.wealth - (societyMarket!.customerDebits.get(identityOf(site)) ?? 0) });
+    const debitRole = <T extends { wealth: number; buildingId: string; slot: RoleSlot }>(s: T): T =>
+      s.slot.state === 'FILLED' ? debit(s, s.buildingId) : s;
+    millers = millers.map(debitRole);
+    bakers = bakers.map(debitRole);
+    couriers = couriers.map(debitRole);
+    investigators = investigators.map(debitRole);
+    importExporters = importExporters.map(debitRole);
+    grifters = grifters.map((s) => debit(s, s.id));
+    // A genuine payment transfer, not additional money creation or a second seller credit.
+    settlement.districtPool += societyMarket.totalPayments;
+  }
+
   const millerIncomes = millers.map((m) =>
     m.slot.state === 'FILLED'
-      ? millerDailyIncome(m.value * grainFactor, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(m.buildingId)
+      ? (societyMarket
+        ? millerDailyIncome(societyMarket.millerSold.get(m.buildingId) ?? 0, flourPriceValue)
+        : millerDailyIncome(m.value * grainFactor, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER) * frictionFor(m.buildingId)
       : 0,
   );
 
@@ -1782,7 +1848,16 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // v2: the same price-weighted demand, made individual. Each located person is due once per
   // purchase cycle and buys from a regular Baker (kept, or redrawn by the same inverse-price
   // weights). Served counts replace the fractional split; income and bread use them unchanged.
-  if (v2 && regularsNext) {
+  if (societyMarket) {
+    servedCustomers = societyMarket.served;
+    if (regularsNext) {
+      const regularBakers = new Map(regularsNext.baker);
+      for (const receipt of societyMarket.receipts) {
+        if (receipt.outcome === 'served' && receipt.bakerSite !== null) regularBakers.set(receipt.customer, identityOf(receipt.bakerSite));
+      }
+      regularsNext.baker = regularBakers;
+    }
+  } else if (v2 && regularsNext) {
     const filledOf = (arr: { slot: RoleSlot; buildingId: string }[]) => arr.filter((x) => x.slot.state === 'FILLED').map((x) => ({ identity: identityOf(x.buildingId), site: x.buildingId }));
     const purchases = allocatePurchases({
       seed: world.seed, day, cycleDays: config.purchaseCycleDays ?? PURCHASE_CYCLE_DAYS, maxPerBaker: BAKER_MAX_DAILY_CUSTOMERS,
@@ -1819,7 +1894,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const millerCompleted = millers.map((m, i) => {
     if (m.slot.state !== 'FILLED') return false;
     resetCompletionIfJustFilled(m.buildingId, millerJustFilled);
-    const completed = millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i));
+    const completed = societyMarket
+      ? (societyMarket.millerSold.get(m.buildingId) ?? 0) > 0 && (millerValuesForCompletion.length < 2
+        ? m.value > 0 : millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i)))
+      : millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i));
     completionStatsWorking[m.buildingId] = recordAttempt(completionStatsWorking[m.buildingId] ?? emptyCompletionStats(), completed);
     return completed;
   });
@@ -1827,7 +1905,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const bakerCompleted = bakers.map((b, i) => {
     if (b.slot.state !== 'FILLED') return false;
     resetCompletionIfJustFilled(b.buildingId, bakerJustFilled);
-    const completed = bakerTaskCompleted(b.value, averageRivalValue(bakerValuesForCompletion, i));
+    const completed = bakerTaskCompleted(b.value, averageRivalValue(bakerValuesForCompletion, i)) &&
+      (!societyMarket || servedCustomers[bakerFilledForDemand.indexOf(i)]! > 0);
     completionStatsWorking[b.buildingId] = recordAttempt(completionStatsWorking[b.buildingId] ?? emptyCompletionStats(), completed);
     return completed;
   });
@@ -1874,9 +1953,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // (EXPERIMENT_FIRST_INHABITANT.md); v1 keeps the current-position behaviour it was frozen with.
   const courierRouteFrom = (c: SupportRoleSlot) => (v2 ? allBuildingsById.get(c.buildingId) ?? c : c);
   const courierClaims = couriers.map((c) =>
-    c.slot.state === 'FILLED' ? courierDailyPay(courierRouteDistance({ x: courierRouteFrom(c).x, y: courierRouteFrom(c).y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
+    c.slot.state === 'FILLED' && isWorking(c.buildingId) ? courierDailyPay(courierRouteDistance({ x: courierRouteFrom(c).x, y: courierRouteFrom(c).y }, world.shard.hubPlot), DAILY_ACTIVITY_MULTIPLIER, frictionFor(c.buildingId)) : 0,
   );
-  const wageClaim = (s: SupportRoleSlot) => (s.slot.state === 'FILLED' ? supportDaily * frictionFor(s.buildingId) : 0);
+  const wageClaim = (s: SupportRoleSlot) => (s.slot.state === 'FILLED' && isWorking(s.buildingId) ? supportDaily * frictionFor(s.buildingId) : 0);
   const investigatorClaims = investigators.map(wageClaim);
   const importExportClaims = importExporters.map(wageClaim);
   const mbCompletion =
@@ -1926,13 +2005,13 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     if (c.slot.state !== 'FILLED') return c;
     const pay = courierClaims[i]! * wageScale;
     recordPay('courierPay', pay);
-    return { ...c, wealth: c.wealth + pay, ...stepSlotStock(c), daysInRole: c.daysInRole + 1 };
+    return { ...c, wealth: c.wealth + pay, ...(isWorking(c.buildingId) ? stepSlotStock(c) : {}), daysInRole: c.daysInRole + 1 };
   });
   const payWage = (claims: readonly number[]) => <T extends SupportRoleSlot>(s: T, i: number): T => {
     if (s.slot.state !== 'FILLED') return s;
     const wage = claims[i]! * wageScale;
     recordPay('supportWage', wage);
-    return { ...s, wealth: s.wealth + wage, ...stepSlotStock(s), daysInRole: s.daysInRole + 1 };
+    return { ...s, wealth: s.wealth + wage, ...(isWorking(s.buildingId) ? stepSlotStock(s) : {}), daysInRole: s.daysInRole + 1 };
   };
   investigators = investigators.map(payWage(investigatorClaims));
   importExporters = importExporters.map(payWage(importExportClaims));
@@ -2021,7 +2100,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // keeps this from ever being a route to a role, a reputation level, or a solo-assembled
   // crafting recipe).
   const oracleStats: OracleTickStats = { entrants: 0, entered: 0, wins: 0, winsByPrize: { wealth: 0, resourceStock: 0, time: 0 } };
-  {
+  if (!society) {
     const winProbability = oracleWinProbability(world.economicHealthWithExperience);
     const applyOracleRoll = <T extends { wealth: number }>(entrant: T, isGrifter: boolean): T => {
       if (rng() >= ORACLE_PARTICIPATION_PROBABILITY) return entrant;
@@ -2080,25 +2159,31 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   // trade-route friction, so a Courier in a declining district really does move fewer
   // parcels, the same consequence their income already takes. See engine/resources.ts.
   const supportFriction = (arr: SupportRoleSlot[]) =>
-    arr.filter((s2) => s2.slot.state === 'FILLED').map((s2) => frictionFor(s2.buildingId));
+    arr.filter((s2) => s2.slot.state === 'FILLED' && isWorking(s2.buildingId)).map((s2) => frictionFor(s2.buildingId));
   // v2: attribute the flows recorded just below to real counterparties (see engine/dealings.ts).
   if (v2 && regularsNext) {
-    const flour = attributeSupply(world.seed, day, 'flourSupply',
+    const flour = societyMarket ? { events: societyMarket.flourEvents, regulars: new Map(v2.regulars.miller) } : attributeSupply(world.seed, day, 'flourSupply',
       bakerFilledForDemand.map((i, pos) => ({ identity: identityOf(bakers[i]!.buildingId), site: bakers[i]!.buildingId,
         quantity: servedCustomers[pos]! * DAILY_ACTIVITY_MULTIPLIER * FLOUR_PER_BREAD })),
       millers.filter((m) => m.slot.state === 'FILLED' || m.slot.state === 'BACKSTOPPED').map((m) => m.slot.state === 'FILLED'
         ? { identity: identityOf(m.buildingId), site: m.buildingId, weight: m.value * grainFactor }
         : { identity: null, site: m.buildingId, weight: BACKSTOP_PRODUCTIVITY * grainFactor }),
       v2.regulars.miller);
-    const grain = attributeSupply(world.seed, day, 'grainSupply',
+    const grainRecipients = millers.filter((m) => m.slot.state === 'FILLED').map((m) => ({ identity: identityOf(m.buildingId), site: m.buildingId,
+      quantity: m.value * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR }));
+    const grainProviders = importExporters.filter((x) => (x.slot.state === 'FILLED' && isWorking(x.buildingId)) || x.slot.state === 'BACKSTOPPED');
+    const grain = society ? { events: allocateSocietySupply(day, 'grainSupply', grainRecipients,
+      grainProviders.map((x) => ({ identity: x.slot.state === 'FILLED' ? identityOf(x.buildingId) : null, site: x.buildingId,
+        quantity: grainDeliveredToday(x.slot.state === 'FILLED' ? 1 : 0, x.slot.state === 'BACKSTOPPED' ? 1 : 0, DAILY_ACTIVITY_MULTIPLIER) }))),
+      regulars: new Map(v2.regulars.importExport) } : attributeSupply(world.seed, day, 'grainSupply',
       millers.filter((m) => m.slot.state === 'FILLED').map((m) => ({ identity: identityOf(m.buildingId), site: m.buildingId,
         quantity: m.value * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR })),
-      importExporters.filter((x) => x.slot.state === 'FILLED' || x.slot.state === 'BACKSTOPPED').map((x) => x.slot.state === 'FILLED'
+      importExporters.filter((x) => (x.slot.state === 'FILLED' && isWorking(x.buildingId)) || x.slot.state === 'BACKSTOPPED').map((x) => x.slot.state === 'FILLED'
         ? { identity: identityOf(x.buildingId), site: x.buildingId, weight: 1 }
         : { identity: null, site: x.buildingId, weight: BACKSTOPPED_NODULE_FRACTION }),
       v2.regulars.importExport);
     const deliveries = attributeDeliveries(world.seed, day, flour.events,
-      couriers.filter((c) => c.slot.state === 'FILLED').map((c) => ({ identity: identityOf(c.buildingId), site: c.buildingId,
+      couriers.filter((c) => c.slot.state === 'FILLED' && isWorking(c.buildingId)).map((c) => ({ identity: identityOf(c.buildingId), site: c.buildingId,
         weight: frictionFor(c.buildingId), parcels: frictionFor(c.buildingId) * PARCELS_PER_COURIER_DAY * DAILY_ACTIVITY_MULTIPLIER })),
       v2.regulars.courier);
     dealings.push(...flour.events, ...grain.events, ...deliveries.events);
@@ -2109,7 +2194,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
   const resources = accumulate(
     world.resources,
     stepResourceFlows(
-      millers.filter((m) => m.slot.state === 'FILLED').map((m) => m.value * grainFactor),
+      millers.filter((m) => m.slot.state === 'FILLED' || (society && m.slot.state === 'BACKSTOPPED'))
+        .map((m) => (m.slot.state === 'FILLED' ? m.value : BACKSTOP_PRODUCTIVITY) * grainFactor),
       servedCustomers,
       supportFriction(couriers),
       supportFriction(investigators),
@@ -2134,7 +2220,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     let completionScale = 1;
     if (funded) {
       const claimOf = (arr: readonly { slot: RoleSlot; buildingId: string }[], reward: number) =>
-        arr.reduce((s, x) => (x.slot.state === 'FILLED' && supportTaskCompleted(frictionFor(x.buildingId)) ? s + reward : s), 0);
+        arr.reduce((s, x) => (x.slot.state === 'FILLED' && isWorking(x.buildingId) && supportTaskCompleted(frictionFor(x.buildingId)) ? s + reward : s), 0);
       const claimed =
         claimOf(couriers, COMPLETION_REWARD.courier) +
         claimOf(investigators, COMPLETION_REWARD.investigator) +
@@ -2156,7 +2242,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
       arr.map((s) => {
         if (s.slot.state !== 'FILLED') return s;
         resetCompletionIfJustFilled(s.buildingId, justFilled);
-        const completed = supportTaskCompleted(frictionFor(s.buildingId));
+        const completed = isWorking(s.buildingId) && supportTaskCompleted(frictionFor(s.buildingId));
         completionStatsWorking[s.buildingId] = recordAttempt(completionStatsWorking[s.buildingId] ?? emptyCompletionStats(), completed);
         return grantIfTaskCompleted(s, completed, reward);
       });
@@ -2230,7 +2316,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     // the flashlight, when built, changes who fills `investigatedBy`, nothing downstream of it.
     const filledInvestigatorByDistrict = new Map<string, string>();
     for (const d of investigators) {
-      if (d.slot.state !== 'FILLED') continue;
+      if (d.slot.state !== 'FILLED' || !isWorking(d.buildingId)) continue;
       const districtId = buildingDistrictId.get(d.buildingId);
       if (districtId && !filledInvestigatorByDistrict.has(districtId)) filledInvestigatorByDistrict.set(districtId, d.buildingId);
     }
@@ -2778,7 +2864,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     // anyone — but weatherHistory is per-district climate, not geometry, and now updates
     // every tick (see District Weather above).
     shard: shardWithPopulation,
-    millers,
+    millers: replacementMillerDefaults ? millers.map((m) => replacementMillerDefaults.has(m.buildingId)
+      ? { ...m, value: replacementMillerDefaults.get(m.buildingId)! } : m) : millers,
     bakers,
     couriers,
     investigators,
@@ -2824,6 +2911,19 @@ export function stepWorld(world: World, participant?: ParticipantHooks): World {
     sabotageCampaigns,
     nextCampaignId,
     lastSabotageCampaignEvents: sabotageEvents,
+    ...(society && societyMarket ? { societyEconomy: {
+      day: day + 1,
+      prices: Object.fromEntries(bakers.filter((b) => b.slot.state === 'FILLED').map((b) => [b.buildingId, b.value])),
+      quantities: Object.fromEntries(millers.filter((m) => m.slot.state === 'FILLED').map((m) => [m.buildingId, m.value])),
+      receipts: societyMarket.receipts,
+      flourSold: Object.fromEntries(societyMarket.millerSold),
+      breadSold: Object.fromEntries(bakerFilledForDemand.map((i, pos) => [bakers[i]!.buildingId, societyMarket!.served[pos]! * DAILY_ACTIVITY_MULTIPLIER])),
+      grainAvailable,
+      grainConsumed: intendedMillerSupply * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR,
+      flourProduced: millerSupply * DAILY_ACTIVITY_MULTIPLIER,
+      flourConsumed: societyMarket.flourConsumed,
+      customerPayments: societyMarket.totalPayments,
+    } } : {}),
     ...(v2 && recognitionTick && regularsNext && wallReachNext
       ? { recognitionV2: { recognition: recognitionTick.state, regulars: regularsNext, wallReach: wallReachNext }, lastDealings: dealings,
         lastRecognitionChanges: { gained: recognitionTick.gained, lost: recognitionTick.lost } }

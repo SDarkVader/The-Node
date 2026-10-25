@@ -1,0 +1,95 @@
+/** Explicit prepare -> review/fund separately -> approve -> one bounded accounted run.
+ * No command here creates an allowance, reuses a historical world, or resets accounting. */
+import { parseArgs } from 'node:util';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync, openSync, fsyncSync, closeSync } from 'node:fs';
+import { resolve, dirname, join, relative, isAbsolute, sep } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { execFileSync, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import { Society, verifySocietyTape } from '../src/society/runtime.js';
+import { createSocietyPlan, societyPlanHash, runAccountedSociety, validateSocietyPlan, type SocietyRunPlan } from '../src/society/accounted.js';
+import { buildSocietyRequest } from '../src/society/request.js';
+import { ExperimentBudget } from '../src/agent/experimentBudget.js';
+import { hostProcessEnvironment } from '../src/agent/isolatedHost.js';
+import { digest } from '../src/agent/replay.js';
+import { sha256 } from '../src/agent/accountingStore.js';
+import type { Genesis } from '../src/agent/participantWorld.js';
+import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
+
+const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
+  bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
+  credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'}}});
+if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
+// Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
+// files (including the owner's PDF) are preserved and do not change a compiled source commit.
+execFileSync('git',['diff','--quiet','HEAD'],{cwd:root,windowsHide:true});
+const untrackedExecutable=execFileSync('git',['ls-files','--others','--exclude-standard','--','src','scripts','client','experiments','package.json','package-lock.json'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
+if(untrackedExecutable)throw Error('society_untracked_executable_source');
+const privatePath=(path:string)=>{
+  const target=resolve(path);
+  let ancestor=target;while(!existsSync(ancestor)){const parent=dirname(ancestor);if(parent===ancestor)throw Error('society_private_path');ancestor=parent;}
+  const resolvedTarget=resolve(realpathSync(ancestor),relative(ancestor,target)),rel=relative(realpathSync(root),resolvedTarget);
+  if(rel===''||rel!=='..'&&!rel.startsWith('..'+sep)&&!isAbsolute(rel))throw Error('society_private_output_outside_repository_required');
+  return target;
+};
+const bundlePath=privatePath(values.bundle);
+interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string}
+if(values.prepare){
+  if(existsSync(bundlePath))throw Error('society_bundle_exists');
+  const seed=Number(values.seed),ticks=Number(values.ticks);
+  if(!Number.isSafeInteger(seed))throw Error('society_seed');
+  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex')});
+  const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan)};
+  const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});
+  mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,stringifySocietyEvidence(bundle),{flag:'wx',mode:0o600});
+  console.log(JSON.stringify({bundle:bundlePath,planSha256:bundle.planSha256,plan,initialPackets:packets,
+    dispatchApproved:false,allowanceCreated:false,providerCalls:0,next:'Review the plan. A later owner approval and a separately authorised allowance carrying the latest actual journal are required.'},null,2));
+}else{
+  const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
+  if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
+  const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret});
+  if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
+  const packets=society.pendingPeople().map(person=>{const q=buildSocietyRequest(society.view(person).visible);return {person,sha256:q.sha256,bytes:Buffer.byteLength(q.body),maxInputTokens:q.maxInputTokens};});
+  if(values.preflight){
+    let funding='not_provided';
+    if(values.budget){const view=ExperimentBudget.inspect(JSON.parse(readFileSync(join(resolve(values.budget),'accounting.journal.json'),'utf8')));
+      funding=view.authorization?.manifestSha256===bundle.planSha256&&view.requests.length===0&&view.canReserve?'manifest_matches_not_approved':'not_ready';}
+    console.log(JSON.stringify({sourceRevision:revision,planSha256:bundle.planSha256,packets,funding,dispatchApproved:false,providerCalls:0,allowanceCreated:false},null,2));
+  }else{
+    if(!values.budget||!values.credential||!values.approval||!values.output||!values['carried-fingerprint'])throw Error('society_explicit_paid_inputs_required');
+    const approvalPath=privatePath(values.approval),credential=privatePath(values.credential),output=privatePath(values.output),budgetPath=privatePath(values.budget);
+    const approval=JSON.parse(readFileSync(approvalPath,'utf8')) as {approved:boolean;planSha256:string;instruction:string};
+    if(approval.approved!==true||approval.planSha256!==bundle.planSha256||!approval.instruction?.trim())throw Error('society_owner_approval_required');
+    if(existsSync(output))throw Error('society_new_paid_output_required');
+    const originalBundle=sha256(readFileSync(bundlePath));
+    mkdirSync(output,{mode:0o700});const events=openSync(join(output,'events.jsonl'),'wx',0o600);
+    const budget=ExperimentBudget.open(budgetPath);
+    const controller=new AbortController(),stop=()=>controller.abort();process.once('SIGINT',stop);process.once('SIGTERM',stop);
+    try{
+      const summary=await runAccountedSociety(society,budget,async (input,signal)=>{
+        const call=join(output,'calls',String(input.index).padStart(5,'0'));mkdirSync(call,{recursive:true,mode:0o700});
+        const fd=openSync(join(call,'request.json'),'wx',0o600);try{writeFileSync(fd,input.body);fsyncSync(fd);}finally{closeSync(fd);}
+        const env=hostProcessEnvironment(process.env);
+        for(const key of ['HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy','NODE_EXTRA_CA_CERTS','NODE_USE_SYSTEM_CA','SSL_CERT_FILE'])if(process.env[key])env[key]=process.env[key];
+        try{await promisify(execFile)(process.execPath,['--use-env-proxy','--import','tsx',join(root,'scripts','society-request-worker.ts'),credential,call,input.sha256],
+          {cwd:root,env,signal,timeout:21_000,maxBuffer:4096,windowsHide:true});}
+        catch{if(!existsSync(join(call,'response.json')))throw Error('society_transport_failed_preserve_hold');}
+        return readFileSync(join(call,'response.json'));
+      },{plan:bundle.plan,ownerApproved:true,instruction:approval.instruction,expectedCarriedFingerprint:values['carried-fingerprint'],signal:controller.signal,
+        sink:event=>{
+          writeFileSync(events,JSON.stringify(JSON.parse(stringifySocietyEvidence(event)))+'\n');fsyncSync(events);
+          if(event.kind==='decision'){
+            const d=event.data as {person:string;tick:number;phase:string};
+            console.log(JSON.stringify({event:'decision_admitted',person:d.person,day:d.tick+1,phase:d.phase}));
+          }
+        }});
+      const tape=society.exportTape();writeFileSync(join(output,'society.json'),stringifySocietyEvidence(tape),{flag:'wx',mode:0o600});
+      const replay=summary.status==='completed'?verifySocietyTape(tape,revision):null;
+      writeFileSync(join(output,'summary.json'),JSON.stringify({summary,replay,originalBundleUnchanged:sha256(readFileSync(bundlePath))===originalBundle},null,2)+'\n',{flag:'wx',mode:0o600});
+      console.log(JSON.stringify({summary,replay,output},null,2));if(summary.status!=='completed')process.exitCode=1;
+    }finally{process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop);budget.close();closeSync(events);}
+  }
+}

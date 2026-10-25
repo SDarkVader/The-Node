@@ -31,6 +31,35 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-25
 
+An opt-in secure society now runs two initially controlled Bakers and one Miller, with autonomous
+Courier, Investigator, Import/Export and roleless residents. Daily locked Wall prices, explicit
+production/customer choices, finite grain/flour, genuine sales/completion, local observations,
+communication, eligible diaries and escrow-backed expiring Oracle entries are implemented.
+Invalid actions halt execution. Old leaking paid-dispatch paths are closed; archived replay stays
+available. Historical worlds, private journals and stopped studies are preserved.
+
+```powershell
+npm run society -- --ticks 14 --output .codex/session-recovery/society/proof-14.json
+npm run society -- --verify .codex/session-recovery/society/proof-14.json
+npm run society -- --interactive --ticks 3 --output .codex/session-recovery/society/supervised-3.json
+```
+
+The first commands use deterministic model fixtures; interactive play supervises local JSON
+choices. Neither bills a model. The new accounted model runner requires separately reviewed
+approval, a matching carried allowance and private evidence paths; it has only been exercised
+with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
+configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
+Implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42), targeting shared `main`.
+The owner has authorized merge when green followed by a new twenty-tick society run; no new paid
+call has occurred yet. The requested output is a raw chronological dump for each controlled inhabitant. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
+with seven explicit environment skips, plus TypeScript. **80 compiled native checks** against the
+original kernel and **eight recovery tests** also pass. Independent saved-file replay passes for
+14 and 60 ticks. The longer run records 889 decisions, 78 real bread orders, 306 diary writes,
+natural District Weather changes and 75 voucher redemptions; maximum accounting residual is
+`1.45e-13`. [Scoped verification evidence](docs/research/evidence/secure-society-offline-2026-10-25.json).
+
+## Historical first-person development — 2026-10-25
+
 The owner-approved **fresh first-person Godot run completed 20 ticks and 40 paid Haiku calls**.
 Both Bakers returned **7 nonempty thinking summaries in 20 decisions**. Every request used the
 same system, explicit per-turn guidance, high effort and 2,048-token total output cap; both
