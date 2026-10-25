@@ -14,6 +14,15 @@ The owner intends to add memory bounds and degradation and study how previous th
 future decisions. These are development and research tasks, not limitations on what the experiment
 may become. The programme is exploratory; this documentation imposes no directional hypothesis.
 
+## Prepared reasoning-condition check — awaiting approval
+
+The owner has requested a fresh two-Baker 20-tick run after correcting the deliberation
+condition. The opt-in version uses the same high effort, output cap and explicit guidance
+for both actors. It has been checked offline; the live run, new allowance and spending clock
+have not started. [Audit, exact configuration and readiness procedure](REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+The supplied historical archive ends at tick 18; the separately reported 28-tick record has
+not been provided. The evidence below retains its original source-specific scope.
+
 ## Current state and evidence
 
 The live pilot is stopped at a verified checkpoint after 18 real ticks and 36 paid decisions:

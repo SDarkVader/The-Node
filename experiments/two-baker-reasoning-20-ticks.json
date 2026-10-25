@@ -1,0 +1,23 @@
+{
+  "schema": "node-reasoning-continuation-v1",
+  "id": "two-baker-reasoning-fresh-20-v1",
+  "model": "claude-haiku-5-5",
+  "seed": 103,
+  "actors": [
+    { "actorId": "baker-0", "role": "Baker", "ordinal": 0 },
+    { "actorId": "baker-1", "role": "Baker", "ordinal": 1 }
+  ],
+  "maxTicks": 20,
+  "maxCalls": 40,
+  "deadlineMs": 12000,
+  "minIntervalMs": 4000,
+  "memory": "own_append_only_transcript",
+  "maxRequestBytes": 95000,
+  "reasoningProfile": "per_turn_deliberation_v1",
+  "allowance": {
+    "maxRequests": 40,
+    "limitMicroUsd": 1000000,
+    "perRequestMicroUsd": 30000,
+    "windowHours": 24
+  }
+}

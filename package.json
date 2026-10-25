@@ -52,6 +52,9 @@
     "observatory:demo": "tsx scripts/observatory-demo.ts",
     "observatory:evaluate": "tsx scripts/evaluate-observatory.ts",
     "continuation:preflight": "tsx scripts/continuation-preflight.ts",
+    "continuation:reasoning-audit": "tsx scripts/audit-continuation-reasoning.ts",
+    "reasoning-test:readiness": "tsx scripts/reasoning-test-readiness.ts",
+    "reasoning-test:rehearse": "tsx scripts/rehearse-reasoning-test.ts",
     "test:observatory": "vitest run test/observatory.test.ts test/anthropicNodeWorker.test.ts test/clientProtocolConformance.test.ts"
   },
   "devDependencies": {

@@ -9,7 +9,9 @@ change. Its present implementation is a stage of development, not a ceiling on t
 ## Current development — 2026-10-25
 
 The follow-up reasoning audit found identical controls in the supplied historical ledger.
-A versioned per-turn deliberation condition and fresh 20-tick two-Baker plan are being verified.
+The opt-in per-turn deliberation condition now gives both Bakers identical high effort,
+2,048-token output caps and explicit system/per-turn guidance. The fresh 20-tick plan passes
+offline rehearsal. [Audit and prepared test](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
 **The new paid run must not start until the owner approves after readiness.**
 For Termux credential transfer, `scripts/credential-envelope.mjs` encrypts locally for the cloud
 recipient; plaintext keys never belong in chat, Git or logs.

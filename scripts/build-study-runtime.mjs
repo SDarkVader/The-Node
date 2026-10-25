@@ -18,7 +18,8 @@ mkdirSync(out, { recursive: true, mode: 0o700 });
 execFileSync(process.execPath, [join('node_modules', 'typescript', 'bin', 'tsc'), '--target', 'ES2022', '--module', 'NodeNext', '--moduleResolution', 'NodeNext',
   '--strict', '--noUncheckedIndexedAccess', '--skipLibCheck', '--types', 'node', '--outDir', out, '--rootDir', 'src',
   'src/eval/accountedRunner.ts', 'src/agent/experimentBudget.ts', 'src/agent/isolatedHost.ts', 'src/agent/isolatedHostChild.ts',
-  'src/eval/anthropicConnectionCheck.ts', 'src/eval/continuationRunner.ts', 'src/eval/continuationLedger.ts'], { stdio: 'inherit' });
+  'src/eval/anthropicConnectionCheck.ts', 'src/eval/continuationRunner.ts', 'src/eval/continuationLedger.ts',
+  'src/eval/reasoningAudit.ts'], { stdio: 'inherit' });
 writeFileSync(join(out, 'package.json'), '{"type":"module"}\n');
 writeFileSync(join(out, 'REVISION'), revision + '\n');
 console.log(JSON.stringify({ runtime: out, revision }, null, 2));

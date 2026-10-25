@@ -1,3 +1,16 @@
+# 2026-10-25 — reasoning-condition follow-up and fresh-test preparation
+
+Audited the owner-supplied private tick-18 archive: exact system/controls are equal, with
+13 versus six nonempty summary turns. Adaptive medium permits per-request omissions; no
+actor-specific budget difference, truncated/redacted block or missing checkpoint prefix was found.
+Added the opt-in per_turn_deliberation_v1 condition with uniform high effort and explicit
+system/per-turn guidance; legacy/frozen bytes are preserved. Prepared the fresh 20-tick plan,
+read-only readiness and owner-only start gate. Full suite 1,369 tests / 111 files and TypeScript
+passed; follow-up targeted checks and offline forty-call rehearsal passed. Actual Haiku
+emission under the new condition is not yet verified. No paid call or allowance activation.
+Encrypted credential transfer supports Termux without exposing keys in chat/Git/logs.
+See [reasoning audit and pending test](research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+
 # 2026-10-25 — cloud shared-world observatory
 
 Built from main afbdec7 (merged PR #38). Web and native Godot project one verified continuation

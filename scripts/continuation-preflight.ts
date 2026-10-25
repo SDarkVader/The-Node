@@ -22,7 +22,7 @@ if(budget.requests.length&&!parent)throw Error('preflight_latest_parent_required
 if(parent){
   if(!parent.recovery.resumable)throw Error('preflight_parent_not_resumable');
   const old=parent.recovery.plan;
-  if(digest([plan.seed,plan.actors,plan.model,plan.memory])!==digest([old.seed,old.actors,old.model,old.memory]))throw Error('preflight_parent_contract');
+  if(digest([plan.seed,plan.actors,plan.model,plan.memory,plan.reasoningProfile??null])!==digest([old.seed,old.actors,old.model,old.memory,old.reasoningProfile??null]))throw Error('preflight_parent_contract');
   if(parent.recovery.runId===auth.runId){
     if(continuationPlanHash(old)!==continuationPlanHash(plan)||budget.historyHash!==parent.recovery.budgetHistoryHash||
       budget.requests.length!==parent.summary!.calls||budget.booked.toString()!==parent.summary!.bookedMicroUsd||budget.held!==0n)throw Error('preflight_stale_parent_or_journal');

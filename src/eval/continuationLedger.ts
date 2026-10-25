@@ -82,8 +82,8 @@ function verifySegment(events: readonly ContinuationEvent[], expectedSourceRevis
   const parent = start.parent ? recoverContinuation(start.parent.events, start.parent.events[0]?.data.sourceRevision, depth + 1) : null;
   if (parent) {
     if (!parent.recovery.resumable || start.parent!.ledgerRoot !== parent.ledgerRoot) throw Error('continuation_parent_not_resumable');
-    equal([genesis, plan.actors, plan.model, plan.memory, start.mode],
-      [parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.mode], 'continuation_parent_contract');
+    equal([genesis, plan.actors, plan.model, plan.memory, plan.reasoningProfile ?? null, start.mode],
+      [parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.recovery.plan.reasoningProfile ?? null, parent.mode], 'continuation_parent_contract');
     if (plan.maxTicks <= parent.summary!.ticks) throw Error('continuation_parent_tick_limit');
   }
   const sameBudget = parent?.recovery.runId === start.runId;
@@ -93,7 +93,7 @@ function verifySegment(events: readonly ContinuationEvent[], expectedSourceRevis
   const baseline = sameBudget ? { calls: parent!.summary!.calls, booked: parent!.summary!.bookedMicroUsd, held: parent!.summary!.heldMicroUsd } : { calls: 0, booked: '0', held: '0' };
   if (parent) equal(start.baseline, baseline, 'continuation_baseline');
   const host = parent ? ContinuationHost.restore(parent.recovery.tape, plan.actors) : new ContinuationHost(genesis, plan.actors);
-  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes) : new ContinuationConversations(plan.maxRequestBytes);
+  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes, plan.reasoningProfile) : new ContinuationConversations(plan.maxRequestBytes, plan.reasoningProfile);
   const startTick = host.tick;
   if (start.stopAtTick !== undefined && (!Number.isSafeInteger(start.stopAtTick) || start.stopAtTick <= startTick || start.stopAtTick > plan.maxTicks)) throw Error('continuation_stage_bound');
   equal(start.identities, host.identities(), 'continuation_identity_mapping');

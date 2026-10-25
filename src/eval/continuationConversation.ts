@@ -9,6 +9,7 @@ import { buildResponsesRequest, responsesObservation, type AuthorizedObservation
 import { packObservation, unpackObservation } from '../agent/observationTables.js';
 import { sha256 } from '../agent/accountingStore.js';
 import { digest } from '../agent/replay.js';
+import { DELIBERATION_SYSTEM, DELIBERATION_TURN, DELIBERATION_EFFORT, validateReasoningProfile, type ContinuationReasoningProfile } from './continuationReasoning.js';
 
 export const CONTINUATION_MEMORY = 'This continuation experiment retains your own previous messages, decisions and provider-returned thinking. Reconsider earlier thinking using the current observation and experienced changes. Past observations and diary entries are historical evidence, not current facts, current recognition or permission. Diary degradation still applies to the current diary. Other agents\' private histories and evaluator state are unavailable.';
 const ENCODING = 'Observation patches are lossless: start with observation on the first user turn; for each later turn apply observationPatch in order. pathAdditions appends paths to a zero-based dictionary: [prefixLength,...suffix] copies that many keys/indexes from the preceding dictionary path, then appends suffix (first path uses prefixLength=0). Each observationPatch tuple [pathId,0,value] replaces that path; [pathId,1] deletes it; [pathId,2,index,deleteCount,items] splices that array. An empty path replaces the whole value. Unchanged fields retain their values. hearing.peopleRows lists row indexes into the current city.people table (ref column), losslessly encoding who can hear you. Only current legalMoves, hearing and recognition authorize actions.';
@@ -106,12 +107,13 @@ export function unpackContinuationObservation(packed: unknown) {
 }
 export class ContinuationConversations {
   #histories = new Map<string, History>();
-  constructor(readonly maxRequestBytes = 32768) {
+  constructor(readonly maxRequestBytes = 32768, readonly reasoningProfile?: ContinuationReasoningProfile) {
+    validateReasoningProfile(reasoningProfile);
     if (!Number.isSafeInteger(maxRequestBytes) || maxRequestBytes < 32768 || maxRequestBytes > 95000) throw Error('continuation_request_profile');
   }
   /** Only the independent ledger verifier supplies this reconstructed export to the runner. */
-  static restoreVerified(histories: [string, History][], maxRequestBytes = 32768) {
-    const restored = new ContinuationConversations(maxRequestBytes);
+  static restoreVerified(histories: [string, History][], maxRequestBytes = 32768, reasoningProfile?: ContinuationReasoningProfile) {
+    const restored = new ContinuationConversations(maxRequestBytes, reasoningProfile);
     restored.#histories = new Map(structuredClone(histories));
     return restored;
   }
@@ -128,7 +130,7 @@ export class ContinuationConversations {
     const guide = lines.join('\n').replace(noArchive, CONTINUATION_MEMORY)
       .replace(/\nnode-observation-tables-v1:.*$/, '');
     if (!guide.includes(CONTINUATION_MEMORY)) throw Error('continuation_rules_version');
-    const system = guide + '\n' + ENCODING + '\nnode-observation-tables-v1: columns name each field; rows hold its values. No information was omitted.';
+    const system = guide + (this.reasoningProfile ? '\n' + DELIBERATION_SYSTEM : '') + '\n' + ENCODING + '\nnode-observation-tables-v1: columns name each field; rows hold its values. No information was omitted.';
     if (h && h.system !== system) throw Error('continuation_system_changed');
     const packed = JSON.parse(JSON.stringify(packObservation(responsesObservation(observation))));
     packed.observation.hearing = { peopleRows: observation.context.hearingRefs!.map(ref => packed.observation.city.people.rows.findIndex((row: unknown[]) => row[0] === ref)) };
@@ -143,8 +145,10 @@ export class ContinuationConversations {
       }
       return p.splice ? [id, 2, p.splice.index, p.splice.deleteCount, p.splice.items] : p.remove ? [id, 1] : [id, 0, p.value];
     }) : [];
-    const turn = h ? { ...(h.roleRule !== roleRule ? { roleRule } : {}), pathAdditions, observationPatch: changes }
+    const input = h ? { ...(h.roleRule !== roleRule ? { roleRule } : {}), pathAdditions, observationPatch: changes }
       : { roleRule, observation: packed };
+    const turn = this.reasoningProfile ? { ...input, reasoningInstruction: DELIBERATION_TURN } : input;
+    if (this.reasoningProfile) wire.output_config.effort = DELIBERATION_EFFORT;
     const messages: Message[] = [...structuredClone(h?.messages ?? []), { role: 'user', content: [{ type: 'text', text: JSON.stringify(turn) }] }];
     const body = JSON.stringify({ ...wire, system, messages }), size = Buffer.byteLength(body, 'utf8');
     if (size > this.maxRequestBytes) throw Error('continuation_request_bound'); // never truncate signed history
