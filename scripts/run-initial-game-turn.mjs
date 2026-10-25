@@ -8,9 +8,11 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { assertLegacyLiveDispatchClosed } from './legacy-live-gate.mjs';
 
 const args = process.argv.slice(2);
 if (![5, 7].includes(args.length) || !/^[a-f0-9]{40}$/.test(args[4]) || args.length === 7 && args[5] !== '--resume') throw Error('explicit_arguments_required');
+assertLegacyLiveDispatchClosed();
 const [runtime, budgetDirectory, directory, keyPath] = args.slice(0, 4).map(x => resolve(x));
 const runnerRevision = args[4], priorDirectory = args.length === 7 ? resolve(args[6]) : null;
 const load = file => import(pathToFileURL(join(runtime, 'agent', file)).href);

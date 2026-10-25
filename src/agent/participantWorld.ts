@@ -6,6 +6,7 @@ import { mulberry32 } from '../sim/rng.js';
 import { parseGameAction, queueGameAction } from '../server/actionVocabulary.js';
 import { observe, observerRef, refHexLength } from '../server/observer.js';
 import { validateDecision, type Decision } from './protocol.js';
+import type { SocietyEconomyPlan } from '../engine/societyEconomy.js';
 
 export interface Genesis { seed: number; namespace: string; observerSecret: string; config: WorldConfig; sourceRevision: string }
 export interface CanonicalAction { person: string; epoch: number; tick: number; decision: Decision }
@@ -44,7 +45,7 @@ function applyMove(world: World, role: string | null, location: string, move: {x
 }
 
 /** Real kernel execution; callers must hold sole ownership of the mutable RNG lineage. */
-export function stepParticipantState(previous: ParticipantState, actions: readonly CanonicalAction[], online: readonly string[]): TickResult {
+export function stepParticipantState(previous: ParticipantState, actions: readonly CanonicalAction[], online: readonly string[], economy?: SocietyEconomyPlan): TickResult {
   const registry = structuredClone(previous.registry);
   let world: World = {...previous.world,diary:structuredClone(previous.world.diary),currentlyOnline:new Set(online)};
   const state: ParticipantState = {world,registry,genesis:previous.genesis};
@@ -119,7 +120,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       if (!a || !live(a) || registry.people.get(a.person)?.role !== 'baker' || !a.decision.role) return undefined;
       effects.push({person:a.person,category:'bakerPrice'}); return a.decision.role.price;
     },
-  });
+  }, economy);
   // A deferred move applies only to the same body, still in the same role episode and place;
   // if the day moved or replaced them (a transition, a refill), the move has no effect.
   for (const {a,location,from} of deferredMoves) {

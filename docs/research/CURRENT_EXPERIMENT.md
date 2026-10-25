@@ -1,4 +1,10 @@
-> **2026-10-25 update:** the separately approved fresh first-person Godot run completed
+> **2026-10-25 implementation update:** a new [secure society](SECURE_AGENT_SOCIETY_2026-10-25.md)
+> now supports two Bakers, one Miller and deterministic other residents through restricted contexts,
+> daily choices, connected transactions and temporary Oracle opportunities. Verified offline only;
+> no new live calls. Old leaking paid-dispatch routes are closed, with historical replay preserved.
+> The new society starts a distinct explicitly selected world; existing experiments are unchanged.
+>
+> **Earlier 2026-10-25 result:** the separately approved fresh first-person Godot run completed
 > 20 ticks / 40 paid calls, with 7/20 summary turns per Baker and USD0.100100 booked / zero held.
 > It is stopped with its request limit consumed; Study1 remains paused.
 > Read the [latest live results](FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).

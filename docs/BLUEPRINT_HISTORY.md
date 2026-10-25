@@ -4013,3 +4013,20 @@ district with 8 Detective slots. Investigation is near-constant rather than scar
 RULE so Phase C changes only who fills it.
 
 25 new tests, 647 total, typecheck clean.
+
+## 25 October 2026 — owner-directed functioning agent society
+
+The owner explicitly requested real everyday choices, initial two Bakers/one Miller, public
+daily locked prices, downstream constrained trade, deterministic other residents, a secure
+information boundary and temporary Oracle opportunities. Existing [0,2] price/[.01,1] quantity
+bounds resolve the missing price question. Preserve old experiments/defaults through an
+opt-in kernel plan. New direct purchases settle preserved margin claims through the existing
+pool rather than inventing a second seller credit. A one-Miller task uses actual sales,
+not an imaginary rival. Public prices are automatic civic quotes; resident Wall text retains
+existing rumour propagation. Coarse local heat closes exact Miller-decision exposure.
+
+The owner superseded the no-role-prize restriction only for temporary opportunities. The
+implemented prize is a personal prepaid Oracle entry for the next three days with real
+escrow, not a role grant or permanent standing. Old time prizes remain in historical/default
+paths. New accounted model execution is separate, capped, no-retry and approval/allowance gated.
+No live calls or remote push are authorized or performed by this implementation task.

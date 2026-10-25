@@ -3,12 +3,16 @@
 import { readFileSync, lstatSync, openSync, writeFileSync, closeSync, fsyncSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertLegacyLiveDispatchClosed } from './legacy-live-gate.mjs';
 
 const durable = (path, value, flag = 'wx') => {
   const fd = openSync(path, flag, 0o600);
   try { writeFileSync(fd, value); fsyncSync(fd); } finally { closeSync(fd); }
 };
 export async function runAnthropicWorker({ keyPath, directory, maxRequestBytes = 32768, profile = 'legacy', endpoint = 'messages' }, fetcher = fetch) {
+  // Explicitly injected transports retain the offline fixture contract. The real transport
+  // is closed before any credential, request file, attempt marker or network access.
+  if (fetcher === globalThis.fetch) assertLegacyLiveDispatchClosed();
   const networkPath = join(directory, 'network.json'), responsePath = join(directory, 'response.json');
   if (existsSync(networkPath) || existsSync(responsePath)) throw Error('worker_artifacts_exist');
   const safeEndpoint = endpoint === 'count_tokens' ? 'count_tokens' : 'messages';

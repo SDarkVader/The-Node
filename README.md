@@ -31,6 +31,28 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-25
 
+An opt-in secure society now runs two initially controlled Bakers and one Miller, with autonomous
+Courier, Investigator, Import/Export and roleless residents. Daily locked Wall prices, explicit
+production/customer choices, finite grain/flour, genuine sales/completion, local observations,
+communication, eligible diaries and escrow-backed expiring Oracle entries are implemented.
+Invalid actions halt execution. Old leaking paid-dispatch paths are closed; archived replay stays
+available. Historical worlds, private journals and stopped studies are preserved.
+
+```powershell
+npm run society -- --ticks 14 --output .codex/session-recovery/society/proof-14.json
+npm run society -- --verify .codex/session-recovery/society/proof-14.json
+npm run society -- --interactive --ticks 3 --output .codex/session-recovery/society/supervised-3.json
+```
+
+The first commands use deterministic model fixtures; interactive play supervises local JSON
+choices. Neither bills a model. The new accounted model runner requires separately reviewed
+approval, a matching carried allowance and private evidence paths; it has only been exercised
+with synthetic senders. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
+Current work is local on `codex/secure-agent-society-2026-10-25`, based on `4196b79`; no remote push
+or paid call is part of this work. Source-anchored final verification is recorded in the recovery checkpoint.
+
+## Historical first-person development — 2026-10-25
+
 The owner-approved **fresh first-person Godot run completed 20 ticks and 40 paid Haiku calls**.
 Both Bakers returned **7 nonempty thinking summaries in 20 decisions**. Every request used the
 same system, explicit per-turn guidance, high effort and 2,048-token total output cap; both

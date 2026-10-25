@@ -1,6 +1,10 @@
 # GitHub-first continuation — The Node
 
 Updated 2026-10-25. A fresh phone, PC or cloud session can recover development context from GitHub.
+Local work on `codex/secure-agent-society-2026-10-25` has intentionally not been pushed, at the
+owner's direction. Its [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)
+closes old real-dispatch paths while retaining historical verification. The current local recovery
+checkpoint names this branch; a remote-only checkout cannot contain these unpushed commits.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 

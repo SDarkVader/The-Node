@@ -12,11 +12,14 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { assertPowerShell7 } from './pwsh-preflight.mjs';
+import { assertLegacyLiveDispatchClosed } from './legacy-live-gate.mjs';
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith('--')));
 const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--max-usd');
 if (positional.length !== 3 || [...flags].some((f) => !['--send-one', '--max-usd'].includes(f))) throw Error('explicit_arguments_required');
+// Free token counts also send the historical context to a remote service.
+assertLegacyLiveDispatchClosed();
 const [runtime, directory, keyPath] = positional.map((x) => resolve(x));
 const maxUsdArg = args.includes('--max-usd') ? Number(args[args.indexOf('--max-usd') + 1]) : 0.01;
 if (!(maxUsdArg > 0 && maxUsdArg <= 0.05)) throw Error('max_usd_out_of_range');
