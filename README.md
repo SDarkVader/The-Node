@@ -198,3 +198,8 @@ verification, framework import and Thinking History integration through `3723a49
 `codex/observatory-windows-2026-10-23` branch contains the accounted live environmental runner
 and sanitized tick-38 results. Existing cloud PR #39 overlaps observatory paths and requires
 deliberate reconciliation before main integration. No automatic merge or model call is requested.
+
+Review links: [PR #40 — observatory foundation](https://github.com/SDarkVader/The-Node/pull/40),
+then [PR #41 — accounted environmental continuation/results](https://github.com/SDarkVader/The-Node/pull/41),
+which currently targets the foundation branch. Existing [PR #39](https://github.com/SDarkVader/The-Node/pull/39)
+contains separate overlapping cloud work and remains unchanged. Nothing has been merged.
