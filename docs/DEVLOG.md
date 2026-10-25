@@ -1,3 +1,16 @@
+# 2026-10-25 — approved fresh first-person live run completed
+
+After actual journal/native readiness and separate owner approval, pinned runtime93f4a99
+completed20 ticks,40 paid Haiku calls and40 token counts. Both Bakers returned7/20 native
+summary turns under identical high-effort guidance/caps; all responses ended normally, with
+no failures/retries. BookedUSD0.100100, held0, forty-call grant consumed; process stopped.
+Exact own histories, receipts, admissions and world independently verify; current new journal
+and compiled observatory match. Original ledger/journal bytes are unchanged. Actual browser
+and both native views match selected history and show returned summaries verbatim. Separate
+Inspect execution share40/40, zero model calls; A01 not applicable. Raw data/live screenshots
+remain private; a private portable viewing bundle contains no credential. Equal counts do
+not establish a causal effect or guarantee thinking. See [live results](research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+
 # 2026-10-25 — fresh first-person integration and interface verification
 
 Integrated the needed PR #40/#41 perception/context/worker components into PR #39 and preserved
@@ -11,7 +24,11 @@ synthetic rehearsal; compiled replay/observatory matched, Inspect execution shar
 and A01 was explicitly not applicable. The follow-up desktop/mobile browser and both native
 views agree on selected history. Fixed stale plan validation and cloud proxy settings;
 eleven targeted fresh/transport checks pass. No real provider/count request or allowance.
-Latest actual journal and separate owner execution approval are still required. Added PC and
+At follow-up source 93f4a99, packaged native preflight and actual local readiness checks pass
+within their scopes; hosted Linux/Windows verification and audit pass. The owner merged #41
+into #40 at 5f84cc0; #39/#40 remain open and main is unchanged. The owner supplied the actual latest journal: full accounting replay, exact tick-38 ledger
+binding, zero holds and closed prior grant pass. Pinned native read-only preflight passes, with
+original files unchanged. Separate owner execution approval is pending; no live call or grant. Added PC and
 private-Codespace launch recipes. See [first-person proof](research/evidence/first-person-offline-2026-10-25.json).
 
 # 2026-10-25 — reasoning-condition follow-up and fresh-test preparation

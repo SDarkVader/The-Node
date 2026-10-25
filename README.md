@@ -8,62 +8,48 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current development — 2026-10-25
 
-The reasoning audit confirms the original **14/28 versus 8/28** summary counts and a further
-**2/10 versus 1/10** through tick 38. Actual controls match and exact own histories are preserved for both
-actors; the exact runtime from [PR #41](https://github.com/SDarkVader/The-Node/pull/41) verifies
-the complete archive. Adaptive medium-effort thinking left emission optional.
+The owner-approved **fresh first-person Godot run completed 20 ticks and 40 paid Haiku calls**.
+Both Bakers returned **7 nonempty thinking summaries in 20 decisions**. Every request used the
+same system, explicit per-turn guidance, high effort and 2,048-token total output cap; both
+started with zero inherited model turns. All responses ended normally, with no failures or
+paid retries. The new allowance booked **USD 0.100100**, with zero held funds, within its USD 1
+cap. The forty-request authorization is consumed; the run is stopped and Study 1 remains paused.
+[Live results and verification](docs/research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
 
-The owner selected a **fresh 20-tick first-person Godot test**, with zero inherited model turns.
-Both agents receive common high effort, a 2,048-token output cap and explicit guidance on every
-turn. Perception components from #40/#41 are integrated into the cloud branch; fresh and
-historical perception ledgers feed the same verified web/Godot observatory. Two actual workers
-agree before delivery. The development offline rehearsal completed 40 synthetic decisions /
-20 real ticks; the committed runtime and independent replay also pass.
-[Diagnosis, selected plan and readiness workflow](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+The original audit confirms **14/28 versus 8/28**, followed by **2/10 versus 1/10** through
+tick 38. Both actors had equal medium-effort adaptive controls and complete own histories.
+The exact runtime from [PR #41](https://github.com/SDarkVader/The-Node/pull/41) verifies that
+archive. Adaptive thinking permits omissions; no actor-specific lower budget or parser loss
+was found. The fresh condition adds common high effort and explicit deliberation guidance.
+Its equal observed counts do not establish a causal effect or guarantee a summary every tick.
+[Diagnosis and versioned conditions](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
 
-**The paid run remains stopped until readiness and separate owner approval.** The encrypted
-credential is installed privately and passes local format/permission checks. The actual latest
-accounting journal is still required; no new grant has been activated or provider request sent.
-The proposal is capped at USD 1 with a conservative forty-request ceiling of USD 0.881920.
-Actual provider emission remains unverified by the synthetic rehearsal.
-
-The cloud observatory connects web and native Godot to one replay-verified continuation world,
-with a shared timeline, exact returned summaries, actor-specific observations, admission/effect
-records, read-only accounting and separately attributed A01/Inspect evaluations. Configuration,
-read-only recovery preflight and credential-separated Node execution work remotely.
-[Run the integrated workflow](docs/research/OBSERVATORY_RUNBOOK.md).
-[Verified results and screenshots](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
+The cloud observatory connects web and native Godot to one replay-verified experiment world,
+with shared history selection, verbatim returned summaries, authorized observations, decisions,
+effects, current accounting and separately attributed evaluations. Two actual Godot workers
+agreed on all forty live perception packets; independent replay, final observatory world and
+journal binding pass. Desktop/mobile and both native views agree on selected live-run history.
+Inspect AI separately reports execution share 40/40; A01 is explicitly not applicable to the
+first-person diary-null condition. Private transcripts, journals, credentials and live
+screenshots remain outside Git. A private portable viewing bundle was prepared for the owner.
 
 At first-person source `be8a3b4652a58e4740a8fb310143223e176e72dc`, all **1,458 Vitest tests /
-116 files** passed with actual Godot enabled. Eight recovery tests passed. The bundled
-preflight makes zero provider/count requests and activates no allowance. Two real workers
-agreed on all forty perception packets in the committed twenty-tick synthetic rehearsal;
-independent compiled replay and observatory world hashes matched. Separate Inspect AI 0.3.282
-execution share is 40/40; A01 is not applicable to the diary-null condition. Earlier seven-role
-society evidence remains scoped in the linked cloud results.
-The follow-up Chromium check passed on desktop/mobile, with both native Godot views matching
-the selected historical cursor. Fresh plan validation/download and stale-response protection
-passed; source ledgers/journals stayed unchanged.
-[First-person proof and screenshots](docs/research/evidence/first-person-offline-2026-10-25.json).
+116 files** passed with actual Godot, plus eight recovery tests. At follow-up/live source
+`93f4a9966cedd326e709b96bbdcbc9ee8b632026`, TypeScript, eleven fresh/transport tests, independent
+runtime preflight and all hosted checks pass. The earlier seven-role synthetic society proof
+and separate evaluations remain scoped in the [cloud results](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
 
 Development branch: `codex/cloud-observatory-2026-10-25`, in
 [PR #39](https://github.com/SDarkVader/The-Node/pull/39), based on main `afbdec7` (merged PR #38).
-The offline rehearsal uses seven roles, 140 scripted decisions and 20 kernel ticks, including a
-sealed-checkpoint restart. Synthetic reasoning/accounting are explicitly labelled. No paid
-provider call or Study 1 reactivation is part of this work. Real pilot evidence remains private.
+The owner merged #41 into #40 at `5f84cc0`; #39 and #40 remain open, with main unchanged.
+The needed perception components are integrated in #39; #40's richer presentation uses a
+different server/registration API and still needs reconciliation before combining branches.
 
-```sh
-npm run observatory:demo -- ../node-demo
-npm run observatory:evaluate -- ../node-demo/registration.json synthetic-rehearsal ../node-demo/a01-evaluation
-# Configure private access tokens, then:
-npm run observatory -- ../node-demo/registration.json
-```
-
-For a complete Windows or browser-only launch recipe, including access-token setup, see
-[Open the interface](docs/research/OBSERVATORY_RUNBOOK.md#open-the-interface-on-your-pc-or-in-a-private-codespace).
-The demo needs Node and npm, with no provider key or Godot installation. The separate native
-first-person rehearsal also requires Godot. The PR is source for review; it does not host a
-public interface or activate an experiment.
+**Open the interface:** follow the [Windows PC or private-Codespace recipe](docs/research/OBSERVATORY_RUNBOOK.md#open-the-interface-on-your-pc-or-in-a-private-codespace).
+The synthetic demo needs Node/npm and no provider key or Godot installation. To view the
+actual completed run, use the owner's private viewing bundle and its relative registration;
+viewing does not dispatch a model or advance the experiment. The PR does not provision a
+public host. [Synthetic screenshots and proof](docs/research/evidence/first-person-offline-2026-10-25.json).
 
 ## Recorded live experiment — 2026-10-23
 

@@ -1,3 +1,9 @@
+> **2026-10-25 update:** the separately approved fresh first-person Godot run completed
+> 20 ticks / 40 paid calls, with 7/20 summary turns per Baker and USD0.100100 booked / zero held.
+> It is stopped with its request limit consumed; Study1 remains paused.
+> Read the [latest live results](FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+> The earlier continuation checkpoint and programme context below retain their historical scope.
+
 # Current experiment — reasoning continuity in The Node
 
 Updated 2026-10-25. This page describes the current experiment and its further work.

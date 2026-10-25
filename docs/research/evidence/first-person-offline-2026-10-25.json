@@ -100,17 +100,84 @@
     "mobile": "first-person-mobile-2026-10-25.png"
   },
   "actualReadiness": {
-    "actualLatestJournalProvided": false,
+    "actualLatestJournalProvided": true,
     "credentialLocalChecks": "private_file_format_valid_network_not_tested",
-    "readyForOwnerApproval": false,
+    "readyForOwnerApproval": true,
     "executionApproval": "pending_separate_owner_instruction",
     "allowanceActivated": false,
     "providerCalls": 0,
-    "freeTokenCountRequests": 0
+    "freeTokenCountRequests": 0,
+    "journalAccountingReplayVerified": true,
+    "latestLedgerBindingVerified": true,
+    "priorGrantClosed": true,
+    "heldMicroUsd": "0",
+    "originalSourcesUnchanged": true
   },
   "privacy": {
     "rawPrivateEvidenceIncluded": false,
     "credentialsIncluded": false,
     "screenshotsContainOnlySyntheticRehearsal": true
-  }
+  },
+  "followUp": {
+    "sourceRevision": "93f4a9966cedd326e709b96bbdcbc9ee8b632026",
+    "typecheck": true,
+    "targetedFreshTransportTestsPassed": 11,
+    "runtimeBuildPassed": true,
+    "bundlePreflight": {
+      "accounting": "TEST_ONLY_SYNTHETIC_REFERENCES",
+      "ownerApproved": false,
+      "credentialFilePresent": false,
+      "instructionFilePresent": false,
+      "nativeWorkerAgreementBoth": true,
+      "allowanceActivated": false,
+      "paidDispatches": 0,
+      "freeTokenCountRequests": 0,
+      "originalSourcesUnchanged": true
+    },
+    "actualLocalReadiness": {
+      "sourceWorkingTreeClean": true,
+      "credential": "private_file_format_valid_network_not_tested",
+      "funding": "actual_journal_not_provided",
+      "bothNativeWorkersAgree": true,
+      "readyForOwnerApproval": false,
+      "dispatchApproved": false,
+      "providerCalls": 0,
+      "kernelTransitions": 0
+    },
+    "hostedChecks": [
+      {
+        "name": "offline-conformance",
+        "runId": 40184141140,
+        "status": "passed"
+      },
+      {
+        "name": "offline-verification",
+        "runId": 40184141138,
+        "status": "passed"
+      },
+      {
+        "name": "audit",
+        "runId": 40184141134,
+        "status": "passed"
+      }
+    ]
+  },
+  "actualJournalPreflight": {
+    "runtimeSourceRevision": "93f4a9966cedd326e709b96bbdcbc9ee8b632026",
+    "localReadinessSourceRevision": "be8582310d6daef79d88132e6d9c8e4422fedba2",
+    "sourceWorkingTreeCleanAtReadiness": true,
+    "readyForOwnerApproval": true,
+    "nativeWorkerAgreementBoth": true,
+    "startTick": 0,
+    "targetTick": 20,
+    "freshGenesis": true,
+    "priorModelTurns": 0,
+    "originalSourcesUnchanged": true,
+    "ownerApproved": false,
+    "allowanceActivated": false,
+    "providerCalls": 0,
+    "freeTokenCountRequests": 0,
+    "invoiceBillingReconciled": false
+  },
+  "scope": "Offline proof and pre-execution readiness only; subsequent approved live result is in first-person-live-20-ticks-2026-10-25.json"
 }

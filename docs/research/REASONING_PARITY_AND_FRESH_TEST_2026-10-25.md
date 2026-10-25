@@ -1,7 +1,10 @@
 # Reasoning conditions and the fresh twenty-tick check
 
-Updated 2026-10-25. **The owner requires readiness and a separate approval before starting
-the new paid run. No new provider call or allowance activation has been made.**
+Updated 2026-10-25. **The owner separately approved the ready fresh run. It completed
+20 ticks / 40 paid calls, with 7/20 nonempty summaries for each Baker, USD 0.100100 booked
+and zero held. The run is stopped; no further calls are authorized by its consumed limit.**
+See [live results](FIRST_PERSON_LIVE_RESULTS_2026-10-25.md). The preparation and diagnostic
+evidence below retain their original scope.
 
 ## Evidence and diagnosis
 
@@ -27,7 +30,8 @@ The later segment uses the distinct `perception_*` ledger format and names runne
 checkout compiled, its full perception verifier passed on the actual archive, and nine
 perception-continuation plus four frozen Study 1 tests passed. Request reconstruction,
 audit bindings, exact signed histories, admission, costs and world replay now verify.
-The actual latest allowance journal is still pending, so current journal binding is not claimed.
+The owner subsequently supplied the actual latest journal; its full accounting replay and
+exact latest-ledger history fingerprint now pass, with zero held funds and a closed prior grant.
 [Sanitized audit results](evidence/reasoning-parity-private-archive-audit-2026-10-25.json)
 record the source-pinned verification. No new provider request was made.
 
@@ -85,7 +89,7 @@ silently switch profiles or rewrite its system. Anthropic explicitly warns that 
 `system` while resending signed thinking can return HTTP 400. The owner's selected test is
 fresh, so both actors receive the new system from genesis with no inherited context.
 
-## Owner-selected fresh first-person test, pending approval
+## Owner-selected fresh first-person condition
 
 The owner explicitly selected **first-person Godot perception from PR #41**, beginning at
 fresh genesis with no prior model context. The earlier original-observer proposal is not
@@ -122,10 +126,14 @@ These are proposals/bounds, not spending, invoices or an activated clock.
 
 The owner's authenticated encrypted credential upload is installed privately with mode
 0600. Its format/permissions pass local checks; provider authentication is untested. Actual
-funding remains `actual_journal_not_provided`. The latest `accounting.journal.json` must pass
-its checksum, full accounting replay and exact binding to the supplied latest ledger, with
-no unresolved holds or overrun and a closed prior grant. An older journal is rejected.
-Neither the archive nor synthetic rehearsal accounting replaces this file.
+funding now passes after the owner supplied the actual latest `accounting.journal.json`.
+The private original and a byte-identical working copy pass checksum, full accounting replay
+and exact binding to the supplied latest ledger, with no unresolved holds or overrun and a
+closed prior grant. The pinned 93f4a99 runner’s read-only native preflight also passes using
+those actual files. Both originals remain unchanged. An older journal is rejected.
+Neither the archive nor synthetic rehearsal accounting replaces this file. After approval,
+the new cloud allowance carried this verified history; its resulting journal is now the latest
+accounting snapshot for any future run. The tick-38 uploaded journal remains preserved history.
 
 Offline preparation, using an actual installed Godot binary:
 
@@ -165,7 +173,9 @@ node <runtime>/scripts/run-fresh-reasoning-test.mjs <runtime> <actual-latest-led
 
 The latest ledger is a financial binding reference only. It is never the model/world parent.
 The paid path requires replacing the final flag with `--owner-approved-fresh-20-ticks` only
-**after readiness and separate explicit owner approval**. Do not run that path yet. It creates
+**after readiness and separate explicit owner approval**. The owner approved this specific
+run and its forty paid requests are now consumed; do not invoke the paid path again without
+a new explicit instruction and current funding verification. The path creates
 the new carried allowance and starts its clock only after real Godot/request preflight.
 No automatic retry or signature/history rewrite is permitted. The later actual live report
 must distinguish per-actor summary presence, missing blocks, truncation, usage and effects
