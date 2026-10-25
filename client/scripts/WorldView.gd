@@ -106,6 +106,9 @@ const STATION_ICON_SIZE := 13.0
 const STATION_ICON_ALPHA := 0.55
 
 var socket := WebSocketPeer.new()
+var observatory_cursor := ""
+var retry_at := 0
+var retry_delay := 1000
 var was_connected := false
 var logged_first_tick := false
 var _falloff: ImageTexture
@@ -131,11 +134,14 @@ func _ready() -> void:
 	# Godot's WebSocketPeer requires an explicit path before any query string — a bare
 	# "host:port" is rejected as invalid. Kept from the original scaffold, where a real Godot
 	# run (not a throwaway JS client) was what caught it.
-	var err := socket.connect_to_url("%s/" % SERVER_HOST)
+	var token := OS.get_environment("NODE_OBSERVATORY_TOKEN")
+	if token != "":
+		socket.handshake_headers = PackedStringArray(["Authorization: Bearer " + token])
+	var err := socket.connect_to_url(_world_url())
 	if err != OK:
 		hud.text = "Failed to start connection (error %d)" % err
 		return
-	hud.text = "Connecting to %s..." % SERVER_HOST
+	hud.text = "Connecting to world stream..."
 	_falloff = _build_falloff(128)
 
 
@@ -150,7 +156,11 @@ func _process(_delta: float) -> void:
 			_handle_message(socket.get_packet().get_string_from_utf8())
 	elif state == WebSocketPeer.STATE_CLOSED:
 		was_connected = false
-		hud.text = "Disconnected (code %d) — is `npm run server` running?" % socket.get_close_code()
+		hud.text = "Disconnected (code %d) — reconnecting to configured world stream" % socket.get_close_code()
+		if Time.get_ticks_msec() >= retry_at:
+			retry_at = Time.get_ticks_msec() + retry_delay
+			retry_delay = mini(retry_delay * 2, 30000)
+			socket.connect_to_url(_world_url())
 
 
 func _handle_message(raw: String) -> void:
@@ -194,6 +204,10 @@ func _handle_tick(msg: Dictionary) -> void:
 	# JSON numbers always parse as float in GDScript; int-typed fields need an explicit cast
 	# or assigning into a declared `int` throws at runtime.
 	day = int(msg.get("day", 0))
+	retry_delay = 1000
+	if msg.has("cursor") and str(msg["cursor"]) != observatory_cursor:
+		observatory_cursor = str(msg["cursor"])
+		print("[NODE observatory] tick=%d worldHash=%s cursor=%s mode=%s" % [day, str(msg.get("worldHash", "")), observatory_cursor, str(msg.get("mode", ""))])
 	economic_health = float(msg.get("economicHealth", 1.0))
 	people = msg.get("people", [])
 
@@ -210,7 +224,7 @@ func _handle_tick(msg: Dictionary) -> void:
 
 	hud.text = "Day %d    health %.3f    tension %.3f    %d people" % [
 		day, economic_health, mean_tension, people.size()
-	]
+	] + _observatory_hud(msg)
 	if not logged_first_tick:
 		logged_first_tick = true
 		print("[NODE] first tick: day %d, %d people, %d stations, health %.3f" % [
@@ -470,3 +484,30 @@ func _draw_role_icon(at: Vector2, role, col: Color, size: float = ICON_SIZE) -> 
 			# Roleless: a plain mark. Present, visible, unlabelled — never invisible, which is
 			# constraint 6's floor expressed visually.
 			draw_circle(at, r * 0.3, col)
+
+
+## Configurable endpoint (2026-10-23). The observatory bridge serves a recorded experiment on its
+## own port and path: `godot --path client -- --world-url=ws://127.0.0.1:8090/observatory/v1/godot?run=<id>&token=<renderer token>`,
+## or NODE_WORLD_URL. Without either, the standalone world server at SERVER_HOST, as before.
+func _world_url() -> String:
+	var cloud_url := OS.get_environment("NODE_OBSERVATORY_URL")
+	if cloud_url != "":
+		return cloud_url
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--world-url="):
+			return arg.substr("--world-url=".length())
+	var env := OS.get_environment("NODE_WORLD_URL")
+	if env != "":
+		return env
+	return "%s/" % SERVER_HOST
+
+
+## Observatory frames carry ignored-by-default metadata. Shown, never acted on; the token in the
+## URL is never printed.
+func _observatory_hud(msg: Dictionary) -> String:
+	if not msg.has("sourceTick"):
+		return ""
+	var tag := "  SYNTHETIC" if msg.get("synthetic", false) else ""
+	return "    observatory %s  tick %d  world %s%s" % [
+		str(msg.get("mode", "")), int(msg.get("sourceTick", 0)), str(msg.get("worldHash", "")).substr(0, 12), tag
+	]

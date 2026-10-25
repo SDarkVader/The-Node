@@ -190,6 +190,11 @@ export class ExperimentBudget {
   }
   static open(directory: string, options: AccountingStoreOptions = {}) { return new ExperimentBudget(AccountingStore.open(directory, validate, options)); }
 
+  /** Pure validation/projection for observers. Never opens a store, acquires a lock or writes. */
+  static inspect(document: unknown, now = new Date().toISOString()) {
+    return experimentView(validate(document), now);
+  }
+
   #append(event: Event) { const d = this.store.current(); d.events.push(structuredClone(event)); this.store.commit(d); }
   carriedFingerprint(): string { return this.store.current().carried.fingerprint; }
   carriedPrices(): AccountingPrices | null { return structuredClone(this.store.current().carried.summary.prices); }
@@ -215,14 +220,18 @@ export class ExperimentBudget {
     this.#append({ kind: 'settlement', value }); return 'settled';
   }
   view(now = new Date().toISOString()) {
-    if (!iso(now)) return fail('experiment_budget_time');
-    const d = this.store.current(), s = replay(d), a = s.authorization;
-    const outstanding = s.requests.some(q => q.bookedMicroUsd === null);
-    const remaining = a ? BigInt(a.limitMicroUsd) - s.booked - s.held : null;
-    const stop = !a ? 'not_authorized' : now < a.authorizedAt ? 'not_yet_open' : now >= a.expiresAt ? 'expired' : s.overrun ? 'overrun'
-      : outstanding ? 'outstanding_hold' : s.requests.length >= a.maxRequests ? 'request_limit' : remaining! <= 0n ? 'cost_limit' : null;
-    return { ...s, historyHash: fingerprint(d), carried: structuredClone(d.carried.summary), remainingMicroUsd: remaining,
-      historicalBillingReconciled: false as const, budgetScope: 'new_experiment_spending_only' as const, canReserve: stop === null, stopReason: stop };
+    return experimentView(this.store.current(), now);
   }
   close() { this.store.close(); }
+}
+
+function experimentView(d: Document, now: string) {
+  if (!iso(now)) return fail('experiment_budget_time');
+  const s = replay(d), a = s.authorization;
+  const outstanding = s.requests.some(q => q.bookedMicroUsd === null);
+  const remaining = a ? BigInt(a.limitMicroUsd) - s.booked - s.held : null;
+  const stop = !a ? 'not_authorized' : now < a.authorizedAt ? 'not_yet_open' : now >= a.expiresAt ? 'expired' : s.overrun ? 'overrun'
+    : outstanding ? 'outstanding_hold' : s.requests.length >= a.maxRequests ? 'request_limit' : remaining! <= 0n ? 'cost_limit' : null;
+  return { ...s, historyHash: fingerprint(d), carried: structuredClone(d.carried.summary), remainingMicroUsd: remaining,
+    historicalBillingReconciled: false as const, budgetScope: 'new_experiment_spending_only' as const, canReserve: stop === null, stopReason: stop };
 }

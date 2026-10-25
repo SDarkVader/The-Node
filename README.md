@@ -6,12 +6,85 @@ Authority, cooperation, information asymmetry and economic behaviour are part of
 programme. The current experiment studies reasoning continuity as world state and diary contents
 change. Its present implementation is a stage of development, not a ceiling on the programme.
 
-## Current experiment — 2026-10-23
+## Open the interface
+
+In a terminal on the computer where you will open the browser:
+
+```sh
+git clone --branch main https://github.com/SDarkVader/The-Node.git The-Node-main-review
+cd The-Node-main-review
+npm ci
+npm run preview
+```
+
+Wait for **Observatory ready**, open the printed URL and paste the printed **interface login
+token**. Keep the terminal running. The default is a two-tick synthetic demo, with no provider
+key or paid calls. To view the owner's completed run, use
+`npm run preview -- <private-bundle>/registration.json` instead.
+
+For browser-only access, [open a private GitHub Codespace on main](https://codespaces.new/SDarkVader/The-Node?ref=main),
+wait for dependency setup, then run `npm run preview` in its terminal. Open the printed
+Codespaces HTTPS URL, keep port 8090 private, and use the printed interface token.
+`127.0.0.1` always refers to the device opening the browser; a cloud process is not reachable
+at that address from your phone or PC. `ERR_CONNECTION_REFUSED` means the server has not
+started on that device/forwarded port. This repository does not provision a public host.
+
+## Current development — 2026-10-25
+
+The owner-approved **fresh first-person Godot run completed 20 ticks and 40 paid Haiku calls**.
+Both Bakers returned **7 nonempty thinking summaries in 20 decisions**. Every request used the
+same system, explicit per-turn guidance, high effort and 2,048-token total output cap; both
+started with zero inherited model turns. All responses ended normally, with no failures or
+paid retries. The new allowance booked **USD 0.100100**, with zero held funds, within its USD 1
+cap. The forty-request authorization is consumed; the run is stopped and Study 1 remains paused.
+[Live results and verification](docs/research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+
+The original audit confirms **14/28 versus 8/28**, followed by **2/10 versus 1/10** through
+tick 38. Both actors had equal medium-effort adaptive controls and complete own histories.
+The exact runtime from [PR #41](https://github.com/SDarkVader/The-Node/pull/41) verifies that
+archive. Adaptive thinking permits omissions; no actor-specific lower budget or parser loss
+was found. The fresh condition adds common high effort and explicit deliberation guidance.
+Its equal observed counts do not establish a causal effect or guarantee a summary every tick.
+[Diagnosis and versioned conditions](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+
+The cloud observatory connects web and native Godot to one replay-verified experiment world,
+with shared history selection, verbatim returned summaries, authorized observations, decisions,
+effects, current accounting and separately attributed evaluations. Two actual Godot workers
+agreed on all forty live perception packets; independent replay, final observatory world and
+journal binding pass. Desktop/mobile and both native views agree on selected live-run history.
+Inspect AI separately reports execution share 40/40; A01 is explicitly not applicable to the
+first-person diary-null condition. Private transcripts, journals, credentials and live
+screenshots remain outside Git. A private portable viewing bundle was prepared for the owner.
+
+At first-person source `be8a3b4652a58e4740a8fb310143223e176e72dc`, all **1,458 Vitest tests /
+116 files** passed with actual Godot, plus eight recovery tests. At follow-up/live source
+`93f4a9966cedd326e709b96bbdcbc9ee8b632026`, TypeScript, eleven fresh/transport tests, independent
+runtime preflight and all hosted checks pass. The earlier seven-role synthetic society proof
+and separate evaluations remain scoped in the [cloud results](docs/research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md).
+
+Shared recovery branch: `main`. [PR #39](https://github.com/SDarkVader/The-Node/pull/39)
+consolidates the cloud line with PR #40 at `5f84cc0`, including merged PR #41.
+The cloud interface and fresh first-person workflow stay the default. The original-observer
+Thinking/History interface, annotations and sample importer are retained under
+`src/observatory/legacy/`, with their original explicit registration/API contracts:
+`npm run observatory:legacy -- serve <legacy-registration.json>`. Original `observatory --
+serve|verify|evaluate|export-frames` commands remain compatible. Both viewers reconstruct
+recorded experiment worlds; neither runs a substitute simulation or dispatches a model.
+[Integration details and supported entry points](docs/recovery/MAIN_INTEGRATION_2026-10-25.md).
+
+**Open the interface:** follow the [Windows PC or private-Codespace recipe](docs/research/OBSERVATORY_RUNBOOK.md#open-the-interface-on-your-pc-or-in-a-private-codespace).
+The synthetic demo needs Node/npm and no provider key or Godot installation. To view the
+actual completed run, use the owner's private viewing bundle and its relative registration;
+viewing does not dispatch a model or advance the experiment. The PR does not provision a
+public host. [Synthetic screenshots and proof](docs/research/evidence/first-person-offline-2026-10-25.json).
+The [GitHub-first handover](docs/recovery/GITHUB_FIRST_CONTINUATION.md) records the completed
+run and the requirement to use its new latest journal for any separately authorized follow-up.
+
+## Recorded live experiment — 2026-10-23
 
 Start with [the current experiment](docs/research/CURRENT_EXPERIMENT.md) and
 [read the sanitized results](docs/research/CONTINUATION_PILOT_RESULTS_2026-10-23.md).
-They are on development branch `codex/stateful-continuation-2026-10-23` in
-[PR #38](https://github.com/SDarkVader/The-Node/pull/38), which is open.
+They were merged in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
 
 The live pilot completed **36 paid decisions across 18 real world ticks**, using two Bakers
 and Haiku 5.5. An initial four-call pilot was extended by 32 decisions over 16 ticks, continuing
@@ -39,10 +112,9 @@ with one existing Windows skip, eight recovery checks and hosted Windows/Linux C
 All three live checkpoint segments replayed independently; Inspect 0.3.282 imported the 32 new
 samples without extra calls. These are recorded results, not new runs implied by a docs update.
 
-The owner is preparing a realtime web/Godot observatory. The
-[Claude Design handover](docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
-maps existing evidence, provider summaries, world frames and framework outputs to proposed adapters.
-It distinguishes implemented interfaces from development work; no dashboard or new run is claimed.
+The [original observatory handover](docs/research/CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md)
+is historical design context. The [current runbook](docs/research/OBSERVATORY_RUNBOOK.md) documents
+the implemented adapters and remaining development work.
 
 ## How the environment and evaluation work
 

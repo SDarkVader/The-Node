@@ -1,6 +1,12 @@
+> **2026-10-25 update:** the separately approved fresh first-person Godot run completed
+> 20 ticks / 40 paid calls, with 7/20 summary turns per Baker and USD0.100100 booked / zero held.
+> It is stopped with its request limit consumed; Study1 remains paused.
+> Read the [latest live results](FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+> The earlier continuation checkpoint and programme context below retain their historical scope.
+
 # Current experiment — reasoning continuity in The Node
 
-Updated 2026-10-23. This page describes the current experiment and its further work.
+Updated 2026-10-25. This page describes the current experiment and its further work.
 The programme can develop beyond the configuration and evidence recorded here.
 
 ## Purpose
@@ -13,6 +19,15 @@ remembering an old observation does not make it current or grant another actor's
 The owner intends to add memory bounds and degradation and study how previous thinking informs
 future decisions. These are development and research tasks, not limitations on what the experiment
 may become. The programme is exploratory; this documentation imposes no directional hypothesis.
+
+## Prepared reasoning-condition check — awaiting approval
+
+The owner has requested a fresh two-Baker 20-tick run after correcting the deliberation
+condition. The opt-in version uses the same high effort, output cap and explicit guidance
+for both actors. It has been checked offline; the live run, new allowance and spending clock
+have not started. [Audit, exact configuration and readiness procedure](REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+The supplied historical archive ends at tick 18; the separately reported 28-tick record has
+not been provided. The evidence below retains its original source-specific scope.
 
 ## Current state and evidence
 
@@ -60,8 +75,11 @@ The world retains genesis source `cf9947630d4164950b93d03b0b6b6b8c8dc99881`.
 | Protected production broker | Original live-admission gate remains closed; accounted experiment runners are separate |
 
 The live runner controls the shared-world actors and exports evidence to Inspect. The original
-Inspect solver does not dispatch the continuation calls. The current review branch is
-`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
+Inspect solver does not dispatch the continuation calls. [PR #38](https://github.com/SDarkVader/The-Node/pull/38) is merged at main `afbdec7`.
+The current cloud-observatory development branch is `codex/cloud-observatory-2026-10-25`.
+The [remote workflow](OBSERVATORY_RUNBOOK.md) now implements shared-world projection,
+authenticated web/Godot delivery, recovery and separately produced A01/Inspect execution metrics.
+Its offline synthetic rehearsal is separate from the historical live pilot.
 Verify actual Git refs before continuing.
 
 ## Evaluation ownership and separation
@@ -83,7 +101,7 @@ fixtures; their scores must not be presented as grades of this live continuation
 
 | Work | Evidence of progress |
 | --- | --- |
-| Realtime web/Godot observatory | See the [Claude Design handover](CLAUDE_DESIGN_OBSERVATORY_HANDOVER_2026-10-23.md); one authoritative world, synchronized evidence and separately attributed evaluations |
+| Realtime web/Godot observatory | Implemented: [current runbook](OBSERVATORY_RUNBOOK.md); one committed world, synchronized evidence and separately attributed evaluations. The earlier Claude Design handover is provenance |
 | Compare memory conditions | Matched authorized views/mechanics, explicit history conditions and provenance, replay and reported differences without assuming an outcome |
 | Add transcript bounds and degradation | Declared retention policy, tested expiry/information exposure, provider-compatible continuation and preserved audit evidence |
 | Investigate interpretation and decision quality | Mechanics-grounded checks separating legal actions, supported beliefs and subjective diary claims |

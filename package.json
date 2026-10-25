@@ -2,7 +2,7 @@
   "name": "the-node",
   "version": "0.1.0",
   "private": true,
-  "description": "NODE — persistent multiplayer social-economic game engine",
+  "description": "NODE \u2014 persistent multiplayer social-economic game engine",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
@@ -47,14 +47,30 @@
     "population-capacity-sweep": "tsx src/sim/populationCapacitySweep.ts",
     "driver-heterogeneity-sweep": "tsx src/sim/driverHeterogeneitySweep.ts",
     "mvp": "tsx src/mvp/run.ts",
-    "server": "tsx src/server/ws.ts"
+    "server": "tsx src/server/ws.ts",
+    "observatory": "tsx src/observatory/cli.ts",
+    "observatory:demo": "tsx scripts/observatory-demo.ts",
+    "observatory:evaluate": "tsx scripts/evaluate-observatory.ts",
+    "continuation:preflight": "tsx scripts/continuation-preflight.ts",
+    "continuation:reasoning-audit": "tsx scripts/audit-continuation-reasoning.ts",
+    "reasoning-test:readiness": "tsx scripts/first-person-test-readiness.ts",
+    "reasoning-test:rehearse": "tsx scripts/rehearse-first-person-test.ts",
+    "test:observatory": "vitest run test/observatory.test.ts test/anthropicNodeWorker.test.ts test/clientProtocolConformance.test.ts",
+    "reasoning-test:observer-readiness": "tsx scripts/reasoning-test-readiness.ts",
+    "reasoning-test:observer-rehearse": "tsx scripts/rehearse-reasoning-test.ts",
+    "reasoning-test:run": "node scripts/run-fresh-reasoning-test.mjs",
+    "observatory:legacy": "tsx src/observatory/legacy/cli.ts",
+    "observatory:legacy-demo": "tsx scripts/legacy-observatory-demo.ts",
+    "observatory:acceptance": "tsx src/observatory/legacy/acceptanceCli.ts",
+    "perception:verify": "tsx scripts/perception-readiness.ts",
+    "preview": "tsx scripts/preview-observatory.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^4.1.11"
+    "vitest": "4.1.12"
   },
   "dependencies": {
     "ws": "^8.21.2"

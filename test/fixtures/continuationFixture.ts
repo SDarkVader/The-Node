@@ -39,7 +39,7 @@ export function continuationBudget(plan: ContinuationPlan, directory = join(root
   return budget;
 }
 export function simulatedContinuationProvider(options: { invalidAt?: number; failAt?: number; wrongModelAt?: number; missingUsageAt?: number;
-    refusalAt?: number; redacted?: boolean; largeSignature?: boolean; hangAt?: number; overrunAt?: number; transformedAt?: number; receiptPrefix?: string } = {}) {
+    refusalAt?: number; redacted?: boolean; largeSignature?: boolean; hangAt?: number; overrunAt?: number; transformedAt?: number; receiptPrefix?: string; exerciseMechanics?: boolean } = {}) {
   const requests: Parameters<Sender>[0][] = [];
   const send: Sender = async (input, signal) => {
     requests.push(input);
@@ -53,8 +53,16 @@ export function simulatedContinuationProvider(options: { invalidAt?: number; fai
     // A deterministic fixture using only this actor's received observation and prior decision.
     // Its explanation/signature are synthetic test data, never evidence of model reasoning.
     const price = previousDecision?.role ? Math.min(1.4, previousDecision.role.price + 0.05) : 0.5;
-    const decision = { move: null, communication: null, diary: null,
+    const decision: Record<string, unknown> = { move: null, communication: null, diary: null,
       role: current.self.role === 'Baker' ? { kind: 'bakerPrice', price: input.index === options.invalidAt ? 4 : price } : null };
+    if (options.exerciseMechanics) {
+      // Uses only the current authorized view. Synthetic authored impressions are not facts.
+      decision.move = input.tick % 3 === 1 ? current.legalMoves[0] ?? null : null;
+      decision.communication = { kind: 'proximityUtterance', intent: 'inform', tone: 'warm',
+        referent: current.hearing?.[0] ? { kind: 'player', playerId: current.hearing[0] } : { kind: 'room' }, context: null };
+      decision.diary = current.recognition[0] ? { subject: current.recognition[0].ref,
+        observation: 'offeredFirstUnprompted', reading: 'cantTellYet', context: null } : null;
+    }
     const content: unknown[] = [{ type: 'thinking', thinking: 'TEST ONLY: reconsider prior price using the evolved authorized observation.',
       signature: options.largeSignature ? 'TEST-ONLY-' + 'x'.repeat(28000) : 'TEST-ONLY-signature-' + input.actorId + '-' + input.tick }];
     if (options.redacted) content.push({ type: 'redacted_thinking', data: 'TEST-ONLY-opaque-redaction-' + input.actorId + '-' + input.tick });

@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from inspect_ai.model import ChatMessage, ChatMessageSystem, ChatMessageUser, GenerateConfig, Model, ModelOutput, get_model
+from inspect_ai.model import ChatMessage, ChatMessageSystem, ChatMessageUser, GenerateConfig, Model, ModelOutput, ModelUsage, get_model
 from inspect_ai.solver import Generate, Solver, TaskState, solver
 
 from .bridge import BridgeError, NodeBridge, source_revision
@@ -53,7 +53,13 @@ def scripted_model(policy_id: str) -> Model:
 
     def respond(messages: list[ChatMessage], tools: Any, tool_choice: Any, config: GenerateConfig) -> ModelOutput:
         prompt = json.loads(messages[-1].text)
-        return ModelOutput.from_content(model="mockllm/model", content=render(policy.respond(prompt, memory)))
+        output = ModelOutput.from_content(model="mockllm/model", content=render(policy.respond(prompt, memory)))
+        # No provider exists and no tokens are billed. Inspect's default mock usage would
+        # download a tokenizer on a fresh machine, making this offline fixture depend on
+        # network/cache state. Keep the explicitly unmetered fixture apart from live receipts.
+        output.usage = ModelUsage(input_tokens=0, output_tokens=0, total_tokens=0)
+        output.metadata = {"usage_basis": "offline_scripted_fixture_no_provider_or_billed_tokens"}
+        return output
 
     return get_model("mockllm/model", custom_outputs=respond, memoize=False)
 

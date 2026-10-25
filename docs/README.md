@@ -1,9 +1,15 @@
+> Main interface startup: `npm run preview`. See [main integration and entry points](recovery/MAIN_INTEGRATION_2026-10-25.md) and [the interface runbook](research/OBSERVATORY_RUNBOOK.md).
+
 # The Node documentation
 
-Updated 2026-10-23. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
+Updated 2026-10-25. Start with [the current experiment](research/CURRENT_EXPERIMENT.md).
 This index separates current guidance, original design sources and dated evidence.
 
 ## Current experiment and results
+
+- [Implemented shared-world observatory and remote workflow](research/OBSERVATORY_RUNBOOK.md)
+- [Verified cloud workflow and screenshots](research/CLOUD_OBSERVATORY_RESULTS_2026-10-25.md)
+- [Reasoning-condition audit and pending fresh twenty-tick test](research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md)
 
 - [Current experiment: reasoning continuity](research/CURRENT_EXPERIMENT.md)
 - [Readable sanitized pilot results](research/CONTINUATION_PILOT_RESULTS_2026-10-23.md)

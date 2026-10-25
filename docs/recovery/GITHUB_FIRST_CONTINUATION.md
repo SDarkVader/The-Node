@@ -1,23 +1,39 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-23. A fresh phone, PC or cloud session can recover development context from GitHub.
+Updated 2026-10-25. A fresh phone, PC or cloud session can recover development context from GitHub.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
 ## Active branch and current experiment
 
-Repository: `SDarkVader/The-Node`. Current review branch:
-`codex/stateful-continuation-2026-10-23`, in [PR #38](https://github.com/SDarkVader/The-Node/pull/38).
-The shared integration line remains `main`; do not silently switch, reset, merge or discard work.
+Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`. Consolidation review branch:
+`codex/cloud-observatory-2026-10-25`, named explicitly in the checkpoint until PR #39 merges.
+PR #39 integrates the cloud work and the PR #40/#41 ancestry without replacing either
+observatory registration contract. Use `npm run preview` for the default web interface.
+Read the [implemented cloud observatory runbook](../research/OBSERVATORY_RUNBOOK.md).
+Preserve unrelated work; do not silently reset or discard state.
 
-The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
-calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
-passed. Estimated extension list cost USD 0.0613495 / conservative booking USD 0.122711, zero holds.
-No background run is active. The separate authority-attribution Study 1 is still paused and frozen.
+The dated Git-tracked pilot results describe tick 18 after 36 paid decisions. The owner has since
+supplied private evidence through tick 38: the complete legacy parent independently verifies to
+tick 28, and the later perception segment's archived bytes, exact own histories and world tape
+check through tick 38. Full perception-runner reconstruction now passes using exact source `47291c8`, available in
+PR #41. The supplied actual journal now passes full replay and exact tick-38 ledger binding. See the
+[reasoning audit](../research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md) for the precise scope.
+After readiness and separate explicit owner approval, the fresh first-person Godot run
+completed 20 ticks / 40 paid calls with 7/20 summary turns per Baker, USD 0.100100 booked and
+zero held. Its forty-request authorization is consumed; it is stopped. The new cloud
+run's journal is now the latest accounting snapshot. The older uploaded journal is preserved
+history and must not be reused as the current balance. See the
+[fresh live results](../research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+The owner merged #41 into #40; PR #39 consolidates both lines for main. The original
+observer interface is preserved as an explicit compatibility mode; current cloud/perception
+evidence uses the default viewer. See [integration details](MAIN_INTEGRATION_2026-10-25.md).
+The authority-attribution Study 1 is still paused and frozen.
 
 [Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and
 [sanitized evidence](../research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
-record runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and the original world revision.
+record the earlier runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and original world revision;
+they do not describe the later environmental continuation.
 Current documentation describes the programme, the evidence so far and further work separately.
 An unimplemented task is not a limitation of the experiment's future.
 
@@ -45,11 +61,13 @@ responses, signatures, world observations, runtime state, credentials or allowan
 Those bytes cannot be reconstructed from a clone that never contained them. Secure transfer and
 recovery mechanisms can be developed; do not confuse missing data with a ceiling on future work.
 
-A later authorized live continuation requires the actual latest private tick-18 parent, its
-matching current journal, and independent verification before dispatch. The runner reconstructs
+A later authorized live continuation requires the actual latest private parent, its matching
+current journal, and independent verification before dispatch. The runner reconstructs
 the world through original replay and preserves exact signed own histories. Reusing an older
 checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to
 retain and diagnose, not an instruction to retry or erase a hold.
+The approved fresh genesis run is complete. Any further run needs a new explicit instruction
+and readiness against the latest new journal; this guide grants no additional spending.
 
 Do not infer permission, missing records or a zero balance from a fresh clone. Do not create a
 replacement allowance or repeat paid calls as setup. This guide does not authorize a run.

@@ -55,6 +55,12 @@ jobs:
         run: python -m inspect_node.constructs --out results/ci/authority-attribution
       - name: G3 - rehearse the accounted study procedure (real scripts, TEST-ONLY fake transport, no network)
         run: PYTHON=python test/cli/rehearse-accounted-study.sh
+      - name: G4 - shared-world observatory rehearsal and separate evaluations (no provider calls)
+        run: |
+          node --import tsx scripts/observatory-demo.ts "$RUNNER_TEMP/node-observatory"
+          node --import tsx scripts/evaluate-observatory.ts "$RUNNER_TEMP/node-observatory/registration.json" synthetic-rehearsal "$RUNNER_TEMP/node-observatory/a01-evaluation"
+          cd evals
+          python -m inspect_node.observatory_export "$RUNNER_TEMP/node-observatory/a01-evaluation/inspect-input.json" --out "$RUNNER_TEMP/node-observatory/inspect-evaluations.json" --log-dir "$RUNNER_TEMP/node-observatory/inspect-execution-logs"
       - if: always()
         uses: actions/upload-artifact@v4
         with:

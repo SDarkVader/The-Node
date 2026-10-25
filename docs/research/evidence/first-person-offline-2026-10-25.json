@@ -1,0 +1,183 @@
+{
+  "schema": "node-sanitized-first-person-offline-proof-v1",
+  "recordedOn": "2026-10-25",
+  "experimentSourceRevision": "be8a3b4652a58e4740a8fb310143223e176e72dc",
+  "sourceWorkingTreeCleanAtRehearsal": true,
+  "mode": "offline_simulated_provider",
+  "syntheticProvider": true,
+  "syntheticTokenCounts": true,
+  "syntheticAccounting": true,
+  "realProviderCalls": 0,
+  "liveEmissionVerified": false,
+  "nativeRehearsal": {
+    "perspective": "first_person",
+    "freshGenesis": true,
+    "priorModelTurns": 0,
+    "rounds": 20,
+    "calls": 40,
+    "independentGodotWorkers": [
+      {
+        "workerId": "godot-process-1",
+        "requests": 40,
+        "delivered": 40,
+        "refused": 0,
+        "timedOut": 0,
+        "unmatched": 0
+      },
+      {
+        "workerId": "godot-process-2",
+        "requests": 40,
+        "delivered": 40,
+        "refused": 0,
+        "timedOut": 0,
+        "unmatched": 0
+      }
+    ],
+    "effort": "high",
+    "totalOutputCap": 2048,
+    "uniformReasoningConditions": true,
+    "explicitInstructionEveryTurn": true,
+    "replayVerified": true,
+    "observatoryTick": 20,
+    "observatoryWorldHash": "ae10773812042fcb75b483eed6c8313cb11cb3961cf316908defebc8826229c9",
+    "finalWorldHash": "ae10773812042fcb75b483eed6c8313cb11cb3961cf316908defebc8826229c9"
+  },
+  "evaluations": {
+    "a01": "not_applicable_no_diary_subjects_in_first_person_condition",
+    "inspect": {
+      "producer": "Inspect AI",
+      "version": "0.3.282",
+      "metric": "node.observatory.execution_share",
+      "value": 1,
+      "numerator": 40,
+      "denominator": 40,
+      "modelCalls": 0
+    }
+  },
+  "fullTests": {
+    "sourceRevision": "be8a3b4652a58e4740a8fb310143223e176e72dc",
+    "vitest": {
+      "passed": 1458,
+      "files": 116,
+      "actualGodotEnabled": true
+    },
+    "recoveryPassed": 8
+  },
+  "browser": {
+    "tick": 20,
+    "worldHash": "ae10773812042fcb75b483eed6c8313cb11cb3961cf316908defebc8826229c9",
+    "recordedRequests": 40,
+    "visibleDecisionRoundCalls": 2,
+    "evaluationRecords": 3,
+    "historicalEvaluationHidden": true,
+    "freshFirstPersonTemplateValidationAndDownload": true,
+    "validatedPlanHash": "3965438e530fe7be082c401654b30c296fa1866bf2a0dfd755637c00f6337a91",
+    "desktopAndMobile": true,
+    "mobileOverflow": false,
+    "browserErrors": [],
+    "evidenceAndJournalUnchanged": true,
+    "native": [
+      {
+        "scene": "WorldView",
+        "tick": 1,
+        "worldHash": "a7ccd0cdaa6753edff157603e2d3779ad6a1ba6570c5665d4fae1f81f78711e9",
+        "cursor": "39c3de4ffde259d6814c7f034c706065ff586ad4b62154962e5843134afc1a7f:12:96ca829ad444fa6b66f34e48c627213352abfb4d775160cd428b71e353e12fe6",
+        "parserPassed": true
+      },
+      {
+        "scene": "IsoView",
+        "tick": 1,
+        "worldHash": "a7ccd0cdaa6753edff157603e2d3779ad6a1ba6570c5665d4fae1f81f78711e9",
+        "cursor": "39c3de4ffde259d6814c7f034c706065ff586ad4b62154962e5843134afc1a7f:12:96ca829ad444fa6b66f34e48c627213352abfb4d775160cd428b71e353e12fe6",
+        "parserPassed": true
+      }
+    ],
+    "stalePlanValidationIgnored": true
+  },
+  "browserImplementationAppSha256": "2e01d7afe71ce31649fb884552b3e3683190303f59bc75edd9f821870ec4b280",
+  "screenshots": {
+    "desktop": "first-person-desktop-2026-10-25.png",
+    "mobile": "first-person-mobile-2026-10-25.png"
+  },
+  "actualReadiness": {
+    "actualLatestJournalProvided": true,
+    "credentialLocalChecks": "private_file_format_valid_network_not_tested",
+    "readyForOwnerApproval": true,
+    "executionApproval": "pending_separate_owner_instruction",
+    "allowanceActivated": false,
+    "providerCalls": 0,
+    "freeTokenCountRequests": 0,
+    "journalAccountingReplayVerified": true,
+    "latestLedgerBindingVerified": true,
+    "priorGrantClosed": true,
+    "heldMicroUsd": "0",
+    "originalSourcesUnchanged": true
+  },
+  "privacy": {
+    "rawPrivateEvidenceIncluded": false,
+    "credentialsIncluded": false,
+    "screenshotsContainOnlySyntheticRehearsal": true
+  },
+  "followUp": {
+    "sourceRevision": "93f4a9966cedd326e709b96bbdcbc9ee8b632026",
+    "typecheck": true,
+    "targetedFreshTransportTestsPassed": 11,
+    "runtimeBuildPassed": true,
+    "bundlePreflight": {
+      "accounting": "TEST_ONLY_SYNTHETIC_REFERENCES",
+      "ownerApproved": false,
+      "credentialFilePresent": false,
+      "instructionFilePresent": false,
+      "nativeWorkerAgreementBoth": true,
+      "allowanceActivated": false,
+      "paidDispatches": 0,
+      "freeTokenCountRequests": 0,
+      "originalSourcesUnchanged": true
+    },
+    "actualLocalReadiness": {
+      "sourceWorkingTreeClean": true,
+      "credential": "private_file_format_valid_network_not_tested",
+      "funding": "actual_journal_not_provided",
+      "bothNativeWorkersAgree": true,
+      "readyForOwnerApproval": false,
+      "dispatchApproved": false,
+      "providerCalls": 0,
+      "kernelTransitions": 0
+    },
+    "hostedChecks": [
+      {
+        "name": "offline-conformance",
+        "runId": 40184141140,
+        "status": "passed"
+      },
+      {
+        "name": "offline-verification",
+        "runId": 40184141138,
+        "status": "passed"
+      },
+      {
+        "name": "audit",
+        "runId": 40184141134,
+        "status": "passed"
+      }
+    ]
+  },
+  "actualJournalPreflight": {
+    "runtimeSourceRevision": "93f4a9966cedd326e709b96bbdcbc9ee8b632026",
+    "localReadinessSourceRevision": "be8582310d6daef79d88132e6d9c8e4422fedba2",
+    "sourceWorkingTreeCleanAtReadiness": true,
+    "readyForOwnerApproval": true,
+    "nativeWorkerAgreementBoth": true,
+    "startTick": 0,
+    "targetTick": 20,
+    "freshGenesis": true,
+    "priorModelTurns": 0,
+    "originalSourcesUnchanged": true,
+    "ownerApproved": false,
+    "allowanceActivated": false,
+    "providerCalls": 0,
+    "freeTokenCountRequests": 0,
+    "invoiceBillingReconciled": false
+  },
+  "scope": "Offline proof and pre-execution readiness only; subsequent approved live result is in first-person-live-20-ticks-2026-10-25.json"
+}

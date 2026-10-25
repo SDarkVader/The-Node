@@ -1,3 +1,75 @@
+# 2026-10-25 — main consolidation and usable preview startup
+
+Owner directed main integration. Consolidated PR40/41 ancestry into the cloud line, preserving
+both registration/API contracts: default cloud/perception viewer and explicit original-observer
+compatibility interface in src/observatory/legacy. Retained Thinking/History, annotations,
+sample imports, archive acceptance and historical docs/tests. Both Python exporter modes and
+native endpoint/reconnect paths remain supported. npm run preview starts a small synthetic
+viewer or opens a private cloud registration, prints URL/login only after ready, and never
+calls a provider. A verified Node24 devcontainer supports private Codespaces forwarding.
+Localhost refers to the viewing device, not this cloud host. No additional paid calls.
+See [integration details](recovery/MAIN_INTEGRATION_2026-10-25.md); foundation branch development
+notes are preserved in [their dated archive](observatory/FOUNDATION_DEVLOG_2026-10-24.md).
+
+# 2026-10-25 — approved fresh first-person live run completed
+
+After actual journal/native readiness and separate owner approval, pinned runtime93f4a99
+completed20 ticks,40 paid Haiku calls and40 token counts. Both Bakers returned7/20 native
+summary turns under identical high-effort guidance/caps; all responses ended normally, with
+no failures/retries. BookedUSD0.100100, held0, forty-call grant consumed; process stopped.
+Exact own histories, receipts, admissions and world independently verify; current new journal
+and compiled observatory match. Original ledger/journal bytes are unchanged. Actual browser
+and both native views match selected history and show returned summaries verbatim. Separate
+Inspect execution share40/40, zero model calls; A01 not applicable. Raw data/live screenshots
+remain private; a private portable viewing bundle contains no credential. Equal counts do
+not establish a causal effect or guarantee thinking. See [live results](research/FIRST_PERSON_LIVE_RESULTS_2026-10-25.md).
+
+# 2026-10-25 — fresh first-person integration and interface verification
+
+Integrated the needed PR #40/#41 perception/context/worker components into PR #39 and preserved
+legacy request verification. Exact source 47291c8 now verifies the actual tick-38 archive;
+14/28 versus 8/28 summaries, then 2/10 versus 1/10, had equal controls and complete own histories.
+The selected fresh condition uses common high effort and per-turn deliberation guidance with
+no old model/world context; financial history must still carry independently.
+At committed source be8a3b4, all 1,458 Vitest tests / 116 files passed with native Godot enabled,
+plus eight recovery checks. Two actual workers agreed on all forty packets in the twenty-tick
+synthetic rehearsal; compiled replay/observatory matched, Inspect execution share was 40/40,
+and A01 was explicitly not applicable. The follow-up desktop/mobile browser and both native
+views agree on selected history. Fixed stale plan validation and cloud proxy settings;
+eleven targeted fresh/transport checks pass. No real provider/count request or allowance.
+At follow-up source 93f4a99, packaged native preflight and actual local readiness checks pass
+within their scopes; hosted Linux/Windows verification and audit pass. The owner merged #41
+into #40 at 5f84cc0; #39/#40 remain open and main is unchanged. The owner supplied the actual latest journal: full accounting replay, exact tick-38 ledger
+binding, zero holds and closed prior grant pass. Pinned native read-only preflight passes, with
+original files unchanged. Separate owner execution approval is pending; no live call or grant. Added PC and
+private-Codespace launch recipes. See [first-person proof](research/evidence/first-person-offline-2026-10-25.json).
+
+# 2026-10-25 — reasoning-condition follow-up and fresh-test preparation
+
+Audited the owner-supplied private tick-18 archive: exact system/controls are equal, with
+13 versus six nonempty summary turns. Adaptive medium permits per-request omissions; no
+actor-specific budget difference, truncated/redacted block or missing checkpoint prefix was found.
+Added the opt-in per_turn_deliberation_v1 condition with uniform high effort and explicit
+system/per-turn guidance; legacy/frozen bytes are preserved. Prepared the fresh 20-tick plan,
+read-only readiness and owner-only start gate. Full suite 1,369 tests / 111 files and TypeScript
+passed; follow-up targeted checks and offline forty-call rehearsal passed. Actual Haiku
+emission under the new condition is not yet verified. No paid call or allowance activation.
+Encrypted credential transfer supports Termux without exposing keys in chat/Git/logs.
+See [reasoning audit and pending test](research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+
+# 2026-10-25 — cloud shared-world observatory
+
+Built from main afbdec7 (merged PR #38). Web and native Godot project one verified continuation
+world with authenticated channels, shared cursors, exact returned summaries, admission/effect
+records, read-only accounting and separately produced A01/Inspect results. Added remote plan
+validation/preflight and a credential-separated Node transport. Seven-role offline rehearsal
+resumes a sealed checkpoint and exercises society actions. The historical pilot/charges,
+protected core, contracts and paused Study 1 remain preserved. No paid provider call.
+Patched the locked Vitest 4.1.11 advisories to 4.1.12; all 1,363 tests and TypeScript pass,
+and the dependency audit reports zero vulnerabilities. Hosted Linux G1–G4 passed.
+See [runbook](research/OBSERVATORY_RUNBOOK.md) and [checkpoint](recovery/CURRENT_SESSION.md)
+for scoped verification; earlier entries below retain their historical results.
+
 > 2026-10-23 — Documentation audit and realtime observatory handover.
 >
 > Current docs now distinguish the stopped 36-call/tick-18 continuation pilot, paused authority study and offline fixtures. Corrected stale provider/v2/resumption/cost claims; retained dated sources and moved old session context into SESSION_HISTORY. Missing work is further work, not a limitation on the experiment. Evaluation is separate from execution: named frameworks/humans or explicit metrics own judgments; operator reasoning comments do not become grades. Claude Design handover maps existing ledger/Inspect/Godot contracts to proposed adapters, telemetry definitions and ordered offline acceptance. No interface is claimed built; the standalone server's separate world must not replace the experiment.
@@ -5917,3 +5989,15 @@ maintain four docs every session: this devlog, `BLUEPRINT.md`, `HANDOVER.md`, an
 `README.md` current. Added `CLAUDE.md` so this rule auto-loads for every future session
 rather than depending on being repeated. Backfilled this entry retroactively since the
 rule postdated the actual Phase 1 work.
+
+
+### 2026-10-25 — fresh first-person reasoning preparation
+
+Located exact runtime 47291c8 in newly opened PR #41 and verified the actual tick-38 archive
+with its full verifier. Integrated the needed perception/worker components into the cloud
+branch, a distinct fresh-start memory condition and common high-effort/per-turn guidance.
+Added counted-input Node transport, journal/ledger binding checks, bundled approval/preflight
+gates, and verified perception-prefix observatory support. Development native rehearsal:
+40 synthetic decisions / 20 real ticks, two actual Godot workers agreed on all packets, same
+final world hash in replay and observatory. At be8a3b4: all 1458 tests / 116 files passed with real Godot, eight recovery tests, committed runtime/native20 and independent replay passed. Inspect execution share 40/40 was evaluated separately. Browser/native-view proof is being finalized.
+The actual latest journal is pending; no provider call or new allowance activation occurred.

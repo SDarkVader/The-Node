@@ -1,0 +1,28 @@
+{
+  "schema": "node-accounted-perception-fresh-v1",
+  "id": "fresh-two-baker-first-person-reasoning-20-ticks",
+  "model": "claude-haiku-5-5",
+  "seed": 103,
+  "actors": [
+    { "actorId": "baker-0", "role": "Baker", "ordinal": 0 },
+    { "actorId": "baker-1", "role": "Baker", "ordinal": 1 }
+  ],
+  "ticks": 20,
+  "maxCalls": 40,
+  "perspective": "first_person",
+  "memory": "own_append_only_perception_transcript",
+  "reasoningProfile": "per_turn_deliberation_v1",
+  "maxRequestBytes": 200000,
+  "inputProfile": "counted_100k_input_v1",
+  "deadlineMs": 20000,
+  "minIntervalMs": 4000,
+  "condition": {
+    "schema": "node-perception-condition-v1",
+    "id": "perception-default-clear-v1",
+    "firstPerson": { "maxRange": 6, "fovDegrees": 92 },
+    "isometric": { "span": 9, "yawDegrees": 45, "pitchDegrees": 35.264 },
+    "weather": { "kind": "clear" },
+    "bands": { "tension": [0.06, 0.10], "heat": [0.15, 0.35], "health": [0.5, 0.8] }
+  },
+  "allowance": { "maxRequests": 40, "limitMicroUsd": 1000000, "perRequestMicroUsd": 30000, "windowHours": 24 }
+}

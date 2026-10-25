@@ -14,6 +14,7 @@ import { ContinuationConversations } from './continuationConversation.js';
 import type { ActorSpec } from './constructs/authorityAttribution.js';
 import type { Sender } from './accountedRunner.js';
 import { recoverContinuation, type ContinuationEvent, type ContinuationLedger } from './continuationLedger.js';
+import { validateReasoningProfile, type ContinuationReasoningProfile } from './continuationReasoning.js';
 
 export interface ContinuationPlan {
   schema: 'node-reasoning-continuation-v1';
@@ -23,10 +24,13 @@ export interface ContinuationPlan {
   memory: 'own_append_only_transcript';
   /** Explicit opt-in for this continuation experiment; legacy/default requests stay at 32 KiB. */
   maxRequestBytes?: number;
+  /** Explicit new experimental condition; omission preserves every historical request. */
+  reasoningProfile?: ContinuationReasoningProfile;
   allowance: { maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number; windowHours: number };
 }
 export const continuationPlanHash = (p: ContinuationPlan) => sha256(JSON.stringify(p));
 export function validateContinuationPlan(p: ContinuationPlan): void {
+  validateReasoningProfile(p.reasoningProfile);
   const positive = (n: number, max: number) => Number.isSafeInteger(n) && n > 0 && n <= max;
   if (p.schema !== 'node-reasoning-continuation-v1' || !/^[A-Za-z0-9._:-]{1,100}$/.test(p.id) ||
       p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.seed) || !positive(p.maxTicks, 1000) ||
@@ -64,9 +68,9 @@ export async function runContinuation(plan: ContinuationPlan, genesis: Genesis, 
       initial.requests.length !== parent!.summary!.calls || initial.booked.toString() !== parent!.summary!.bookedMicroUsd || initial.held !== 0n) throw Error('continuation_resume_budget');
   } else if (initial.requests.length || parent && budget.carriedFingerprint() !== parent.recovery.budgetHistoryHash) throw Error('continuation_separate_unused_allowance_required');
   if (genesis.seed !== plan.seed || (!parent && genesis.sourceRevision !== options.sourceRevision) || genesis.config.recognition !== 'v2') throw Error('continuation_genesis_mismatch');
-  if (parent && digest([genesis, plan.actors, plan.model, plan.memory, options.mode]) !== digest([parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.mode])) throw Error('continuation_parent_contract');
+  if (parent && digest([genesis, plan.actors, plan.model, plan.memory, plan.reasoningProfile ?? null, options.mode]) !== digest([parent.recovery.tape.genesis, parent.recovery.plan.actors, parent.recovery.plan.model, parent.recovery.plan.memory, parent.recovery.plan.reasoningProfile ?? null, parent.mode])) throw Error('continuation_parent_contract');
   const host = parent ? ContinuationHost.restore(parent.recovery.tape, plan.actors) : new ContinuationHost(genesis, plan.actors);
-  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes) : new ContinuationConversations(plan.maxRequestBytes);
+  const histories = parent ? ContinuationConversations.restoreVerified(parent.recovery.histories, plan.maxRequestBytes, plan.reasoningProfile) : new ContinuationConversations(plan.maxRequestBytes, plan.reasoningProfile);
   if (host.tick >= plan.maxTicks || options.stopAtTick !== undefined && (!Number.isSafeInteger(options.stopAtTick) || options.stopAtTick <= host.tick || options.stopAtTick > plan.maxTicks)) throw Error('continuation_stage_bound');
   const baseline = sameBudget ? { calls: initial.requests.length, booked: initial.booked.toString(), held: initial.held.toString() } : { calls: 0, booked: '0', held: '0' };
   ledger.append('start', { plan, genesis, sourceRevision: options.sourceRevision, runId: auth.runId, mode: options.mode, prices: auth.prices, budgetHistoryHash: initial.historyHash, identities: host.identities(),

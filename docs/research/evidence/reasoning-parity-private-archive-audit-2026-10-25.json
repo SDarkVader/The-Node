@@ -1,0 +1,144 @@
+{
+  "schema": "node-reasoning-parity-private-archive-audit-v1",
+  "inspectedOn": "2026-10-25",
+  "auditImplementationRevision": "0f5a5cf4071dcc3ede600b1378794d6401b5cc25",
+  "compiledKernelRuntimeRevision": "7ee38da9851629d4a569ba001def3b5029f610d7",
+  "latestUploadedLedgerSha256": "0ebc7b4e2a6a3c7f1b0a3291aaecde7acf5f452f86fe6b19192aecad5625dbed",
+  "earlierUploadedLedgerSha256": "7fe8920ac3fcce81f51463a42782676eea81724c88fbea3c76fbffa0a4360609",
+  "legacyParent": {
+    "verified": true,
+    "complete": true,
+    "finalTick": 28,
+    "ledgerRoot": "287c5dceb31c8e0dacaa2e4f4e7c3c33cc0295defdeeb1d646a191535fccd15e",
+    "requestCount": 56,
+    "uniformReasoningConditions": true,
+    "controls": {
+      "model": "claude-haiku-5-5",
+      "thinking": {
+        "type": "adaptive",
+        "display": "summarized"
+      },
+      "effort": "medium",
+      "maxOutputTokens": 2048
+    },
+    "systemSha256": "b052321f0629bc0e34f56adc9ae00a1c8576a56b906b8c534edcb1c4bb3906f3",
+    "actors": [
+      {
+        "actorId": "baker-0",
+        "requests": 28,
+        "summaryReturned": 14,
+        "notReturned": 14,
+        "truncated": 0,
+        "explicitInstructionOnEveryRequest": false
+      },
+      {
+        "actorId": "baker-1",
+        "requests": 28,
+        "summaryReturned": 8,
+        "notReturned": 20,
+        "truncated": 0,
+        "explicitInstructionOnEveryRequest": false
+      }
+    ]
+  },
+  "perceptionExtension": {
+    "sourceRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "matchingRunnerSourceAvailable": true,
+    "wholePerceptionRunnerVerified": true,
+    "archivedHashChainVerified": true,
+    "actualResponsesReparsed": true,
+    "exactOwnHistoryPrefixesVerified": true,
+    "worldTapeReplayVerified": true,
+    "worldGenesisRevision": "cf9947630d4164950b93d03b0b6b6b8c8dc99881",
+    "startTick": 28,
+    "finalTick": 38,
+    "ledgerRoot": "76d36db2f1aa6d17b13189ac0b615152be50d47a5f1e70be6cd87eb5c8a29ecc",
+    "finalWorldHash": "659cc5d9115866dc6bf13de333ec2b3796716b6df086675214631b96385e2c86",
+    "actors": [
+      {
+        "actorId": "baker-0",
+        "requests": 10,
+        "summaryReturned": 2,
+        "notReturned": 8,
+        "truncated": 0,
+        "priorAssistantTurnsAtStart": 28,
+        "conditionHashes": [
+          "603e27b1a3a4dea8c36e14664da3bbc741879463201ca85db052ac9c931d0cb0"
+        ],
+        "systemHashes": [
+          "b052321f0629bc0e34f56adc9ae00a1c8576a56b906b8c534edcb1c4bb3906f3"
+        ]
+      },
+      {
+        "actorId": "baker-1",
+        "requests": 10,
+        "summaryReturned": 1,
+        "notReturned": 9,
+        "truncated": 0,
+        "priorAssistantTurnsAtStart": 28,
+        "conditionHashes": [
+          "603e27b1a3a4dea8c36e14664da3bbc741879463201ca85db052ac9c931d0cb0"
+        ],
+        "systemHashes": [
+          "b052321f0629bc0e34f56adc9ae00a1c8576a56b906b8c534edcb1c4bb3906f3"
+        ]
+      }
+    ],
+    "uniformReasoningConditions": true,
+    "controls": {
+      "model": "claude-haiku-5-5",
+      "thinking": {
+        "type": "adaptive",
+        "display": "summarized"
+      },
+      "effort": "medium",
+      "maxOutputTokens": 2048,
+      "systemSha256": "b052321f0629bc0e34f56adc9ae00a1c8576a56b906b8c534edcb1c4bb3906f3",
+      "explicitReasoningInstruction": false
+    },
+    "allProposalsNoOp": true,
+    "allStopsEndTurn": true,
+    "inputTransformations": 0,
+    "redactedBlocks": 0,
+    "segmentBookedMicroUsd": "139250"
+  },
+  "actualLatestJournalProvided": false,
+  "providerCallsByInspection": 0,
+  "allowanceCreated": false,
+  "freshTestStarted": false,
+  "ownerApprovalForFresh20Ticks": "pending_required_after_readiness",
+  "rawPrivateTextIncluded": false,
+  "interpretation": "Both agents had equal controls and complete own history. Adaptive thinking did not guarantee a summary on every decision. Archived responses do not expose a model-internal cause for individual omissions. Source-pinned perception verification passes; actual latest journal binding remains pending.",
+  "sourcePinnedVerification": {
+    "runtimeRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "sourceAvailableInPr": 41,
+    "verified": true,
+    "ledgerRoot": "76d36db2f1aa6d17b13189ac0b615152be50d47a5f1e70be6cd87eb5c8a29ecc",
+    "sourceRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "summary": {
+      "status": "completed",
+      "calls": 20,
+      "startTick": 28,
+      "finalTick": 38,
+      "completedTicks": 10,
+      "finalWorldHash": "659cc5d9115866dc6bf13de333ec2b3796716b6df086675214631b96385e2c86",
+      "historyHash": "29e8c628df9fae6559d855749a730d0a65af8b4d3676fa099c8cab2b8950b288",
+      "budgetHistoryHash": "c8ccc9b6ef7871b3083413765642398f04c0ebbec46cbdf7224807c81adbcb86",
+      "bookedMicroUsd": "139250",
+      "heldMicroUsd": "0"
+    },
+    "metrics": "not_evaluated",
+    "actualLatestJournalProvided": false,
+    "providerCalls": 0,
+    "rawPrivateTextIncluded": false
+  },
+  "sourceBranches": {
+    "foundationPr": 40,
+    "foundationHead": "e0fc2997f192cebec5962e00ace21e68682cfe53",
+    "environmentalPr": 41,
+    "environmentalHead": "b7dc9619bef80252f88008349406c2302f252174",
+    "recordedRuntimeIsAncestor": true,
+    "runtimeCodeUnchangedSinceRecordedCommit": true,
+    "mergedIntoMainByThisWork": false
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "NODE observatory",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:5.2.3-24-bookworm",
+  "postCreateCommand": "npm ci",
+  "forwardPorts": [8090],
+  "portsAttributes": {
+    "8090": {
+      "label": "NODE observatory",
+      "onAutoForward": "notify"
+    }
+  }
+}
