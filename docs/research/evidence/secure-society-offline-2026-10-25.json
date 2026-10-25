@@ -1,0 +1,115 @@
+{
+  "schema": "node-secure-society-sanitized-evidence-v1",
+  "date": "2026-10-25",
+  "sourceRevision": "acb0d0b331440f0351909d10ae2aede89b886064",
+  "type": "offline_deterministic_model_fixtures_and_real_kernel",
+  "reasoningQualityEvaluation": "not_performed",
+  "paidCalls": 0,
+  "tokenCountRequests": 0,
+  "hostAccessExperiments": 0,
+  "remotePushes": 0,
+  "oldExperimentsAndAccounting": "preserved",
+  "runs": [
+    {
+      "ticks": 14,
+      "seed": 42,
+      "sourceRevision": "acb0d0b331440f0351909d10ae2aede89b886064",
+      "decisions": 237,
+      "controlledDecisions": 84,
+      "autonomousDecisions": 153,
+      "movementEffects": 89,
+      "heardCommunicationEffects": 194,
+      "diaryWrites": 21,
+      "breadOrdersServed": 6,
+      "breadEquivalents": 4.2,
+      "oracleEntries": 135,
+      "oracleWins": 52,
+      "voucherAwards": 21,
+      "voucherRedemptions": 20,
+      "districtTensionValues": [
+        0
+      ],
+      "districtStates": [
+        "ACTIVE"
+      ],
+      "maximumAccountingResidual": 1.4210854715202004e-14,
+      "finalHash": "93fa21e1e6db80e4d1d42884ec0857e06e155bb0d02fd9b11081ded0e1eb6d82",
+      "diskReplay": "passed_in_separate_cli_process",
+      "exactContextsMenusActionsAndTransitions": "retained_privately_in_lossless_tape",
+      "paidModelCalls": 0
+    },
+    {
+      "ticks": 60,
+      "seed": 20261025,
+      "sourceRevision": "acb0d0b331440f0351909d10ae2aede89b886064",
+      "decisions": 889,
+      "controlledDecisions": 346,
+      "autonomousDecisions": 543,
+      "movementEffects": 374,
+      "heardCommunicationEffects": 716,
+      "diaryWrites": 306,
+      "breadOrdersServed": 78,
+      "breadEquivalents": 54.6,
+      "oracleEntries": 621,
+      "oracleWins": 189,
+      "voucherAwards": 75,
+      "voucherRedemptions": 75,
+      "districtTensionValues": [
+        0,
+        0.68,
+        0.16
+      ],
+      "districtStates": [
+        "ACTIVE"
+      ],
+      "maximumAccountingResidual": 1.4477308241112041e-13,
+      "finalHash": "00a9faa9c2706219c3fdf057daf33f936a54e78beb3014cd995fd097b2035c6f",
+      "diskReplay": "passed_in_separate_cli_process",
+      "exactContextsMenusActionsAndTransitions": "retained_privately_in_lossless_tape",
+      "paidModelCalls": 0
+    }
+  ],
+  "verification": {
+    "vitest": {
+      "sourceRevision": "acb0d0b331440f0351909d10ae2aede89b886064",
+      "passed": 1568,
+      "failed": 0,
+      "skipped": 7,
+      "files": 131,
+      "skipReasons": [
+        "six real-Godot tests require configured NODE_GODOT_BIN",
+        "one POSIX fake-pwsh test skips Windows"
+      ]
+    },
+    "native": {
+      "sourceRevision": "42591f48b0f6678863fb88dc4111f0ebac39384c",
+      "passed": 80,
+      "baseline": "4196b79bb46ed9e9f7afc28ab68ec14fbd4e6f11",
+      "kernelEngineAndParticipantCodeUnchangedAtFinalSource": true
+    },
+    "recoveryTests": 8,
+    "typeScript": "passed",
+    "paidAdapter": "synthetic_sender_and_disposable_accounting_only",
+    "paidCliPreparePreflight": {
+      "passed": true,
+      "ticks": 3,
+      "maxCalls": 18,
+      "allowanceCreated": false,
+      "credentialRead": false,
+      "funding": "not_provided",
+      "dispatchApproved": false
+    },
+    "python": "not_rerun_inspect_ai_not_installed_no_python_source_changes"
+  },
+  "remaining": [
+    "new contract has no paid-model behavior evidence",
+    "Godot/observatory presentation adapter for this society is further work",
+    "real-play economic calibration is unmeasured",
+    "current-view personal memory only; historical transcript experiments preserved separately"
+  ],
+  "correctedDuringVerification": [
+    "newly replaced Miller retains legal next-day default",
+    "grain dealings bounded by actual provider capacity",
+    "plain JSON optional-configuration loss replaced by lossless disk codec; earlier failed trial artifacts preserved"
+  ]
+}

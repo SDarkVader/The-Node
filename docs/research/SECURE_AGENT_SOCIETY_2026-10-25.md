@@ -146,8 +146,24 @@ The terminal reports each admitted model decision; Ctrl+C stops further dispatch
 
 Automated tests cover leakage, role descriptions, illegal actions and halt, transaction constraints,
 same-seed complete replay, evidence tampering, all roles, natural environmental change, Oracle
-population balance, and accounted transport/usage failures. Final source-anchored test totals and
-sanitized aggregates are linked from README and CURRENT_SESSION. Full raw contexts stay private.
+population balance, and accounted transport/usage failures. At source `acb0d0b331440f0351909d10ae2aede89b886064`,
+all **1,568 Vitest tests / 131 files pass**, with zero failures and seven explicit skips: six real-Godot
+cases require `NODE_GODOT_BIN`, and one POSIX fake-PowerShell test skips Windows. TypeScript passes.
+The compiled broker/participant runner passes **80 checks** against original `4196b79`; eight recovery
+tests pass. These native checks ran on `42591f4`, whose kernel/engine/participant bytes are identical
+to `acb0d0b`. The old Python suite was not rerun: this checkout has no `inspect_ai` installation,
+and no Python source changed. [Sanitized evidence](evidence/secure-society-offline-2026-10-25.json)
+records the scope; full raw contexts remain private.
+
+| Offline run | Decisions | Moves | Heard effects | Diary writes | Bread orders | Voucher redemptions |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 14 ticks, seed 42 | 237 | 89 | 194 | 21 | 6 | 20 |
+| 60 ticks, seed 20261025 | 889 | 374 | 716 | 306 | 78 | 75 |
+
+Both lossless files replay in separate CLI processes with the exact final hashes. The longer run
+observes tension `0`, `0.68`, `0.16` without forced actions/events; district state remains ACTIVE.
+The largest conservation residual is `1.4477308241112041e-13`. The paid CLI's three-tick/eighteen-call
+prepare and reopen/preflight also pass with no credential read, allowance or provider request.
 
 The secure society does not yet have a Godot/observatory presentation adapter. Paid behavior has
 not been observed in this new contract, and real-world economic balance has not been established.

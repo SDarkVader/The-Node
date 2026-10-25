@@ -6032,3 +6032,16 @@ private plain-JSON trial files are preserved as failed evidence, not relabelled 
 The initial unconfigured direct native test invocation failed two harness setup checks;
 the documented compiled/baseline runner then passed all80 checks, plus8 recovery tests.
 No existing private journal, provider credential or actual model call was involved.
+
+### 2026-10-25 — final committed-source society verification
+
+At acb0d0b:1568 Vitest tests/131files passed,0 failed,7 explicit environment skips
+(six real-Godot cases need NODE_GODOT_BIN;one POSIX fake-pwsh case skips Windows),
+and TypeScript passed.80 compiled native broker/participant checks against4196b79 and
+8 recovery checks passed at42591f4;kernel/engine/participant bytes are identical at acb0d0b.
+No Python edits;the Python suite was not rerun without inspect_ai. Lossless14/60tick tapes
+reopened in separate CLI processes with exact hashes.60ticks:889decisions,374moves,716heard
+effects,306diary writes,78bread orders,75voucher redemptions,natural weather0/.68/.16;
+max conservation residual1.4477308241112041e-13. Paid prepare/reopen/preflight passes with
+zero credential/allowance/provider access and no funding. Full contexts remain private;
+sanitary scoped aggregate is research/evidence/secure-society-offline-2026-10-25.json.
