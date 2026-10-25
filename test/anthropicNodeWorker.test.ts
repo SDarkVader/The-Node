@@ -30,3 +30,15 @@ it('refuses oversized requests/responses and invalid credential files before fur
   await runAnthropicWorker(args,async()=>{calls++;return new Response('ok');});expect(calls).toBe(0);
   const other=setup();await runAnthropicWorker(other,async()=>new Response('x'.repeat(262145)));expect(existsSync(join(other.directory,'response.json'))).toBe(false);
 });
+it('requires the explicit counted-input profile for larger bodies and free counts, with fixed URLs',async()=>{
+  for(const endpoint of ['messages','count_tokens']){
+    const args=setup();writeFileSync(join(args.directory,'request.json'),'x'.repeat(150000));let calls=0;
+    const result=await runAnthropicWorker({...args,maxRequestBytes:200000,profile:'counted_100k_input_v1',endpoint},async(url:string)=>{
+      calls++;expect(url).toBe(endpoint==='messages'?'https://api.anthropic.com/v1/messages':'https://api.anthropic.com/v1/messages/count_tokens');
+      return new Response('{"input_tokens":1200}');
+    });expect(calls).toBe(1);expect(result.outcome).toBe('response_archived');
+  }
+  for(const extra of [{maxRequestBytes:200000},{endpoint:'count_tokens'},{profile:'counted_100k_input_v1',endpoint:'https://invalid.example'}]){
+    const args=setup();let calls=0;await runAnthropicWorker({...args,...extra},async()=>{calls++;return new Response('{}');});expect(calls).toBe(0);
+  }
+});

@@ -2,7 +2,9 @@ import { readFileSync, lstatSync } from 'node:fs';
 import { ExperimentBudget } from '../agent/experimentBudget.js';
 import { sha256 } from '../agent/accountingStore.js';
 import { replay } from '../agent/replay.js';
-import { recoverContinuation, type ContinuationEvent } from '../eval/continuationLedger.js';
+import type { ContinuationEvent } from '../eval/continuationLedger.js';
+import { usageCost } from '../agent/accountingLedger.js';
+import { recoverExperiment, eventType } from './recovery.js';
 import type { StartEvidence } from '../eval/continuationRunner.js';
 import { parseAnthropicResponse } from '../agent/anthropicResponse.js';
 import { LedgerTail } from './ledgerTail.js';
@@ -23,7 +25,7 @@ export class ObservatorySource {
   readonly tail: LedgerTail;
   #events: readonly ContinuationEvent[] = [];
   #points: Point[] = [];
-  #snapshot = new Map<string, ReturnType<typeof recoverContinuation>>();
+  #snapshot = new Map<string, ReturnType<typeof recoverExperiment>>();
   constructor(readonly registration: Registration) {
     if (!/^[A-Za-z0-9._-]{1,80}$/.test(registration.id) || !/^[a-f0-9]{40}$/.test(registration.sourceRevision)) throw Error('observatory_registration');
     this.tail = new LedgerTail(registration.ledger, registration.sourceRevision);
@@ -36,7 +38,7 @@ export class ObservatorySource {
   get latestCursor() { return this.#points.at(-1)?.cursor ?? null; }
   has(cursor: string) { return this.#points.some(p => p.cursor === cursor); }
   list() { return this.#points.map(p => ({ cursor: p.cursor, segmentId: p.segmentId, seq: p.event.seq, eventHash: p.event.hash,
-    type: p.event.kind, sourceTick: p.event.data.tick ?? p.event.data.summary?.ticks ?? null })); }
+    type: p.event.kind, sourceTick: p.event.data.tick ?? p.event.data.summary?.ticks ?? p.event.data.summary?.finalTick ?? null })); }
   point(cursor: string | null = null) {
     const p = cursor === null ? this.#points.at(-1) : this.#points.find(p => p.cursor === cursor);
     if (!p) throw Error('observatory_cursor_unknown');
@@ -46,14 +48,14 @@ export class ObservatorySource {
     const p = this.point(cursor), selected = p.events.slice(0, p.index + 1);
     let verified = this.#snapshot.get(p.cursor) ?? (p.cursor === this.latestCursor ? this.tail.verified : null);
     if (!verified) {
-      verified = recoverContinuation(selected, p.start.sourceRevision);
+      verified = recoverExperiment(selected, p.start.sourceRevision);
       // Bounded cache; a new viewer cannot create an unbounded state cache.
       if (this.#snapshot.size >= 8) this.#snapshot.delete(this.#snapshot.keys().next().value!);
       this.#snapshot.set(p.cursor, verified);
     }
     const state = replay(verified.recovery.tape, verified.recovery.tape.genesis.sourceRevision);
     const meta = { schema: 'node-observatory-snapshot-v1', experimentId: this.registration.id, segmentId: p.segmentId,
-      sourceRunId: p.start.runId, sourceRevision: p.start.sourceRevision, genesisSourceRevision: p.start.genesis.sourceRevision,
+      sourceRunId: p.start.runId, sourceRevision: p.start.sourceRevision, genesisSourceRevision: verified.recovery.tape.genesis.sourceRevision,
       cursor: p.cursor, eventHash: p.event.hash, sourceTick: state.world.tick, worldHash: verified.finalStateHash,
       segmentRoot: verified.complete ? verified.ledgerRoot : null, mode: p.start.mode,
       status: verified.summary?.status ?? 'recorded_prefix', verification: 'replay_verified',
@@ -61,31 +63,39 @@ export class ObservatorySource {
     const projected = projectWorld(state, secret);
     const result = { ...meta, hello: { ...projected.hello, ...meta, type: 'hello' }, frame: { ...projected.frame, ...meta, type: 'tick' } };
     if (!researcher) return result;
-    const through = points(selected), requests = through.filter(x => x.event.kind === 'request');
+    const through = points(selected), requests = through.filter(x => eventType(x.event) === 'request');
     const calls = requests.map(q => {
       const d = q.event.data, related = through.filter(x => x.event.data.requestId === d.requestId);
-      const response = related.find(x => x.event.kind === 'response')?.event.data;
-      const receipt = related.find(x => x.event.kind === 'receipt')?.event.data;
-      const validation = related.find(x => x.event.kind === 'validation')?.event.data;
-      const transition = through.find(x => x.event.kind === 'transition' && x.event.data.requests[d.actorId] === d.requestId)?.event.data;
+      const response = related.find(x => eventType(x.event) === 'response')?.event.data;
+      const receipt = related.find(x => eventType(x.event) === 'receipt')?.event.data;
+      const validation = related.find(x => eventType(x.event) === 'validation')?.event.data;
+      const transition = through.find(x => eventType(x.event) === 'transition' && x.event.data.requests[d.actorId] === d.requestId)?.event.data;
       let parsed;
       try { if (response) parsed = parseAnthropicResponse(Buffer.from(response.raw, 'base64'), d.requestId); } catch { /* absent/invalid is explicit */ }
+      const perceptionUsage = receipt?.parsed?.receipt;
+      const perceptionBooked = perceptionUsage?.usage && perceptionUsage.model === q.start.plan.model
+        ? usageCost(perceptionUsage.usage.inputTokens, perceptionUsage.usage.outputTokens, q.start.prices) : null;
+      const usage = perceptionUsage ? { model: perceptionUsage.model, inputTokens: perceptionUsage.usage?.inputTokens,
+        outputTokens: perceptionUsage.usage?.outputTokens, bookedMicroUsd: perceptionBooked, stopReason: receipt.parsed.stopReason }
+        : receipt ? { model: receipt.receipt.model, inputTokens: receipt.receipt.inputTokens, outputTokens: receipt.receipt.outputTokens,
+          bookedMicroUsd: receipt.bookedMicroUsd, stopReason: receipt.stopReason } : null;
       return { cursor: q.cursor, segmentId: q.segmentId, sourceRunId: q.start.runId,
-        requestId: d.requestId, actorId: d.actorId, tick: d.tick, observation: d.observation,
+        requestId: d.requestId, actorId: d.actorId, tick: d.tick, observation: d.observation ?? {
+          schema: 'node-first-person-authorized-view-v1', perception: d.record?.observation,
+          self: { role: d.reservation.participant.role, roleEpoch: d.reservation.participant.roleEpoch,
+            x: d.perceptionRequest.scene.observer.x, y: d.perceptionRequest.scene.observer.y } },
         reasoning: parsed ? { source: parsed.reasoning.source, status: parsed.reasoning.status,
-          summaries: parsed.reasoning.summaries, redactedBlocks: parsed.reasoning.redactedBlocks } : { status: response ? 'unparseable' : related.some(x => x.event.kind === 'failure') ? 'transport_failed' : 'pending', summaries: [] },
+          summaries: parsed.reasoning.summaries, redactedBlocks: parsed.reasoning.redactedBlocks } : { status: response ? 'unparseable' : related.some(x => eventType(x.event) === 'failure') ? 'transport_failed' : 'pending', summaries: [] },
         latencyMs: response?.latencyMs ?? null, proposal: parsed?.decision ?? null, admitted: validation?.admitted ?? null,
         executed: !!transition, nextTick: transition?.nextTick ?? null,
         // Effects are facts about this actor, not a judgment of the provider's explanation.
         effects: transition?.effects.filter((e: { person: string }) => e.person === q.start.identities.find(a => a.actorId === d.actorId)?.person).map((e: { category: string }) => e.category) ?? [],
-        usage: receipt ? { model: receipt.receipt.model, inputTokens: receipt.receipt.inputTokens, outputTokens: receipt.receipt.outputTokens,
-          bookedMicroUsd: receipt.bookedMicroUsd, stopReason: receipt.stopReason } : null,
-        heldMicroUsd: receipt?.bookedMicroUsd != null ? 0 : d.ceilingMicroUsd };
+        usage, heldMicroUsd: usage?.bookedMicroUsd != null ? 0 : d.ceilingMicroUsd ?? d.ceiling };
     });
     return { ...result, phase: 'execution', calls, timeline: this.list().slice(0, this.#points.indexOf(p) + 1),
       telemetry: { callAttemptCount: calls.length, knownUsageCount: calls.filter(c => c.usage?.bookedMicroUsd != null).length,
         validatorAdmissionCount: calls.filter(c => c.admitted !== null).length, executedDecisionCount: calls.filter(c => c.executed).length,
-        completedTickCount: through.filter(x => x.event.kind === 'transition').length,
+        completedTickCount: through.filter(x => eventType(x.event) === 'transition').length,
         inputTokens: calls.reduce((n,c) => n + (c.usage?.inputTokens ?? 0), 0), outputTokens: calls.reduce((n,c) => n + (c.usage?.outputTokens ?? 0), 0),
         bookedMicroUsd: calls.reduce((n,c) => n + BigInt(c.usage?.bookedMicroUsd ?? 0), 0n).toString(),
         heldMicroUsd: calls.reduce((n,c) => n + BigInt(c.heldMicroUsd), 0n).toString(), basis: 'verified_ledger_receipts_at_cursor', qualityEvaluation: 'not_evaluated' },

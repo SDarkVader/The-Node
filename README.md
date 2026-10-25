@@ -8,23 +8,24 @@ change. Its present implementation is a stage of development, not a ceiling on t
 
 ## Current development — 2026-10-25
 
-The follow-up reasoning audit found identical controls in the supplied historical ledger.
-The opt-in per-turn deliberation condition now gives both Bakers identical high effort,
-2,048-token output caps and explicit system/per-turn guidance. The fresh 20-tick plan passes
-offline rehearsal. [Audit and prepared test](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
-**The new paid run must not start until the owner approves after readiness.**
-For Termux credential transfer, `scripts/credential-envelope.mjs` encrypts locally for the cloud
-recipient; plaintext keys never belong in chat, Git or logs. Its `check` command tests
-crypto and an existing encrypted output without reading a credential.
-The encrypted credential upload has now been authenticated and imported into a private cloud
-file. Local format and permission checks pass; provider authentication is untested. The actual
-latest accounting journal and separate owner approval remain pending. No new allowance has
-been activated and no new provider call has been made.
-The subsequently supplied ledger confirms the original 14/28 versus 8/28 summary counts and
-2/10 versus 1/10 in the later environmental continuation. Actual request controls match for
-both actors; exact own histories persist. The world tape replays through tick 38. Complete
-perception-runner verification needs the unpublished source revision; the actual latest
-accounting journal is still pending. See the linked audit for the scope of completed checks.
+The reasoning audit confirms the original **14/28 versus 8/28** summary counts and a further
+**2/10 versus 1/10** through tick 38. Actual controls match and exact own histories are preserved for both
+actors; the exact runtime from [PR #41](https://github.com/SDarkVader/The-Node/pull/41) verifies
+the complete archive. Adaptive medium-effort thinking left emission optional.
+
+The owner selected a **fresh 20-tick first-person Godot test**, with zero inherited model turns.
+Both agents receive common high effort, a 2,048-token output cap and explicit guidance on every
+turn. Perception components from #40/#41 are integrated into the cloud branch; fresh and
+historical perception ledgers feed the same verified web/Godot observatory. Two actual workers
+agree before delivery. The development offline rehearsal completed 40 synthetic decisions /
+20 real ticks; committed-runtime verification is the next check.
+[Diagnosis, selected plan and readiness workflow](docs/research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+
+**The paid run remains stopped until readiness and separate owner approval.** The encrypted
+credential is installed privately and passes local format/permission checks. The actual latest
+accounting journal is still required; no new grant has been activated or provider request sent.
+The proposal is capped at USD 1 with a conservative forty-request ceiling of USD 0.881920.
+Actual provider emission remains unverified by the synthetic rehearsal.
 
 The cloud observatory connects web and native Godot to one replay-verified continuation world,
 with a shared timeline, exact returned summaries, actor-specific observations, admission/effect

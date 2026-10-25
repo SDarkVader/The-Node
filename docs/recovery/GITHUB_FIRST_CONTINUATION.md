@@ -14,10 +14,10 @@ Preserve unrelated work; do not silently reset or discard state.
 The dated Git-tracked pilot results describe tick 18 after 36 paid decisions. The owner has since
 supplied private evidence through tick 38: the complete legacy parent independently verifies to
 tick 28, and the later perception segment's archived bytes, exact own histories and world tape
-check through tick 38. Full perception-runner reconstruction needs its unpublished source
-`47291c8`; current accounting-journal binding is also pending. See the
+check through tick 38. Full perception-runner reconstruction now passes using exact source `47291c8`, available in
+PR #41. Current accounting-journal binding is still pending. See the
 [reasoning audit](../research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md) for the precise scope.
-The owner's requested fresh 20-tick test remains stopped until readiness and separate explicit
+The owner's requested fresh first-person Godot 20-tick test remains stopped until readiness and separate explicit
 approval. The authority-attribution Study 1 is still paused and frozen.
 
 [Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and

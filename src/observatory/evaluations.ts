@@ -1,5 +1,6 @@
 import { lstatSync, readFileSync } from 'node:fs';
 import type { Point } from './source.js';
+import { eventType } from './recovery.js';
 
 export interface EvaluationRecord {
   schema: 'node-observatory-evaluation-v1'; evaluationId: string; experimentId: string; phase: 'evaluation';
@@ -33,17 +34,17 @@ export function readEvaluations(path: string | string[] | undefined, experimentI
   const out: EvaluationRecord[] = [];
   for (const r of records) {
     const through = points.findIndex(p => p.cursor === r.evaluatedThroughCursor), p = points[through];
-    const endTick = p?.event.kind === 'transition' ? p.event.data.nextTick : p?.event.data.summary?.ticks ?? p?.event.data.tick ?? 0;
+    const endTick = p && eventType(p.event) === 'transition' ? p.event.data.nextTick : p?.event.data.summary?.ticks ?? p?.event.data.summary?.finalTick ?? p?.event.data.tick ?? 0;
     if (r.schema !== 'node-observatory-evaluation-v1' || r.phase !== 'evaluation' || r.experimentId !== experimentId ||
         !text(r.evaluationId) || ids.has(r.evaluationId) || !p || r.inputEventHash !== p.event.hash ||
-        r.inputLedgerRoot !== null && (!p.events.some(e => e.kind === 'stop' && e.hash === r.inputLedgerRoot) || p.events.at(-1)?.hash !== r.inputLedgerRoot) ||
+        r.inputLedgerRoot !== null && (!p.events.some(e => eventType(e) === 'stop' && e.hash === r.inputLedgerRoot) || p.events.at(-1)?.hash !== r.inputLedgerRoot) ||
         !r.producer || !['framework', 'human', 'declared_metric'].includes(r.producer.kind) || !text(r.producer.name) || !text(r.producer.version) ||
         r.executor !== undefined && (!['human', 'assistant', 'process'].includes(r.executor.kind) || !text(r.executor.id)) ||
         !text(r.metricId) || !text(r.metricVersion) || !text(r.definition, 8000) ||
         !['scored', 'not_applicable', 'not_scorable', 'not_evaluated', 'pending'].includes(r.status) ||
         (r.status === 'scored' ? !(typeof r.value === 'number' && Number.isFinite(r.value) || text(r.value, 8000)) : r.value !== null) ||
         !r.scope || !tick(r.scope.startTick) || !tick(r.scope.endTick) || r.scope.startTick > r.scope.endTick ||
-        r.scope.actorId !== undefined && !p.start.plan.actors.some(a => a.actorId === r.scope.actorId) ||
+        r.scope.actorId !== undefined && !p.start.identities.some(a => a.actorId === r.scope.actorId) ||
         r.evaluatedThroughTick !== endTick || r.scope.endTick > r.evaluatedThroughTick || !text(r.createdAt) || !Number.isFinite(Date.parse(r.createdAt)) ||
         !Array.isArray(r.evidence) || !r.evidence.length || r.evidence.some(e => !points.slice(0, through + 1).some(q => q.segmentId === e.segmentId && q.event.seq === e.seq && q.event.hash === e.eventHash)) ||
         r.numerator !== undefined && (!tick(r.numerator) || r.denominator === undefined || r.numerator > r.denominator) ||

@@ -5,8 +5,28 @@ import { classifyDiary, type DiaryRecord } from '../eval/constructs/diaryContrac
 import type { ActorEvent } from '../eval/constructs/authorityAttribution.js';
 import type { EvaluationRecord } from './evaluations.js';
 import { points } from './source.js';
+import { recoverExperiment } from './recovery.js';
+import { DIARY_CONTRACT, diaryContractHash, DIARY_RESULT_SCHEMA, type DiaryResult } from '../eval/constructs/diaryContract.js';
 
 export function evaluateContinuationDiary(events: readonly ContinuationEvent[], experimentId: string) {
+  if (events[0]?.kind === 'perception_fresh_start' || events[0]?.kind === 'perception_start') {
+    const verified = recoverExperiment(events, events[0]!.data.sourceRevision), chain = points(events), p = chain.at(-1)!;
+    if (!verified.complete || !verified.recovery.tape.ticks.length) throw Error('observatory_sealed_committed_input_required');
+    const actors = events[0]!.data.identities as { actorId: string }[];
+    const result: DiaryResult = { schema: DIARY_RESULT_SCHEMA, contract: { id: DIARY_CONTRACT.id, version: DIARY_CONTRACT.version, hash: diaryContractHash() },
+      actors: actors.map(a => ({ actorId: a.actorId, days: [], eligibleDays: 0, writtenDays: 0, adherence: null })),
+      counts: Object.fromEntries(Object.keys(DIARY_CONTRACT.measurement.outcomes).map(k => [k,0])) as DiaryResult['counts'], adherence: null,
+      grounding: { written: 0, subjectGrounded: 0, observationSupported: 0, observationUnsupported: 0, observationUnverifiable: 0 } };
+    const records: EvaluationRecord[] = actors.map(a => ({ schema: 'node-observatory-evaluation-v1', phase: 'evaluation',
+      evaluationId: `a01-perception-na-${a.actorId}-${p.event.hash.slice(0,16)}`, experimentId, inputLedgerRoot: verified.ledgerRoot,
+      inputEventHash: p.event.hash, evaluatedThroughCursor: p.cursor, evaluatedThroughTick: verified.recovery.tape.ticks.length,
+      producer: { kind: 'declared_metric', name: 'NODE A01 observation-condition applicability', version: '1' },
+      executor: { kind: 'process', id: 'node.observatory.diaryEvaluation' }, metricId: 'diary_daily_adherence', metricVersion: '1',
+      contractHash: diaryContractHash(), definition: 'Not applicable to this first-person segment: its declared decision schema supplies no recognized diary subjects and requires diary=null. The unchanged A01 behavioural classifier is not run on hidden social state. Historical parent outcomes are evaluated separately.',
+      status: 'not_applicable', value: null, numerator: 0, denominator: 0, scope: { actorId: a.actorId, startTick: events[0]!.data.startTick, endTick: verified.recovery.tape.ticks.length },
+      evidence: [{ segmentId: p.segmentId, seq: p.event.seq, eventHash: p.event.hash }], createdAt: new Date().toISOString() }));
+    return { input: null, result, records };
+  }
   const verified = recoverContinuation(events, events[0]?.data.sourceRevision);
   if (!verified.complete || !verified.recovery.tape.ticks.length) throw Error('observatory_sealed_committed_input_required');
   const chain = points(events), eventLog: ActorEvent[] = [];

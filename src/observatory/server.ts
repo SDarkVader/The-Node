@@ -6,6 +6,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { ObservatorySource, points } from './source.js';
 import { readEvaluations } from './evaluations.js';
 import { validateContinuationPlan, continuationPlanHash } from '../eval/continuationRunner.js';
+import { validateFreshPerceptionPlan, freshPerceptionPlanHash } from './freshPerception.js';
+import { validatePerceptionPlan, perceptionPlanHash } from './perceptionContinuation.js';
 
 interface Options { sources: ObservatorySource[]; researcherToken: string; worldToken: string; host?: string; port?: number; pollMs?: number; secureCookie?: boolean }
 type Role = 'researcher' | 'world';
@@ -97,8 +99,13 @@ export function startObservatory(options: Options) {
         return json(res, 200, { role: 'researcher' });
       }
       if (role(req) !== 'researcher') return json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET' && url.pathname === '/observatory/v1/configuration/fresh-first-person')
+        return json(res, 200, { plan: JSON.parse(readFileSync(fileURLToPath(new URL('../../experiments/two-baker-first-person-reasoning-20-ticks.json',import.meta.url)),'utf8')), spendingAuthorized: false });
       if (req.method === 'POST' && url.pathname === '/observatory/v1/configuration/validate') {
-        const { plan } = await body(req); validateContinuationPlan(plan);
+        const { plan } = await body(req);
+        if (plan?.schema === 'node-accounted-perception-fresh-v1') { validateFreshPerceptionPlan(plan); return json(res,200,{planSha256:freshPerceptionPlanHash(plan),spendingAuthorized:false}); }
+        if (plan?.schema === 'node-accounted-perception-continuation-v1') { validatePerceptionPlan(plan); return json(res,200,{planSha256:perceptionPlanHash(plan),spendingAuthorized:false}); }
+        validateContinuationPlan(plan);
         return json(res, 200, { planSha256: continuationPlanHash(plan), spendingAuthorized: false });
       }
       if (req.method === 'DELETE' && url.pathname === '/session') {

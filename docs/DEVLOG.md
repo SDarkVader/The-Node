@@ -5943,3 +5943,15 @@ maintain four docs every session: this devlog, `BLUEPRINT.md`, `HANDOVER.md`, an
 `README.md` current. Added `CLAUDE.md` so this rule auto-loads for every future session
 rather than depending on being repeated. Backfilled this entry retroactively since the
 rule postdated the actual Phase 1 work.
+
+
+### 2026-10-25 — fresh first-person reasoning preparation
+
+Located exact runtime 47291c8 in newly opened PR #41 and verified the actual tick-38 archive
+with its full verifier. Integrated the needed perception/worker components into the cloud
+branch, a distinct fresh-start memory condition and common high-effort/per-turn guidance.
+Added counted-input Node transport, journal/ledger binding checks, bundled approval/preflight
+gates, and verified perception-prefix observatory support. Development native rehearsal:
+40 synthetic decisions / 20 real ticks, two actual Godot workers agreed on all packets, same
+final world hash in replay and observatory. Final committed checks remain to record.
+The actual latest journal is pending; no provider call or new allowance activation occurred.

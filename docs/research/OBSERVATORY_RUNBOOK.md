@@ -213,3 +213,17 @@ own contract-aware joins. Human annotation authoring, transcript degradation com
 browser-embedded Godot, and full A04 key/abode transactions remain further work; none is
 silently added to the frozen action contract. The existing society mechanics are exercised
 through their actual kernel, rather than through UI-only state.
+
+
+## Fresh first-person test selected on 2026-10-25
+
+The owner selected the first-person Godot condition from PR #41, fresh from genesis with
+no prior model context. Use the [selected plan/readiness workflow](REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md).
+The web configuration panel can load, validate and download the fresh twenty-tick template;
+this grants no execution/spending permission. The cloud reader now verifies `perception_*`
+and `perception_fresh_start` archives as well as original continuation archives. The same
+selected committed world cursor drives web and native Godot. Exact returned summaries and
+missing blocks remain distinct; historical financial state is carried without model history.
+A01 diary adherence is not applicable where the declared first-person schema requires
+`diary=null`; execution-share evaluation remains separate. The actual latest journal and
+separate owner approval are still required before any provider request or new allowance.

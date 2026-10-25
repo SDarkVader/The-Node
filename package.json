@@ -2,7 +2,7 @@
   "name": "the-node",
   "version": "0.1.0",
   "private": true,
-  "description": "NODE — persistent multiplayer social-economic game engine",
+  "description": "NODE \u2014 persistent multiplayer social-economic game engine",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
@@ -53,9 +53,12 @@
     "observatory:evaluate": "tsx scripts/evaluate-observatory.ts",
     "continuation:preflight": "tsx scripts/continuation-preflight.ts",
     "continuation:reasoning-audit": "tsx scripts/audit-continuation-reasoning.ts",
-    "reasoning-test:readiness": "tsx scripts/reasoning-test-readiness.ts",
-    "reasoning-test:rehearse": "tsx scripts/rehearse-reasoning-test.ts",
-    "test:observatory": "vitest run test/observatory.test.ts test/anthropicNodeWorker.test.ts test/clientProtocolConformance.test.ts"
+    "reasoning-test:readiness": "tsx scripts/first-person-test-readiness.ts",
+    "reasoning-test:rehearse": "tsx scripts/rehearse-first-person-test.ts",
+    "test:observatory": "vitest run test/observatory.test.ts test/anthropicNodeWorker.test.ts test/clientProtocolConformance.test.ts",
+    "reasoning-test:observer-readiness": "tsx scripts/reasoning-test-readiness.ts",
+    "reasoning-test:observer-rehearse": "tsx scripts/rehearse-reasoning-test.ts",
+    "reasoning-test:run": "node scripts/run-fresh-reasoning-test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

@@ -8,12 +8,15 @@ const durable = (path, value, flag = 'wx') => {
   const fd = openSync(path, flag, 0o600);
   try { writeFileSync(fd, value); fsyncSync(fd); } finally { closeSync(fd); }
 };
-export async function runAnthropicWorker({ keyPath, directory, maxRequestBytes = 32768 }, fetcher = fetch) {
+export async function runAnthropicWorker({ keyPath, directory, maxRequestBytes = 32768, profile = 'legacy', endpoint = 'messages' }, fetcher = fetch) {
   const networkPath = join(directory, 'network.json'), responsePath = join(directory, 'response.json');
   if (existsSync(networkPath) || existsSync(responsePath)) throw Error('worker_artifacts_exist');
-  const result = { endpoint: 'messages', httpStatus: null, elapsedMs: null, outcome: 'not_started', requestId: null };
+  const safeEndpoint = endpoint === 'count_tokens' ? 'count_tokens' : 'messages';
+  const result = { endpoint: safeEndpoint, httpStatus: null, elapsedMs: null, outcome: 'not_started', requestId: null };
   let key = '', begun = performance.now();
   try {
+    if (!['legacy', 'counted_100k_input_v1'].includes(profile) || !['messages', 'count_tokens'].includes(endpoint) ||
+      endpoint === 'count_tokens' && profile !== 'counted_100k_input_v1') throw Error('request_profile');
     const stat = lstatSync(keyPath);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > 16384 ||
         process.platform !== 'win32' && ((stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.())) throw Error('credential_file_invalid');
@@ -22,14 +25,15 @@ export async function runAnthropicWorker({ keyPath, directory, maxRequestBytes =
     key = lines[0].slice(lines[0].indexOf('=') + 1).trim();
     if (key.startsWith('"') && key.endsWith('"') || key.startsWith("'") && key.endsWith("'")) key = key.slice(1, -1);
     if (key.length > 512 || !/^sk-ant-[A-Za-z0-9_-]{8,}$/.test(key)) throw Error('credential_entry_invalid');
-    if (!Number.isSafeInteger(maxRequestBytes) || maxRequestBytes < 32768 || maxRequestBytes > 95000) throw Error('request_bounds');
+    if (!Number.isSafeInteger(maxRequestBytes) || maxRequestBytes < 32768 ||
+      maxRequestBytes > (profile === 'counted_100k_input_v1' ? 200000 : 95000)) throw Error('request_bounds');
     const body = readFileSync(join(directory, 'request.json'));
     if (!body.length || body.length > maxRequestBytes) throw Error('request_bounds');
     result.outcome = 'dispatching_cost_unknown'; durable(networkPath, JSON.stringify(result) + '\n');
     begun = performance.now();
-    const response = await fetcher('https://api.anthropic.com/v1/messages', { method: 'POST', redirect: 'error',
+    const response = await fetcher(safeEndpoint === 'messages' ? 'https://api.anthropic.com/v1/messages' : 'https://api.anthropic.com/v1/messages/count_tokens', { method: 'POST', redirect: 'error',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', accept: 'application/json' },
-      body, signal: AbortSignal.timeout(12000) });
+      body, signal: AbortSignal.timeout(profile === 'counted_100k_input_v1' ? 20000 : 12000) });
     result.httpStatus = response.status;
     const id = response.headers.get('request-id');
     if (/^req_[A-Za-z0-9_-]{1,128}$/.test(id ?? '')) result.requestId = id;

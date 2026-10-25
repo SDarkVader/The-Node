@@ -43,8 +43,8 @@
   },
   "perceptionExtension": {
     "sourceRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
-    "matchingRunnerSourceAvailable": false,
-    "wholePerceptionRunnerVerified": false,
+    "matchingRunnerSourceAvailable": true,
+    "wholePerceptionRunnerVerified": true,
     "archivedHashChainVerified": true,
     "actualResponsesReparsed": true,
     "exactOwnHistoryPrefixesVerified": true,
@@ -108,5 +108,37 @@
   "freshTestStarted": false,
   "ownerApprovalForFresh20Ticks": "pending_required_after_readiness",
   "rawPrivateTextIncluded": false,
-  "interpretation": "Both agents had equal controls and complete own history. Adaptive thinking did not guarantee a summary on every decision. Archived responses do not expose a model-internal cause for individual omissions. Full perception-runner reconstruction and current journal binding remain unverified."
+  "interpretation": "Both agents had equal controls and complete own history. Adaptive thinking did not guarantee a summary on every decision. Archived responses do not expose a model-internal cause for individual omissions. Source-pinned perception verification passes; actual latest journal binding remains pending.",
+  "sourcePinnedVerification": {
+    "runtimeRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "sourceAvailableInPr": 41,
+    "verified": true,
+    "ledgerRoot": "76d36db2f1aa6d17b13189ac0b615152be50d47a5f1e70be6cd87eb5c8a29ecc",
+    "sourceRevision": "47291c82535a542d1760a6563fc818e24480fa2c",
+    "summary": {
+      "status": "completed",
+      "calls": 20,
+      "startTick": 28,
+      "finalTick": 38,
+      "completedTicks": 10,
+      "finalWorldHash": "659cc5d9115866dc6bf13de333ec2b3796716b6df086675214631b96385e2c86",
+      "historyHash": "29e8c628df9fae6559d855749a730d0a65af8b4d3676fa099c8cab2b8950b288",
+      "budgetHistoryHash": "c8ccc9b6ef7871b3083413765642398f04c0ebbec46cbdf7224807c81adbcb86",
+      "bookedMicroUsd": "139250",
+      "heldMicroUsd": "0"
+    },
+    "metrics": "not_evaluated",
+    "actualLatestJournalProvided": false,
+    "providerCalls": 0,
+    "rawPrivateTextIncluded": false
+  },
+  "sourceBranches": {
+    "foundationPr": 40,
+    "foundationHead": "e0fc2997f192cebec5962e00ace21e68682cfe53",
+    "environmentalPr": 41,
+    "environmentalHead": "b7dc9619bef80252f88008349406c2302f252174",
+    "recordedRuntimeIsAncestor": true,
+    "runtimeCodeUnchangedSinceRecordedCommit": true,
+    "mergedIntoMainByThisWork": false
+  }
 }

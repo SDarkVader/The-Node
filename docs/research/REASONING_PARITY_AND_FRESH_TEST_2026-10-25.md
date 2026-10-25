@@ -20,13 +20,16 @@ tape replays with the existing compiled kernel to the recorded final hash. All t
 proposals are null actions; all stops are `end_turn`, with no redactions or input transformations.
 
 The later segment uses the distinct `perception_*` ledger format and names runner source
-`47291c82535a542d1760a6563fc818e24480fa2c`, unavailable in the local clone or GitHub at inspection.
-Its actual wire bytes have the same reasoning controls and system hash below, unchanged
-from each actor's signed parent. Full reconstruction of perception packets, worker agreement
-and request construction still requires that source; world-tape replay does not establish
-those additional checks. The actual latest allowance journal is also still pending.
+`47291c82535a542d1760a6563fc818e24480fa2c`. The owner identified the newly opened
+[foundation PR #40](https://github.com/SDarkVader/The-Node/pull/40) and dependent
+[runtime PR #41](https://github.com/SDarkVader/The-Node/pull/41). The source is preserved in
+#41's ancestry; its runtime code is unchanged at that PR's head. A clean exact-source
+checkout compiled, its full perception verifier passed on the actual archive, and nine
+perception-continuation plus four frozen Study 1 tests passed. Request reconstruction,
+audit bindings, exact signed histories, admission, costs and world replay now verify.
+The actual latest allowance journal is still pending, so current journal binding is not claimed.
 [Sanitized audit results](evidence/reasoning-parity-private-archive-audit-2026-10-25.json)
-separate completed checks from these remaining checks. No new provider request was made.
+record the source-pinned verification. No new provider request was made.
 
 Every actual archived request across both supplied files has the same system prompt and
 reasoning controls for both actors:
@@ -82,57 +85,76 @@ silently switch profiles or rewrite its system. Anthropic explicitly warns that 
 `system` while resending signed thinking can return HTTP 400. The owner's selected test is
 fresh, so both actors receive the new system from genesis with no inherited context.
 
-## Prepared test, not an authorization
+## Owner-selected fresh first-person test, pending approval
 
-Configuration: [two-baker-reasoning-20-ticks.json](../../experiments/two-baker-reasoning-20-ticks.json).
-Two Baker identities, seed 103, fresh genesis, 20 decision rounds and at most 40 paid calls.
-Human rounds 1–20 correspond to the unchanged kernel's canonical source ticks 0–19.
-There is no parent ledger and no resumed model context.
+The owner explicitly selected **first-person Godot perception from PR #41**, beginning at
+fresh genesis with no prior model context. The earlier original-observer proposal is not
+the selected condition. Configuration:
+[two-baker-first-person-reasoning-20-ticks.json](../../experiments/two-baker-first-person-reasoning-20-ticks.json).
+Two Baker identities, seed 103, 20 rounds and at most 40 paid calls. Human rounds 1–20
+correspond to canonical source ticks 0–19. Financial history is carried independently;
+no old experiment conversation or world is attached as a parent.
 
-The draft proposes a new allowance cap of USD 1 conservatively booked, at most 40 requests,
-USD 0.03 per-request admission, and a 24-hour window. With the existing reviewed prices and
-95,000-byte request bound, the full-request conservative ceiling is 21,868 micro-USD per
-call and 874,720 micro-USD over 40 calls. These are bounds/proposals, not an invoice or
-an activated grant. The clock must start only after the owner approves a ready test.
+The cloud branch imports the perception, context, independent-worker and Godot geometry
+components from #40/#41. The shared accounted loop now supports a separately versioned
+fresh start with a common first-person system, high effort and the explicit reminder on
+every turn. Historical continuation request construction stays compatible; the actual
+38-tick archive also verifies through the integrated backend. This is component integration
+into #39, not a merge of #40/#41 into main or a claim that their separate interface branches
+have been fully reconciled.
 
-Readiness also requires the actual latest accounting journal, with no unresolved holds and
-an eligible closed prior grant for the existing carry mechanism, plus an approved credential.
-Source-only or synthetic accounting must never replace that journal.
+Two separately launched Godot workers must agree before each agent receives its packet.
+The real host remains authoritative. Fresh and historical perception prefixes are verified
+before the web/Godot observatory displays them, including requests, actual returned summaries,
+admission, effects, usage and historical cursor selection. A01 diary adherence is explicitly
+`not_applicable` in this narrower condition: no recognized diary subjects are supplied and
+the action schema requires `diary=null`. Hidden social state is not used to grade that agent.
+The existing Inspect execution-share evaluation remains separate from execution and is not
+a reasoning-quality score.
 
-Credential provisioning completed on 2026-10-25: the owner's encrypted upload authenticated
-against the existing cloud recipient and was imported outside the checkout with mode 0600.
-Read-only readiness at source `00ac75a` passed the credential format/permissions and uniform
-fresh-request conditions. Provider authentication is untested. Funding remains
-`actual_journal_not_provided`, so `readyForOwnerApproval` and `dispatchApproved` are false.
-The actual latest `accounting.journal.json` is still needed; the previously supplied continuation
-ledger is already preserved privately and does not replace the journal. No allowance was
-created, no allowance clock started and no provider request was sent.
+The proposal caps the new allowance at USD 1, forty paid requests, USD 0.03 per-request
+admission and 24 hours. The explicit counted-input profile allows 200,000 serialized bytes
+with the unchanged 100,000-input-token ceiling. A free count plus schema/overhead margin
+must fit before each paid dispatch. Both actors have the same 2,048 total output-token cap
+and 20-second response deadline. Conservative bounds are **22,048 micro-USD per request**
+and **881,920 micro-USD over forty requests**. At most forty free counts accompany them.
+These are proposals/bounds, not spending, invoices or an activated clock.
 
-Offline preparation commands:
+The owner's authenticated encrypted credential upload is installed privately with mode
+0600. Its format/permissions pass local checks; provider authentication is untested. Actual
+funding remains `actual_journal_not_provided`. The latest `accounting.journal.json` must pass
+its checksum, full accounting replay and exact binding to the supplied latest ledger, with
+no unresolved holds or overrun and a closed prior grant. An older journal is rejected.
+Neither the archive nor synthetic rehearsal accounting replaces this file.
+
+Offline preparation, using an actual installed Godot binary:
 
 ```sh
-npm run continuation:reasoning-audit -- <actual-private-ledger> <NEW-private-audit.json>
-npm run reasoning-test:rehearse -- <NEW-private-offline-directory>
-npm run reasoning-test:readiness -- <NEW-private-readiness.json> --journal <actual-journal> --credential-file <approved-private-env>
+NODE_GODOT_BIN=/path/to/godot npm run reasoning-test:rehearse -- <NEW-private-offline-directory>
+NODE_GODOT_BIN=/path/to/godot npm run reasoning-test:readiness -- <NEW-private-report.json> --ledger <actual-latest-ledger> --journal <actual-latest-accounting.journal.json> --credential-file <approved-private-env>
 ```
 
-The audit exports hashes, controls, counts and usage, without raw prompts, observations,
-thinking text or signatures. Rehearsal uses an explicitly synthetic provider and budget;
-its emission counts do not verify Haiku behavior. Readiness creates no allowance and sends
-no provider request. Missing credentials/accounting are reported as missing, never as zero.
+Readiness starts no allowance, count request or provider call. The rehearsal uses real
+Godot processes and kernel transitions but explicitly synthetic provider responses, counts
+and accounting. It does not verify Haiku emission. Missing accounting is never assumed zero.
+The original-observer checks remain separately named `reasoning-test:observer-rehearse`
+and `reasoning-test:observer-readiness` for their historical scope.
 
-After code verification, build a committed runtime with the existing build script. Only
-after explicit owner approval and proper real-budget authorization may the separate gate run:
+Build from committed source using `node scripts/build-study-runtime.mjs <NEW-runtime>`.
+The bundle contains committed client/plan/transport files and its locked WebSocket dependency.
+The fresh CLI verifies its own code against that bundle. A preflight can then use:
 
 ```text
-node scripts/run-fresh-reasoning-test.mjs <committed-runtime> <approved-new-allowance> <NEW-private-artifacts> <approved-credential-file> --owner-approved-fresh-20-ticks
+node <runtime>/scripts/run-fresh-reasoning-test.mjs <runtime> <actual-latest-ledger> <actual-latest-accounting.journal.json> <NEW-private-output> <approved-private-env> <owner-instruction-file> --preflight-only
 ```
 
-This wrapper accepts no resume option and checks the compiled runtime's actual initial wire
-conditions before opening the budget. The underlying runner still enforces every existing
-accounting, request-bound, usage, validation and kernel gate. The actual live check must report
-thinking presence, nonempty-summary emission, truncation, usage, latency, proposals and effects
-per actor, separately from any evaluation of decision quality.
+The latest ledger is a financial binding reference only. It is never the model/world parent.
+The paid path requires replacing the final flag with `--owner-approved-fresh-20-ticks` only
+**after readiness and separate explicit owner approval**. Do not run that path yet. It creates
+the new carried allowance and starts its clock only after real Godot/request preflight.
+No automatic retry or signature/history rewrite is permitted. The later actual live report
+must distinguish per-actor summary presence, missing blocks, truncation, usage and effects
+from any separately attributed evaluation of decision quality.
 
 ## Credential transfer from Termux
 
