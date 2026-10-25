@@ -5,14 +5,30 @@ the new paid run. No new provider call or allowance activation has been made.**
 
 ## Evidence and diagnosis
 
-The supplied private file is a self-contained continuation ledger ending at tick 18,
-not the reported 28-tick file. It independently verifies its embedded parents, exact
-conversation histories, responses, accounting receipts and original world replay.
-It contains 36 calls: 18 for each Baker. Baker 0 returned a nonempty thinking summary
-on 13 turns; Baker 1 did so on six. The reported 14/28 versus 8/28 counts require the
-later ledger and are not substituted for what this file contains.
+The initial private file independently verified through tick 18: 36 calls, with summaries
+on 13 turns for `baker-0` and six for `baker-1`. Its original bytes remain preserved.
+The owner's subsequent ledger includes the complete 28-tick legacy parent and the later
+environmental continuation from ticks 28–38. Independent legacy recovery now confirms the
+original reported counts: **14/28 for `baker-0`, 8/28 for `baker-1`**. Exact histories,
+requests, responses, receipts and original world replay pass for the complete parent chain.
 
-Every actual archived request in the supplied file has the same system prompt and
+The later twenty archived decisions confirm **2/10 versus 1/10** additional summaries,
+matching the owner's scanned report. Their hash chain, response hashes, production parser
+results, usage bookings and exact retained own-history prefixes pass independent checks.
+Both actors start that segment with 28 prior assistant turns. The complete 38-tick world
+tape replays with the existing compiled kernel to the recorded final hash. All twenty
+proposals are null actions; all stops are `end_turn`, with no redactions or input transformations.
+
+The later segment uses the distinct `perception_*` ledger format and names runner source
+`47291c82535a542d1760a6563fc818e24480fa2c`, unavailable in the local clone or GitHub at inspection.
+Its actual wire bytes have the same reasoning controls and system hash below, unchanged
+from each actor's signed parent. Full reconstruction of perception packets, worker agreement
+and request construction still requires that source; world-tape replay does not establish
+those additional checks. The actual latest allowance journal is also still pending.
+[Sanitized audit results](evidence/reasoning-parity-private-archive-audit-2026-10-25.json)
+separate completed checks from these remaining checks. No new provider request was made.
+
+Every actual archived request across both supplied files has the same system prompt and
 reasoning controls for both actors:
 
 - Model: `claude-haiku-5-5`.

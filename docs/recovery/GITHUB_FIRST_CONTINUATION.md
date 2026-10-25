@@ -11,14 +11,19 @@ Repository: `SDarkVader/The-Node`. Current development branch:
 Read the [implemented cloud observatory runbook](../research/OBSERVATORY_RUNBOOK.md).
 Preserve unrelated work; do not silently reset or discard state.
 
-The live continuation pilot is stopped at tick 18 after 36 paid decisions, including 32 extension
-calls. Exact histories and the original world persisted. Fresh-process replay and Inspect imports
-passed. Estimated extension list cost USD 0.0613495 / conservative booking USD 0.122711, zero holds.
-No background run is active. The separate authority-attribution Study 1 is still paused and frozen.
+The dated Git-tracked pilot results describe tick 18 after 36 paid decisions. The owner has since
+supplied private evidence through tick 38: the complete legacy parent independently verifies to
+tick 28, and the later perception segment's archived bytes, exact own histories and world tape
+check through tick 38. Full perception-runner reconstruction needs its unpublished source
+`47291c8`; current accounting-journal binding is also pending. See the
+[reasoning audit](../research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md) for the precise scope.
+The owner's requested fresh 20-tick test remains stopped until readiness and separate explicit
+approval. The authority-attribution Study 1 is still paused and frozen.
 
 [Results](../research/CONTINUATION_PILOT_RESULTS_2026-10-23.md) and
 [sanitized evidence](../research/evidence/reasoning-continuation-live-extension-2026-10-23.json)
-record runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and the original world revision.
+record the earlier runner source `d237effcc129c7757e382a3af8ecc0e95307ebc4` and original world revision;
+they do not describe the later environmental continuation.
 Current documentation describes the programme, the evidence so far and further work separately.
 An unimplemented task is not a limitation of the experiment's future.
 
@@ -46,11 +51,12 @@ responses, signatures, world observations, runtime state, credentials or allowan
 Those bytes cannot be reconstructed from a clone that never contained them. Secure transfer and
 recovery mechanisms can be developed; do not confuse missing data with a ceiling on future work.
 
-A later authorized live continuation requires the actual latest private tick-18 parent, its
-matching current journal, and independent verification before dispatch. The runner reconstructs
+A later authorized live continuation requires the actual latest private parent, its matching
+current journal, and independent verification before dispatch. The runner reconstructs
 the world through original replay and preserves exact signed own histories. Reusing an older
 checkpoint after the journal advanced is refused. Unknown/failed partial calls are evidence to
 retain and diagnose, not an instruction to retry or erase a hold.
+The current owner request is a fresh run from genesis, not a resumption of this historical world.
 
 Do not infer permission, missing records or a zero balance from a fresh clone. Do not create a
 replacement allowance or repeat paid calls as setup. This guide does not authorize a run.

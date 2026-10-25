@@ -20,6 +20,11 @@ The encrypted credential upload has now been authenticated and imported into a p
 file. Local format and permission checks pass; provider authentication is untested. The actual
 latest accounting journal and separate owner approval remain pending. No new allowance has
 been activated and no new provider call has been made.
+The subsequently supplied ledger confirms the original 14/28 versus 8/28 summary counts and
+2/10 versus 1/10 in the later environmental continuation. Actual request controls match for
+both actors; exact own histories persist. The world tape replays through tick 38. Complete
+perception-runner verification needs the unpublished source revision; the actual latest
+accounting journal is still pending. See the linked audit for the scope of completed checks.
 
 The cloud observatory connects web and native Godot to one replay-verified continuation world,
 with a shared timeline, exact returned summaries, actor-specific observations, admission/effect

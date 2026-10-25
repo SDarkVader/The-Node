@@ -2,7 +2,9 @@
 
 Updated 2026-10-25. Development branch: `codex/cloud-observatory-2026-10-25`; integration branch: `main`.
 [PR #39](https://github.com/SDarkVader/The-Node/pull/39) is open; no merge to main was performed.
-PR #38 is merged at afbdec7. The historical live pilot remains stopped at tick 18, and Study 1 remains paused.
+PR #38 is merged at afbdec7. The supplied legacy ledger verifies through tick 28; the later segment's
+archived bytes, exact histories and world tape check through tick 38. Complete perception-runner
+verification needs its unpublished source. No cloud run is active; Study 1 remains paused.
 
 [Current workflow](../research/OBSERVATORY_RUNBOOK.md) · [Current experiment](../research/CURRENT_EXPERIMENT.md) ·
 [Preserved earlier checkpoint](SESSION_HISTORY_2026-10-25.md).
@@ -33,16 +35,17 @@ PR #38 is merged at afbdec7. The historical live pilot remains stopped at tick 1
     "Final dependency/source ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e: TypeScript and all 1,363 Vitest tests / 109 files passed on Vitest 4.1.12; npm audit --audit-level=low reports zero vulnerabilities. Hosted Linux research conformance passed G1\u2013G4 on dc87115 (run 40167757966).",
     "Reasoning follow-up: full suite 1,369 tests / 111 files and TypeScript passed. After clarifying the trusted per-turn instruction, 39 targeted continuation/profile/resume/freeze/credential tests pass. Offline fresh rehearsal completed 40 synthetic calls / 20 ticks with uniform settings and explicit guidance for both actors; independent replay passed. Real uploaded historical archive verified; its SHA-256 is unchanged. No new provider call.",
     "Credential helper diagnostic: two tests pass, including authenticated round trip, tamper/wrong-key refusal, credential-free CLI self-test and safe invalid-input reporting. Downloaded public helper source was checked byte-for-byte against the committed source; synthetic stdin seal/unseal round trip passed.",
-    "At source 00ac75a, the real encrypted upload authenticated and local readiness passed private credential format/permissions and uniform fresh-request checks. Recovery verification passed. Funding reports actual_journal_not_provided; readyForOwnerApproval and dispatchApproved remain false, with zero new provider calls and no allowance activation."
+    "At source 00ac75a, the real encrypted upload authenticated and local readiness passed private credential format/permissions and uniform fresh-request checks. Recovery verification passed. Funding reports actual_journal_not_provided; readyForOwnerApproval and dispatchApproved remain false, with zero new provider calls and no allowance activation.",
+    "At source 0f5a5cf, the newly uploaded 38-tick archive's embedded legacy parent independently recovers through tick 28, confirming 14/28 versus 8/28 summary turns. The perception extension's hash chain, exact retained own histories, raw-response parser results, receipt-derived bookings and complete kernel world-tape replay pass through tick 38, confirming another 2/10 versus 1/10 summaries with equal controls. Complete perception-runner/source verification and actual latest journal binding remain pending. Sanitized results are in docs/research/evidence/reasoning-parity-private-archive-audit-2026-10-25.json."
   ],
   "unresolvedIssues": [
     "Latest owner instruction: prepare a FRESH 20-tick two-Baker test from genesis, then wait for explicit owner approval after readiness. No provider dispatch or allowance activation is permitted yet. The credential is provisioned; the actual latest accounting journal is still pending. The earlier as-necessary paid authorization does not authorize starting this test now.",
-    "The owner-supplied continuation ledger is preserved privately and verifies through tick 18. The reported later 28-tick ledger has not been supplied. Neither the verified ledger nor synthetic rehearsal accounting replaces the actual latest accounting journal.",
+    "The latest private ledger includes the complete legacy parent: independent recovery confirms tick 28 and the original 14/28 versus 8/28 summary counts. Its perception_* extension confirms 2/10 versus 1/10 additional summaries, identical legacy reasoning controls, exact 28-turn own-history prefixes, matching parser/response hashes and receipt-derived bookings. The complete world tape replays through tick 38. Complete perception request/worker reconstruction still requires source 47291c82535a542d1760a6563fc818e24480fa2c, which GitHub cannot find. The actual latest accounting journal is also pending.",
     "The new paid run is stopped pending readiness and separate owner approval. Study 1 remains paused and frozen; production broker/kernel/replay/prices/contracts/pins are preserved.",
     "Full A04 key crafting/abode transactions, transcript-memory degradation/comparison conditions, embedded-browser Godot and annotation authoring remain further work outside the frozen protocol. No causal memory-benefit or reasoning-quality result is claimed."
   ],
   "nextSteps": [
-    "The profile, readiness tools and compiled runtime are prepared, and encrypted credential transfer is complete. Obtain and validate the actual latest accounting journal read-only. Do not authorize an allowance, start its clock or dispatch the fresh 20-tick test until readiness and a separate explicit owner approval.",
+    "The profile, readiness tools and compiled runtime are prepared, and encrypted credential transfer is complete. Obtain and validate the actual latest accounting journal read-only. Obtain the unpublished 47291c8 source for complete perception-runner verification. Do not authorize an allowance, start its clock or dispatch the fresh 20-tick test until readiness and a separate explicit owner approval.",
     "Review the development-branch PR against main. The implementation, remote workflow and sanitized evidence are committed. Keep private registrations, credentials, ledgers and journals outside Git.",
     "Resuming the original live tick-18 pilot requires the matching actual journal and separate authorization. The current owner request is a fresh run; do not resume the old world. Study 1 stays paused."
   ],
