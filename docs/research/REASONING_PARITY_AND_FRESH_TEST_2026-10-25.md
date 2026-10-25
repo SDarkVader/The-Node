@@ -83,6 +83,15 @@ Readiness also requires the actual latest accounting journal, with no unresolved
 an eligible closed prior grant for the existing carry mechanism, plus an approved credential.
 Source-only or synthetic accounting must never replace that journal.
 
+Credential provisioning completed on 2026-10-25: the owner's encrypted upload authenticated
+against the existing cloud recipient and was imported outside the checkout with mode 0600.
+Read-only readiness at source `00ac75a` passed the credential format/permissions and uniform
+fresh-request conditions. Provider authentication is untested. Funding remains
+`actual_journal_not_provided`, so `readyForOwnerApproval` and `dispatchApproved` are false.
+The actual latest `accounting.journal.json` is still needed; the previously supplied continuation
+ledger is already preserved privately and does not replace the journal. No allowance was
+created, no allowance clock started and no provider request was sent.
+
 Offline preparation commands:
 
 ```sh

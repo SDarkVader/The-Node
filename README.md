@@ -16,6 +16,10 @@ offline rehearsal. [Audit and prepared test](docs/research/REASONING_PARITY_AND_
 For Termux credential transfer, `scripts/credential-envelope.mjs` encrypts locally for the cloud
 recipient; plaintext keys never belong in chat, Git or logs. Its `check` command tests
 crypto and an existing encrypted output without reading a credential.
+The encrypted credential upload has now been authenticated and imported into a private cloud
+file. Local format and permission checks pass; provider authentication is untested. The actual
+latest accounting journal and separate owner approval remain pending. No new allowance has
+been activated and no new provider call has been made.
 
 The cloud observatory connects web and native Godot to one replay-verified continuation world,
 with a shared timeline, exact returned summaries, actor-specific observations, admission/effect
