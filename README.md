@@ -190,3 +190,11 @@ Read the current checkpoint and verify actual Git state before continuing. A Git
 committed source and sanitized context, not unpublished work or private runtime/accounting data.
 Preserve local work, all prior charges and Git history. A later live continuation needs its exact
 latest private parent and matching allowance; do not recreate the grant or replay consumed calls.
+
+## Review stack
+
+`codex/observatory-interface-review` contains the read-only observatory, agent perception, Windows
+verification, framework import and Thinking History integration through `3723a49`. The dependent
+`codex/observatory-windows-2026-10-23` branch contains the accounted live environmental runner
+and sanitized tick-38 results. Existing cloud PR #39 overlaps observatory paths and requires
+deliberate reconciliation before main integration. No automatic merge or model call is requested.
