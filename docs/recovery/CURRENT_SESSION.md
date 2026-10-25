@@ -1,12 +1,14 @@
 # Current development and experiment checkpoint
 
-Updated 2026-10-25. Current local implementation branch: `codex/secure-agent-society-2026-10-25`,
-based on shared `main` at `4196b79`. Secure society implementation, assumptions, security trace and
-run commands: [agent society](../research/SECURE_AGENT_SOCIETY_2026-10-25.md).
-No paid/provider/count calls, live autonomous experiment, accounting reset or remote push were performed.
-The original local `trace.pdf` is unrelated and preserved. Existing private experiment state and
-all historical allowances remain untouched. The new run requires fresh explicit approval and
-an already-authorized matching carried allowance; this task does not authorize spending.
+Updated 2026-10-25. Shared destination: `main`; implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42).
+The owner now authorizes PR publication/merge when green and a new twenty-tick society run.
+That supersedes the earlier local-only/no-spending instruction for this requested run.
+No new paid call has occurred. The latest actual forty-call journal was supplied privately and
+validated: 100100 microUSD booked, zero held, request limit consumed; preserve its complete
+history when funding the new run. Credentials, journals and raw results stay outside Git.
+The owner requests raw chronological dumps for speed. A separate follow-up prepares the
+twenty-tick bound and stronger cancellation/failure evidence.
+[Society implementation and rules](../research/SECURE_AGENT_SOCIETY_2026-10-25.md).
 
 The following paragraphs preserve the prior shared-main experiment status:
 [PR #39](https://github.com/SDarkVader/The-Node/pull/39) consolidates the cloud and original interface lines for main.
@@ -24,9 +26,10 @@ Each Baker returned7/20 summaries; Study1 remains paused.
 {
   "format": "the-node-git-session-checkpoint",
   "version": 1,
-  "branch": "codex/secure-agent-society-2026-10-25",
-  "verifiedBaseCommit": "acb0d0b331440f0351909d10ae2aede89b886064",
+  "branch": "main",
+  "verifiedBaseCommit": "5fa2b185ae25a98d7e16cee4f90aa65e39c25cc3",
   "completedWork": [
+    "Owner requested implementation PR, merge when green, then a new live20 society run. PR42 is open. At66991ab hosted dependency audit and Windows integration/native/Python/replay passed; Linux G3 found the closed legacy CLI blocked its former fake-pwsh rehearsal. At5fa2b18 replaced that test-only route with a pure offline sender over real compiled accounting/runner/replay; all11 equivalent local assertions pass, including hold/settlement/resume, and the production gate remains closed. Awaiting rerun CI before merge. No new paid call yet.",
     "Final runtime acb0d0b verified with lossless saved-file replay in separate processes for 14 and 60 ticks; prepared eighteen-call/three-tick model plan reopened and preflight passed without credential/allowance/provider access. Sanitized aggregates: docs/research/evidence/secure-society-offline-2026-10-25.json. Local commits only; no remote push or new paid authorization. Full private observations/actions remain under ignored local recovery, not in Git.",
     "File-based verification caught plain JSON dropping optional undefined configuration fields after source 42591f4; added a lossless operator evidence codec for tapes, plans and events, with exact digest checks and tests reopening the complete tape and plan. Earlier private plain-JSON trials remain preserved as failed serialization evidence and are not final disk-replay proof. Existing experiment codecs/histories are unchanged.",
     "2026-10-25 local secure society implementation: restricted local inhabitant context and strict six-field action boundary; daily simultaneous Baker price and Miller quantity commitments; real grain/flour-constrained customer transactions, actual completion and work choices for all support/roleless residents; preserved recognition/hearing/diary mechanics; escrow-backed three-day Oracle entry opportunities. Complete offline tapes retain exact visible contexts/menus/actions and state transitions with independent replay. See SECURE_AGENT_SOCIETY_2026-10-25.md for resolved assumptions.",
@@ -62,7 +65,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "At committed runner/runtime 0bdb48a: TypeScript, 1,363 Vitest tests / 109 files, 32 Python tests, eight recovery tests, 80 native broker/participant tests, G1 29/29 replay/determinism/archive hash matches, G2 12/12 checks and nine deterministic samples, G3 10/10 failure/settlement/resume/analysis checks passed.",
     "Later observer cache/payload refinement at 1cce703: TypeScript and all 21 targeted tests passed. Actual frontend dc87115: Chromium desktop/mobile, shared historical selection, evaluation lag, plan validation/download and logout; zero browser errors or overflow. Native WorldView/IsoView agreed with browser-selected tick/cursor/world hash. Ledger and journal byte hashes stayed unchanged.",
     "Committed-runner seven-role rehearsal: 140 synthetic decisions / 20 real ticks; preflight and checkpoint restart; fresh-process compiled replay; A01 25/25 eligible diary writes, separate Inspect execution share 140/140. Zero actual provider calls. See docs/research/evidence/cloud-observatory-offline-2026-10-25.json.",
-    "Final dependency/source ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e: TypeScript and all 1,363 Vitest tests / 109 files passed on Vitest 4.1.12; npm audit --audit-level=low reports zero vulnerabilities. Hosted Linux research conformance passed G1\u2013G4 on dc87115 (run 40167757966).",
+    "Final dependency/source ee1be08550b5e36df2f0ec4f44a66aa1893c6c9e: TypeScript and all 1,363 Vitest tests / 109 files passed on Vitest 4.1.12; npm audit --audit-level=low reports zero vulnerabilities. Hosted Linux research conformance passed G1–G4 on dc87115 (run 40167757966).",
     "Reasoning follow-up: full suite 1,369 tests / 111 files and TypeScript passed. After clarifying the trusted per-turn instruction, 39 targeted continuation/profile/resume/freeze/credential tests pass. Offline fresh rehearsal completed 40 synthetic calls / 20 ticks with uniform settings and explicit guidance for both actors; independent replay passed. Real uploaded historical archive verified; its SHA-256 is unchanged. No new provider call.",
     "Credential helper diagnostic: two tests pass, including authenticated round trip, tamper/wrong-key refusal, credential-free CLI self-test and safe invalid-input reporting. Downloaded public helper source was checked byte-for-byte against the committed source; synthetic stdin seal/unseal round trip passed.",
     "At source 00ac75a, the real encrypted upload authenticated and local readiness passed private credential format/permissions and uniform fresh-request checks. Recovery verification passed. Funding reports actual_journal_not_provided; readyForOwnerApproval and dispatchApproved remain false, with zero new provider calls and no allowance activation.",

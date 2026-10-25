@@ -49,8 +49,9 @@ choices. Neither bills a model. The new accounted model runner requires separate
 approval, a matching carried allowance and private evidence paths; it has only been exercised
 with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
 configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
-Current work is local on `codex/secure-agent-society-2026-10-25`, based on `4196b79`; no remote push
-or paid call is part of this work. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
+Implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42), targeting shared `main`.
+The owner has authorized merge when green followed by a new twenty-tick society run; no new paid
+call has occurred yet. The requested output is a raw chronological dump for each controlled inhabitant. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
 with seven explicit environment skips, plus TypeScript. **80 compiled native checks** against the
 original kernel and **eight recovery tests** also pass. Independent saved-file replay passes for
 14 and 60 ticks. The longer run records 889 decisions, 78 real bread orders, 306 diary writes,
