@@ -1,9 +1,27 @@
 # Observatory readiness and interface handover
 
-Updated 2026-10-24. Review foundation branch: `codex/observatory-interface-review`, extending Claude's
+Updated 2026-10-24. Dependent live-runtime/results branch: `codex/observatory-windows-2026-10-23`, extending Claude's
 `ccr-8d64b59c-a4puhv` at `0d70803`. Start with this file and
 [`CURRENT_SESSION`](../recovery/CURRENT_SESSION.md), then verify actual Git refs/worktree.
 The original checkout, main, private live-run files and accounting remain separate.
+
+## Latest run for interface integration
+
+The owner subsequently authorized ten world ticks with the new environmental context. Runtime
+`47291c8` completed twenty first-person calls, advancing the same world/identities from tick28
+to38. All responses were HTTP200/end_turn, admitted and executed. Current perception came from
+two agreeing real Godot workers; exact own historical conversations persisted through an explicit
+condition transition. Three calls returned nonempty reasoning text; seventeen did not. Nothing
+fills missing summaries or grades reasoning. [Results](../research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md).
+
+The private new ledger uses `perception_*` events, described in
+[LIVE_PERCEPTION_CONTINUATION](LIVE_PERCEPTION_CONTINUATION.md), and embeds the verified original
+parent. It is not the old continuation schema and is not yet registered in the observatory.
+The current PC observatory therefore still shows the original tick28 archive. Next integration
+work is a verified resumption/display adapter for the new schema; do not merely point the old
+reader at it or falsely label the old archive tick38. Raw text remains local; this GitHub handover
+contains only sanitized aggregates. The new grant's twenty-request count is consumed; no further
+paid run is authorized by this handover.
 
 ## Owner assigned responsibilities
 
@@ -198,3 +216,7 @@ synthetic readiness packet/record/audit contract for new perception displays. Bu
 visibility, role, legal-action and proposal-versus-effect views, verify them interactively, and
 preserve the token scopes and information asymmetry. Do not start inference, mutate experiment
 ledgers/journals, or replace main. Update the tracked checkpoint and root README before handover.
+
+Review stack: foundation [PR #40](https://github.com/SDarkVader/The-Node/pull/40) targets main;
+the live runtime/results PR targets its branch. Existing cloud PR #39 is separate overlapping
+work and is preserved for deliberate reconciliation. No automatic merge or inference.

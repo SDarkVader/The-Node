@@ -1,5 +1,9 @@
 # Observatory and agent perception
 
+Latest world checkpoint: the owner-authorized [environmental continuation](../research/ENVIRONMENTAL_TICK38_RESULTS_2026-10-24.md)
+reached tick38 with twenty new calls. Its distinct `perception_*` ledger needs a display/recovery
+adapter; the existing observatory registration below still displays the original tick28 archive.
+
 Latest archive: the [subsequent 20-call batch](../research/CONTINUATION_TICK28_RESULTS_2026-10-23.md) reached tick 28 and
 passed observatory acceptance over five segments and 29 frames. Use its new private registration
 and matching advanced journal for current acceptance. The tick-18 measurements below describe
