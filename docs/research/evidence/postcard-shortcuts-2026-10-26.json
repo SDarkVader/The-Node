@@ -1,0 +1,1050 @@
+{
+  "format": "node-postcard-shortcut-verification-v2",
+  "date": "2026-10-26",
+  "baselineRevision": "1217c9b4573f7a4792b8015b7618750ca706905d",
+  "sourceRevision": "e173dbf37f401111a876ccea835bd334f7e1d085",
+  "handoff": {
+    "pullRequest": 43,
+    "documentationRevision": "139f98fb50317feeb573403eab2fa91cf6f316fc",
+    "packageSha256": "3cea3e21f8fd83256180c809da9e74ec021ec9ed95928916bc3df365613af3f3",
+    "manifestFilesVerified": 9
+  },
+  "originalBehaviour": {
+    "v1AccrualClaimsAndSafeFusion": true,
+    "shortcutFusion": false,
+    "existingMechanicsUnchanged": [
+      "src/world",
+      "src/society",
+      "src/agent",
+      "src/sim",
+      "src/engine/postcards.ts",
+      "src/engine/postcardReplay.ts",
+      "scripts/postcard-proof.ts",
+      "src/engine/ecosystem.ts",
+      "src/engine/importExport.ts",
+      "src/engine/oracle.ts",
+      "src/engine/oracleOpportunities.ts",
+      "src/engine/reputation.ts",
+      "src/engine/wealth.ts",
+      "src/engine/settlement.ts"
+    ]
+  },
+  "implementation": {
+    "stateFormat": "node-postcard-state-v2",
+    "explicitV1Upgrade": true,
+    "rngVersion": "mulberry32-rejection5-v1",
+    "eligibleShortcutTiers": [
+      "green",
+      "blue",
+      "purple"
+    ],
+    "stakes": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "probability": "k/5",
+    "wholeStakeConsumed": true,
+    "fiveCardRecipesUseRng": false,
+    "whiteShortcut": false,
+    "orangeFusion": false,
+    "mixedTierRecipes": false,
+    "mandatoryTransactionId": true,
+    "exactRetryIsNoOp": true,
+    "successIssuance": "(5-k) * source-tier White equivalent",
+    "failureBurn": "k * source-tier White equivalent",
+    "agentOrWorldIntegration": false
+  },
+  "verification": {
+    "projectTypecheck": "passed",
+    "proofCliTypecheck": "passed",
+    "sessionRecoveryTests": 8,
+    "vitest": {
+      "passed": 1779,
+      "failed": 0,
+      "skipped": 7,
+      "files": 140,
+      "skips": [
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client does not disclose an obscured entity until it becomes observable, then binds it to the right agent, tick and state"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client fog limits first-person sight to the declared visibility, from the same position"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client the Wall at the hub hides what stands behind it, like the buildings the client draws"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client derives the same observation from the same request"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical first_person observations with both independent workers"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical isometric observations with both independent workers"
+        },
+        {
+          "file": "pwshPreflight.test.ts",
+          "test": "PowerShell 7 preflight accepts 7 or later and refuses older or unreadable versions"
+        }
+      ],
+      "reportSha256": "91f99532d81f752058003e6a57559c593f65e743dbccb46f556c34dda7d37fd0"
+    },
+    "newTests": {
+      "core": 82,
+      "replay": 26,
+      "cli": 3,
+      "total": 111
+    },
+    "seededFixture": {
+      "seeds": 1000,
+      "tiers": 3,
+      "stakes": 5,
+      "transactions": 15000,
+      "successesByStake": [
+        182,
+        367,
+        557,
+        777,
+        1000
+      ],
+      "note": "Same seed set at each eligible tier. Fixed mechanical output, not population balance or agent behaviour evidence."
+    },
+    "separateRawWordBoundaryTest": {
+      "excessUint32Rejected": true,
+      "allRawDrawsCounted": true,
+      "snapshotResume": true,
+      "callbackInActionSchema": false
+    },
+    "sourceFileSha256": {
+      "src/engine/postcards.ts": "5a2d026f475010e2f54916ccc2278bd342676c91e140156f032693b634d06bd9",
+      "src/engine/postcardReplay.ts": "696e16684cd33c69583770f063a6d879ab6c7d371942f35265e0276136e9f742",
+      "src/engine/postcardAccount.ts": "478310efff1520cac65b9600b21930c64934a310df9add43ef882d61232788c9",
+      "src/engine/postcardAccountReplay.ts": "39dd37b90cfbebbefc4e768db7a3c666f1406d9a3f31c702a38dcf11ec70bb36",
+      "src/sim/rng.ts": "36259eed2150747baa70243053223688c36a3cc866ffea256808dd26dbfe933b",
+      "scripts/postcard-shortcut-proof.ts": "9557453616d0e118cfb82961317d1821cf4a594e2ea37e555afbcc7a0f198335"
+    },
+    "coldProof": {
+      "sha256": "b6c59438be56b1850860c8604d861c38eebcfda9ffca946fd55be9cab39fcee5",
+      "repeatSha256": "b6c59438be56b1850860c8604d861c38eebcfda9ffca946fd55be9cab39fcee5",
+      "bytesIdentical": true,
+      "scenarios": 31,
+      "v1AcquisitionEvents": 2292,
+      "v2TransactionRecords": 40,
+      "reopenedCheckpoints": 9,
+      "rejectedAttempts": 10,
+      "duplicateNoOpRecords": 1
+    },
+    "preservedV1Proof": {
+      "sha256": "fc97b4d150664bcc6edea71a20a14b935a471156f9ced6efdafe1753c8c5994e",
+      "verified": true,
+      "sourceRevision": "8011e60972948990b5f5d00e84663bc5542c3a79",
+      "scenarios": 5
+    }
+  },
+  "mode": "offline_explicit_clock_fixture",
+  "calibration": "Explicit illustrative 2 White/hour from DESIGN_ADDENDUM_2026-08-07; no production rate or tick-to-hour mapping enabled.",
+  "fixtureSelection": "Synthetic mechanical fixtures: seeds 4 (first bucket 0) and 5 (first bucket 4) deliberately cover success and loss; no agent or population behaviour is measured.",
+  "scenarios": [
+    {
+      "name": "v1-safe-orange-upgrade-and-held-year",
+      "legacyEvents": 176,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 0,
+      "issuedWhite": "0",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "115200000",
+      "overflowUnits": "62956800000",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "7833dc994a27283c49af1b4b891804f8c9c088d708ae1f8c82decc3000347c22"
+    },
+    {
+      "name": "green-stake-1-success",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "20",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 4,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "abc500b74bcdb04117e84bf6156d6aeecf071de97f747e5a876be5776e7d8487"
+    },
+    {
+      "name": "green-stake-1-loss",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "5",
+      "held": {
+        "blue": 0,
+        "green": 4,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "13b67632db6ef4a2464111b3eec1ea255e4b0125484a45b048403b3156ef20f2"
+    },
+    {
+      "name": "green-stake-2-success",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "15",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 3,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "60b52389896793651628a60bfe6d713aea1cbdfe3d1fbeea4b63d828211b512a"
+    },
+    {
+      "name": "green-stake-2-loss",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "10",
+      "held": {
+        "blue": 0,
+        "green": 3,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "acaad01f0f0cef536b71359cfd510c559ad43eebb18447415347abdf38facac4"
+    },
+    {
+      "name": "green-stake-3-success",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "10",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 2,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "c61f56c289084d57d077c1ed3785f2b916b4f4c28f8bea13df4d034e69e71910"
+    },
+    {
+      "name": "green-stake-3-loss",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "15",
+      "held": {
+        "blue": 0,
+        "green": 2,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "b2cd1c12775237c89f1fb081ff73d0ed8653d76f8a162766ffeb98fee29ef869"
+    },
+    {
+      "name": "green-stake-4-success",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "5",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 1,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "77d57cfa89b2bc77afde5494e1a703f6d95fcdd85c214528b24112475af40bea"
+    },
+    {
+      "name": "green-stake-4-loss",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "20",
+      "held": {
+        "blue": 0,
+        "green": 1,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "33247d3be0b6dbd65bedfab8a0a3bb6c20509d0b424d8693675a6daf7cd9e347"
+    },
+    {
+      "name": "green-guaranteed-five-no-draw",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 0,
+      "issuedWhite": "0",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "91aae9e8618acdb5f0509cf135594a63c3358c4cc5ac94a7c51dbc16d6bc12bb"
+    },
+    {
+      "name": "blue-stake-1-success",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "100",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 4,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "53ce28e5477f886ff8f944916f73b408d990374ff9b06c69dd486f4b753c6e95"
+    },
+    {
+      "name": "blue-stake-1-loss",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "25",
+      "held": {
+        "blue": 4,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "5d02cd7d9192494fc023cc10b4098d6a40891849d6dd6cd9607a7717068d5335"
+    },
+    {
+      "name": "blue-stake-2-success",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "75",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 3,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "571a43996d1ee65711695a0d8c609752cbfeee8c474cadcb4aa73915e4d5172f"
+    },
+    {
+      "name": "blue-stake-2-loss",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "50",
+      "held": {
+        "blue": 3,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "25dea5cf184678141b2ed08df7172f58479e48bd736323e2f06fd10db7ff269c"
+    },
+    {
+      "name": "blue-stake-3-success",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "50",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 2,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "669116c9e9a6c343073fece76cb95b8eea7e2a856536ebaaefd116d1825537b4"
+    },
+    {
+      "name": "blue-stake-3-loss",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "75",
+      "held": {
+        "blue": 2,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "a1cca865f05f2e3006b360cccc1b6b6a8c43220e1b7ab23467cf492be1705c2f"
+    },
+    {
+      "name": "blue-stake-4-success",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "25",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 1,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "2f48c106a727e47aa979e2397a2bb82ccd7d4cacf1e5096756dede48fcf19a95"
+    },
+    {
+      "name": "blue-stake-4-loss",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "100",
+      "held": {
+        "blue": 1,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "d5cd5ab632a4a4537fb937a70272cdf714dd1b31bcf845c6c86c25d90389f62f"
+    },
+    {
+      "name": "blue-guaranteed-five-no-draw",
+      "legacyEvents": 34,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 0,
+      "issuedWhite": "0",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "9e0f12db35d0a2627fefdb5ff5d1350232e23f872c6a6ac76360cdafc2becc24"
+    },
+    {
+      "name": "purple-stake-1-success",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "500",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 4,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "a471f12b60669fb5c26327cd141cd756986e948cdc23b2ae542da5bab963be16"
+    },
+    {
+      "name": "purple-stake-1-loss",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "125",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 4,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "bd88900ba2c36a3d739915fbb972fd0c21447d0f74d23dfe92788f7b3e8b533e"
+    },
+    {
+      "name": "purple-stake-2-success",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "375",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 3,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "1503603d1a8f5eb38e4ae9d21bbf926565a741e104980100939f090ae52525b5"
+    },
+    {
+      "name": "purple-stake-2-loss",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "250",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 3,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "1e7665db6cd503b69b319319c5b7e6a09caa6ea4d8f42719e494303d41b2908f"
+    },
+    {
+      "name": "purple-stake-3-success",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "250",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 2,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "0ebe57743d77bbb8c71ba949109a6238b5156db4e109e2d0be7992128ef00bae"
+    },
+    {
+      "name": "purple-stake-3-loss",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "375",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 2,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "97b4f81b6c073914550e71760d49e7aaff93341c86cb4a25692ffb3c0376bc0e"
+    },
+    {
+      "name": "purple-stake-4-success",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "125",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "14262f6f910c7ab7495fd0a189b5de586b57e9ca430d5f9a65227a71017000d7"
+    },
+    {
+      "name": "purple-stake-4-loss",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "500",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 1,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "f34346136318ca2e21df466cbd404feeb416b34621e49a1228c7e1849383da26"
+    },
+    {
+      "name": "purple-guaranteed-five-no-draw",
+      "legacyEvents": 175,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 0,
+      "issuedWhite": "0",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 1,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "b8ad25dffb17f4961b7242121b4a6d04e0ee7937e2c9e3d36c831fda8213c469"
+    },
+    {
+      "name": "fractional-claim-and-capped-overflow",
+      "legacyEvents": 0,
+      "events": 4,
+      "receipts": 4,
+      "drawCount": 0,
+      "issuedWhite": "0",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 0,
+        "purple": 0,
+        "white": 34
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "57600000",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 2,
+      "atomicFailures": 0,
+      "duplicateRecords": 0,
+      "finalHash": "609a999c2910462116c68f4aaa0729181231a174e9a8e4bb53af7f4acd1f0c5f"
+    },
+    {
+      "name": "seeded-prefix-reopen-and-delayed-duplicate",
+      "legacyEvents": 175,
+      "events": 7,
+      "receipts": 6,
+      "drawCount": 3,
+      "issuedWhite": "1375",
+      "burnedWhite": "0",
+      "held": {
+        "blue": 0,
+        "green": 0,
+        "orange": 3,
+        "purple": 1,
+        "white": 32
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "57600000",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 2,
+      "atomicFailures": 0,
+      "duplicateRecords": 1,
+      "finalHash": "9d3da8e22931959310c681a42d7d62fc90ada995a853616a14c8d745e0d223bf"
+    },
+    {
+      "name": "invalid-transactions-are-atomic",
+      "legacyEvents": 6,
+      "events": 1,
+      "receipts": 1,
+      "drawCount": 1,
+      "issuedWhite": "0",
+      "burnedWhite": "5",
+      "held": {
+        "blue": 0,
+        "green": 4,
+        "orange": 0,
+        "purple": 0,
+        "white": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "atomicFailures": 10,
+      "duplicateRecords": 0,
+      "finalHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683"
+    }
+  ],
+  "rejectedAttempts": [
+    {
+      "name": "white-has-no-shortcut",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-white",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "white",
+        "stake": 1
+      },
+      "errorCode": "postcard_white_shortcut_forbidden",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "orange-is-terminal",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-orange",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "orange",
+        "stake": 1
+      },
+      "errorCode": "postcard_recipe",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "mixed-tiers-not-defined",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-mixed",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": [
+          "green",
+          "blue"
+        ],
+        "stake": 1
+      },
+      "errorCode": "postcard_recipe",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "stake-zero",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-zero",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "green",
+        "stake": 0
+      },
+      "errorCode": "postcard_shortcut_stake",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "stake-six",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-six",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "green",
+        "stake": 6
+      },
+      "errorCode": "postcard_shortcut_stake",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "insufficient-held-cards",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-inventory",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "purple",
+        "stake": 1
+      },
+      "errorCode": "postcard_insufficient_cards",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "other-owner",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-owner",
+        "personId": "another-person",
+        "atMs": 48600000,
+        "tier": "green",
+        "stake": 1
+      },
+      "errorCode": "postcard_owner",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "time-reversal",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-time",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 44999999,
+        "tier": "green",
+        "stake": 1
+      },
+      "errorCode": "postcard_clock_reversal",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "untrusted-supplied-roll",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "bad-roll",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 48600000,
+        "tier": "green",
+        "stake": 1,
+        "roll": 0
+      },
+      "errorCode": "postcard_transaction_schema",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    },
+    {
+      "name": "conflicting-id",
+      "event": {
+        "kind": "shortcutFusion",
+        "id": "existing-id",
+        "personId": "postcard-shortcut-offline-proof",
+        "atMs": 45000000,
+        "tier": "green",
+        "stake": 2
+      },
+      "errorCode": "postcard_transaction_conflict",
+      "beforeHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "afterHash": "1a7b5e2c5b763b68e9a96077683bc35ac80bda6bf9ac0c289ef1bb3b51e06683",
+      "drawCount": 1
+    }
+  ],
+  "assumptions": [
+    "Same-tier shortcut weights cancel to k/5; no illustrative cross-tier weight or mixed recipe is activated.",
+    "Five-card shortcut aliases safe fusion without consuming RNG; White remains safe-only and Orange terminal.",
+    "Explicit immutable v1 origin, seed and full unique receipt journal anchor v2 replay. All exact retries keep the current state unchanged.",
+    "White-equivalent ledger values 1,5,25,125,625 are safe-path accounting values, not configured rarity weights.",
+    "Seeds4and5 intentionally cover fixed mechanical success/loss; no inhabitant decision or live behaviour is manufactured.",
+    "The explicit2White/hour proof rate is illustrative only; no production rate or tick-to-hour conversion is selected.",
+    "Unkeyed hashes prove consistency, not authentic external origin. Mulberry32 is deterministic and predictable; seed/cursor/journal remain operator-only.",
+    "Safeinteger/byte/depth/node/record bounds are representation capacities, not game economy caps."
+  ],
+  "integrationNotYetVerified": [
+    "Trusted owner/origin/seed binding, real or virtual clock source, world persistence and abode claim location",
+    "Strict inhabitant asset views, legal menus and all-role autonomous parity for these new actions",
+    "Universal daily Oracle and separately optional inexpensive lottery with calibrated health/rarity/rewards",
+    "Ticket forging and existing-rules migration redemption",
+    "Signed deed reputation separate from old opportunity progress, actual Baker civic records and optional universal wealth cap",
+    "Independent PowerShell whole-program simulation and separately authorized behavioural experiment"
+  ],
+  "providerCalls": 0,
+  "credentialAccess": false,
+  "accountingReset": false,
+  "historicalApprovalReused": false,
+  "behaviouralEvaluation": false
+}

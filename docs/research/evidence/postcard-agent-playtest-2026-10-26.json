@@ -1,0 +1,232 @@
+{
+  "format": "node-postcard-agent-playtest-verification-v1",
+  "date": "2026-10-26",
+  "sourceRevision": "0561d56c3f6fe6a5e3be62b99e4abe3147dd9515",
+  "baselineRevision": "b8d42f42faf2ce4ef49c78bb05f858e58c2e0773",
+  "pureOracleRevision": "19a5791cc698d643ef31b55075cfeb85b945cbd9",
+  "purpose": "Production agent-facing postcard actions and human-started real PowerShell test readiness; verification uses synthetic decisions only.",
+  "verification": {
+    "projectTypecheck": "passed",
+    "cliTypecheck": "passed",
+    "sessionRecoveryTests": 8,
+    "vitest": {
+      "passed": 1866,
+      "failed": 0,
+      "skipped": 7,
+      "files": 145,
+      "reportSha256": "89b88fe4255c4a1e3725767423cf8d0e57e01c753239e2aa9d246bec33a6a866",
+      "skips": [
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client does not disclose an obscured entity until it becomes observable, then binds it to the right agent, tick and state"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client fog limits first-person sight to the declared visibility, from the same position"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client the Wall at the hub hides what stands behind it, like the buildings the client draws"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client derives the same observation from the same request"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical first_person observations with both independent workers"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical isometric observations with both independent workers"
+        },
+        {
+          "file": "pwshPreflight.test.ts",
+          "test": "PowerShell 7 preflight accepts 7 or later and refuses older or unreadable versions"
+        }
+      ]
+    },
+    "newTests": {
+      "boundary": 19,
+      "powerShellReview": 18,
+      "accountedAndWorker": 5,
+      "runtime": 9,
+      "configuredOracleCore": 36,
+      "total": 87
+    },
+    "realRequestPathSyntheticRehearsal": {
+      "ticks": 3,
+      "calls": 18,
+      "brandedSevenFieldRequests": true,
+      "lastEgressWorkerValidated": true,
+      "usageBooked": true,
+      "rawChronologyPerIdentity": true,
+      "coldTapeReplay": true,
+      "illegalActionCase": {
+        "badRecipe": "orange fusion",
+        "stoppedCalls": 10,
+        "finalTick": 1,
+        "knownUsageBooked": true,
+        "rawResponseRetained": true,
+        "partialReplayVerified": true
+      }
+    },
+    "legacyCompatibility": {
+      "archivedSource": "b8d42f42faf2ce4ef49c78bb05f858e58c2e0773",
+      "days": 4,
+      "seed": 20261025,
+      "fixtureSourceRevision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "worldHash": "252b7d7fde62123c62415a44ebce1933dbf647afdefe6be59f4113ae6de2c3bd",
+      "completeTapeDigest": "ee99622c2b82ca198d24028dab46465b1e10743ea567f7656fd05bbad096b71c",
+      "matches": true
+    },
+    "naturalChurnTestDays": 30,
+    "coldPowerShell": {
+      "verified": true,
+      "sourceRevision": "0561d56c3f6fe6a5e3be62b99e4abe3147dd9515",
+      "mode": "TEST_ONLY_cold_production_PowerShell_prepare_and_check",
+      "ticks": 3,
+      "maxCalls": 18,
+      "limitMicroUsd": 1000000,
+      "postcards": {
+        "rate": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "startAtMs": 0,
+        "dayDurationMs": 86400000
+      },
+      "sourcePinned": true,
+      "reviewApproved": false,
+      "executionCreated": false,
+      "allowanceCreated": false,
+      "providerCalls": 0,
+      "actualCredentialAccess": false,
+      "actualJournalAccess": false,
+      "syntheticInvalidCredentialUnchanged": true,
+      "syntheticPriorUnchanged": true,
+      "syntheticPriorSha256": "103202b83accf4f071ca2ce38ce0cf3235497abb5068490d3d2b67b243df38a9",
+      "preparedBundleSha256": "d280c95dae2e56400c1c612f13ef31a420c85e9ec69e7fd32af2b4489b833ef5"
+    },
+    "sourceFileSha256": {
+      "README.md": "22c15ab0cae17cd7a8efc02d6fa8101c2608cd2b52238c736293cf9aeb8c4f7c",
+      "docs/recovery/CURRENT_SESSION.md": "2d61e10d19ef544cee2a70720efeb2a0bd93dce07ea0eb8c077cd9aad2ee3e38",
+      "docs/recovery/GITHUB_FIRST_CONTINUATION.md": "aee95cb3bbc6ccdd9c38dfb2f223c61db235e4c06315e0974f6a744d3f85d6ee",
+      "docs/research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md": "b0afca51e6c695988c6cacd7ef8223b0c2c767a53705661c54153cc85daeca5f",
+      "docs/research/POSTCARD_SHORTCUTS_2026-10-26.md": "5d1c4436736598768c381e925b8fd6361ec7d94b74f110d5781e243291a431b3",
+      "scripts/prepare-society-playtest.ts": "a5d1ec6ff61b755d0a562a2ecb1af27e49f2d5b499dcd858765417a39e123e73",
+      "scripts/run-society-live.ts": "9aa678e23f5060cdd17bd8ed0dc81cb932d952d39221211330ec5437c94fbbda",
+      "scripts/run-society.ts": "4362bd012fcbc7b60973ed9d8bac417dab77309c057bcd6318aeb598ef104bb9",
+      "scripts/society-request-worker.ts": "ac31c0d497286f9c5648925f2f0559c8d4322aa567bb0740353bb3fc22be3323",
+      "scripts/start-society-playtest.ps1": "054d4d357825bbfe85f2669b7df00cf655091c7f5f05f297ae12ee6ea144f271",
+      "src/engine/oracleDaily.ts": "695a849e5b9b066046521e5414a65440cff7579dbc7bfb9bc408cd03a6507a7e",
+      "src/society/accounted.ts": "07608d9e2fe37d61b585f4a02331a9fb670deb8e69f708253c28c7dc3e160f39",
+      "src/society/boundary.ts": "e0a50b470963a33ce6fba676fcad11f46da2893ca88bcc6f4e7304cdae72d9c2",
+      "src/society/launch.ts": "0fe56e76094e7c218b6e52b4210f61e85ab52424c31d3696cff1557873fb4e7e",
+      "src/society/policy.ts": "020b7ca0b32d9560532ef5c018e17aaae097fe1c4c1890042ec04085cd47e382",
+      "src/society/postcards.ts": "738f0101a74e3774e7c7edc674fb98c443e5c3103a137a1ca9873316ff026943",
+      "src/society/request.ts": "fed6a3e829eb65aa314dc981f52f40a7f1e0aeaac9ab04e9c491738576efcd95",
+      "src/society/runtime.ts": "92ca77a91bd8cd2aaf9c3e00e2e729484dfbced0d099e319de506ee1572ccacf",
+      "test/oracleDaily.test.ts": "a883f43510c0bd381e4104a725df6bfae1cb6e11b31addebd4ff402b4013fa63",
+      "test/societyPlaytestLaunch.test.ts": "f94f3d0d8a5143024f8481dfd03f1e315450752c7e33a4403c9d40975ef35730",
+      "test/societyPostcardAccounted.test.ts": "cd06fed88ae345f351fcd0a5e0393cc6cecef30b74ce19f4d2f6becb5521838a",
+      "test/societyPostcardBoundary.test.ts": "985694f346f06595d1987b0909b70af605a3e41afa0758293c2e43f643be95c3",
+      "test/societyPostcardRuntime.test.ts": "00369ec68938a22403349bfad6bb59b078e877c2a227b56bde94706da9f310d9"
+    }
+  },
+  "integratedRun": {
+    "mode": "offline_deterministic_model_fixtures",
+    "paidCalls": 0,
+    "sourceRevision": "0561d56c3f6fe6a5e3be62b99e4abe3147dd9515",
+    "verified": true,
+    "ticks": 20,
+    "decisions": 332,
+    "finalHash": "c15279c1489abf51b8d5bba5e1a41c2540a0a16f813825a62ece08d2412943b7",
+    "controlled": [
+      "society-inhabitant:0",
+      "society-inhabitant:1",
+      "society-inhabitant:2"
+    ],
+    "controlledDecisions": 120,
+    "autonomousDecisions": 212,
+    "movement": 152,
+    "heard": 271,
+    "diaryWrites": 46,
+    "breadSales": 14.7,
+    "oracleEntries": 204,
+    "oracleWins": 56,
+    "voucherAwards": 33,
+    "voucherRedemptions": 33,
+    "maximumAccountingResidual": 4.085620730620576e-14,
+    "fixtureMode": true,
+    "independentReplay": {
+      "verified": true,
+      "ticks": 20,
+      "decisions": 332,
+      "finalHash": "c15279c1489abf51b8d5bba5e1a41c2540a0a16f813825a62ece08d2412943b7"
+    },
+    "tapeSha256": "0626bace63a8a840bd4e663737df2a12d32150d2e6a6522056676e26699ea666",
+    "repeatSha256": "0626bace63a8a840bd4e663737df2a12d32150d2e6a6522056676e26699ea666",
+    "bytesIdentical": true,
+    "postcards": {
+      "config": {
+        "rate": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "startAtMs": 0,
+        "dayDurationMs": 86400000
+      },
+      "accounts": 16,
+      "clockEvents": 272,
+      "claims": 272,
+      "fusions": 272,
+      "safeFusions": 241,
+      "shortcutFusions": 31,
+      "shortcutSuccesses": 3,
+      "shortcutLosses": 28,
+      "issuedWhite": "60",
+      "burnedWhite": "180",
+      "heldWhiteEquivalent": "8584",
+      "overflowUnits": "15667200000",
+      "unitDenominator": "3600000",
+      "everyAccountExactMassVerified": true
+    }
+  },
+  "runContract": {
+    "paidPlanSchema": "node-accounted-society-postcards-v2",
+    "tapeFormat": "node-society-postcards-v2",
+    "defaultDays": 3,
+    "maxCallsAtDefault": 18,
+    "limitMicroUsd": 1000000,
+    "perRequestMicroUsd": 20000,
+    "prepareApproved": false,
+    "requiresSeparateHumanStart": true,
+    "startSwitch": "-ApprovePaidRun",
+    "requiresLatestCountClosedNoHoldPrior": true,
+    "automaticRetry": false,
+    "newPrivateOutputRequired": true
+  },
+  "oracleDailyCore": {
+    "implemented": true,
+    "zeroCost": true,
+    "healthLinkedWinOdds": true,
+    "configuredNonlinearRewardQuality": true,
+    "fullyBackedIntegerLedger": true,
+    "activatedInPlaytest": false,
+    "defaultCalibration": null
+  },
+  "actualProviderCalls": 0,
+  "actualCredentialAccess": false,
+  "actualJournalAccess": false,
+  "accountingReset": false,
+  "historicalApprovalReused": false,
+  "behaviouralEvaluation": false,
+  "furtherWork": [
+    "Universal daily Oracle catalogue/funding/agent integration",
+    "Ticket forging and guarded migration",
+    "Signed deed reputation and actual civic monuments",
+    "Universal wealth-cap integration",
+    "Independently approved actual behavioural results; no live success is claimed by these synthetic checks"
+  ]
+}

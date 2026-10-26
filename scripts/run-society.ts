@@ -9,7 +9,8 @@ import { Society, verifySocietyTape, type SocietyTape } from '../src/society/run
 import { autonomousPolicy } from '../src/society/policy.js';
 import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
 
-const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'}}});
+const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'}}});
 if(values.verify){
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
@@ -22,7 +23,11 @@ if(values.verify){
   const head=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
   const dirty=execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
   const sourceRevision=head+(dirty?'-working-tree':'');
-  const society=new Society({seed,sourceRevision});
+  if(values['postcard-start-ms']!==undefined&&!values['postcard-rate'])throw Error('society_postcard_rate_required');
+  if(values['postcard-rate']&&!/^[1-9][0-9]*\/[1-9][0-9]*$/.test(values['postcard-rate']))throw Error('society_postcard_rate');
+  const [numerator,denominator]=(values['postcard-rate']??'0/1').split('/').map(Number);
+  const postcards=values['postcard-rate']?{rate:{numerator:numerator!,denominator:denominator!},startAtMs:Number(values['postcard-start-ms']??0),dayDurationMs:86_400_000 as const}:undefined;
+  const society=new Society({seed,sourceRevision,...(postcards?{postcards}:{})});
   const terminal=values.interactive?createInterface({input:stdin,output:stdout}):null;
   let failure:unknown;
   try{
