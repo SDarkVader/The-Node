@@ -29,7 +29,28 @@ Codespaces HTTPS URL, keep port 8090 private, and use the printed interface toke
 at that address from your phone or PC. `ERR_CONNECTION_REFUSED` means the server has not
 started on that device/forwarded port. This repository does not provision a public host.
 
-## Current development — 2026-10-25
+## Current development — 2026-10-26
+
+The first [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
+implementation slice is a production per-person postcard reducer: explicit millisecond time,
+a required rational White/hour rate, a 16-hour unclaimed buffer, retained fractional credit,
+and atomic guaranteed five-to-one fusion through White, Green, Blue, Purple and Orange.
+Every transaction checks exact resource conservation; snapshots and event tapes replay with
+state hashes. There is no new default rate, daily-tick conversion, agent action or migration grant.
+
+```powershell
+npm run postcards:proof -- --output .codex/session-recovery/postcard-proof.json
+npm run postcards:proof -- --verify .codex/session-recovery/postcard-proof.json
+```
+
+This is an explicit-clock mechanical proof using the original illustrative 2 White/hour, with
+zero provider calls. At source `8011e60972948990b5f5d00e84663bc5542c3a79`, all **1,668 tests / 137 files pass**,
+with seven explicit environment skips, plus project/CLI TypeScript and eight recovery tests.
+A cold process verified five scenarios/183 events/three reopened checkpoints; repeat proof bytes
+match exactly. [Source-anchored evidence](docs/research/evidence/postcard-core-2026-10-26.json).
+Trusted world-clock/abode integration, agent menus and subsequent Oracle/civic slices remain unimplemented.
+
+### Preserved society mechanics
 
 An opt-in secure society now runs two initially controlled Bakers and one Miller, with autonomous
 Courier, Investigator, Import/Export and roleless residents. Daily locked Wall prices, explicit
@@ -52,7 +73,8 @@ configuration values, and are checked after reopening. [Implementation, assumpti
 [PR #42](https://github.com/SDarkVader/The-Node/pull/42) merged after all three hosted workflows passed.
 The local twenty-tick follow-up supplies a standalone PowerShell launcher:
 `powershell -File scripts/start-society-live.ps1 -Config <private-launch.json>`. Add `-CheckOnly`
-for read-only readiness. The owner will start it directly; no new live call has occurred.
+for read-only readiness. This belongs to the earlier society task. The postcard work invokes no live path and grants no
+spending authorization; historical approvals must not be reused.
 Explicit plans support at most twenty ticks/120 calls with a USD1 cap. Raw per-inhabitant JSONL
 contains exact contexts, legal choices, returned summaries, actions, transitions and failures;
 `npm run society:dump -- --input <private-run> --output <new-private-dump> --raw` exports them.

@@ -1,0 +1,188 @@
+{
+  "format": "node-postcard-core-verification-v1",
+  "date": "2026-10-26",
+  "baselineRevision": "e2a16e6df069cf21beaa6107365adc359f19bd64",
+  "sourceRevision": "8011e60972948990b5f5d00e84663bc5542c3a79",
+  "handoff": {
+    "pullRequest": 43,
+    "documentationRevision": "139f98fb50317feeb573403eab2fa91cf6f316fc",
+    "packageSha256": "3cea3e21f8fd83256180c809da9e74ec021ec9ed95928916bc3df365613af3f3",
+    "manifestFilesVerified": 9
+  },
+  "originalBehaviour": {
+    "postcardReducerPresent": false,
+    "legacyMigrationUsesAggregateTicketProgress": true,
+    "existingMechanicsUnchanged": [
+      "src/world",
+      "src/society",
+      "src/agent",
+      "src/engine/ecosystem.ts",
+      "src/engine/importExport.ts",
+      "src/engine/oracle.ts",
+      "src/engine/oracleOpportunities.ts",
+      "src/engine/reputation.ts",
+      "src/engine/settlement.ts",
+      "src/engine/wealth.ts"
+    ]
+  },
+  "verification": {
+    "projectTypecheck": "passed",
+    "proofCliTypecheck": "passed",
+    "vitest": {
+      "passed": 1668,
+      "failed": 0,
+      "skipped": 7,
+      "files": 137,
+      "skips": [
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client does not disclose an obscured entity until it becomes observable, then binds it to the right agent, tick and state"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client fog limits first-person sight to the declared visibility, from the same position"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client the Wall at the hub hides what stands behind it, like the buildings the client draws"
+        },
+        {
+          "file": "perception.test.ts",
+          "test": "perception through the real Godot client derives the same observation from the same request"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical first_person observations with both independent workers"
+        },
+        {
+          "file": "perceptionAudit.test.ts",
+          "test": "audit through two separately launched real Godot workers re-derives identical isometric observations with both independent workers"
+        },
+        {
+          "file": "pwshPreflight.test.ts",
+          "test": "PowerShell 7 preflight accepts 7 or later and refuses older or unreadable versions"
+        }
+      ]
+    },
+    "targetedPostcardTests": 59,
+    "recoveryTests": {
+      "passed": 8,
+      "failed": 0
+    },
+    "coldReplay": {
+      "verified": true,
+      "scenarios": 5,
+      "events": 183,
+      "checkpoints": 3,
+      "repeatProofByteIdentical": true,
+      "proofSha256": "fc97b4d150664bcc6edea71a20a14b935a471156f9ced6efdafe1753c8c5994e",
+      "sourceFiles": {
+        "src/engine/postcards.ts": "5a2d026f475010e2f54916ccc2278bd342676c91e140156f032693b634d06bd9",
+        "src/engine/postcardReplay.ts": "696e16684cd33c69583770f063a6d879ab6c7d371942f35265e0276136e9f742",
+        "scripts/postcard-proof.ts": "ebe4300f48583fec2a1c7beb2a7716e7f2ebf28840936f03cf009a13d7ce6620"
+      }
+    }
+  },
+  "calibration": "Explicit illustrative 2 White/hour from DESIGN_ADDENDUM_2026-08-07; no production rate or tick-to-hour mapping enabled.",
+  "scenarios": [
+    {
+      "name": "claim-after-12-hours",
+      "events": 1,
+      "held": {
+        "white": 24,
+        "green": 0,
+        "blue": 0,
+        "purple": 0,
+        "orange": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "finalHash": "fe998cff4fc482ed4955ac9f3a0417a4bfc720fd1dad42a6a51e816553759e48"
+    },
+    {
+      "name": "claim-after-24-hours",
+      "events": 1,
+      "held": {
+        "white": 32,
+        "green": 0,
+        "blue": 0,
+        "purple": 0,
+        "orange": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "57600000",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "finalHash": "32dd54104bfa1e4af9b2d766cf8fa36d523d5a9382385c69cc4bdcf270ba7fdc"
+    },
+    {
+      "name": "two-12-hour-claims",
+      "events": 2,
+      "held": {
+        "white": 48,
+        "green": 0,
+        "blue": 0,
+        "purple": 0,
+        "orange": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 0,
+      "finalHash": "37f6149566d7023e3f03bd49486379248b4a98d8524b6fdc9708a245b3cf4a77"
+    },
+    {
+      "name": "fractional-save-and-reopen",
+      "events": 2,
+      "held": {
+        "white": 2,
+        "green": 0,
+        "blue": 0,
+        "purple": 0,
+        "orange": 0
+      },
+      "unclaimedUnits": "0",
+      "overflowUnits": "0",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 1,
+      "finalHash": "84e27d3740cf20931c1b514dbeb3fc3369aaccb88e1dc0648d8920cf3bf39b9f"
+    },
+    {
+      "name": "safe-ladder-and-held-year",
+      "events": 177,
+      "held": {
+        "white": 0,
+        "green": 0,
+        "blue": 0,
+        "purple": 0,
+        "orange": 1
+      },
+      "unclaimedUnits": "115200000",
+      "overflowUnits": "62956800000",
+      "unitDenominator": "3600000",
+      "checkpointsReopened": 2,
+      "finalHash": "356d6dacef9aa82559a95b695d529e2d59f889bb33a679a3c60e21b0154d454e"
+    }
+  ],
+  "assumptions": [
+    "Caller supplies explicit monotonic integer milliseconds; no Date.now(), daily-tick or login-hour substitution.",
+    "Required positive rational White/hour configuration; illustrative2/hour only in proof fixtures.",
+    "Claims collect wholeWhite and retain fractional unclaimed credit; discarded cap overflow never returns.",
+    "Safefusion conserves White-equivalent values1,5,25,125,625; no Orange fusion, shortcut, mixed-tier or ticket recipe is inferred.",
+    "Safeinteger inventory/time and evidence size/depth bounds are technical representation limits, not economy cap settings."
+  ],
+  "integrationNotYetVerified": [
+    "Trusted clock source and authenticated world/person ownership binding",
+    "Abode claim placement and all-role/non-agent action parity in society",
+    "Agent-view, egress-schema and legal-action integration",
+    "Shortcut burning/RNG and ticket forging/migration",
+    "Universal Oracle, calibrated rarity/rewards, signed reputation, monuments and universal wealth caps",
+    "Final independent PowerShell whole-program simulation"
+  ],
+  "providerCalls": 0,
+  "credentialAccess": false,
+  "accountingReset": false,
+  "behaviouralEvaluation": false
+}
