@@ -238,6 +238,8 @@ export type RoleType = 'miller' | 'baker' | 'courier' | 'investigator' | 'import
 export const ROLE_TYPES: readonly RoleType[] = ['miller', 'baker', 'courier', 'investigator', 'importExport'];
 
 export interface WorldConfig {
+  /** Versioned Oct26 subject-optional menu diary; absent keeps historical admission. */
+  diarySubjectOptional?: true;
   shardConfig: ShardLayoutConfig;
   rMiller: number;
   rBaker: number;
@@ -569,7 +571,7 @@ export interface RumourEventLite {
  *  so `stepWorld` never generates one on its own; this is the only way one enters `World`. */
 export interface PendingDiaryEntry {
   authorId: PlayerId;
-  subject: PlayerId;
+  subject: PlayerId | null;
   observation: Observation;
   reading: Reading;
   context?: ContextTag;
@@ -2716,7 +2718,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   for (const entry of world.pendingDiaryEntries) {
     if (participant && !participant.allowAction('diary', entry.authorId)) continue;
     try {
-      writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, knownForDiary(entry.authorId), entry.context);
+      writeDiaryEntry(diary, entry.authorId, entry.subject, entry.observation, entry.reading, day, knownForDiary(entry.authorId), entry.context, world.config.diarySubjectOptional === true && v2 !== undefined);
       lastDiaryWrites.push(entry.authorId);
     } catch (err) {
       lastDiaryRejections.push({ authorId: entry.authorId, reason: err instanceof Error ? err.message : String(err) });

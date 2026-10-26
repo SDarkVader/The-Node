@@ -54,7 +54,7 @@ export function prepareLocalTest(settingsPath:string,ticks:number,seed:number):R
   const current=readLocalTestSettings(settingsPath),output=join(current.outputParent,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomBytes(4).toString('hex'));
   const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
   const result=prepareSocietyPlaytest({priorJournal:current.priorJournal,credentialFile:current.credentialFile,
-    outputRoot:output,postcardRate:current.postcardRate,ticks,seed,oracleConfig:resolve(root,current.oracleConfig)},{repositoryRoot:root});
+    outputRoot:output,postcardRate:current.postcardRate,ticks,seed,oracleConfig:resolve(root,current.oracleConfig),optionalDiarySubject:true},{repositoryRoot:root});
   current.pendingRun=output;write(settingsPath,current);return result;
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){

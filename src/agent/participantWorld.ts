@@ -88,7 +88,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
       const value = structuredClone(payload);
       if (value.context === null) delete value.context;
       let kind: string;
-      if (category === 'diary') { kind = 'diaryEntry'; value.subject = translateRef(value.subject); }
+      if (category === 'diary') { kind = 'diaryEntry'; if(value.subject !== null)value.subject = translateRef(value.subject); }
       else {
         kind = value.kind as string; delete value.kind;
         if (kind === 'proximityUtterance') {
@@ -96,7 +96,7 @@ export function stepParticipantState(previous: ParticipantState, actions: readon
           if (r.kind === 'player') r.playerId = translateRef(r.playerId);
         }
       }
-      const parsed = parseGameAction(kind,value);
+      const parsed = parseGameAction(kind,value,world.config.diarySubjectOptional && v2 ? {diarySubjectOptional:true} : undefined);
       if (!parsed) throw Error('wire_translation_failed');
       world = queueGameAction(world,a.person,parsed);
     }

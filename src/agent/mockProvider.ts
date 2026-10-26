@@ -57,8 +57,8 @@ export function mockDecisionSchema(context: DecisionContext): Schema {
       x: fixed(point.x), y: fixed(point.y),
     }))),
     communication,
-    diary: silentGrifter || !known.length ? nullSchema() : nullable(objectSchema({
-      subject: strings(known), observation: strings(OBSERVATIONS), reading: strings(READINGS),
+    diary: silentGrifter || !known.length && !input.diarySubjectOptional ? nullSchema() : nullable(objectSchema({
+      subject: input.diarySubjectOptional ? nullable(...(known.length ? [strings(known)] : [])) : strings(known), observation: strings(OBSERVATIONS), reading: strings(READINGS),
       context: nullable(strings(DIARY_CONTEXTS)),
     })),
     role: input.role !== 'Baker' ? nullSchema() : nullable(objectSchema({

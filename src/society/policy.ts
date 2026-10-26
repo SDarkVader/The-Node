@@ -47,6 +47,9 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
   if(subject){
     const heard=v.heard.find(h=>h.speaker===subject)!;
     a.diary={subject,observation:heard.tone==='guarded'?'stayedGuarded':'openedUpUnprompted',reading:'cantTellYet',context:null};
+  }else if(v.legalChoices.diarySubjectOptional){
+    // Deterministic resident choice under the same menu, not a claim about another person.
+    a.diary={subject:null,observation:'stayedGuarded',reading:'cantTellYet',context:null};
   }
   // Walk toward a nearby interaction partner. At the same plot, stay; no artificial wage
   // or stock benefit is attached to walking. Every move comes from the actual legal menu.

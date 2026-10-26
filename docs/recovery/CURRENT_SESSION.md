@@ -1,3 +1,20 @@
+# Current diary implementation — 2026-10-26
+
+Branch codex/daily-routine-2026-10-26 starts from merged PR51 main0e8797a.
+The owner confirmed OPTIONAL subject with constrained vocabulary; the implementation now
+allows null subject through the full boundary and kernel. Old contexts stay subject-required.
+Canonical fresh PC tests select the new contract, and review/genesis mismatches fail.
+Slot drift and expiry remain unchanged. No new paid call or private credential/journal read.
+[Implementation scope](../research/DIARY_SUBJECT_OPTIONAL_2026-10-26.md).
+
+The mandatory multi-turn day, visits and task-completion gate are not yet implemented.
+Role/customer constrained speech, daily Wall, food and diary remain required. The owner
+confirmed a failed food attempt may be recorded and allow closure after the other duties;
+no guaranteed food, money or Oracle win. Full abode/trespass is further work, not a fake
+read-by-ID shortcut. Requested system-design DOCX also remains pending.
+
+Earlier source-specific handover follows:
+
 # Current development and experiment checkpoint
 
 Owner merged PR50 into main at c5cf2af0c89ea7d5783c5fbbc49823cd757262df. Both hosted
@@ -122,8 +139,9 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "c5cf2af0c89ea7d5783c5fbbc49823cd757262df",
+  "verifiedBaseCommit": "0e8797aefaabb183e34d1f5946b289b7a43feb7e",
   "completedWork": [
+    "PR51 mergedmain0e8797a after exactheadf2a72b4 Windows121721553858/Linux121721957858 and121721347216 passed, no review threads. Actual browser Godot and expanded2D visual check completed. Subjectoptional diary implemented through strict context/schema/worker/kernel/replay and source-bound real-run preparation; menus, recognition and existing decay preserved. Canonical PC preview/newly reviewed real test selects it. Focused59 tests and new review binding test pass; full source-specific regression pending. No paid calls or actual credentials/journal read.",
     "Owner mergedPR50 atc5cf2af after exacthead0acc4f4 Windows121695168692 and Linux121695168324/121695139866 passed. Full1910/150files/0fail/7skips. ActualPowerShellpreview3days51decisions9tickfiles18controlleddecisionrecords independently coldreplayed SHA b6d017dcca5c012e757686b633eb89afe2c897216c6bb10b6dc889b6420195b0, finalworld7a0cbe6e8266b6a1c1c8cd1e7e21c1772420aadcebbd07b12df860145452832e. No paid call. Newowner corrected strongcolour targetto2D andrequested3D lessintense; rendering-onlyfollowup. Ownerdaily-routine/optional-subjectlexicaldiary/rolecustomercommunication clarifications above are mandatorynextwork, notyetimplemented.",
     "PR47 mergedmain aadb99b and PR49 mergedmainfd72553 after all respective Windows/Linuxchecks passed. PR43 duplicateclosed, handoffbyteidentical and refreshedbrowser/APIverified. SocietyObservatory sourceca1010c passes1910tests/150files/0fail/7environment skips, TypeScript and8recoverytests. ActualWindowsPowerShelldefaultlauncher exportsGodot4.7.2 and startsoneauthenticatedpanel; embeddedGodotrenderedandoneoffline tickobserved. Latestthinkinghistory enhancement adds per-tick/fullchronologicalreturnedblocks withactualobservations,decisionsandtransitions; source-specificchecks pending. Hostedca1010c stoppedbeforetests because a JavaScript replacement string expanded a historical dollar-one sequence inside recovery JSON; restoring validmetadata with a function replacement, strictverifierunchanged. Noactualpaidcall/credential/privatejournalread.",
     "Owner approved the explicit provisional dailyOracle trial configuration and100gamewealth declared endowment. Integrated free entry as independent8thaction, shared health/rarity/prize menu, own prior result, whole-roster backed reserves, canonical roster resolution, real person wealth/capoverflow and v3 replay/plan. ExistingpaidOracle remains independent. Newprofile experiments/oracle/daily-oracle-trial-2026-10-26.json is opt-in, not a default or USD budget.43focused boundary/runtime/launch/regression tests plus6accountedtests pass; final fullsuite/coldPowerShell evidence to record. No actual provider/private financial operation.",
@@ -201,6 +219,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
+    "Finish new versioned sequential daily routine, physical visits, Wall/diary/food and role/customer speech duties before claiming completion. Owner permits recorded food failure to close day after other duties. Keep day open until chosen diary write before rollover. Preserve old replay, daily ageing/recognition caps, real resource accounting; no provider call during implementation.",
     "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
     "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
     "Continue universal dailyOracle catalogue/funding/agent integration after this runnable postcard slice; no uncalibrated reward numbers activated. Preserve old paidOracle/temporaryvoucher behavior, legacyworld/hash evidence and separateoldreputationProgress. Fullprogramme remains unfinished.",
@@ -208,6 +227,6 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/observatory-colour-balance-2026-10-26"
+  "reviewBranch": "codex/daily-routine-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->

@@ -5,15 +5,15 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { Society, verifySocietyTape, type SocietyTape } from '../src/society/runtime.js';
+import { Society, societyConfig, verifySocietyTape, type SocietyTape } from '../src/society/runtime.js';
 import { autonomousPolicy } from '../src/society/policy.js';
 import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'}}});
 if(values.verify){
-  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
+  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
@@ -36,7 +36,7 @@ if(values.verify){
     const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
-  const society=new Society({seed,sourceRevision,...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
+  const society=new Society({seed,sourceRevision,...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
   const terminal=values.interactive?createInterface({input:stdin,output:stdout}):null;
   let failure:unknown;
   try{

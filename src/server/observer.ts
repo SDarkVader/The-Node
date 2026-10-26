@@ -53,9 +53,9 @@ export function observe(s: ParticipantState, personId: string, secret: string) {
   const v2 = s.world.config.recognition === 'v2';
   const context: DecisionContext = {tick:s.world.tick,selfRef:ref(personId),role:own.role,roleEpoch:self.roleEpoch,
     legalMoves,presentRefs,knownSubjects:known.map(ref),
-    ...(v2 ? {rules:'v2' as const,hearingRefs} : {})};
+    ...(v2 ? {rules:'v2' as const,hearingRefs,...(s.world.config.diarySubjectOptional ? {diarySubjectOptional:true as const} : {})} : {})};
   const diary = (s.world.diary.get(personId) ?? []).filter(e => s.world.tick - e.createdOnDay < 2).map(e => ({
-    subject:ref(e.value.subject),observation:e.value.observation,reading:e.value.reading,context:e.value.context ?? null,
+    subject:e.value.subject === null ? null : ref(e.value.subject),observation:e.value.observation,reading:e.value.reading,context:e.value.context ?? null,
   }));
   const rumours = s.world.lastRumourEvents.filter(e => e.heardBy === personId).map(e => ({source:ref(e.heardFrom),state:e.state,clarity:e.clarity}));
   const proximity = s.world.lastProximityConversations.filter(e => e.listenerId === personId).map(e => {

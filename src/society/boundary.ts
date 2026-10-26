@@ -201,14 +201,14 @@ export const SOCIETY_PUBLIC_ROLES = freeze({
 });
 
 /** Canonical public guide; no caller text may replace any part of it. */
-export function societyPublicRules(v2 = true) {
+export function societyPublicRules(v2 = true, subjectOptional = false) {
   return freeze({ roles: SOCIETY_PUBLIC_ROLES,
       purpose: 'Choose freely among legal actions. Sustainable work, social dealings and opportunities matter; wealth alone is not winning.',
       economy: `Nodules become grain, grain becomes flour, and Bakers make bread. One bread order is ${DAILY_ACTIVITY_MULTIPLIER} bread, costs posted price times ${DAILY_ACTIVITY_MULTIPLIER}, and consumes flour in proportion. Purchases fund the district pool; Baker income uses the existing margin-over-flour-cost, activity and district-friction formula rather than a second seller credit. Real customer choices affect sales, income, dealings and occupational completion. Prices commit before daily choices, lock for the whole day and remain public on the central Wall. Purchase only on a due day, from a listed offer; defer with null. A quote never guarantees stock or service.`,
       environment: 'District Weather is locally felt aggregate tension, not optical weather or proof of a hidden cause. Heat is an approximate low, medium or high local signal: below one-third, below two-thirds, or at least two-thirds of the role-dependent scale. The underlying scale is Baker price divided by two, Miller output, or support trade friction pressure; vacant, backstopped and housing locations show none. Bands do not reveal exact decisions, stock, profit, guilt or intentions. District conditions can affect work and supply.',
       recognition: 'Recognition is directional and comes from direct address and repeated dealings; it can lapse. Passive presence, room talk, Wall posts and one-off purchases alone do not establish recognition. Visible role shows general capabilities, never a person\'s private choices, stock or intent.',
       communication: 'One closed-grammar Wall self-state or proximity utterance per day. Address only someone listed in hearing, or the room. Speech uses the starting position; walking resolves afterwards. Hearing can degrade with distance. Only your own received speech is shown.',
-      diary: v2 ? 'Each day, write one entry about another person you currently recognise, choosing the subject, observation, reading and optional context from the menus. You decide what to record; nothing checks it. If you recognise no one, leave the diary null. Entries last two days; observation and reading may drift, subject and context do not.' : 'The existing known-subject diary eligibility and two-day ageing rules apply. Unrecognised subjects and self-entries are forbidden.',
+      diary: subjectOptional ? 'Write a daily entry using only the observation, reading and optional context menus. The subject may be null: an entry can be a diversion. A named subject must be another person you currently recognise; self-entries and unrecognised subjects are forbidden. Choose your own content; it is not fact-checked. Entries last two days; observation and reading may drift, subject and context do not.' : v2 ? 'Each day, write one entry about another person you currently recognise, choosing the subject, observation, reading and optional context from the menus. You decide what to record; nothing checks it. If you recognise no one, leave the diary null. Entries last two days; observation and reading may drift, subject and context do not.' : 'The existing known-subject diary eligibility and two-day ageing rules apply. Unrecognised subjects and self-entries are forbidden.',
       movement: 'Choose one listed adjacent same-district destination or null to stay. Walking changes nearby encounters and later hearing; it grants no role, resource, delivery bonus or private access.',
       occupationalChoice: 'During commit, a Baker may set bakerPrice from 0 to 2, and a Miller may set millerQuantity from 0.01 to 1. Null retains the current commitment. During act, Courier, Investigator and ImportExport may choose work or decline with null. Production, resource limits and vacancy backstops still apply.',
       oracle: SOCIETY_ORACLE_RULES.description + ' The prize menu gives the bounded award amounts and each eligible prize\'s probability conditional on winning. Wealth awards are also bounded by the available prize pool. Choose enter to pay the quoted entry cost, redeem to use a valid own voucher, or null to decline.',
@@ -261,6 +261,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
     legalMoves: base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
+    ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
     phase: options.phase, purchaseDue: options.purchaseDue === true, offers,
     oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}) };
@@ -302,11 +303,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
         entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
         conditionalPrizeProbability: own.role === 'Grifter' ? 1 / 2 : 1 / 3,
         maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld } },
-    rules: societyPublicRules(base.rules === 'v2'),
+    rules: societyPublicRules(base.rules === 'v2', base.diarySubjectOptional),
     ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
+      ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
       purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef).map(q => q.sellerRef),
       oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])],
       ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase) } : {}),
@@ -333,6 +335,7 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const point = (q: unknown): boolean => record(q, ['x', 'y']) && coordinate(q.x) && coordinate(q.y);
   const hasPostcards = object(value) && Object.hasOwn(value, 'postcards');
   const hasDailyOracle = object(value) && Object.hasOwn(value, 'dailyOracle');
+  const subjectOptional = object(value) && object(value.legalChoices) && Object.hasOwn(value.legalChoices, 'diarySubjectOptional');
   if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : [])])) fail('society_serialized_view');
   const v = value;
   let postcards: SocietyPostcardView | undefined;
@@ -369,7 +372,7 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
     !list(v.hearing, ref) || !list(v.heard, q => record(q, ['speaker', 'intent', 'tone', 'clarity', 'referent', 'context']) && ref(q.speaker) && member(q.intent, INTENTS) && member(q.tone, TONES) && bounded(q.clarity, 0, 1) &&
       (record(q.referent, ['kind']) && q.referent.kind === 'room' || record(q.referent, ['kind', 'playerId']) && q.referent.kind === 'player' && ref(q.referent.playerId)) && nullable(q.context, x => member(x, SPEECH_CONTEXTS))) ||
     !list(v.rumours, q => record(q, ['source', 'state', 'clarity']) && ref(q.source) && member(q.state, SELF_STATES) && bounded(q.clarity, 0, 1)) ||
-    !list(v.diary, q => record(q, ['subject', 'observation', 'reading', 'context']) && ref(q.subject) && q.subject !== v.self.ref && member(q.observation, OBSERVATIONS) && member(q.reading, READINGS) && nullable(q.context, x => member(x, DIARY_CONTEXTS))) ||
+    !list(v.diary, q => record(q, ['subject', 'observation', 'reading', 'context']) && (ref(q.subject) || subjectOptional && q.subject === null) && q.subject !== v.self.ref && member(q.observation, OBSERVATIONS) && member(q.reading, READINGS) && nullable(q.context, x => member(x, DIARY_CONTEXTS))) ||
     !list(v.dealings, q => record(q, ['kind', 'as', 'counterparty', 'quantity', 'outcome']) && member(q.kind, ['purchase', 'flourSupply', 'grainSupply', 'delivery', 'evidence', 'inquiry']) && member(q.as, ['provider', 'recipient', 'sender']) && nullable(q.counterparty, ref) && nullable(q.quantity, x => finite(x) && x >= 0) && member(q.outcome, ['served', 'turnedAway', 'supplied', 'delivered', 'questioned']))) fail('society_serialized_memory');
   if (!record(v.wall, ['prices', 'posts']) ||
     !list(v.wall.prices, q => record(q, ['sellerRef', 'buildingId', 'price', 'available']) && ref(q.sellerRef) && site(q.buildingId) && bounded(q.price, 0, 2) && typeof q.available === 'boolean') ||
@@ -381,8 +384,8 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const prizes = { wealth: SOCIETY_ORACLE_RULES.wealthPrize, ownRoleStock: v.self.role === 'Grifter' ? null : SOCIETY_ORACLE_RULES.resourceStockPrize,
     ownRoleStockCap: SOCIETY_ORACLE_RULES.personalResourceCap, entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
     conditionalPrizeProbability: v.self.role === 'Grifter' ? 1 / 2 : 1 / 3, maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld };
-  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true))) fail('society_serialized_rules');
-  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(postcards ? ['postcards'] : []), ...(dailyOracle ? ['dailyOracle'] : [])]) || !list(v.legalChoices.moves, point) ||
+  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true, subjectOptional))) fail('society_serialized_rules');
+  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(subjectOptional ? ['diarySubjectOptional'] : []), ...(postcards ? ['postcards'] : []), ...(dailyOracle ? ['dailyOracle'] : [])]) || subjectOptional && v.legalChoices.diarySubjectOptional !== true || !list(v.legalChoices.moves, point) ||
     !list(v.legalChoices.present, ref) || !list(v.legalChoices.diarySubjects, ref) || typeof v.legalChoices.purchaseDue !== 'boolean' ||
     JSON.stringify(v.legalChoices.present) !== JSON.stringify(v.local.people.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.diarySubjects) !== JSON.stringify(v.recognition.map((q: any) => q.ref)) ||
@@ -393,6 +396,7 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const context: SocietyDecisionContext = { tick: v.day - 1, selfRef: v.self.ref, role: v.self.role, roleEpoch: 0,
     legalMoves: v.legalChoices.moves, presentRefs: v.legalChoices.present, knownSubjects: v.legalChoices.diarySubjects,
     rules: 'v2', hearingRefs: v.hearing, phase: v.phase, offers: v.wall.prices, purchaseDue: v.legalChoices.purchaseDue,
+    ...(subjectOptional ? {diarySubjectOptional:true as const} : {}),
     oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
 }
