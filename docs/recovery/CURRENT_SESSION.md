@@ -1,5 +1,35 @@
 # Current development and experiment checkpoint
 
+Owner merged PR50 into main at c5cf2af0c89ea7d5783c5fbbc49823cd757262df. Both hosted
+Windows/Linux suites pass on source0acc4f49f03b61e1b9efc1688769c0374f3cc0bb; full
+regression1910passed/150files/0fail/7environment skips. Actual PowerShell preview:
+3days51decisions,9individualagenttickfiles,independentcoldreplayverified,zero paid calls.
+Archived20day behaviour data opens in the new UI with complete returned thinking by tick
+or full chronology; private contents are not published. Main was synced locally.
+
+Current colour follow-up branch codex/observatory-colour-balance-2026-10-26: stronger
+2D settlement overview weather/heat gradients, merging additive glows and clear role
+markers; main3D radiance reduced after owner correction. Gameplay unchanged in this slice.
+
+IMPORTANT OWNER CLARIFICATIONS FOR NEXT SIMULATION IMPLEMENTATION:
+- Each tick is a day containing several sequential turns, with fresh observations.
+- Residents visit task locations; Bakers/Millers leave their abode for daily tasks.
+- Food purchasing, Wall posting and diary writing are daily duties.
+- Diary subject is OPTIONAL, while constrained vocabulary/menus remain required.
+- An entry may be a diversion; do not fact-check or fabricate the agent's chosen content.
+- The day stays open until they choose when to write, and writing precedes rollover.
+- Role holders, including Bakers, must communicate with customers using lexical rules.
+- Preserve the established daily economic-gift Oracle and minimal-cost lottery/gambling.
+- Audit original/latest rules before implementing: do not treat simplified runner gaps
+  as the design. A01 Oct20/21 supersedes Oct18 diary/trespass review; latest Oct26 owner
+  decisions supersede A01 subject requirement/optional daily admission in the new mode.
+- Existing one-act/day runtime does not fulfil this routine. New version must preserve
+  old replays, diary decay, recognition/hearing, economy and host isolation. No paid run
+  has been made. Whole programme and requested system-design DOCX remain unfinished.
+
+Earlier handover follows:
+
+
 Current interface slice: codex/society-observatory-2026-10-26, based on merged main
 fd72553cb5c1c49b77baa25435f7b6ff9d39b8f8. PR47 and then PR49 merged after their own
 Windows/Linux checks passed. PR43 is closed as already incorporated, verified by both
@@ -92,8 +122,9 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "ca1010c5592d80e5dd0c87a7eb3f571625478f29",
+  "verifiedBaseCommit": "c5cf2af0c89ea7d5783c5fbbc49823cd757262df",
   "completedWork": [
+    "Owner mergedPR50 atc5cf2af after exacthead0acc4f4 Windows121695168692 and Linux121695168324/121695139866 passed. Full1910/150files/0fail/7skips. ActualPowerShellpreview3days51decisions9tickfiles18controlleddecisionrecords independently coldreplayed SHA b6d017dcca5c012e757686b633eb89afe2c897216c6bb10b6dc889b6420195b0, finalworld7a0cbe6e8266b6a1c1c8cd1e7e21c1772420aadcebbd07b12df860145452832e. No paid call. Newowner corrected strongcolour targetto2D andrequested3D lessintense; rendering-onlyfollowup. Ownerdaily-routine/optional-subjectlexicaldiary/rolecustomercommunication clarifications above are mandatorynextwork, notyetimplemented.",
     "PR47 mergedmain aadb99b and PR49 mergedmainfd72553 after all respective Windows/Linuxchecks passed. PR43 duplicateclosed, handoffbyteidentical and refreshedbrowser/APIverified. SocietyObservatory sourceca1010c passes1910tests/150files/0fail/7environment skips, TypeScript and8recoverytests. ActualWindowsPowerShelldefaultlauncher exportsGodot4.7.2 and startsoneauthenticatedpanel; embeddedGodotrenderedandoneoffline tickobserved. Latestthinkinghistory enhancement adds per-tick/fullchronologicalreturnedblocks withactualobservations,decisionsandtransitions; source-specificchecks pending. Hostedca1010c stoppedbeforetests because a JavaScript replacement string expanded a historical dollar-one sequence inside recovery JSON; restoring validmetadata with a function replacement, strictverifierunchanged. Noactualpaidcall/credential/privatejournalread.",
     "Owner approved the explicit provisional dailyOracle trial configuration and100gamewealth declared endowment. Integrated free entry as independent8thaction, shared health/rarity/prize menu, own prior result, whole-roster backed reserves, canonical roster resolution, real person wealth/capoverflow and v3 replay/plan. ExistingpaidOracle remains independent. Newprofile experiments/oracle/daily-oracle-trial-2026-10-26.json is opt-in, not a default or USD budget.43focused boundary/runtime/launch/regression tests plus6accountedtests pass; final fullsuite/coldPowerShell evidence to record. No actual provider/private financial operation.",
     "PR48 merged into PR47 parent branch at35fe129c7261ff33b9b16f134dd73437414f2196. Hosted Windows job121617817317 and Linux job121617815244 both stopped at recovery:verify because inherited reviewBranch still named the child postcard-playtest branch. Corrected only tracked branch handover/README/continuation guide to the actual postcard-shortcuts parent; preserved verifiedBase0561d56 and strict verifier. No runtime, financial, model or historical evidence change.",
@@ -177,6 +208,6 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/society-observatory-2026-10-26"
+  "reviewBranch": "codex/observatory-colour-balance-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->

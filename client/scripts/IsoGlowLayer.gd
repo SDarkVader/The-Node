@@ -48,20 +48,20 @@ func _draw() -> void:
 		var cool: Color = view.HEAT_COOL
 		var hot: Color = view.HEAT_HOT
 		var colour := cool.lerp(hot, heat)
-		colour.a = 0.54 * pow(heat, 0.95) * strength
+		colour.a = 0.32 * pow(heat, 0.95) * strength
 		var position := Vector3(float(b["x"]), 0.20, float(b["y"]))
 		_halo(camera, position, lerpf(1.6, 5.2, heat) * cell, colour)
 		if heat > 0.35:
 			var core := hot.lerp(Color(1.0, 0.95, 0.85), (heat - 0.35) * 0.8)
-			core.a = (heat - 0.35) * 0.72 * strength
+			core.a = (heat - 0.35) * 0.48 * strength
 			_halo(camera, position, cell * 1.15, core)
 	var soul: Color = view._soul_colour(view.economic_health)
-	soul.a = 0.24
+	soul.a = 0.14
 	_halo(camera, origin + Vector3.UP * 0.3, cell * 4.3, soul)
 	for person in view.people:
 		var key := "%d,%d" % [int(round(float(person["x"]))), int(round(float(person["y"])))]
 		if person.get("role") != null and view._building_at.has(key):
 			continue
 		var colour: Color = view.ROLE_COLOUR.get(person.get("role"), view.COLOUR_GRIFTER)
-		colour.a = 0.20
+		colour.a = 0.14
 		_halo(camera, Vector3(float(person["x"]), 0.25, float(person["y"])), cell * 0.85, colour)
