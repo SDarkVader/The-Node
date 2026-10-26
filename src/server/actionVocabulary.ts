@@ -42,7 +42,7 @@ import type { PlayerId } from '../engine/player.js';
 
 export type GameAction =
   | { kind: 'wallPost'; state: SelfState }
-  | { kind: 'diaryEntry'; subject: PlayerId; observation: Observation; reading: Reading; context?: DiaryContextTag }
+  | { kind: 'diaryEntry'; subject: PlayerId | null; observation: Observation; reading: Reading; context?: DiaryContextTag }
   | { kind: 'proximityUtterance'; intent: ProximityIntent; tone: ProximityTone; referent: ProximityReferent; context?: ProximityContextTag };
 
 function isMember<T extends string>(value: unknown, members: readonly T[]): value is T {
@@ -65,7 +65,7 @@ function parseReferent(value: unknown): ProximityReferent | null {
  * treated as an error condition, the same "not every message is for you" tolerance
  * `parseClientMessage` already has for `type !== 'action'`.
  */
-export function parseGameAction(action: string, payload: unknown): GameAction | null {
+export function parseGameAction(action: string, payload: unknown, options?:{diarySubjectOptional:true}): GameAction | null {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null;
   const p = payload as Record<string, unknown>;
 
@@ -75,7 +75,8 @@ export function parseGameAction(action: string, payload: unknown): GameAction | 
       return { kind: 'wallPost', state: p.state };
     }
     case 'diaryEntry': {
-      if (typeof p.subject !== 'string' || p.subject.length === 0) return null;
+      if (p.subject !== null && (typeof p.subject !== 'string' || p.subject.length === 0)) return null;
+      if (p.subject === null && options?.diarySubjectOptional !== true) return null;
       if (!isMember(p.observation, OBSERVATIONS)) return null;
       if (!isMember(p.reading, READINGS)) return null;
       if (p.context !== undefined && !isMember(p.context, DIARY_CONTEXT_TAGS)) return null;

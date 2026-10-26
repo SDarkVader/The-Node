@@ -117,8 +117,8 @@ export const CONTEXT_TAGS = ['trade', 'wallPost', 'rumourHeard', 'crisisCover'] 
 export type ContextTag = (typeof CONTEXT_TAGS)[number];
 
 export interface DiaryEntry {
-  /** A specific *known* player — never distorts; identity resolution stays reliable (constraint 4). */
-  subject: PlayerId;
+  /** A recognised other person, or null under the explicit Oct26 contract. Never distorts. */
+  subject: PlayerId | null;
   observation: Observation;
   reading: Reading;
   /** Optional; a pointer to a real event, never distorts for the same reason SUBJECT doesn't. */
@@ -156,7 +156,8 @@ export function createDiaryStore(): PrivateStore<DiaryEntry> {
 /**
  * Writing is always unprompted (the game never nudges a player to write) and always honest
  * (no write-time distortion — the player always knows what they meant when they wrote it).
- * Throws if SUBJECT isn't resolved for the author, matching fog-of-recognition (§4.2): a
+ * With subjectOptional enabled, null is a subjectless diversion using the same slot menus.
+ * Otherwise throws if SUBJECT isn't resolved for the author, matching fog-of-recognition (§4.2): a
  * diary entry about a stranger's silhouette is not a thing that can exist. Also throws on a
  * self-entry — the diary is explicitly "a private space to process a feeling about ANOTHER
  * player," matching `sendEnvelope`'s existing no-self-target check.
@@ -164,17 +165,18 @@ export function createDiaryStore(): PrivateStore<DiaryEntry> {
 export function writeDiaryEntry(
   store: PrivateStore<DiaryEntry>,
   authorId: PlayerId,
-  subject: PlayerId,
+  subject: PlayerId | null,
   observation: Observation,
   reading: Reading,
   day: number,
   knownByAuthor: ReadonlySet<PlayerId>,
   context?: ContextTag,
+  subjectOptional = false,
 ): void {
   if (subject === authorId) {
     throw new Error('cannot write a diary entry about yourself');
   }
-  if (isKnown(subject, knownByAuthor) !== 'known') {
+  if (subject === null ? !subjectOptional : isKnown(subject, knownByAuthor) !== 'known') {
     throw new Error('cannot write a diary entry about an unresolved subject');
   }
   addEntry(store, authorId, { subject, observation, reading, context }, day);

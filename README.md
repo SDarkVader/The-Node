@@ -31,6 +31,14 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-26
 
+PR51's colour follow-up is merged at `0e8797a` after Windows/Linux checks passed.
+The next diary change makes the subject optional while retaining the existing observation,
+reading and context menus. The configured PC launcher enables this contract for fresh previews
+and freshly reviewed real tests. Named subjects still require recognition; self-subjects and
+free text remain illegal. Older saved runs keep their original admission. The required
+multi-turn daily routine, location visits and completion gate are still being implemented;
+the existing one-act/day runner does not yet fulfil those duties.
+
 The Society Observatory now uses the actual Society world and evidence. On the configured
 PC, use one launcher for a manual model-free preview, saved-run replay and the embedded
 Godot world:

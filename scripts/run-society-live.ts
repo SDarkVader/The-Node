@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { Society, verifySocietyTape } from '../src/society/runtime.js';
+import { Society, societyConfig, verifySocietyTape } from '../src/society/runtime.js';
 import { createSocietyPlan, societyPlanHash, runAccountedSociety, validateSocietyPlan, type SocietyRunPlan } from '../src/society/accounted.js';
 import { buildSocietyRequest } from '../src/society/request.js';
 import { ExperimentBudget } from '../src/agent/experimentBudget.js';
@@ -25,10 +25,10 @@ import {openSocietyPanel} from '../src/observatory/societyPanel.js';
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -61,7 +61,7 @@ if(values.prepare){
     const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
-  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
+  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
     ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{})};
   const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});

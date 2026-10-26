@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {afterEach,describe,expect,it} from 'vitest';
 import {root,cleanup} from './fixtures/accountingFixture.js';
 import {continuationBudget,continuationPlan} from './fixtures/continuationFixture.js';
-import {Society,type SocietyOptions} from '../src/society/runtime.js';
+import {Society,societyConfig,type SocietyOptions} from '../src/society/runtime.js';
 import {createSocietyPlan,societyPlanHash} from '../src/society/accounted.js';
 import {parseSocietyEvidence,stringifySocietyEvidence} from '../src/society/codec.js';
 import {prepareSocietyPlaytest,checkSocietyPlaytest,approveSocietyPlaytest,type PlaytestEnvironment} from '../scripts/prepare-society-playtest.js';
@@ -30,7 +30,8 @@ function fixture(state:'closed'|'open'|'held'='closed'){
   const environment:PlaytestEnvironment={repositoryRoot,sourceRevision,verifySource:(path,revision)=>{
     expect(path).toBe(repositoryRoot);expect(revision).toBe(sourceRevision);
   },prepareBundle:(path,options)=>{
-    const society=new Society({seed:options.seed,sourceRevision,postcards:options.postcards} as SocietyOptions),tape=society.exportTape();
+    const society=new Society({seed:options.seed,sourceRevision,postcards:options.postcards,
+      ...(options.optionalDiarySubject?{config:{...societyConfig(),diarySubjectOptional:true}}:{})} as SocietyOptions),tape=society.exportTape();
     const plan=createSocietyPlan(society,{ticks:options.ticks});
     writeFileSync(path,stringifySocietyEvidence({plan,genesis:tape.genesis,postcardConfig:options.postcards,planSha256:societyPlanHash(plan)}),{flag:'wx',mode:0o600});
   }};
@@ -38,6 +39,16 @@ function fixture(state:'closed'|'open'|'held'='closed'){
   return {directory,environment,options,bytes};
 }
 describe('human-started postcard playtest review and approval preparation',()=>{
+  it('binds the optional-subject contract into genesis, review and recheck without spending',()=>{
+    const f=fixture(),prepared=prepareSocietyPlaytest({...f.options,optionalDiarySubject:true},f.environment);
+    const review=JSON.parse(readFileSync(prepared.review,'utf8'));
+    expect(review.diarySubjectOptional).toBe(true);
+    expect(prepared).toMatchObject({diarySubjectOptional:true,approved:false,providerCalls:0,allowanceCreated:false});
+    expect(checkSocietyPlaytest(prepared.review,f.environment)).toEqual(prepared);
+    delete review.diarySubjectOptional;writeFileSync(prepared.review,JSON.stringify(review));
+    expect(()=>checkSocietyPlaytest(prepared.review,f.environment)).toThrow('society_playtest_diary_binding');
+    expect(readFileSync(f.options.priorJournal)).toEqual(f.bytes);
+  });
   it('prepares a private pinned review with no approval, credential parsing, allowance or provider operation',()=>{
     const f=fixture(),result=prepareSocietyPlaytest(f.options,f.environment),review=JSON.parse(readFileSync(result.review,'utf8'));
     expect(result).toMatchObject({ok:true,approved:false,ticks:3,maxCalls:18,limitMicroUsd:1_000_000,providerCalls:0,allowanceCreated:false,

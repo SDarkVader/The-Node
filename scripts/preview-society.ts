@@ -4,7 +4,7 @@ import {readFileSync,writeFileSync,mkdirSync,mkdtempSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {execFileSync} from 'node:child_process';
-import {Society} from '../src/society/runtime.js';
+import {Society,societyConfig} from '../src/society/runtime.js';
 import {autonomousPolicy} from '../src/society/policy.js';
 import {createSocietyPlan,type SocietyRunEvent} from '../src/society/accounted.js';
 import {buildSocietyRequest} from '../src/society/request.js';
@@ -15,7 +15,7 @@ const {values}=parseArgs({options:{history:{type:'string'},'web-world':{type:'st
   ticks:{type:'string',default:'3'},output:{type:'string'}}});
 const days=Number(values.ticks);if(!Number.isSafeInteger(days)||days<1||days>20)throw Error('society_preview_days');
 const sourceRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
-const society=new Society({seed:42,sourceRevision,postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
+const society=new Society({seed:42,sourceRevision,config:{...societyConfig(),diarySubjectOptional:true},postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
   dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))});
 const output=values.output?resolve(values.output):join(mkdtempSync(join(tmpdir(),'node-society-preview-')),'run');
 mkdirSync(output,{recursive:true});

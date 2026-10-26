@@ -18,6 +18,8 @@ export interface DecisionContext {
    *  right now. A proximity utterance may address only them, so every admitted address is heard
    *  (owner decision 2026-10-21, "show who can hear"). A subset of presentRefs. */
   hearingRefs?: readonly string[];
+  /** Owner's Oct26 diary contract. Absence preserves the frozen subject-required rules. */
+  diarySubjectOptional?: true;
 }
 export type JsonObject = Record<string, unknown>;
 export interface Decision {
@@ -39,6 +41,7 @@ export function validateContext(c: DecisionContext): void {
       !Array.isArray(c.presentRefs) || !c.presentRefs.every(r => typeof r === 'string' && r.length > 0) ||
       !Array.isArray(c.knownSubjects) || !c.knownSubjects.every(r => typeof r === 'string' && r.length > 0) ||
       (Object.hasOwn(c, 'rules') && c.rules !== 'v2') ||
+      (Object.hasOwn(c, 'diarySubjectOptional') && (c.diarySubjectOptional !== true || c.rules !== 'v2')) ||
       (c.rules === 'v2') !== Object.hasOwn(c, 'hearingRefs') ||
       (Object.hasOwn(c, 'hearingRefs') && (!Array.isArray(c.hearingRefs) || new Set(c.hearingRefs).size !== c.hearingRefs.length ||
         !c.hearingRefs.every(r => typeof r === 'string' && r !== c.selfRef && c.presentRefs.includes(r))))) {
@@ -54,6 +57,7 @@ export function policyInput(c: DecisionContext): DecisionContext {
     legalMoves: c.legalMoves.map(p => ({ x: p.x, y: p.y })),
     presentRefs: [...c.presentRefs], knownSubjects: [...c.knownSubjects],
     ...(c.rules === 'v2' ? { rules: c.rules, hearingRefs: [...c.hearingRefs!] } : {}),
+    ...(c.diarySubjectOptional === true ? { diarySubjectOptional: true as const } : {}),
   };
 }
 
@@ -81,7 +85,7 @@ export function validateDecision(value: unknown, c: DecisionContext): Decision |
     } else return null;
   }
   if (diary !== null && (!object(diary) || !exact(diary, ['subject', 'observation', 'reading', 'context']) ||
-      diary.subject === c.selfRef || !member(diary.subject, c.knownSubjects) || !member(diary.observation, OBSERVATIONS) ||
+      diary.subject === c.selfRef || !(diary.subject === null && c.diarySubjectOptional === true || member(diary.subject, c.knownSubjects)) || !member(diary.observation, OBSERVATIONS) ||
       !member(diary.reading, READINGS) || (diary.context !== null && !member(diary.context, DIARY_CONTEXTS)))) return null;
   if (role !== null && (!object(role) || !exact(role, ['kind', 'price']) || role.kind !== 'bakerPrice' ||
       c.role !== 'Baker' || !finite(role.price) || role.price < 0 || role.price > 2)) return null;
