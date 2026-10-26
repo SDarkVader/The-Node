@@ -163,13 +163,51 @@ async function renderThinkingHistory(){
 function draw(s) {
   const canvas=$('map'), ctx=canvas.getContext('2d'), {bounds,buildings,hub}=s.hello;
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#0d0a08';ctx.fillRect(0,0,canvas.width,canvas.height);
   const scale=Math.min((canvas.width-70)/(bounds.maxX-bounds.minX+2),(canvas.height-70)/(bounds.maxY-bounds.minY+2));
   const x=v=>35+(v-bounds.minX+1)*scale, y=v=>35+(v-bounds.minY+1)*scale;
-  for(const p of s.hello.plots){ctx.fillStyle=p.kind==='plaza'?'#34291a':'#1c1813';ctx.fillRect(x(p.x)-scale*.45,y(p.y)-scale*.45,scale*.9,scale*.9);}
-  for(const b of buildings){const station=s.frame.stations.find(p=>p.buildingId===b.id);ctx.fillStyle=station?`hsl(${35-(station.heat??0)*25} 65% ${18+(station.heat??0)*30}%)`:'#30291f';ctx.fillRect(x(b.x)-scale*.3,y(b.y)-scale*.3,scale*.6,scale*.6);}
-  const colors={baker:'#e5b55e',miller:'#99bdae',courier:'#afaccb',investigator:'#db8d79',importExport:'#93bdd5'};
-  for(const p of s.frame.people){ctx.fillStyle=colors[p.role]??'#eee3d2';ctx.beginPath();ctx.arc(x(p.x),y(p.y),Math.max(2,scale*.13),0,Math.PI*2);ctx.fill();}
-  ctx.strokeStyle='#f2c776';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x(hub.x),y(hub.y),scale*.35,0,Math.PI*2);ctx.stroke();
+  const clamp=v=>Math.max(0,Math.min(1,v)),mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*clamp(t)));
+  const rgba=(c,a=1)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const weather=t=>t<=.06?mix([36,91,153],[150,93,40],(t-.03)/.03):mix([150,93,40],[202,53,39],(t-.06)/.04);
+  const tensions=new Map((s.frame.districtTension??[]).map(d=>[d.districtId,d.tension]));
+  const stations=new Map(s.frame.stations.map(p=>[p.buildingId,p]));
+  const colors={baker:'#ff8b51',miller:'#ffd25e',courier:'#50d2bc',investigator:'#f26f9b',importExport:'#b5d96e'};
+  for(const p of s.hello.plots){
+    const colour=p.kind==='plaza'?[176,144,86]:weather(tensions.get(p.districtId)??.06);
+    const gradient=ctx.createLinearGradient(x(p.x)-scale*.5,y(p.y)-scale*.5,x(p.x)+scale*.5,y(p.y)+scale*.5);
+    gradient.addColorStop(0,rgba(colour.map(c=>Math.round(c*.83))));gradient.addColorStop(1,rgba(colour.map(c=>Math.round(c*.43))));
+    ctx.fillStyle=gradient;ctx.fillRect(x(p.x)-scale*.46,y(p.y)-scale*.46,scale*.92,scale*.92);
+  }
+  // Same measured heat range and additive falloff as the original 2D visual contract.
+  // Neighbouring real heat sources blend across streets instead of colouring isolated boxes.
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const b of buildings){
+    const st=stations.get(b.id);if(!st)continue;const heat=clamp((st.heat??0)/.5);if(heat<=0)continue;
+    const brightness={FILLED:1,BACKSTOPPED:.5,VACANT:.28}[st.state]??1,colour=mix([74,107,122],[255,171,62],heat);
+    const radius=scale*(1.1+heat*2.1),gradient=ctx.createRadialGradient(x(b.x),y(b.y),0,x(b.x),y(b.y),radius);
+    gradient.addColorStop(0,rgba(colour,.52*Math.pow(heat,.95)*brightness));
+    gradient.addColorStop(.45,rgba(colour,.22*heat*brightness));gradient.addColorStop(1,rgba(colour,0));
+    ctx.fillStyle=gradient;ctx.fillRect(x(b.x)-radius,y(b.y)-radius,radius*2,radius*2);
+  }
+  const health=s.frame.economicHealth??.909,soul=health>=.909?mix([232,150,74],[255,214,138],(health-.909)/.039):mix([232,150,74],[206,58,40],(.909-health)/.052);
+  const wall=ctx.createRadialGradient(x(hub.x),y(hub.y),0,x(hub.x),y(hub.y),scale*2.2);
+  wall.addColorStop(0,rgba(soul,.25));wall.addColorStop(1,rgba(soul,0));ctx.fillStyle=wall;
+  ctx.fillRect(x(hub.x)-scale*2.2,y(hub.y)-scale*2.2,scale*4.4,scale*4.4);ctx.restore();
+  for(const b of buildings){
+    const st=stations.get(b.id),heat=clamp((st?.heat??0)/.5),brightness={FILLED:1,BACKSTOPPED:.5,VACANT:.28}[st?.state]??.6;
+    ctx.fillStyle=st?rgba(mix([55,76,91],[255,171,62],heat),.65+.35*brightness):'#30291f';
+    ctx.fillRect(x(b.x)-scale*.29,y(b.y)-scale*.29,scale*.58,scale*.58);
+    ctx.strokeStyle=colors[b.role]??'#77654f';ctx.lineWidth=1.6;ctx.setLineDash(st?.state==='BACKSTOPPED'?[3,3]:[]);
+    ctx.strokeRect(x(b.x)-scale*.29,y(b.y)-scale*.29,scale*.58,scale*.58);
+  }
+  ctx.setLineDash([]);
+  for(const p of s.frame.people){
+    const colour=colors[p.role]??'#eee3d2',radius=Math.max(3.5,scale*.155);
+    ctx.save();ctx.shadowColor=colour;ctx.shadowBlur=scale*.30;ctx.fillStyle=colour;
+    ctx.beginPath();ctx.arc(x(p.x),y(p.y),radius,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.strokeStyle='#100d0b';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  ctx.strokeStyle='#efdcae';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x(hub.x),y(hub.y),scale*.35,0,Math.PI*2);ctx.stroke();
 }
 $('plan').oninput=()=>{planVersion++;planLoaded=true;$('validate').disabled=false;$('plan-status').textContent='Edited plan · validate before review';};
 $('validate').onclick=async()=>{const version=planVersion,draft=$('plan').value;$('validate').disabled=true;$('plan-status').textContent='Validating…';try{const p=await api('/observatory/v1/configuration/validate',{method:'POST',body:JSON.stringify({plan:JSON.parse(draft)})});if(version===planVersion&&draft===$('plan').value)$('plan-status').textContent=`Valid · SHA-256 ${p.planSha256} · no allowance created`;}catch(e){if(version===planVersion)$('plan-status').textContent=e.message;}finally{if(version===planVersion)$('validate').disabled=false;}};

@@ -32,6 +32,24 @@ contract's weather/heat/role meanings and measured anchors. A browser-compatible
 layer makes real station heat and overlapping radiance visible when HDR bloom is absent.
 No decorative crowd, movement, transactions or hidden event signals are generated.
 
+The owner's subsequent correction targets the **2D settlement overview** for the stronger
+gradient: its streets now encode local District Weather, heat halos blend additively over
+neighbouring cells, station states remain distinct and people carry clear role colours.
+The main 3D world's halo/core and emission intensity are reduced. Both views still use
+the recorded world; these changes alter rendering only.
+
+## Owner daily-routine clarification
+
+The next simulation revision must provide several sequential turns inside each day and
+actual visits to the relevant locations. Daily diary writing and Wall posting are tasks;
+a diary's subject may be null but its vocabulary remains constrained. The day stays open
+for the inhabitant to choose when to write, before rollover. Bakers and Millers must leave
+their abode for duties, people buy food, and role/customer communication is compulsory
+under the existing lexical rules. Extra speech outside role duties remains a separate
+choice under the established design. These requirements are not yet implemented by the
+current one-act-per-day Society loop. Historical tapes and the frozen diary classifier
+must retain their original semantics when the new routine is added.
+
 Use the experiment, world-tick, agent, phase and decision selectors. **Advance one tick**
 permits exactly one day through the existing validated/accounted controller. Waiting makes
 no provider request or reservation. Duplicate/stale permits, a world-only token,

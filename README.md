@@ -47,7 +47,16 @@ decisions and transitions needed to study behaviour. Godot uses stronger contrac
 colour gradients and overlapping heat glow, including browser-compatible radiance. Every
 export also includes separate chronological per-agent per-tick JSON files.
 [Unified PC workflow and private settings](docs/research/SOCIETY_OBSERVATORY_2026-10-26.md).
-This interface slice is undergoing offline/browser verification; no paid run is claimed.
+PR #50 merged at `c5cf2af`; Windows and Linux checks passed on `0acc4f4`, with
+1,910 tests / 150 files, zero failures and seven environment skips. The PowerShell
+model-free preview cold-replayed three days and 51 decisions, with nine per-agent tick
+files. No new paid run is claimed. The colour follow-up strengthens the **2D overview**
+and reduces the 3D world's radiance at the owner's request.
+
+The owner has clarified the next required behaviour: sequential turns within each day,
+visits to task locations, daily Wall posting and diary writing, optional diary subject
+within the constrained vocabulary, and compulsory role/customer communication. The
+current commit-plus-single-act loop does not yet implement that complete routine.
 
 The postcard-enabled society is now wired through the real agent runner. Prepare a small
 PowerShell behaviour test from this checkout:

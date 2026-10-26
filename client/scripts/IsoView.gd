@@ -441,7 +441,7 @@ void fragment() {
 	// A low self-lit floor so the weather is legible on unlit stones too — without it the
 	// streets away from any station fall to black and the mood disappears exactly where
 	// there is nothing else to look at.
-	EMISSION = COLOR.rgb * 0.55;
+	EMISSION = COLOR.rgb * 0.40;
 }
 """
 	var mat := ShaderMaterial.new()
@@ -497,7 +497,7 @@ func _build_buildings() -> void:
 	sh.code = """
 shader_type spatial;
 render_mode cull_back, diffuse_burley;
-uniform float emit_gain = 3.6;
+uniform float emit_gain = 2.9;
 uniform vec3 ground_tint = vec3(1.05, 0.72, 0.42);
 uniform vec3 upper_tint = vec3(0.44, 0.56, 0.80);
 uniform float floor_height = 0.30;
@@ -598,7 +598,7 @@ func _build_wall() -> void:
 	smat.albedo_color = COLOUR_WALL
 	smat.emission_enabled = true
 	smat.emission = COLOUR_WALL
-	smat.emission_energy_multiplier = 1.15
+	smat.emission_energy_multiplier = 0.95
 	_wall_slab.material_override = smat
 	_wall_root.add_child(_wall_slab)
 
