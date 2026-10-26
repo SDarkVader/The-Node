@@ -1,5 +1,7 @@
 # Postcard shortcut implementation — 2026-10-26
 
+Subsequent integration: [real-agent PowerShell playtests](POSTCARD_AGENT_PLAYTEST_2026-10-26.md). The source-specific evidence below remains scoped to the pure shortcut slice.
+
 This is the second bounded slice of the [Oracle/civic handoff](NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md), following the v1 core at `8011e60972948990b5f5d00e84663bc5542c3a79`. Previously postcards supported explicit hourly accrual, claims and safe fusion only. The new production v2 account adds the same-tier shortcut from [7 August §4b](../DESIGN_ADDENDUM_2026-08-07.md); v1 source files and saved evidence are unchanged. Existing World, society, agent, economy, role, reputation and migration paths are unchanged.
 
 ## Implemented transactions

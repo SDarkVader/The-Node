@@ -11,11 +11,34 @@ import { OBSERVATIONS, READINGS, CONTEXT_TAGS as DIARY_CONTEXTS } from '../engin
 import { SOCIETY_ORACLE_RULES } from '../engine/oracleOpportunities.js';
 import { DAILY_ACTIVITY_MULTIPLIER } from '../engine/wealth.js';
 import { COMPLETION_REWARD, SUPPORT_TASK_FRICTION_BAR } from '../engine/roleCompletion.js';
+import { POSTCARD_TIERS, POSTCARD_BUFFER_HOURS, POSTCARD_HOUR_MS, postcardAccrualDenominator,
+  type PostcardTier, type PostcardRate } from '../engine/postcards.js';
 
 export class SocietySecurityError extends Error {
   constructor(code = 'society_boundary_violation') { super(code); this.name = 'SocietySecurityError'; }
 }
 export interface SocietyMarketOffer { sellerRef: string; buildingId: string; price: number; available: boolean }
+/** An explicitly projected own account. Never pass the reducer account itself here. */
+export interface SocietyPostcardObservation {
+  held: Readonly<Record<PostcardTier, number>>;
+  unclaimedUnits: string;
+  rate: PostcardRate;
+  clockMs: number;
+  lastClaimAtMs: number | null;
+}
+export interface SocietyPostcardView extends SocietyPostcardObservation {
+  claimableWhite: number;
+  unitDenominator: string;
+  capHours: 16;
+  rules: string;
+}
+export interface SocietyPostcardFusionChoice {
+  tier: PostcardTier;
+  stake: number;
+  successProbability: number;
+  requiresClaim: boolean;
+}
+export interface SocietyPostcardChoices { canClaim: boolean; fusion: SocietyPostcardFusionChoice[] }
 export interface SocietyContextOptions {
   phase: 'commit' | 'act';
   ownCommitment?: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | null;
@@ -25,18 +48,21 @@ export interface SocietyContextOptions {
     voucherExpiresOnDay?: number | null; rewards?: readonly string[] };
   opportunities?: readonly { kind: 'oracleEntryVoucher'; expiresOnDay: number }[];
   wall?: readonly { author: string; state: SelfState; day: number }[];
+  postcards?: SocietyPostcardObservation;
 }
 export interface SocietyDecisionContext extends DecisionContext {
   phase: 'commit' | 'act';
   purchaseDue: boolean;
   offers: SocietyMarketOffer[];
   oracle: { canEnter: boolean; canRedeem: boolean };
+  postcards?: SocietyPostcardView;
 }
 export interface SocietyAction {
   move: Decision['move']; communication: Decision['communication']; diary: Decision['diary'];
   occupation: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | { kind: 'work' } | null;
   purchase: { seller: string; quantity: 1 } | null;
   oracle: 'enter' | 'redeem' | null;
+  postcards?: { claim: boolean; fusion: { tier: PostcardTier; stake: number } | null } | null;
 }
 const object = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v) &&
   (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
@@ -60,6 +86,41 @@ function assertJsonData(v: unknown, depth = 0, maxDepth = 12): void {
 function freeze<T>(v: T): T {
   if (v && typeof v === 'object') { Object.values(v).forEach(freeze); Object.freeze(v); }
   return v;
+}
+const postcardInteger = (v: unknown): v is number => day(v) && !Object.is(v, -0);
+const postcardUnits = (v: unknown): v is string => typeof v === 'string' && /^(0|[1-9][0-9]{0,63})$/.test(v);
+export const SOCIETY_POSTCARD_RULES = 'Postcards belong to you across role changes. White credit accrues at the listed hourly rate into a buffer capped at 16 hours; excess unclaimed credit is lost, while held cards never expire. '
+  + 'The clock is game time: each day spans 24 hours. During act, optionally claim whole White cards, retaining any fraction, then optionally perform one listed fusion. Null declines both. '
+  + 'Five same-tier cards safely produce one next-tier card. White can only use five; Green, Blue and Purple can stake one to five with success chance stake/5. The entire stake is consumed on success or loss. Five is guaranteed. Orange is final. '
+  + 'A recipe marked requiresClaim needs the claim in this same action. Postcards are personal; this menu provides no transfer, ticket forging, travel, money purchase or role grant.';
+
+function postcardProjection(value: unknown): SocietyPostcardView {
+  assertJsonData(value);
+  if (!object(value) || !exact(value, ['held', 'unclaimedUnits', 'rate', 'clockMs', 'lastClaimAtMs']) ||
+    !object(value.held) || !exact(value.held, POSTCARD_TIERS) || POSTCARD_TIERS.some(t => !postcardInteger((value.held as Record<string, unknown>)[t])) ||
+    !object(value.rate) || !exact(value.rate, ['numerator', 'denominator']) || !postcardUnits(value.unclaimedUnits) ||
+    !postcardInteger(value.clockMs) || value.lastClaimAtMs !== null && (!postcardInteger(value.lastClaimAtMs) || value.lastClaimAtMs > value.clockMs)) fail('society_postcard_observation');
+  let denominator: bigint;
+  try { denominator = postcardAccrualDenominator(value.rate as unknown as PostcardRate); }
+  catch { fail('society_postcard_rate'); }
+  const rate = value.rate as unknown as PostcardRate, units = BigInt(value.unclaimedUnits);
+  if (units > BigInt(POSTCARD_BUFFER_HOURS) * BigInt(POSTCARD_HOUR_MS) * BigInt(rate.numerator) || units / denominator > BigInt(Number.MAX_SAFE_INTEGER)) fail('society_postcard_credit');
+  return { held: { ...(value.held as unknown as SocietyPostcardObservation['held']) }, unclaimedUnits: value.unclaimedUnits,
+    rate: { numerator: rate.numerator, denominator: rate.denominator }, clockMs: value.clockMs, lastClaimAtMs: value.lastClaimAtMs as number | null,
+    claimableWhite: Number(units / denominator), unitDenominator: denominator.toString(), capHours: 16, rules: SOCIETY_POSTCARD_RULES };
+}
+export function societyPostcardChoices(p: SocietyPostcardView, phase: 'commit' | 'act'): SocietyPostcardChoices {
+  if (phase !== 'act') return { canClaim: false, fusion: [] };
+  const canClaim = p.claimableWhite <= Number.MAX_SAFE_INTEGER - p.held.white;
+  const fusion: SocietyPostcardFusionChoice[] = [];
+  for (let index = 0; index < POSTCARD_TIERS.length - 1; index++) {
+    const tier = POSTCARD_TIERS[index]!, target = POSTCARD_TIERS[index + 1]!;
+    if (p.held[target] === Number.MAX_SAFE_INTEGER) continue;
+    const held = p.held[tier], afterClaim = tier === 'white' && canClaim ? held + p.claimableWhite : held;
+    for (const stake of tier === 'white' ? [5] : [1, 2, 3, 4, 5]) if (afterClaim >= stake)
+      fusion.push({ tier, stake, successProbability: stake / 5, requiresClaim: held < stake });
+  }
+  return { canClaim, fusion };
 }
 const authorizedViews = new WeakSet<object>();
 /** Only immutable views created here may be handed to an external policy request builder. */
@@ -137,11 +198,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     if (!ref(q.author) || !SELF_STATES.includes(q.state) || !day(q.day) || q.day > base.tick) fail('society_public_wall');
     return { author: q.author, state: q.state, day: q.day };
   });
+  const postcards = options.postcards === undefined ? undefined : postcardProjection(options.postcards);
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
     legalMoves: base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
     phase: options.phase, purchaseDue: options.purchaseDue === true, offers,
-    oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem } };
+    oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}) };
   const locations = district.buildings.filter(b => distance(own, b) <= state.world.config.commsProximityRange).map(b => {
     const station = p.city.stations.find(s => s.buildingId === b.id);
     const role = roleArrays(state.world).find(([, slots]) => slots.some(s => s.buildingId === b.id))?.[0] ?? null;
@@ -181,10 +243,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
         conditionalPrizeProbability: own.role === 'Grifter' ? 1 / 2 : 1 / 3,
         maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld } },
     rules: societyPublicRules(base.rules === 'v2'),
+    ...(postcards ? { postcards } : {}),
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
       purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef).map(q => q.sellerRef),
-      oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])] },
+      oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])],
+      ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase) } : {}) },
     decisionSchema: societyDecisionSchema(context),
   };
   const safe = freeze(visible);
@@ -205,8 +269,17 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const bounded = (v: unknown, min: number, max: number): boolean => finite(v) && v >= min && v <= max;
   const nullable = (v: unknown, check: (item: any) => boolean): boolean => v === null || check(v);
   const point = (q: unknown): boolean => record(q, ['x', 'y']) && coordinate(q.x) && coordinate(q.y);
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema'])) fail('society_serialized_view');
+  const hasPostcards = object(value) && Object.hasOwn(value, 'postcards');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : [])])) fail('society_serialized_view');
   const v = value;
+  let postcards: SocietyPostcardView | undefined;
+  if (hasPostcards) {
+    if (!record(v.postcards, ['held', 'unclaimedUnits', 'rate', 'clockMs', 'lastClaimAtMs', 'claimableWhite', 'unitDenominator', 'capHours', 'rules'])) fail('society_serialized_postcards');
+    postcards = postcardProjection({ held: v.postcards.held, unclaimedUnits: v.postcards.unclaimedUnits, rate: v.postcards.rate,
+      clockMs: v.postcards.clockMs, lastClaimAtMs: v.postcards.lastClaimAtMs });
+    if (v.postcards.claimableWhite !== postcards.claimableWhite || v.postcards.unitDenominator !== postcards.unitDenominator ||
+      v.postcards.capHours !== postcards.capHours || v.postcards.rules !== postcards.rules) fail('society_serialized_postcards');
+  }
   if (!day(v.day) || v.day < 1 || !member(v.phase, ['commit', 'act']) ||
     !record(v.self, ['ref', 'role', 'x', 'y', 'workplace', 'wealth', 'stock', 'price', 'quantity', 'flourCost', 'flourSalePrice', 'progress', 'completion']) ||
     !ref(v.self.ref) || !member(v.self.role, Object.keys(SOCIETY_PUBLIC_ROLES)) || !coordinate(v.self.x) || !coordinate(v.self.y) ||
@@ -238,23 +311,24 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
     ownRoleStockCap: SOCIETY_ORACLE_RULES.personalResourceCap, entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
     conditionalPrizeProbability: v.self.role === 'Grifter' ? 1 / 2 : 1 / 3, maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld };
   if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true))) fail('society_serialized_rules');
-  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle']) || !list(v.legalChoices.moves, point) ||
+  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(postcards ? ['postcards'] : [])]) || !list(v.legalChoices.moves, point) ||
     !list(v.legalChoices.present, ref) || !list(v.legalChoices.diarySubjects, ref) || typeof v.legalChoices.purchaseDue !== 'boolean' ||
     JSON.stringify(v.legalChoices.present) !== JSON.stringify(v.local.people.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.diarySubjects) !== JSON.stringify(v.recognition.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.purchaseSellers) !== JSON.stringify(v.wall.prices.filter((q: any) => q.available && q.sellerRef !== v.self.ref).map((q: any) => q.sellerRef)) ||
     JSON.stringify(v.legalChoices.oracle) !== JSON.stringify([...(v.oracle.canEnter ? ['enter'] : []), ...(v.oracle.canRedeem ? ['redeem'] : [])])) fail('society_serialized_choices');
+  if (postcards && JSON.stringify(v.legalChoices.postcards) !== JSON.stringify(societyPostcardChoices(postcards, v.phase))) fail('society_serialized_postcard_choices');
   const context: SocietyDecisionContext = { tick: v.day - 1, selfRef: v.self.ref, role: v.self.role, roleEpoch: 0,
     legalMoves: v.legalChoices.moves, presentRefs: v.legalChoices.present, knownSubjects: v.legalChoices.diarySubjects,
     rules: 'v2', hearingRefs: v.hearing, phase: v.phase, offers: v.wall.prices, purchaseDue: v.legalChoices.purchaseDue,
-    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem } };
+    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
 }
 
 /** A violation aborts the controller; it is never silently converted into a stay/work fallback. */
 export function validateSocietyAction(value: unknown, c: SocietyDecisionContext): SocietyAction {
   assertJsonData(value);
-  if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'occupation', 'purchase', 'oracle'])) fail('society_action_shape');
+  if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'occupation', 'purchase', 'oracle', ...(c.postcards ? ['postcards'] : [])])) fail('society_action_shape');
   const old = validateDecision({ move: value.move, communication: value.communication, diary: value.diary, role: null }, c);
   if (!old) fail('society_action_illegal');
   const occupation = value.occupation;
@@ -272,6 +346,12 @@ export function validateSocietyAction(value: unknown, c: SocietyDecisionContext)
   if (value.purchase !== null && (!object(value.purchase) || !exact(value.purchase, ['seller', 'quantity']) || value.purchase.quantity !== 1 ||
     !c.purchaseDue || !c.offers.some(q => q.available && q.sellerRef !== c.selfRef && q.sellerRef === (value.purchase as Record<string, unknown>).seller))) fail('society_purchase');
   if (value.oracle !== null && !(value.oracle === 'enter' && c.oracle.canEnter || value.oracle === 'redeem' && c.oracle.canRedeem)) fail('society_oracle');
+  if (c.postcards && value.postcards !== null) {
+    const p = value.postcards, choices = societyPostcardChoices(c.postcards, c.phase);
+    if (c.phase !== 'act' || !object(p) || !exact(p, ['claim', 'fusion']) || typeof p.claim !== 'boolean' || p.claim && !choices.canClaim) fail('society_postcards');
+    if (p.fusion !== null && (!object(p.fusion) || !exact(p.fusion, ['tier', 'stake']) ||
+      !choices.fusion.some(q => q.tier === (p.fusion as Record<string, unknown>).tier && q.stake === (p.fusion as Record<string, unknown>).stake && (!q.requiresClaim || p.claim)))) fail('society_postcards');
+  }
   return freeze(structuredClone(value) as unknown as SocietyAction);
 }
 
@@ -293,8 +373,18 @@ export function societyDecisionSchema(c: SocietyDecisionContext): Record<string,
     : c.phase === 'act' && ['Courier', 'Investigator', 'ImportExport'].includes(c.role) ? optional(obj({ kind: kind('work') })) : nil;
   const sellers = c.offers.filter(q => q.available && q.sellerRef !== c.selfRef).map(q => q.sellerRef);
   const oracle = [...(c.oracle.canEnter ? ['enter'] : []), ...(c.oracle.canRedeem ? ['redeem'] : [])];
+  let postcardSchema: unknown = nil;
+  if (c.postcards && c.phase === 'act') {
+    const choices = societyPostcardChoices(c.postcards, c.phase);
+    const selection = (claim: boolean) => {
+      const recipes = choices.fusion.filter(q => claim || !q.requiresClaim).map(q => obj({ tier: kind(q.tier), stake: { type: 'number', enum: [q.stake] } }));
+      return obj({ claim: { type: 'boolean', enum: [claim] }, fusion: recipes.length ? { anyOf: [nil, ...recipes] } : nil });
+    };
+    postcardSchema = { anyOf: [nil, selection(false), ...(choices.canClaim ? [selection(true)] : [])] };
+  }
   return obj({ move: c.phase === 'act' ? original.properties.move : nil,
     communication: c.phase === 'act' ? original.properties.communication : nil, diary: c.phase === 'act' ? original.properties.diary : nil,
     occupation, purchase: c.phase === 'act' && c.purchaseDue && sellers.length ? optional(obj({ seller: { type: 'string', enum: sellers }, quantity: { type: 'number', enum: [1] } })) : nil,
-    oracle: c.phase === 'act' && oracle.length ? optional({ type: 'string', enum: oracle }) : nil });
+    oracle: c.phase === 'act' && oracle.length ? optional({ type: 'string', enum: oracle }) : nil,
+    ...(c.postcards ? { postcards: postcardSchema } : {}) });
 }

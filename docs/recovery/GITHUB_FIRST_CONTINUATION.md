@@ -4,7 +4,12 @@ Updated 2026-10-26. A fresh phone, PC or cloud session can recover development c
 The owner requested publication as implementation proceeds. PR #44 published the society runner
 and PR #46 integrated the first postcard slice into `main` at `1217c9b`.
 The verified shortcut slice is on `codex/postcard-shortcuts-2026-10-26`, [PR #47](https://github.com/SDarkVader/The-Node/pull/47),
-code source `e173dbf37f401111a876ccea835bd334f7e1d085`; check the current remote head and
+code source `e173dbf37f401111a876ccea835bd334f7e1d085`; its hosted checks passed.
+The next active branch `codex/postcard-playtest-2026-10-26` integrates those choices into
+the real agent runner with a human-started [PowerShell test flow](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
+[PR #48](https://github.com/SDarkVader/The-Node/pull/48) publishes it; source `0561d56` has
+the recorded full regression, cold replay and synthetic Windows PowerShell preparation proof.
+Check the current remote head and
 [CURRENT_SESSION](CURRENT_SESSION.md) rather than assuming it is already merged.
 The [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)
 closes old real-dispatch paths while retaining historical verification.
@@ -14,7 +19,7 @@ Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 ## Active branch and current experiment
 
 Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`; current review branch:
-`codex/postcard-shortcuts-2026-10-26`. The Oracle/civic work proceeds one verified slice at a time.
+`codex/postcard-playtest-2026-10-26`. The Oracle/civic work proceeds one verified slice at a time.
 No paid model, private credential access, accounting reset, historical approval reuse or live
 experiment is authorized by this implementation task. The latest handoff reports an earlier
 20-tick run at `e2a16e6`; its private evidence has not been reopened for these new mechanics.

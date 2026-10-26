@@ -10,6 +10,7 @@ export const emptySocietyAction=():SocietyAction=>({move:null,communication:null
 
 export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
   const a=emptySocietyAction(), preference=parseInt(v.self.ref.slice(0,4),16)/65535;
+  if(v.postcards)a.postcards=null;
   if(v.phase==='commit'){
     if(v.self.role==='Baker'){
       // Sustainable cost estimate comes only from one's own observed input market.
@@ -56,5 +57,16 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
   }
   if(v.oracle.canRedeem)a.oracle='redeem';
   else if(v.oracle.canEnter&&v.self.wealth>=v.oracle.entryCost+0.7&&v.oracle.winProbability>=0.1)a.oracle='enter';
+  if(v.postcards&&v.legalChoices.postcards){
+    const claim=v.legalChoices.postcards.canClaim;
+    const recipes=v.legalChoices.postcards.fusion.filter(r=>!r.requiresClaim||claim);
+    // Personal deterministic patience preference, based only on public own options.
+    // Humans/models may instead bank, abstain or select any other listed recipe.
+    const tiers=['white','green','blue','purple'];
+    const safe=recipes.filter(r=>r.stake===5).sort((x,y)=>tiers.indexOf(y.tier)-tiers.indexOf(x.tier))[0];
+    const risky=preference>0.75?recipes.filter(r=>r.stake<5).sort((x,y)=>tiers.indexOf(y.tier)-tiers.indexOf(x.tier)||y.stake-x.stake)[0]:undefined;
+    const fusion=risky??safe;
+    if(claim||fusion)a.postcards={claim,fusion:fusion?{tier:fusion.tier,stake:fusion.stake}:null};
+  }
   return a;
 }
