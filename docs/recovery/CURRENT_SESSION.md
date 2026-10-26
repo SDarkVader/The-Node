@@ -1,9 +1,11 @@
 # Current Society daily implementation checkpoint
 
-Updated 2026-10-26. Work in existing repo branch codex/sequential-days-2026-10-26, based on
-main a345a68099f22e7b0f723266be19e2b689c903d6 (PR52). PR51 and52 merged after exact-head
-Windows/Linux checks passed. Earlier PR43 duplicate closed,47 then49 merged in order;
-owner merged50. Preserve unrelated trace.pdf and all private experiment/accounting history.
+Updated 2026-10-26. Shared branch: main. PR53 contains the sequential-day implementation
+from codex/sequential-days-2026-10-26, based on main
+a345a68099f22e7b0f723266be19e2b689c903d6 (PR52). Verify its current merge state and refs.
+PR51 and PR52 merged after checks passed on their exact heads. Earlier PR43 was closed
+as a duplicate; PR47 and PR49 merged in order; the owner merged PR50. Preserve unrelated
+trace.pdf and all private experiment and accounting history.
 
 Society v4 adds fresh sequential turns per day, physical home/task visits, mandatory daily
 Wall/food attempts/diary and role/customer lexical speech, completion gating and deterministic
@@ -22,18 +24,21 @@ deleted history or invented requests. Unknown usage or overrun continues to bloc
 Observatory displays actual partial turns, exact per-turn contexts/choices/returned blocks
 and resulting transitions, with no same-day future-thinking exposure at historical cursors.
 Godot remains embedded and uses the same cursor. Day exports contain all chronological turns.
-The requested seven-page SystemDesign template document is created separately, sourcec4ac041
+The requested seven-page System Design template document is created separately, source c4ac041
 snapshot, with original package/style/section preservation and all-page visual verification.
 
-Sourcec4ac041d537a58694cfee8c49fac38548c9002bd passes1964tests/155files/0fail/7environment
-skips, project/CLItypechecks and8recoverytests. Three days cold-replay1148decisions42diaries,
-repeatbytesidentical SHA69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73.
-Actual standalone Windows prepare/check passes with synthetic journal/fake key/STOPinput,
-approvedfalse/noexecution/noallowance/zerocalls. Browser one-day manualpreview completes
-389decisions94controlledcontexts with Godot embedded, turn replay and three rawagentdayfiles;
-independent coldreplaypasses. All94packetsfitUSD.02ceiling(max9771microUSD). Newassertion
-additionally proves unsubmitted falsecontext halts before dispatch. [Verification](../research/evidence/sequential-days-2026-10-26.json). No new paid/provider call, credential or actual
-private journal read occurred during this work. Do not reuse consumed approvals.
+Source c4ac041d537a58694cfee8c49fac38548c9002bd passed 1,964 tests across 155 files,
+zero failures, seven environment skips, project/CLI typechecks and eight recovery tests.
+Three days cold-replayed 1,148 decisions and 42 diary writes. Independent runs produced
+identical bytes, SHA 69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73.
+Actual standalone Windows preparation/check passed with a synthetic journal, fake key and
+STOP input: approval false, no execution, no allowance and zero calls. The browser manual
+preview completed 389 decisions and 94 controlled contexts with embedded Godot, turn replay
+and three raw agent/day files; independent cold replay passed. All 94 packets fit the
+USD 0.02 ceiling (maximum 9,771 micro-USD). A subsequent assertion also proves that an
+unsubmitted false context halts before dispatch. [Verification](../research/evidence/sequential-days-2026-10-26.json).
+No new paid/provider call, credential or actual private journal read occurred during this
+work. Do not reuse consumed approvals.
 
 Further work: full A04 trespass transactions, multi-district daily routing, later approved
 opportunity calibration, detailed same-day supply/service dialogue beyond Baker replies,
