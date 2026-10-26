@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $configPath = (Resolve-Path -LiteralPath $Config).Path
 $nodeExecutable = (Get-Command node -CommandType Application | Select-Object -First 1).Source
-$nodeMajor = & $nodeExecutable -p 'Number(process.versions.node.split(".")[0])'
+$nodeMajor = & $nodeExecutable -p 'parseInt(process.versions.node)'
 if ($LASTEXITCODE -ne 0 -or [int]$nodeMajor -lt 24) { throw 'Node 24 or newer is required.' }
 $runExitCode = 1
 $createdCredential = $null
