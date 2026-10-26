@@ -67,6 +67,8 @@ export interface SocietyRunEvent { kind: 'start' | 'request' | 'reserved' | 'dis
 export interface AccountedSocietyOptions {
   plan: SocietyRunPlan; ownerApproved: boolean; instruction: string; expectedCarriedFingerprint: string;
   sink: (event: SocietyRunEvent) => void; signal?: AbortSignal;
+  /** Trusted operator gate only; never appears in the inhabitant context or action. */
+  awaitDayPermit?: (day:number,signal?:AbortSignal)=>Promise<void>;
 }
 export interface AccountedSocietySummary {
   status: 'completed' | 'stopped'; stoppedReason: string | null; calls: number; ticks: number;
@@ -109,7 +111,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     try{options.sink(detached);}catch(error){undeliveredEvents.push(structuredClone(event));throw error;}
   };
   running.add(society);
-  let calls=0,stoppedReason:string|null=null,lastDispatch=-Infinity;
+  let calls=0,stoppedReason:string|null=null,lastDispatch=-Infinity,permittedDay=0;
   let active:{binding:SocietyCallBinding;stage:SocietyCallStage;beforeHash:string;beforeTick:number;finished:boolean}|null=null;
   const halt=(reason:string)=>{stoppedReason??=reason;society.halt();};
   const outcome=(status:SocietyCallStatus,reason:string|null)=>{
@@ -126,6 +128,13 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
       budgetHistoryHash:start.historyHash,carriedFingerprint:options.expectedCarriedFingerprint}});
     while(society.tick<plan.ticks&&!stoppedReason){
       if(options.signal?.aborted){halt('society_cancelled');break;}
+      if(options.awaitDayPermit&&permittedDay!==society.tick+1){
+        const revision=society.revision,day=society.tick+1;
+        await options.awaitDayPermit(day,options.signal);
+        if(options.signal?.aborted){halt('society_cancelled');break;}
+        if(society.halted||society.revision!==revision)throw new SocietySecurityError('society_stale_tick_permit');
+        permittedDay=day;
+      }
       const people=society.pendingPeople();
       if(!people.length){halt('society_no_pending_people');break;}
       for(const person of people){

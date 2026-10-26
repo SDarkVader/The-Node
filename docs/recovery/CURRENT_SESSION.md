@@ -1,5 +1,32 @@
 # Current development and experiment checkpoint
 
+Current interface slice: codex/society-observatory-2026-10-26, based on merged main
+fd72553cb5c1c49b77baa25435f7b6ff9d39b8f8. PR47 and then PR49 merged after their own
+Windows/Linux checks passed. PR43 is closed as already incorporated, verified by both
+API and refreshed browser; its handoff blob matches main exactly.
+
+The owner requires one PC workflow, including Godot inside the Observatory, manual ticks,
+run/agent/tick selection, historical replay and raw individual per-agent per-tick records.
+The new implementation connects the actual Society tape and live accounted runner to the
+existing authenticated server. A gate waits before each day without reserving or calling;
+replay has no sender. Stale/duplicate/cross-origin/world-token control is rejected.
+Raw request/view/replay violations stop the active simulation. Readable and raw exports
+share identical tick files and retain failures/missing provider summaries honestly.
+
+A real Godot4.7.2 web export has rendered inside the browser and followed an actual
+offline tick. The installed engine is reused; the matching official template archive was
+checksum-verified, and only its single-threaded Web template is used. Compiled assets
+and the machine preset/history registry are private/local. The same PowerShell launcher
+opens a model-free preview or, with -Start, prepares a fresh source-pinned review and
+requires human START before the existing funded path. No actual provider, credential or
+private accounting-journal content was accessed here. Pending further checks: full suite,
+committed-source PowerShell/browser/replay proof and hosted CI.
+
+[Interface commands](../research/SOCIETY_OBSERVATORY_2026-10-26.md).
+The system-design DOCX using the supplied template remains to deliver after this slice.
+
+Earlier PR-integration handover (preserved as dated history):
+
 Updated 2026-10-26. The owner directed PR issue checks and merges in dependency order
 before further interface work. PR #43 is closed as already incorporated: its complete
 Oracle/civic handoff at 139f98fb50317feeb573403eab2fa91cf6f316fc is byte-identical to
@@ -65,8 +92,9 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe",
+  "verifiedBaseCommit": "ca1010c5592d80e5dd0c87a7eb3f571625478f29",
   "completedWork": [
+    "PR47 mergedmain aadb99b and PR49 mergedmainfd72553 after all respective Windows/Linuxchecks passed. PR43 duplicateclosed, handoffbyteidentical and refreshedbrowser/APIverified. SocietyObservatory sourceca1010c passes1910tests/150files/0fail/7environment skips, TypeScript and8recoverytests. ActualWindowsPowerShelldefaultlauncher exportsGodot4.7.2 and startsoneauthenticatedpanel; embeddedGodotrenderedandoneoffline tickobserved. Latestthinkinghistory enhancement adds per-tick/fullchronologicalreturnedblocks withactualobservations,decisionsandtransitions; source-specificchecks pending. Hostedca1010c stoppedbeforetests because a JavaScript replacement string expanded a historical dollar-one sequence inside recovery JSON; restoring validmetadata with a function replacement, strictverifierunchanged. Noactualpaidcall/credential/privatejournalread.",
     "Owner approved the explicit provisional dailyOracle trial configuration and100gamewealth declared endowment. Integrated free entry as independent8thaction, shared health/rarity/prize menu, own prior result, whole-roster backed reserves, canonical roster resolution, real person wealth/capoverflow and v3 replay/plan. ExistingpaidOracle remains independent. Newprofile experiments/oracle/daily-oracle-trial-2026-10-26.json is opt-in, not a default or USD budget.43focused boundary/runtime/launch/regression tests plus6accountedtests pass; final fullsuite/coldPowerShell evidence to record. No actual provider/private financial operation.",
     "PR48 merged into PR47 parent branch at35fe129c7261ff33b9b16f134dd73437414f2196. Hosted Windows job121617817317 and Linux job121617815244 both stopped at recovery:verify because inherited reviewBranch still named the child postcard-playtest branch. Corrected only tracked branch handover/README/continuation guide to the actual postcard-shortcuts parent; preserved verifiedBase0561d56 and strict verifier. No runtime, financial, model or historical evidence change.",
     "Real agent postcard test implementation committed/pushed at0561d56c3f6fe6a5e3be62b99e4abe3147dd9515, PR48 stacked onPR47. Source-specific full regression1866passed/145files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Actual WindowsPowerShell5.1 production prepare/check succeeded using synthetic inputs only: unapproved3day18callreview, zeroallowance/execution/provider, keyplaceholder/journal unchanged.20days332decisions/120controlledfixtures/212autonomous/272claims/241safefusions/31shortcuts independently cold-replayed; repeat tape SHA0626bace63a8a840bd4e663737df2a12d32150d2e6a6522056676e26699ea666 identical. Per-account exact mass; maxcurrencyresidual4.085620730620576e-14. Evidence docs/research/evidence/postcard-agent-playtest-2026-10-26.json. No actual behavioural/paid result claimed.",
@@ -142,12 +170,13 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
+    "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
     "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
     "Continue universal dailyOracle catalogue/funding/agent integration after this runnable postcard slice; no uncalibrated reward numbers activated. Preserve old paidOracle/temporaryvoucher behavior, legacyworld/hash evidence and separateoldreputationProgress. Fullprogramme remains unfinished.",
     "Use main as shared recovery source. Run npm run preview on the viewing PC or inside a private Codespace; wait for the ready URL and enter its interface token. Pass the private completed-run bundle registration to view actual evidence.",
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/oracle-agent-playtest-2026-10-26"
+  "reviewBranch": "codex/society-observatory-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->

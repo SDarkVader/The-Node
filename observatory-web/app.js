@@ -1,6 +1,8 @@
 /* No provider client, credentials, raw ledger or experiment clock in this browser. */
 const $ = id => document.getElementById(id);
 let snapshot, timeline = [], stream, selectedCall = '', planLoaded = false, planVersion = 0;
+let runGeneration=0, replayTimer=null, embeddedGodot=false, godotRun='';
+let agentChosen=false,historyVersion=0,historyKey='';
 const base = () => `/observatory/v1/runs/${encodeURIComponent($('run').value)}`;
 async function api(path, options = {}) {
   const res = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
@@ -15,16 +17,24 @@ $('login').onsubmit = async event => {
 };
 async function loadRuns() {
   const runs = await api('/observatory/v1/runs');
+  embeddedGodot=(await api('/observatory/v1/capabilities')).godotEmbedded;
   $('login').hidden = true; $('workspace').hidden = false;
   $('run').replaceChildren(...runs.map(r => new Option(`${r.id} · ${r.status}`, r.id)));
   if (runs.length) await openRun();
 }
 async function openRun() {
+  const generation=++runGeneration,route=base();stopReplay();
+  agentChosen=false;historyKey='';historyVersion++;
   stream?.close(); planLoaded = false; planVersion++; $('validate').disabled=false; $('plan-status').textContent='';
-  timeline = await api(base() + '/timeline');
-  render(await api(base() + '/snapshot'));
-  stream = new EventSource(base() + '/events');
-  stream.addEventListener('snapshot', event => { $('connection').textContent = 'Connected · verified evidence'; render(JSON.parse(event.data)); });
+  const nextTimeline=await api(route+'/timeline'),nextSnapshot=await api(route+'/snapshot');
+  if(generation!==runGeneration)return;
+  timeline=nextTimeline;render(nextSnapshot);
+  if(embeddedGodot&&godotRun!==$('run').value){godotRun=$('run').value;$('godot-world').src='/godot/index.html?run='+encodeURIComponent(godotRun);}
+  $('godot-world').hidden=!embeddedGodot;
+  $('overview').open=!embeddedGodot;
+  $('godot-status').textContent=embeddedGodot?'Godot runs here and follows this run and the shared evidence cursor.':'Godot web export is not configured. Build it with scripts/build-godot-web.ps1 before starting the unified PC test launcher.';
+  stream = new EventSource(route + '/events');
+  stream.addEventListener('snapshot', event => { if(generation!==runGeneration)return;$('connection').textContent = 'Connected · verified evidence'; render(JSON.parse(event.data)); });
   stream.addEventListener('source_error', () => { $('connection').textContent = 'Evidence unavailable · display frozen'; stream.close(); });
   stream.onerror = () => { $('connection').textContent = 'Disconnected · reconnecting'; };
 }
@@ -35,13 +45,32 @@ async function select(cursor) { await api(base() + '/selection', { method: 'PUT'
 $('timeline').onchange = () => select(timeline[Number($('timeline').value)].cursor).catch(showError);
 $('follow').onclick = () => select(null).catch(showError);
 $('call').onchange = () => { selectedCall = $('call').value; renderCall(); };
+$('agent').onchange=()=>{agentChosen=true;renderCalls();};$('phase').onchange=()=>renderCalls();
+$('thinking-scope').onchange=()=>renderThinkingHistory();
+$('tick-select').onchange=()=>{stopReplay();select($('tick-select').value||null).catch(showError);};
+function recordedTicks(){const byTick=new Map();for(const p of timeline)if(p.cursor!=='live'&&Number.isInteger(p.sourceTick))byTick.set(p.sourceTick,p);return [...byTick.values()].sort((a,b)=>a.sourceTick-b.sourceTick);}
+function stopReplay(){if(replayTimer)clearInterval(replayTimer);replayTimer=null;$('replay-play').textContent='Play recorded ticks';}
+$('replay-play').onclick=()=>{
+  if(replayTimer){stopReplay();return;}
+  const points=recordedTicks(),generation=runGeneration;let index=Math.max(0,points.findIndex(p=>p.cursor===snapshot.cursor));
+  $('replay-play').textContent='Pause replay';let busy=false;
+  replayTimer=setInterval(async()=>{if(busy)return;if(generation!==runGeneration||index>=points.length){stopReplay();return;}busy=true;
+    try{await select(points[index++].cursor);}catch(error){stopReplay();showError(error);}finally{busy=false;}},700);
+};
+$('advance').onclick=async()=>{
+  const route=base(),current=snapshot;if(!current?.control?.canAdvance)return;$('advance').disabled=true;
+  try{await api(route+'/advance',{method:'POST',body:JSON.stringify({cursor:current.cursor,day:current.control.waitingDay,version:current.control.version})});
+    if(route===base())render(await api(route+'/snapshot'));
+  }catch(error){showError(error);if(route===base())render(await api(route+'/snapshot'));}
+};
+$('stop').onclick=async()=>{if(!snapshot?.control?.canStop)return;$('stop').disabled=true;try{await api(base()+'/stop',{method:'POST',body:'{}'});}catch(error){showError(error);}};
 $('evaluation-refresh').onclick = () => { if (snapshot) render(snapshot); };
 function render(s) {
   const previousCursor = snapshot?.cursor;
   const previousActor = snapshot?.calls.find(c => c.requestId === selectedCall)?.actorId;
   snapshot = s;
   $('run-title').textContent = s.experimentId;
-  $('mode').textContent = `${s.mode === 'live' ? 'RECORDED PROVIDER EVIDENCE' : 'SYNTHETIC TEST PROVIDER · NO PAID CALLS'} / ${s.following ? 'FOLLOW LATEST' : 'HISTORICAL PLAYBACK'}`;
+  $('mode').textContent = `${s.mode === 'live' ? 'RECORDED PROVIDER EVIDENCE' : s.schema==='node-observatory-society-v1'?'DETERMINISTIC PREVIEW · NO MODEL CALLS':'SYNTHETIC TEST PROVIDER · NO PAID CALLS'} / ${s.following ? 'FOLLOW LATEST' : 'HISTORICAL PLAYBACK'}`;
   $('status').textContent = s.status;
   $('provenance').textContent = `Source ${s.sourceRevision.slice(0, 12)} · world ${s.worldHash.slice(0, 16)} · replay verified through day ${s.sourceTick}`;
   const event = s.timeline?.at(-1);
@@ -55,14 +84,33 @@ function render(s) {
   const m = s.telemetry;
   $('metrics').replaceChildren(...[
     [m.callAttemptCount, 'Recorded requests'], [m.executedDecisionCount, 'Executed decisions'], [m.completedTickCount, 'Committed ticks'],
-    [m.inputTokens.toLocaleString(), 'Known input tokens'], [(Number(m.bookedMicroUsd)/1e6).toFixed(6), 'USD booked · cursor'], [(Number(m.heldMicroUsd)/1e6).toFixed(6), 'USD held · cursor']
+    [m.inputTokens.toLocaleString(), 'Known input tokens'], [m.bookedMicroUsd===null?'See accounting':(Number(m.bookedMicroUsd)/1e6).toFixed(6), 'USD booked · cursor'], [m.heldMicroUsd===null?'See accounting':(Number(m.heldMicroUsd)/1e6).toFixed(6), 'USD held · cursor']
   ].map(([value,label]) => { const el = document.createElement('div'); el.className='metric'; const v = document.createElement('strong'); v.textContent=value; const l=document.createElement('span'); l.textContent=label; el.append(v,l); return el; }));
-  const visible = s.calls.filter(c => c.tick === s.calls.at(-1)?.tick);
-  $('call').replaceChildren(...visible.map(c => new Option(`${c.actorId} · tick ${c.tick} · ${c.executed ? 'executed' : c.reasoning.status}`, c.requestId)));
+  const agents=[...new Set([...(s.society?.controlled??[]),...(s.society?.people??[]).map(p=>p.person),...s.calls.map(c=>c.actorId)])],selectedAgent=$('agent').value;
+  $('agent').replaceChildren(new Option('All agents',''),...agents.map(id=>{
+    const person=s.society?.people?.find(p=>p.person===id);return new Option(`${id}${person?' · '+(person.role??'roleless'):''}${s.society?.controlled?.includes(id)?' · model':''}`,id);
+  }));
+  if(agents.includes(selectedAgent))$('agent').value=selectedAgent;
+  if(!agentChosen&&s.society?.controlled?.length)$('agent').value=s.society.controlled[0];
+  const ticks=recordedTicks();$('tick-select').replaceChildren(new Option('Live / latest',''),...ticks.map(p=>new Option(`World tick ${p.sourceTick}`,p.cursor)));
+  $('tick-select').value=s.following?'':s.cursor;
+  $('advance').disabled=!s.control?.canAdvance;
+  $('stop').disabled=!s.control?.canStop;
+  $('control-status').textContent=(!s.following||s.control?.replayOnly)?'Recorded tick · replay is read-only and makes no model calls.':s.control?.waitingDay?`Paused before day ${s.control.waitingDay}. Advance runs one complete day within the approved bounds.`:s.control?.manual?'Day running or run stopped. Further clicks cannot queue extra days.':'Read-only evidence viewer.';
+  $('world-data').textContent=JSON.stringify(s.society??s.frame,null,2);
+  renderCalls(previousCursor,previousActor);draw(s);
+  $('accounting').textContent = JSON.stringify(s.accounting, null, 2);
+  renderEvaluationAndPlan(s);
+}
+function renderCalls(previousCursor=snapshot?.cursor,previousActor){
+  const s=snapshot;if(!s)return;
+  const visible = s.calls.filter(c => c.tick === s.calls.at(-1)?.tick&&(!$('agent').value||c.actorId===$('agent').value)&&(!$('phase').value||c.phase===$('phase').value));
+  $('call').replaceChildren(...visible.map(c => new Option(`${c.actorId} · day ${c.tick} · ${c.phase??'decision'} · ${c.executed ? 'executed' : c.reasoning.status}`, c.requestId)));
   selectedCall = previousCursor === s.cursor && visible.some(c => c.requestId === selectedCall) ? selectedCall
     : visible.find(c => c.actorId === previousActor)?.requestId ?? visible.at(-1)?.requestId ?? '';
-  $('call').value = selectedCall; renderCall(); draw(s);
-  $('accounting').textContent = JSON.stringify(s.accounting, null, 2);
+  $('call').value = selectedCall; renderCall();
+}
+function renderEvaluationAndPlan(s){
   api(base() + '/evaluations?cursor=' + encodeURIComponent(s.cursor)).then(records => {
     if (snapshot.cursor !== s.cursor) return;
     $('evaluations').replaceChildren();
@@ -78,9 +126,39 @@ function renderCall() {
   const c = snapshot.calls.find(c => c.requestId === selectedCall);
   $('call-status').textContent = c ? `${c.actorId} · source tick ${c.tick} → ${c.nextTick ?? 'uncommitted'} · ${c.latencyMs === null ? 'latency unknown' : Math.round(c.latencyMs)+' ms'} · effects: ${c.effects.join(', ') || 'none recorded'}` : 'No request recorded at this cursor.';
   $('reasoning-source').textContent = c ? `${snapshot.providerReasoning} · ${c.reasoning.status} · ${c.reasoning.source ?? 'response not available'} · summaries shown verbatim` : '';
-  $('reasoning').textContent = c?.reasoning.summaries.join('\n\n') || 'No reasoning summary is available at this cursor.';
+  $('reasoning').textContent = c?.reasoning.status==='not_a_model'?'Deterministic autonomous policy. No model reasoning exists.':c?.reasoning.summaries.join('\n\n') || 'No reasoning summary is available at this cursor.';
   $('decision').textContent = c ? JSON.stringify({ proposed:c.proposal, admitted:c.admitted, executed:c.executed, usage:c.usage },null,2) : '';
   $('observation').textContent = c ? JSON.stringify(c.observation,null,2) : '';
+  $('legal-choices').textContent=c?JSON.stringify(c.legalChoices??null,null,2):'';
+  $('raw-record').textContent=c?JSON.stringify(c.rawRecord??{transition:c.transition??null},null,2):'';
+  renderThinkingHistory();
+}
+async function renderThinkingHistory(){
+  if(!snapshot)return;
+  const scope=$('thinking-scope').value,agent=$('agent').value,phase=$('phase').value,s=snapshot;
+  $('reasoning').hidden=scope!=='decision';$('thinking-history').hidden=scope==='decision';
+  if(scope==='decision'){historyVersion++;historyKey='';$('thinking-history-status').textContent='Complete thinking text returned for the selected decision; absent/redacted blocks stay marked.';return;}
+  const key=[base(),s.cursor,s.evidenceRevision??'',agent,phase,scope].join('|');if(key===historyKey)return;
+  historyKey=key;const version=++historyVersion,route=base();
+  $('thinking-history-status').textContent='Loading recorded thinking and decisions…';
+  try{
+    const history=await api(route+'/history?cursor='+encodeURIComponent(s.cursor)+(agent?'&agent='+encodeURIComponent(agent):''));
+    if(version!==historyVersion||route!==base())return;
+    const latestDay=s.calls.at(-1)?.tick??s.sourceTick;
+    const records=history.records.filter(r=>(scope==='full'||r.day===latestDay)&&(!phase||r.phase===phase));
+    $('thinking-history').replaceChildren();
+    for(const r of records){
+      const box=document.createElement('article'),heading=document.createElement('h3'),status=document.createElement('p'),thinking=document.createElement('pre');
+      heading.textContent=`${r.agentId} · day ${r.day} · ${r.phase??'decision'}`;
+      status.className='caption';status.textContent=`${r.thinking.source??history.reasoningSource} · ${r.thinking.status} · ${r.executed?'action executed':'not executed'} · ${r.nextTick===null?'day not committed':'world tick '+r.nextTick}`;
+      thinking.textContent=r.thinking.status==='not_a_model'?'Deterministic policy; no model thinking.':r.thinking.summaries.join('\n\n')||'No thinking text was returned. Missing or redacted content has not been reconstructed.';
+      const details=document.createElement('details'),summary=document.createElement('summary'),facts=document.createElement('pre');
+      summary.textContent='Observation, decision and resulting transition';facts.textContent=JSON.stringify({observation:r.observation,legalChoices:r.legalChoices,
+        proposed:r.proposed,admitted:r.admitted,executed:r.executed,transition:r.transition,usage:r.usage},null,2);
+      details.append(summary,facts);box.append(heading,status,thinking,details);$('thinking-history').append(box);
+    }
+    $('thinking-history-status').textContent=`${records.length} recorded decisions · ${scope==='full'?'complete history through the selected cursor':'selected tick'} · returned thinking reproduced verbatim, without interpretation.`;
+  }catch(error){if(version===historyVersion){historyKey='';$('thinking-history-status').textContent=error.message;}}
 }
 function draw(s) {
   const canvas=$('map'), ctx=canvas.getContext('2d'), {bounds,buildings,hub}=s.hello;

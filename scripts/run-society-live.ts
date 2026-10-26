@@ -20,11 +20,13 @@ import { readSocietyResults, writeSocietyRawResults } from '../src/society/repor
 import { inspectSocietyFunding } from '../src/society/funding.js';
 import type {SocietyPostcardConfig} from '../src/society/postcards.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
+import {openSocietyPanel} from '../src/observatory/societyPanel.js';
 
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},
+  observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
 if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -90,6 +92,8 @@ if(values.prepare){
     mkdirSync(output,{mode:0o700});const events=openSync(join(output,'events.jsonl'),'wx',0o600);
     const controller=new AbortController(),stop=()=>controller.abort();process.once('SIGINT',stop);process.once('SIGTERM',stop);
     let budget:ExperimentBudget|undefined,summary:Awaited<ReturnType<typeof runAccountedSociety>>|null=null;
+    let panel:Awaited<ReturnType<typeof openSocietyPanel>>|undefined;
+    let panelAccounting:unknown=null,accountingClosed=false;
     let replay:unknown=null,error:string|null=null;
     const persist=(name:string,value:unknown,codec=false)=>{
       const fd=openSync(join(output,name),'wx',0o600);
@@ -99,6 +103,14 @@ if(values.prepare){
       persist('run-start.json',{sourceRevision:revision,planSha256:bundle.planSha256,requestedTicks:bundle.plan.ticks,
         startedAt:new Date().toISOString(),controlled:bundle.plan.controlled});
       budget=ExperimentBudget.open(budgetPath);
+      if(values.observatory){
+        panel=await openSocietyPanel({society,id:budget.view().authorization!.runId.replace(/[^A-Za-z0-9._-]/g,'-'),mode:'live',manual:!!values['manual-ticks'],stop,
+          ...(values.port?{port:Number(values.port)}:{}),...(values['web-world']?{webWorldDirectory:resolve(values['web-world'])}:{}),
+          ...(values.history?{history:resolve(values.history)}:{}),accounting:()=>{if(accountingClosed)return panelAccounting;
+            const v=budget!.view();panelAccounting={status:'current_runner_snapshot',
+              bookedMicroUsd:v.booked.toString(),heldMicroUsd:v.held.toString(),historyHash:v.historyHash,requests:v.requests.length};return panelAccounting;}});
+        console.log(JSON.stringify({event:'observatory_ready',url:panel.url,loginToken:panel.researcherToken,manualTicks:!!values['manual-ticks']}));
+      }
       summary=await runAccountedSociety(society,budget,async (input,signal)=>{
         const call=join(output,'calls',String(input.index).padStart(5,'0'));mkdirSync(call,{recursive:true,mode:0o700});
         const fd=openSync(join(call,'request.json'),'wx',0o600);try{writeFileSync(fd,input.body);fsyncSync(fd);}finally{closeSync(fd);}
@@ -114,8 +126,10 @@ if(values.prepare){
         if(!existsSync(join(call,'response.json')))throw Error('society_transport_failed_preserve_hold');
         return readFileSync(join(call,'response.json'));
       },{plan:bundle.plan,ownerApproved:true,instruction:approval.instruction,expectedCarriedFingerprint:values['carried-fingerprint'],signal:controller.signal,
+        ...(panel?.gate?{awaitDayPermit:(day:number,signal?:AbortSignal)=>panel!.gate!.wait(day,signal)}:{}),
         sink:event=>{
           writeFileSync(events,JSON.stringify(JSON.parse(stringifySocietyEvidence(event)))+'\n');fsyncSync(events);
+          panel?.event(event);
           if(event.kind==='decision'){
             const d=event.data as {person:string;tick:number;phase:string};
             console.log(JSON.stringify({event:'decision_validated',person:d.person,day:d.tick+1,phase:d.phase}));
@@ -136,7 +150,9 @@ if(values.prepare){
       attempt('society_summary_write_failed',()=>persist('summary.json',{summary,replay,error,errors,
         sourceRevision:revision,requestedTicks:bundle.plan.ticks,finalTick:society.tick,halted:society.halted,accounting,
         originalBundleUnchanged:sha256(readFileSync(bundlePath))===originalBundle,finishedAt:new Date().toISOString()}));
+      attempt('society_observatory_finalize_failed',()=>panel?.finish(summary));
       process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop);
+      panelAccounting=accounting;accountingClosed=true;
       attempt('society_budget_close_failed',()=>budget?.close());
       attempt('society_events_close_failed',()=>{fsyncSync(events);closeSync(events);});
       attempt('society_results_export_failed',()=>{writeSocietyRawResults(readSocietyResults(output),join(output,'results'));});
@@ -144,7 +160,16 @@ if(values.prepare){
       attempt('society_finalization_write_failed',()=>persist('finalization.json',{errors,halted:society.halted,
         finishedAt:new Date().toISOString()}));
       console.log(JSON.stringify({summary,replay,error,errors,output},null,2));
+      console.log(JSON.stringify({event:'society_run_finalized',output}));
       if(summary?.status!=='completed'||error||errors.length)process.exitCode=1;
+    }
+    if(panel){
+      console.log('Run stopped. The Observatory remains open for read-only inspection. Ctrl+C closes it.');
+      if(!controller.signal.aborted)await new Promise<void>(resolve=>{
+        const close=()=>{process.removeListener('SIGINT',close);process.removeListener('SIGTERM',close);resolve();};
+        process.once('SIGINT',close);process.once('SIGTERM',close);
+      });
+      await panel.close();
     }
   }
 }

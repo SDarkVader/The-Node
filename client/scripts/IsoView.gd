@@ -22,7 +22,7 @@ extends Node3D
 
 const SERVER_HOST := "ws://127.0.0.1:8080"
 
-# --- Ember palette, same values as playtestRenderer.ts / WorldView.gd -----------------------
+# Ember hue semantics; stronger lit-surface contrast requested by the owner 2026-10-26.
 const HEAT_COOL := Color8(74, 107, 122)
 const HEAT_HOT := Color8(255, 171, 62)
 const COLOUR_WALL := Color8(239, 220, 174)
@@ -35,9 +35,9 @@ const COLOUR_AWAY := Color8(232, 168, 92)
 ## The 2D values are tuned as a dark BACKGROUND wash. Here the same scale is painted onto real
 ## lit surfaces — the streets — so it needs the brightness and saturation a surface needs. Same
 ## anchors, same three stops, same meaning; a lit version of the same idea.
-const TENSION_COLD := Color8(46, 96, 158)
-const TENSION_EMBER := Color8(96, 74, 52)
-const TENSION_HOT := Color8(168, 52, 34)
+const TENSION_COLD := Color8(50, 126, 220)
+const TENSION_EMBER := Color8(176, 112, 52)
+const TENSION_HOT := Color8(230, 65, 45)
 const TENSION_COLD_AT := 0.03
 const TENSION_MEDIAN := 0.06
 const TENSION_HOT_AT := 0.10
@@ -53,11 +53,11 @@ const HEAT_OBSERVED_MAX := 0.5
 const STATE_BRIGHTNESS := {"FILLED": 1.0, "BACKSTOPPED": 0.5, "VACANT": 0.28}
 
 const ROLE_COLOUR := {
-	"miller": Color8(226, 178, 92),
-	"baker": Color8(214, 122, 74),
-	"courier": Color8(122, 158, 148),
-	"investigator": Color8(196, 96, 96),
-	"importExport": Color8(148, 168, 108),
+	"miller": Color8(255, 210, 94),
+	"baker": Color8(255, 139, 81),
+	"courier": Color8(80, 210, 188),
+	"investigator": Color8(242, 111, 155),
+	"importExport": Color8(181, 217, 110),
 }
 
 ## One world cell is one 3D unit. Buildings are 3 floors in the data, so FLOOR_HEIGHT * 3 is
@@ -158,6 +158,12 @@ func _ready() -> void:
 	_shot_path = OS.get_environment("NODE_SHOT")
 	_build_environment()
 	_build_vignette()
+	var radiance := CanvasLayer.new()
+	radiance.layer = 0
+	var glows = preload("res://scripts/IsoGlowLayer.gd").new()
+	glows.view = self
+	radiance.add_child(glows)
+	add_child(radiance)
 	var token := OS.get_environment("NODE_OBSERVATORY_TOKEN")
 	if token != "":
 		socket.handshake_headers = PackedStringArray(["Authorization: Bearer " + token])
@@ -435,7 +441,7 @@ void fragment() {
 	// A low self-lit floor so the weather is legible on unlit stones too — without it the
 	// streets away from any station fall to black and the mood disappears exactly where
 	// there is nothing else to look at.
-	EMISSION = COLOR.rgb * 0.30;
+	EMISSION = COLOR.rgb * 0.55;
 }
 """
 	var mat := ShaderMaterial.new()
@@ -788,7 +794,7 @@ func _update_dynamic() -> void:
 		# even on a quiet day — someone is in there with the lights on — while an unoccupied
 		# one cannot glow no matter what its heat value says.
 		if _occupied.has(b["id"]):
-			heat = maxf(heat, 0.46)
+			heat = 0.18 + 0.82 * heat
 		else:
 			heat *= 0.16
 		# Albedo stays a real, lit surface at every heat level — the building is always there.
@@ -809,6 +815,16 @@ func _update_dynamic() -> void:
 			l.light_energy = 0.0
 
 	_update_routes()
+	# This field was computed by a dormant helper but never applied to the ground.
+	# Blend actual local station colour with the district's measured weather, rather
+	# than leaving every street at its initial unchanging dark material.
+	_accumulate_local_weather()
+	var ground := _ground_mm.multimesh
+	for i in _plot_pos.size():
+		var base: Color = COLOUR_PLAZA if _plot_is_plaza[i] else tc
+		var local_weight := clampf(1.0 - exp(-_plot_local_w[i] * 1.8), 0.0, 0.78)
+		var colour := base.lerp(_plot_local[i], local_weight)
+		ground.set_instance_color(i, colour * lerpf(0.92, 1.08, _plot_shade[i]))
 
 	# The Wall: substrate constant, radiance carries sentiment.
 	var soul := _soul_colour(economic_health)
@@ -1028,6 +1044,15 @@ func _hide_icons_from(n: int) -> void:
 ## own port and path: `godot --path client -- --world-url=ws://127.0.0.1:8090/observatory/v1/godot?run=<id>&token=<renderer token>`,
 ## or NODE_WORLD_URL. Without either, the standalone world server at SERVER_HOST, as before.
 func _world_url() -> String:
+	if OS.has_feature("web"):
+		# Same-origin HttpOnly Observatory session authenticates the browser socket.
+		# Only the non-secret registered run ID appears in the iframe URL.
+		var location = JavaScriptBridge.get_interface("window").location
+		var params = JavaScriptBridge.create_object("URLSearchParams", str(location.search))
+		var run_id = params.get("run")
+		if run_id != null and str(run_id).is_valid_filename():
+			return ("wss://" if str(location.protocol) == "https:" else "ws://") + str(location.host) + "/observatory/v1/runs/" + str(run_id).uri_encode() + "/world"
+		return ""
 	var cloud_url := OS.get_environment("NODE_OBSERVATORY_URL")
 	if cloud_url != "":
 		return cloud_url

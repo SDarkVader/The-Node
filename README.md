@@ -31,6 +31,24 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-26
 
+The Society Observatory now uses the actual Society world and evidence. On the configured
+PC, use one launcher for a manual model-free preview, saved-run replay and the embedded
+Godot world:
+
+```powershell
+powershell -NoProfile -File scripts/start-node-test.ps1
+```
+
+Add `-Start -Ticks 3` for a real agent test. It prepares the exact review and asks the human
+to type `START` before funding or dispatch; manual tick clicks then run one complete day
+within those approved bounds. The interface includes run, tick, agent and phase selectors,
+read-only playback, per-tick or full chronological returned thinking, and the observations,
+decisions and transitions needed to study behaviour. Godot uses stronger contract-based
+colour gradients and overlapping heat glow, including browser-compatible radiance. Every
+export also includes separate chronological per-agent per-tick JSON files.
+[Unified PC workflow and private settings](docs/research/SOCIETY_OBSERVATORY_2026-10-26.md).
+This interface slice is undergoing offline/browser verification; no paid run is claimed.
+
 The postcard-enabled society is now wired through the real agent runner. Prepare a small
 PowerShell behaviour test from this checkout:
 
@@ -66,8 +84,8 @@ which merged into `main` at `aadb99be1c5736d8c601eb12a8da7db52465a3b1` after Win
 verification, Linux conformance and dependency audit all passed on `0c0e089`.
 The recovery-branch mismatch and proof-byte comparison timeout are repaired; the strict
 verifier, original timeout and all replay, overwrite and tamper assertions remain.
-[PR #49](https://github.com/SDarkVader/The-Node/pull/49) now targets `main` for the daily
-Oracle integration. [PR #43](https://github.com/SDarkVader/The-Node/pull/43) is closed as
+[PR #49](https://github.com/SDarkVader/The-Node/pull/49) then merged at `fd72553` after its
+Windows and Linux checks passed. [PR #43](https://github.com/SDarkVader/The-Node/pull/43) is closed as
 already incorporated: its handoff document is byte-identical to the copy on `main`.
 The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
 enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth

@@ -17,6 +17,7 @@ import {parseSocietyEvidence,stringifySocietyEvidence} from '../src/society/code
 import {buildSocietyResultsReport,writeSocietyRawResults,type SocietyCallReport} from '../src/society/report.js';
 import type {Sender} from '../src/eval/accountedRunner.js';
 import type {SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
+import {ManualTickGate} from '../src/society/manualTicks.js';
 
 const handles:{close():void}[]=[];
 afterEach(()=>{for(const h of handles.splice(0))h.close();cleanup();});
@@ -69,6 +70,27 @@ function coldVerify(path:string,allowPartial=false){
 }
 
 describe('production postcard accounted path with disposable synthetic approvals only',()=>{
+  it('waits without requests or reservations and advances exactly one approved day per manual permit',async()=>{
+    const f=fixture(2),gate=new ManualTickGate(),controller=new AbortController();
+    const running=runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:controller.signal,
+      awaitDayPermit:(day,signal)=>gate.wait(day,signal)});
+    await new Promise(resolve=>setTimeout(resolve,10));
+    expect(gate.state.waitingDay).toBe(1);expect(f.sent).toHaveLength(0);expect(f.budget.view().requests).toHaveLength(0);
+    gate.advance(1);expect(()=>gate.advance(1)).toThrow('society_tick_not_waiting');
+    for(let i=0;i<100&&gate.state.waitingDay!==2;i++)await new Promise(resolve=>setTimeout(resolve,5));
+    expect(f.society.tick).toBe(1);expect(f.sent).toHaveLength(6);expect(gate.state.waitingDay).toBe(2);
+    expect(()=>gate.advance(1)).toThrow('society_tick_not_waiting');
+    gate.advance(2);const result=await running;gate.close();
+    expect(result).toMatchObject({status:'completed',ticks:2,calls:12});
+  });
+  it('cancels while awaiting a manual permit with no paid call or held reservation',async()=>{
+    const f=fixture(2),gate=new ManualTickGate(),controller=new AbortController();
+    const running=runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:controller.signal,
+      awaitDayPermit:(day,signal)=>gate.wait(day,signal)});
+    controller.abort();const result=await running;gate.close();
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',ticks:0,calls:0,heldMicroUsd:'0'});
+    expect(f.sent).toHaveLength(0);expect(f.society.halted).toBe(true);
+  });
   it('runs the actual daily Oracle eight-field worker/accounting/raw-export path for eighteen synthetic responses',async()=>{
     const dailyOracle=JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8')) as SocietyDailyOracleConfig;
     const f=fixture(3,dailyOracle),result=await runAccountedSociety(f.society,f.budget,f.sender(),f.options);
