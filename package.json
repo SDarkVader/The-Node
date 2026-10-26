@@ -66,7 +66,8 @@
     "preview": "tsx scripts/preview-observatory.ts",
     "society": "tsx scripts/run-society.ts",
     "society:live": "tsx scripts/run-society-live.ts",
-    "society:dump": "tsx scripts/export-society-results.ts"
+    "society:dump": "tsx scripts/export-society-results.ts",
+    "postcards:proof": "tsx scripts/postcard-proof.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
