@@ -44,9 +44,11 @@ npm run postcards:proof -- --verify .codex/session-recovery/postcard-proof.json
 ```
 
 This is an explicit-clock mechanical proof using the original illustrative 2 White/hour, with
-zero provider calls. The current candidate passed 59 postcard/core/replay/CLI tests and
-TypeScript; the broader pre-hardening regression passed 1,663 tests with seven environment skips.
-Committed-source verification is recorded in the recovery checkpoint.
+zero provider calls. At source `8011e60972948990b5f5d00e84663bc5542c3a79`, all **1,668 tests / 137 files pass**,
+with seven explicit environment skips, plus project/CLI TypeScript and eight recovery tests.
+A cold process verified five scenarios/183 events/three reopened checkpoints; repeat proof bytes
+match exactly. [Source-anchored evidence](docs/research/evidence/postcard-core-2026-10-26.json).
+Trusted world-clock/abode integration, agent menus and subsequent Oracle/civic slices remain unimplemented.
 
 ### Preserved society mechanics
 
