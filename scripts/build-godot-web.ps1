@@ -7,6 +7,14 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+function Get-NodeFileSha256([string]$Path) {
+  # .NET is available in both Windows PowerShell and PowerShell 7, including when
+  # a parent process supplies module paths for a different PowerShell installation.
+  $nodeHashStream = [IO.File]::OpenRead($Path)
+  $nodeHashAlgorithm = [Security.Cryptography.SHA256]::Create()
+  try { return [BitConverter]::ToString($nodeHashAlgorithm.ComputeHash($nodeHashStream)).Replace('-', '').ToLowerInvariant() }
+  finally { $nodeHashAlgorithm.Dispose(); $nodeHashStream.Dispose() }
+}
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $repositoryRoot '.codex/godot-web' }
 $target = [IO.Path]::GetFullPath($OutputDirectory)
@@ -33,7 +41,7 @@ if ($LASTEXITCODE -ne 0) { throw ('Godot export failed. See ' + $log) }
 $files = @('index.html', 'index.js', 'index.wasm', 'index.pck')
 foreach ($name in $files) { if (-not [IO.File]::Exists((Join-Path $target $name))) { throw ('Missing Godot output: ' + $name) } }
 $manifest = @{ format='node-godot-web-build-v1'; sourceRevision=$revision; engineVersion=$version;
-  templateSha256=(Get-FileHash -LiteralPath $template -Algorithm SHA256).Hash.ToLowerInvariant();
-  files=@($files | ForEach-Object { @{name=$_;sha256=(Get-FileHash -LiteralPath (Join-Path $target $_) -Algorithm SHA256).Hash.ToLowerInvariant()} }) }
+  templateSha256=(Get-NodeFileSha256 $template);
+  files=@($files | ForEach-Object { @{name=$_;sha256=(Get-NodeFileSha256 (Join-Path $target $_))} }) }
 [IO.File]::WriteAllText((Join-Path $target 'build.json'), ($manifest | ConvertTo-Json -Depth 5), (New-Object Text.UTF8Encoding($false)))
 Write-Output ($manifest | ConvertTo-Json -Depth 5)

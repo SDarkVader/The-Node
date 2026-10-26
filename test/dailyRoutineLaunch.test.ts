@@ -89,7 +89,7 @@ describe('reviewed sequential routine launch and evidence',()=>{
     expect(sourceView.snapshot(null,'TEST-ONLY-secret',true).sourceTick).toBe(1);
     const world=JSON.stringify(sourceView.snapshot(null,'TEST-ONLY-secret',false));
     expect(world).not.toContain('TEST ONLY returned summary');expect(world).not.toContain('society-inhabitant:');
-  },30000);
+  }); // Uses the suite's existing 60-second budget for a complete multi-turn day and replay.
   it('cancellation preserves a replayable open day and all returned evidence without finishing duties',async()=>{
     const f=accountedFixture(),controller=new AbortController();
     const sender=async(input:any)=>{const response=await f.sender(input);if(input.index===7)controller.abort();return response;};
