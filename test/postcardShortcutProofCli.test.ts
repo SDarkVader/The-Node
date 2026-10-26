@@ -31,12 +31,12 @@ it('cold-replays actual acquisitions, every same-tier stake, snapshots and atomi
   expect(find('seeded-prefix-reopen-and-delayed-duplicate')).toMatchObject({events:7,receipts:6,duplicateRecords:1,drawCount:3,checkpointsReopened:2});
   expect(find('invalid-transactions-are-atomic').atomicFailures).toBe(10);
   expect(scenarios.reduce((n,s)=>n+s.checkpointsReopened,0)).toBe(9);
-  expect(readFileSync(output)).toEqual(bytes);
+  expect(readFileSync(output).equals(bytes)).toBe(true);
 },20_000);
 it('creates byte-identical proofs in separate processes and refuses output reuse',()=>{
   const {output,root}=fixture(),bytes=readFileSync(output),repeat=join(root,'repeat.json');run('--output',repeat);
-  expect(readFileSync(repeat)).toEqual(bytes);expect(()=>run('--output',output)).toThrow();
-  expect(readFileSync(output)).toEqual(bytes);
+  expect(readFileSync(repeat).equals(bytes)).toBe(true);expect(()=>run('--output',output)).toThrow();
+  expect(readFileSync(output).equals(bytes)).toBe(true);
 },20_000);
 it('rejects source changes, missing cases, altered checkpoints and self-consistent alternate fixtures',()=>{
   const {output,root}=fixture(),proof=JSON.parse(readFileSync(output,'utf8'));
