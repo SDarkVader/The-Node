@@ -61,6 +61,9 @@ integrated tape cold-replays and repeats byte-identically.
 PR #48 merged into [PR #47](https://github.com/SDarkVader/The-Node/pull/47)'s parent branch at
 `35fe129`. The parent recovery checkpoint now names `codex/postcard-shortcuts-2026-10-26`;
 the earlier Windows/Linux failures stopped on that inherited branch mismatch before tests.
+The subsequent Windows run reached all tests and found a 20-second timeout in the proof
+byte-comparison test. Exact native byte comparison now replaces per-element assertion work;
+the timeout and all replay, overwrite and tamper assertions are unchanged.
 The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
 enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth
 trial treasury. It does not change the USD model-call allowance or activate a default profile.
