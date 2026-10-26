@@ -1,3 +1,13 @@
+# Current workflow update
+
+Use `START-NODE.ps1` for preview, or `START-NODE.ps1 -Start -Ticks 1` for a freshly reviewed
+real test without this chat running. Society v4 has sequential turns and mandatory duties.
+The old 18-call/three-day figure below belongs to the earlier one-act contract; v4 reviews
+its explicit turn-dependent call cap while retaining USD1 total/USD0.02 request ceilings.
+[Current rules, commands and verification](SEQUENTIAL_DAYS_2026-10-26.md).
+
+The earlier interface guide follows as source-specific history:
+
 # Society tests in one PC interface
 
 From the repository, open a model-free manual preview and registered previous runs:

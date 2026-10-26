@@ -91,3 +91,22 @@ or reasoning-quality score is attached to these execution records.
 
 Source-bound full regression, independent replay and cold PowerShell/browser evidence are
 recorded in the current recovery handover after integration verification.
+
+At source `c4ac041d537a58694cfee8c49fac38548c9002bd`, the complete local suite passed
+1,964 tests across 155 files, zero failures and seven environment skips. Three days with
+the approved postcard/Oracle profile produced 1,148 decisions, 897 movements and 42 diary
+writes. Independent runs produced identical tape bytes and cold replay passed. Actual
+Windows PowerShell preparation/check used only a generated synthetic journal and fake key;
+the real launcher completed one model-free manual day in the browser with embedded Godot.
+[Sanitized verification record](evidence/sequential-days-2026-10-26.json).
+
+Role holders must speak, and each actual queued Baker customer requires a reply. Further
+role-specific dialogue about exact same-day flour supply, delivery or inquiry counterparties
+remains to implement: those counterparties currently arise during the existing day-end
+kernel. This revision does not claim every detailed role interaction is already present.
+
+Full routine tapes use bounded lossless gzip envelopes (128 MiB encoded, 256 MiB expanded).
+Per-agent/day exports remain readable JSON. A storage-admission guard preserves a replayable
+prefix when bounds approach; it never closes an unfinished day to reduce output size.
+The twenty-day candidate capacity check retained and replayed 7,286 decisions in a 7.8 MB
+tape, with more than ten million data nodes; this is offline capacity evidence, not a paid run.

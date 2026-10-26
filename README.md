@@ -45,8 +45,10 @@ then carry the latest history into the next separately reviewed test. USD ceilin
 PR51's colour follow-up merged at `0e8797a`; PR52's optional-subject diary merged at
 `a345a68` after Windows/Linux checks passed. Source `0ee1325` passed 1,921 tests /
 151 files, zero failures and seven environment skips; three offline days cold-replayed
-51 decisions and 42 diary writes. New v4 integration checks are in progress; no new paid
-run is claimed. [Earlier source-specific history](docs/DEVLOG.md).
+51 decisions and 42 diary writes. New v4 source `c4ac041` passes 1,964 tests /155 files,
+zero failures and seven environment skips. Three days cold-replay 1,148 decisions and
+42 diary writes with identical repeated tape bytes. Actual standalone Windows preparation
+and the embedded-Godot manual preview pass with zero provider calls. No new paid run is claimed. [Earlier source-specific history](docs/DEVLOG.md).
 
 Initial v4 assumptions are explicit: one district, existing residential capacity, shared
 Wall/Oracle hub, and minimal deterministic streets joining previously unreachable plots.

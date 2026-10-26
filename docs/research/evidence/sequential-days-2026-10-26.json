@@ -1,0 +1,47 @@
+{
+  "format": "node-scoped-implementation-verification-v1",
+  "date": "2026-10-26",
+  "sourceRevision": "c4ac041d537a58694cfee8c49fac38548c9002bd",
+  "fullLocalSuite": {"passed": 1964, "failed": 0, "environmentSkips": 7, "files": 155},
+  "projectAndAffectedCliTypecheck": "passed",
+  "recoveryTests": {"passed": 8, "failed": 0},
+  "offlineThreeDays": {
+    "seed": 42, "ticks": 3, "decisions": 1148, "controlledFixtureDecisions": 283,
+    "autonomousDecisions": 865, "movements": 897, "communicationEffects": 255,
+    "diaryWrites": 42, "breadUnitsSold": 1.4, "paidGameLotteryEntries": 6,
+    "paidGameLotteryWins": 2, "maximumCurrencyResidual": 1.7763568394002505e-14,
+    "finalHash": "3081ba9ac69a5af88f7727f9c73e136f87d2ed59460d7529db2ceac1c88a061c",
+    "tapeSha256": "69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73",
+    "independentRepeatedBytesIdentical": true, "separateProcessReplay": "passed"
+  },
+  "actualWindowsPowerShellSyntheticCheck": {
+    "entrypoint": "START-NODE.ps1 -Start -Ticks 1", "approvalInput": "STOP",
+    "sourcePinnedPrepareAndReadOnlyRecheck": "passed", "reviewApproved": false,
+    "maxCalls": 387, "limitMicroUsd": 1000000, "perRequestMicroUsd": 20000,
+    "originalSyntheticJournalUnchanged": true, "fakeCredentialUnchanged": true,
+    "executionCreated": false, "allowanceCreated": false, "pendingRunReleased": true
+  },
+  "requestCeilings": {"controlledPackets": 94, "maximumBytes": 34517, "maximumMicroUsd": 9771, "allWithinExistingPerRequestLimit": true},
+  "actualPcManualPreview": {
+    "ticks": 1, "decisions": 389, "controlledContextRecords": 94, "agentDayFiles": 3,
+    "embeddedGodotRendered": true, "turnSelectorAndHistoricalReplayObserved": true,
+    "coldReplay": "passed", "finalHash": "33d96f9f70985cbfcafd5e4465aab0180aa4d8353237b01a7fdedd619581be1a"
+  },
+  "candidateCapacityProof": {
+    "sourceScope": "working candidate before final committed-source proof",
+    "ticks": 20, "decisions": 7286, "dataNodes": 10625631,
+    "encodedBytes": 7841593, "expandedBytes": 187358715, "replay": "passed",
+    "finalHash": "f5801ad1595f57473894d29fd238ac13f1ecc33cffc264b6824df5c9df8d539d"
+  },
+  "repairsObserved": [
+    "Generated disconnected workplace prevented legal visits; v4-only minimal street connectors preserve old geometry.",
+    "Raw valid-shape context mismatch was only annotated; active simulation now stops on contradictory or unbound observations.",
+    "Long routine tape exceeded historical evidence capacity; bounded lossless routine envelope preserves all records.",
+    "Standalone Windows child could not load Get-FileHash; portable .NET SHA256 retains all hash checks.",
+    "New full-day integration test exceeded its 30-second override under full load; it uses the suite's pre-existing 60-second budget. All original test budgets are unchanged."
+  ],
+  "actualProviderCalls": 0, "actualCountCalls": 0,
+  "actualCredentialContentsRead": false, "actualAccountingJournalRead": false,
+  "behaviorInterpretation": "not_performed",
+  "furtherWork": ["Full A04 trespass transactions", "Multi-district routine routing", "Detailed role-specific supply and service conversation", "Separately approved live behaviour tests and named evaluation"]
+}

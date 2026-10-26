@@ -22,17 +22,22 @@ deleted history or invented requests. Unknown usage or overrun continues to bloc
 Observatory displays actual partial turns, exact per-turn contexts/choices/returned blocks
 and resulting transitions, with no same-day future-thinking exposure at historical cursors.
 Godot remains embedded and uses the same cursor. Day exports contain all chronological turns.
-The requested seven-page SystemDesign template document is created separately, source0ee
+The requested seven-page SystemDesign template document is created separately, sourcec4ac041
 snapshot, with original package/style/section preservation and all-page visual verification.
 
-Candidate v4 focused checks pass, including natural policy days without injected actions;
-committed-source fullsuite and cold PowerShell/browser verification are still required.
-Source0ee baseline passed1921tests/151files/0fail/7environment skips and8recoverytests;
-three days cold-replayed51decisions42diaries. No new paid/provider call, credential or actual
+Sourcec4ac041d537a58694cfee8c49fac38548c9002bd passes1964tests/155files/0fail/7environment
+skips, project/CLItypechecks and8recoverytests. Three days cold-replay1148decisions42diaries,
+repeatbytesidentical SHA69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73.
+Actual standalone Windows prepare/check passes with synthetic journal/fake key/STOPinput,
+approvedfalse/noexecution/noallowance/zerocalls. Browser one-day manualpreview completes
+389decisions94controlledcontexts with Godot embedded, turn replay and three rawagentdayfiles;
+independent coldreplaypasses. All94packetsfitUSD.02ceiling(max9771microUSD). Newassertion
+additionally proves unsubmitted falsecontext halts before dispatch. [Verification](../research/evidence/sequential-days-2026-10-26.json). No new paid/provider call, credential or actual
 private journal read occurred during this work. Do not reuse consumed approvals.
 
 Further work: full A04 trespass transactions, multi-district daily routing, later approved
-opportunity calibration and separately defined behavioural evaluation. The original study
+opportunity calibration, detailed same-day supply/service dialogue beyond Baker replies,
+and separately defined behavioural evaluation. The original study
 and source-scoped historical evidence remain unchanged. SystemDesign is a design snapshot,
 not a claim that every mechanic is complete.
 
@@ -43,6 +48,7 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "a345a68099f22e7b0f723266be19e2b689c903d6",
   "completedWork": [
+    "Sequentialsourcec4ac041d537a58694cfee8c49fac38548c9002bd full1964passed155files0fail7environment skips, TypeScript/CLI and8recoverytests. Three days1148decisions897moves42diaries1.4breadunits coldreplay+independent repeatbytes SHA69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73. ActualWindowsPowerShell START-NODE prepare/check syntheticonly passed approvedfalse/noexecution/noallowance/journalunchanged; all94packetsmax9771microUSDfit. ActualbrowserGodot/manualday389decisions andturnhistory/privateexports verified. Initial44ee fullsuite1963pass1newtest30sectimeout; repairedtouseexistingglobalsuite60; nooldtestbudgetchanged. Cold44ee GetFileHashmodulefailurebeforeanyfunding repairedportableNETSHA256. P1 rawcontextmismatchnowhalts activebeforeadmission oraftertape; longrecordsv4boundedlosslessgzip withcapacityguard,20candidate7286decisions10.6Mnodes7.8MBcoldreplayed. No actualpaidcall/credential/journalread.",
     "PR52 optionaldiary source0ee1325a0650dc2430f5b0b4b7fc636988629081 full1921passed151files0fail7environment skips; project/CLItypecheckand8recoverytests pass. Cold3day51decisions42diaries final643870b4fb2b60591956b3297d5dc21c7ff6d03437addc6657a92ce41f756041, tapeSHAff706c43de177faf1134c33e0cc5b3191fcfdbec6a88039d6511f83f13bc0e41. Hosted Windows121732846814/Linux121732846992+121732249990 green, no reviews; mergedmaina345a68. Current v4 sequential-day integration and standalone START-NODE wrapper implemented, focused checks passing; fullsourceverification in progress. Requested SystemDesign DOCX rendered/visuallyverified7pages from retainedtemplate and delivered separately as source0ee snapshot. No paid/provider/privatecredential/journal operation.",
     "PR51 mergedmain0e8797a after exactheadf2a72b4 Windows121721553858/Linux121721957858 and121721347216 passed, no review threads. Actual browser Godot and expanded2D visual check completed. Subjectoptional diary implemented through strict context/schema/worker/kernel/replay and source-bound real-run preparation; menus, recognition and existing decay preserved. Canonical PC preview/newly reviewed real test selects it. Focused59 tests and new review binding test pass; full source-specific regression pending. No paid calls or actual credentials/journal read.",
     "Owner mergedPR50 atc5cf2af after exacthead0acc4f4 Windows121695168692 and Linux121695168324/121695139866 passed. Full1910/150files/0fail/7skips. ActualPowerShellpreview3days51decisions9tickfiles18controlleddecisionrecords independently coldreplayed SHA b6d017dcca5c012e757686b633eb89afe2c897216c6bb10b6dc889b6420195b0, finalworld7a0cbe6e8266b6a1c1c8cd1e7e21c1772420aadcebbd07b12df860145452832e. No paid call. Newowner corrected strongcolour targetto2D andrequested3D lessintense; rendering-onlyfollowup. Ownerdaily-routine/optional-subjectlexicaldiary/rolecustomercommunication clarifications above are mandatorynextwork, notyetimplemented.",
@@ -122,7 +128,7 @@ not a claim that every mechanic is complete.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
-    "Complete current v4 source-bound fullsuite/coldreplay, realWindowsPowerShell synthetic prepare/check and embeddedGodot/manualday/replay/browser proof; commit/push/openPR, exactheadgreenchecks thenmergeinorder. Standaloneusercommand START-NODE.ps1 -Start -Ticks1; freshhumanSTART/currentjournal required. FullA04 and multiDistrictdaily furtherwork.",
+    "Finish exactfinalheadWindows/Linuxchecks for PR53 and no reviews, mergeonlygreen; updatecleanmainrecovery. Userstandalonecommand powershell -NoProfile -File .\\START-NODE.ps1 -Start -Ticks1, humanSTARTrequired, noassistantonline dependency. FullA04,multiDistrictdaily and detailedsupplierspeech are furtherwork. Noactualpaidrunbydeveloper.",
     "Finish new versioned sequential daily routine, physical visits, Wall/diary/food and role/customer speech duties before claiming completion. Owner permits recorded food failure to close day after other duties. Keep day open until chosen diary write before rollover. Preserve old replay, daily ageing/recognition caps, real resource accounting; no provider call during implementation.",
     "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
     "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
