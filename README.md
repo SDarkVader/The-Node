@@ -44,6 +44,12 @@ the reviewed run with `-ApprovePaidRun`. Three days allow at most 18 Haiku calls
 the source, rate, 24-hour game day, plan and carried history are pinned. Each agent can claim,
 bank or fuse its own postcards alongside ordinary work, movement, communication and purchases.
 [Real-agent test instructions and raw output locations](docs/research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
+At source `0561d56c3f6fe6a5e3be62b99e4abe3147dd9515`, **1,866 tests / 145 files pass**,
+with zero failures and seven environment skips, plus TypeScript and eight recovery tests.
+The actual Windows PowerShell preparation/check path passes with synthetic inputs; a 20-day
+integrated tape cold-replays and repeats byte-identically.
+[Verification record](docs/research/evidence/postcard-agent-playtest-2026-10-26.json) ·
+[PR #48](https://github.com/SDarkVader/The-Node/pull/48).
 The original paid Oracle/vouchers remain available. A separate configured daily Oracle ledger
 is implemented but remains inactive pending reward calibration and world funding integration.
 

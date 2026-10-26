@@ -7,6 +7,8 @@ The verified shortcut slice is on `codex/postcard-shortcuts-2026-10-26`, [PR #47
 code source `e173dbf37f401111a876ccea835bd334f7e1d085`; its hosted checks passed.
 The next active branch `codex/postcard-playtest-2026-10-26` integrates those choices into
 the real agent runner with a human-started [PowerShell test flow](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
+[PR #48](https://github.com/SDarkVader/The-Node/pull/48) publishes it; source `0561d56` has
+the recorded full regression, cold replay and synthetic Windows PowerShell preparation proof.
 Check the current remote head and
 [CURRENT_SESSION](CURRENT_SESSION.md) rather than assuming it is already merged.
 The [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)

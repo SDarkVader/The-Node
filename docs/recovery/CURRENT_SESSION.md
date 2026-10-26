@@ -13,6 +13,12 @@ actions, stable-person persistence, explicit 24-hour virtual days and versioned 
 The new PowerShell prepare/review/start flow delegates to the existing financial launcher;
 it requires the actual latest completed journal and a fresh source-pinned review.
 See [real-agent playtest commands](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
+Implementation source `0561d56c3f6fe6a5e3be62b99e4abe3147dd9515` passed 1,866 tests /
+145 files, zero failures and seven environment skips; TypeScript and eight recovery tests
+pass. A clean-source Windows PowerShell preparation/check succeeded with synthetic inputs,
+zero calls/allowance and an unapproved review. Two 20-day tapes are byte-identical and cold
+replay verifies 332 decisions. [PR #48](https://github.com/SDarkVader/The-Node/pull/48)
+publishes this branch, stacked on #47 until the dependency reaches main.
 PR #43 documentation head `139f98fb` and its checksummed full Drive package define the
 [Oracle/civic handoff](../research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md).
 The first slice implements per-person postcard accrual, 16-hour unclaimed storage,
@@ -29,8 +35,9 @@ See [shortcut mechanics and verification](../research/POSTCARD_SHORTCUTS_2026-10
 The hourly rate is required configuration; 2/hour is only an explicit proof fixture.
 A tick remains a day. The opt-in integration now adds authorized own-card information and
 legal choices; the default legacy world/view/action contract remains unchanged. No role,
-currency, migration or standing advantage is granted. Source-anchored full integration
-regression and clean-source PowerShell preparation evidence are still to record.
+currency, migration or standing advantage is granted.
+[Source-anchored integration evidence](../research/evidence/postcard-agent-playtest-2026-10-26.json)
+records the full checks. No actual live result is inferred from synthetic verification.
 No paid provider calls, live run, private credential access or historical approval reuse is authorized.
 The handoff reports a completed historical 20-tick run at e2a16e6; that evidence has not been
 reopened here and is not proof of these new mechanisms. Current checks are offline only.
@@ -52,8 +59,9 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "e173dbf37f401111a876ccea835bd334f7e1d085",
+  "verifiedBaseCommit": "0561d56c3f6fe6a5e3be62b99e4abe3147dd9515",
   "completedWork": [
+    "Real agent postcard test implementation committed/pushed at0561d56c3f6fe6a5e3be62b99e4abe3147dd9515, PR48 stacked onPR47. Source-specific full regression1866passed/145files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Actual WindowsPowerShell5.1 production prepare/check succeeded using synthetic inputs only: unapproved3day18callreview, zeroallowance/execution/provider, keyplaceholder/journal unchanged.20days332decisions/120controlledfixtures/212autonomous/272claims/241safefusions/31shortcuts independently cold-replayed; repeat tape SHA0626bace63a8a840bd4e663737df2a12d32150d2e6a6522056676e26699ea666 identical. Per-account exact mass; maxcurrencyresidual4.085620730620576e-14. Evidence docs/research/evidence/postcard-agent-playtest-2026-10-26.json. No actual behavioural/paid result claimed.",
     "Owner clarified real agent behaviour tests from PowerShell, not only offline mechanics. Added optional postcard-enabled Society and real branded view/request/serialized-worker/action/accounted pipeline; explicit rate/start/24-hour-day config; stable person accounts, claim then one fusion, independent old actions, all-role deterministic parity, v2 tape and paid plan. New PowerShell entrypoint prepares approved:false review and prints separate human -ApprovePaidRun command, delegating existing carried-accounting/key-copy launcher. Old six-field/default mode matches archived b8d42f4 complete tape and world hashes. Candidate tests cover20dayrepeat,30daychurn,18fakecalls,illegalactionstop andrawchronology. Full committed-source regression/coldPS proof pending.",
     "Pure configured daily Oracle ledger committed separately at19a5791cc698d643ef31b55075cfeb85b945cbd9: universal zero-cost daily entry independent old paid path, canonical health-linked win odds, nonlinear configured common/rare quality, fully backed per-person maximum reserves, exact integer ledger and receipt replay.36new tests,52includingoldOracle tests pass. No catalogue/payout defaults activated and no world/view integration claimed; existing paidOracle unchanged.",
     "Shortcut implementation committed and pushed at e173dbf37f401111a876ccea835bd334f7e1d085; PR47 targets main. Saved proof created twice at this exact clean source, byte-identical SHA256 b6c59438be56b1850860c8604d861c38eebcfda9ffca946fd55be9cab39fcee5; fresh process verifies all31scenarios/2292recorded v1 acquisition events/40v2records/9checkpoints/10rejections/1duplicate. Full source regression1779passed/140files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Preserved v1 proof independently reverified unchanged. Exact aggregate docs/research/evidence/postcard-shortcuts-2026-10-26.json. No paid or private financial operation. Full programme remains active.",
@@ -92,6 +100,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "Exact0561d56 fullsuite1866passed/145files/0failed/7skips;87new tests(19boundary,18launcher,5accounted/worker,9runtime,36Oraclecore).3ticks18syntheticresponse productionpipeline; badOrangefusiononcallindex9 booksusage/stopsafter10calls/tick1,rawresponse preserved andpartialtapereplay passes.20dayrepeat/coldtapeexact;30daynaturalchurn retainingowneraccounts; originalv1archived4dayworld/tapedigests identical. Both old saved postcard proofs still verify. Cold real PowerShell prepared/rechecked same source with TESTONLYinputs andnoapproval/spending. All further live behaviour must be measured separately by owner's fresh test.",
     "New integration candidate:19boundary+18launcher+5request/worker/accounted+9runtime tests pass(51);36standaloneOracle tests pass. Includes exact legacy4daytape/hash comparison to independently archivedb8d42f4,real20dayrepeat and30daychurn,3ticks18syntheticcalls,knownusagebookedbeforeillegalactionhalt,rawperidentityexports,immutableclock/recipe/planbinding andreview/approvalsourcehistory checks. Project and preparer TypeScript pass. No actual provider call or private credential/journal read. Final committed-source full test counts not yet recorded.",
     "At exact e173dbf37f401111a876ccea835bd334f7e1d085:1779Vitest tests pass across140files,0fail,7skips(6realGodot workers unconfigured,1POSIXfakepwshWindows); project and both proof-CLI TypeScript pass;8recoverytests pass.31fixedmechanicalscenarios/40v2records/9snapshotresumes/10atomicrejections/1delayedduplicate pass cold replay; repeat proof bytes match. Existing v1 snapshot/tape/proof sources and World/Society/Agent/economy/RNG/reputation/migration paths are byte-unchanged. No behavioural score or new paid-run evidence claimed.",
     "Shortcut candidate based on1217c9b:82core+26replay+3CLItests pass(111new tests). Includes15000seededtier/staketransactions, exact bucket/rejection/resume, issuance/burn, duplicate/conflict/illegal atomicity, hostile shape validation, fresh-process snapshot/tape replay and31fixedproofscenarios. CLIrepeatbytesidentical andalternate self-consistent fixtures rejected. Committed-source full regression/cold retained proof still to record.",
@@ -123,7 +132,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
-    "Finish source-anchored full regression and clean-source PowerShell playtest preparation using synthetic inputs, then publish separate integration PR and deliver real human launch command. User will run actual small agent tests themselves. Do not dispatch on their behalf or inspect private credentials/accounting as setup; their future explicit -ApprovePaidRun approves a fresh reviewed source/plan/history. Existing count-closed/nohold gate stays intact.",
+    "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
     "Continue universal dailyOracle catalogue/funding/agent integration after this runnable postcard slice; no uncalibrated reward numbers activated. Preserve old paidOracle/temporaryvoucher behavior, legacyworld/hash evidence and separateoldreputationProgress. Fullprogramme remains unfinished.",
     "Use main as shared recovery source. Run npm run preview on the viewing PC or inside a private Codespace; wait for the ready URL and enter its interface token. Pass the private completed-run bundle registration to view actual evidence.",
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
