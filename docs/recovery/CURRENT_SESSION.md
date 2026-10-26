@@ -1,5 +1,7 @@
 # Current development and experiment checkpoint
 
+Documentation review checkpoint (PR #43, 2026-10-26): this branch names its own reviewBranch only so the strict clean-branch/ancestor recovery gate can validate its CI checkout. The recovery script is unchanged. Before or during integration to main, reconcile the reviewBranch value back to the active implementation review branch or remove it when no review branch remains; do not leave this documentation branch authorized indefinitely.
+
 Updated 2026-10-25. Shared destination: `main`; implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42).
 The owner now authorizes PR publication/merge when green and a new twenty-tick society run.
 That supersedes the earlier local-only/no-spending instruction for this requested run.
@@ -85,6 +87,6 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/secure-agent-society-2026-10-25"
+  "reviewBranch": "docs/node-oracle-civic-handoff-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->
