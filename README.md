@@ -31,24 +31,35 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-26
 
-The first [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
-implementation slice is a production per-person postcard reducer: explicit millisecond time,
-a required rational White/hour rate, a 16-hour unclaimed buffer, retained fractional credit,
-and atomic guaranteed five-to-one fusion through White, Green, Blue, Purple and Orange.
-Every transaction checks exact resource conservation; snapshots and event tapes replay with
-state hashes. There is no new default rate, daily-tick conversion, agent action or migration grant.
+The first two [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
+slices implement postcard accounts: explicit millisecond time, a required rational White/hour
+rate, a 16-hour unclaimed buffer, retained fractional credit and five-to-one safe fusion.
+An explicit v2 upgrade adds same-tier Green/Blue/Purple shortcuts: stake 1–5 cards for exact
+`k/5` odds, consume the whole stake and produce one next-tier card only on success. Five is
+guaranteed without a random draw; White stays safe-only and Orange is final. Named issuance
+on success and burns on loss reconcile every transaction. Stable transaction IDs prevent
+retries from consuming more cards or draws, including after a saved-state reopen.
+The existing v1 state, replay and proof sources remain unchanged.
 
 ```powershell
 npm run postcards:proof -- --output .codex/session-recovery/postcard-proof.json
 npm run postcards:proof -- --verify .codex/session-recovery/postcard-proof.json
+npm run postcards:shortcut-proof -- --output .codex/session-recovery/postcard-shortcut-proof.json
+npm run postcards:shortcut-proof -- --verify .codex/session-recovery/postcard-shortcut-proof.json
 ```
 
-This is an explicit-clock mechanical proof using the original illustrative 2 White/hour, with
-zero provider calls. At source `8011e60972948990b5f5d00e84663bc5542c3a79`, all **1,668 tests / 137 files pass**,
-with seven explicit environment skips, plus project/CLI TypeScript and eight recovery tests.
-A cold process verified five scenarios/183 events/three reopened checkpoints; repeat proof bytes
-match exactly. [Source-anchored evidence](docs/research/evidence/postcard-core-2026-10-26.json).
-Trusted world-clock/abode integration, agent menus and subsequent Oracle/civic slices remain unimplemented.
+Both proofs use explicit synthetic clock/asset events at the original illustrative 2 White/hour,
+with zero provider calls. The new shortcut proof covers 31 fixed cases, v1 acquisition tapes,
+v2 snapshots, delayed duplicates and atomic failures. The shortcut candidate passes 111 new
+tests, including 15,000 seeded transactions; committed-source full regression is still to record.
+[Mechanics, accounting and current verification](docs/research/POSTCARD_SHORTCUTS_2026-10-26.md).
+The earlier v1 source `8011e60972948990b5f5d00e84663bc5542c3a79` passed 1,668 tests / 137 files,
+with seven environment skips, plus TypeScript and eight recovery tests; its cold proof verified
+five scenarios/183 events/three checkpoints with identical repeat bytes.
+[Preserved v1 evidence](docs/research/evidence/postcard-core-2026-10-26.json).
+PR #44 published the society runner; PR #46 integrated the postcard core into main at `1217c9b`.
+World-clock/abode ownership, agent menus, ticket migration and subsequent Oracle/civic slices
+remain further work. No default rate, daily-tick conversion or paid experiment is activated.
 
 ### Preserved society mechanics
 
@@ -71,7 +82,7 @@ approval, a matching carried allowance and private evidence paths; it has only b
 with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
 configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
 [PR #42](https://github.com/SDarkVader/The-Node/pull/42) merged after all three hosted workflows passed.
-The local twenty-tick follow-up supplies a standalone PowerShell launcher:
+The twenty-tick follow-up, published through [PR #44](https://github.com/SDarkVader/The-Node/pull/44), supplies a standalone PowerShell launcher:
 `powershell -File scripts/start-society-live.ps1 -Config <private-launch.json>`. Add `-CheckOnly`
 for read-only readiness. This belongs to the earlier society task. The postcard work invokes no live path and grants no
 spending authorization; historical approvals must not be reused.

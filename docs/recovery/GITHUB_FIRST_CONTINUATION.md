@@ -1,19 +1,24 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-25. A fresh phone, PC or cloud session can recover development context from GitHub.
-Local work on `codex/secure-agent-society-2026-10-25` has intentionally not been pushed, at the
-owner's direction. Its [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)
-closes old real-dispatch paths while retaining historical verification. The current local recovery
-checkpoint names this branch; a remote-only checkout cannot contain these unpushed commits.
+Updated 2026-10-26. A fresh phone, PC or cloud session can recover development context from GitHub.
+The owner requested publication as implementation proceeds. PR #44 published the society runner
+and PR #46 integrated the first postcard slice into `main` at `1217c9b`.
+The next bounded shortcut slice is on `codex/postcard-shortcuts-2026-10-26`; check the current
+remote head and [CURRENT_SESSION](CURRENT_SESSION.md) rather than assuming it is already merged.
+The [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)
+closes old real-dispatch paths while retaining historical verification.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
 ## Active branch and current experiment
 
-Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`. Consolidation review branch:
-`codex/cloud-observatory-2026-10-25`, named explicitly in the checkpoint until PR #39 merges.
-PR #39 integrates the cloud work and the PR #40/#41 ancestry without replacing either
-observatory registration contract. Use `npm run preview` for the default web interface.
+Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`; current review branch:
+`codex/postcard-shortcuts-2026-10-26`. The Oracle/civic work proceeds one verified slice at a time.
+No paid model, private credential access, accounting reset, historical approval reuse or live
+experiment is authorized by this implementation task. The latest handoff reports an earlier
+20-tick run at `e2a16e6`; its private evidence has not been reopened for these new mechanics.
+Earlier PR #39 integrated the cloud work and PR #40/#41 ancestry while preserving both
+observatory registration contracts. Use `npm run preview` for the default web interface.
 Read the [implemented cloud observatory runbook](../research/OBSERVATORY_RUNBOOK.md).
 Preserve unrelated work; do not silently reset or discard state.
 
