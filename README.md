@@ -49,9 +49,14 @@ choices. Neither bills a model. The new accounted model runner requires separate
 approval, a matching carried allowance and private evidence paths; it has only been exercised
 with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
 configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
-Implementation review: [PR #42](https://github.com/SDarkVader/The-Node/pull/42), targeting shared `main`.
-The owner has authorized merge when green followed by a new twenty-tick society run; no new paid
-call has occurred yet. The requested output is a raw chronological dump for each controlled inhabitant. At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
+[PR #42](https://github.com/SDarkVader/The-Node/pull/42) merged after all three hosted workflows passed.
+The local twenty-tick follow-up supplies a standalone PowerShell launcher:
+`powershell -File scripts/start-society-live.ps1 -Config <private-launch.json>`. Add `-CheckOnly`
+for read-only readiness. The owner will start it directly; no new live call has occurred.
+Explicit plans support at most twenty ticks/120 calls with a USD1 cap. Raw per-inhabitant JSONL
+contains exact contexts, legal choices, returned summaries, actions, transitions and failures;
+`npm run society:dump -- --input <private-run> --output <new-private-dump> --raw` exports them.
+At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
 with seven explicit environment skips, plus TypeScript. **80 compiled native checks** against the
 original kernel and **eight recovery tests** also pass. Independent saved-file replay passes for
 14 and 60 ticks. The longer run records 889 decisions, 78 real bread orders, 306 diary writes,

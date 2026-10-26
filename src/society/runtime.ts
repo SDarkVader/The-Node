@@ -52,6 +52,8 @@ export class Society {
   #state: ParticipantState;
   #phase: Phase = 'commit';
   #halted = false;
+  // Transport lease counter, deliberately outside historical world hashes and tapes.
+  #revision = 0;
   #pending = new Map<string,SocietyAction>();
   #prices = new Map<string,number>();
   #quantities = new Map<string,number>();
@@ -73,8 +75,9 @@ export class Society {
   get tick() { return this.#state.world.tick; }
   get phase() { return this.#phase; }
   get halted() { return this.#halted; }
+  get revision() { return this.#revision; }
   /** External transport/accounting failures revoke further execution, without a retry. */
-  halt(): void { this.#halted=true; }
+  halt(): void { if (!this.#halted) { this.#halted=true; this.#revision++; } }
   get hash() { return digest([evidenceHash(this.#state),[...this.#oracle],this.#phase,[...this.#prices],[...this.#quantities],this.#wall]); }
   get controlled() { return [...this.#tape.controlled]; }
   /** Researcher-only read. This must never be passed to a policy or provider. */
@@ -119,11 +122,12 @@ export class Society {
     try {
       if (!this.pendingPeople().includes(person)) throw new SocietySecurityError('stale_or_duplicate_submission');
       const view=this.view(person), action=typeof value==='string'?parseSocietyResponse(value,view.context):validateSocietyAction(value,view.context);
+      this.#revision++;
       this.#pending.set(person,action);
       this.#tape.decisions.push({day:this.tick+1,phase:this.#phase,person,controlled:this.controlled.includes(person),
         visible:structuredClone(view.visible),legalChoices:structuredClone({menu:view.visible.legalChoices,schema:view.visible.decisionSchema}),action:structuredClone(action)});
       if (this.pendingPeople().length===0) this.#finishPhase();
-    } catch (error) { this.#halted=true; throw error; }
+    } catch (error) { this.halt(); throw error; }
   }
   #finishPhase() {
     if (this.#phase==='commit') {
@@ -206,7 +210,7 @@ export class Society {
 
 /** Independent reconstruction uses recorded JSON decisions, never reruns a policy. It also
  * verifies each exact visible context, so hidden observation drift cannot pass as replay. */
-export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.genesis.sourceRevision) {
+export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.genesis.sourceRevision, options:{allowPartial?:boolean}={}) {
   if(tape.format!=='node-society-offline-v1'||tape.genesis.sourceRevision!==expectedSourceRevision)throw Error('society_tape_source');
   const society=new Society({seed:tape.genesis.seed,sourceRevision:expectedSourceRevision,config:tape.genesis.config,observerSecret:tape.genesis.observerSecret});
   if(society.hash!==tape.genesisHash||digest(society.controlled)!==digest(tape.controlled))throw Error('society_genesis_mismatch');
@@ -215,6 +219,8 @@ export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.
     society.submit(record.person,record.action);
   }
   const replay=society.exportTape();
-  if(society.phase!=='commit'||digest(replay)!==digest(tape))throw Error('society_replay_mismatch');
-  return {verified:true,ticks:society.tick,decisions:tape.decisions.length,finalHash:society.hash};
+  const complete = replay.decisions.length===0 || replay.decisions.at(-1)!.day===society.tick;
+  if((!options.allowPartial&&(!complete||society.phase!=='commit'))||digest(replay)!==digest(tape))throw Error('society_replay_mismatch');
+  return {verified:true,ticks:society.tick,decisions:tape.decisions.length,finalHash:society.hash,
+    ...(options.allowPartial?{complete}:{})};
 }

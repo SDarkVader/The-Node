@@ -3,6 +3,7 @@ import { createParticipantState, fixtureGenesis } from '../src/agent/participant
 import { DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
 import { observerRef, refHexLength } from '../src/server/observer.js';
 import { writeDiaryEntry } from '../src/engine/diary.js';
+import { buildSocietyRequest } from '../src/society/request.js';
 import { buildSocietyContext, validateSocietyAction, parseSocietyResponse, SocietySecurityError,
   type SocietyContextOptions, type SocietyAction } from '../src/society/boundary.js';
 
@@ -20,6 +21,22 @@ function fixture(role: string | null = 'baker', options: Partial<SocietyContextO
 }
 
 describe('inhabitant society information boundary', () => {
+  it('produces identical exact provider bytes when only other inhabitants private state and developer data differ',()=>{
+    const f=fixture(),before=buildSocietyRequest(f.visible).body;
+    const other=[...f.state.registry.people.values()].find(p=>p.id!==f.person.id&&p.role==='baker')!;
+    const otherSlot=f.state.world.bakers.find(b=>b.buildingId===other.location)!;
+    otherSlot.wealth=987654.123;otherSlot.personalResourceStock=765432.125;otherSlot.daysInRole=991;
+    f.state.world.completionStats={...f.state.world.completionStats,[other.location!]:{attempts:555,completions:333}};
+    Object.assign(otherSlot,{hiddenIntention:'PRIVATE_INTENT',developerNotes:'PRIVATE_DEVELOPMENT_UPDATE'});
+    writeDiaryEntry(f.state.world.diary,other.id,f.person.id,'haggledHard','seemsCalculating',0,new Set([f.person.id]));
+    Object.assign(f.state.world,{packageInformation:'PRIVATE_PACKAGE',sourceMetadata:'PRIVATE_SOURCE',privateEvaluation:'PRIVATE_SCORE'});
+    Object.assign(f.state.genesis,{sourceRevision:'PRIVATE_REVISION',credentials:'PRIVATE_CREDENTIAL'});
+    const after=buildSocietyContext(f.state,f.person.id,{phase:'act',market:f.market,purchaseDue:true,
+      oracle:{entryCost:0.3,winProbability:0.3,canEnter:true,canRedeem:false}});
+    expect(after.visible).toEqual(f.visible);
+    expect(buildSocietyRequest(after.visible).body).toBe(before);
+    expect(after.context).toEqual(f.context);
+  });
   it('explains every role without technical world, development, package or other-private metadata', () => {
     const f = fixture(), { state, person } = f;
     Object.assign(state.world, { developmentUpdate: 'DEVELOPMENT_SECRET', packageInformation: 'PACKAGE_SECRET', evaluator: 'EVALUATOR_SECRET' });
