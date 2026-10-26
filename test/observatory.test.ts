@@ -146,6 +146,14 @@ it('authenticates research/world channels; synchronizes shared selection and nev
   const current=await(await fetch(url+'/observatory/v1/runs/test/snapshot',{headers})).json() as any;
   expect(current.calls).toHaveLength(2);expect(current.calls.every((c:any)=>c.tick===1)).toBe(true);
   expect(current.telemetry.callAttemptCount).toBe(4);
+  const full=await(await fetch(url+'/observatory/v1/runs/test/history',{headers})).json() as any;
+  expect(full.records).toHaveLength(4);
+  expect(full.records.every((r:any)=>r.thinking.summaries[0]==='TEST ONLY: reconsider prior price using the evolved authorized observation.')).toBe(true);
+  const actor=encodeURIComponent(current.calls[0].actorId);
+  const individual=await(await fetch(url+'/observatory/v1/runs/test/history?agent='+actor,{headers})).json() as any;
+  expect(individual.records).toHaveLength(2);expect(individual.records.map((r:any)=>r.day)).toEqual([0,1]);
+  expect(individual.records.every((r:any)=>r.observation&&r.admitted&&r.executed)).toBe(true);
+  expect((await fetch(url+'/observatory/v1/runs/test/history',{headers:{Authorization:'Bearer '+W}})).status).toBe(401);
   expect((await fetch(url+'/observatory/v1/configuration/validate',{method:'POST',headers,body:JSON.stringify({plan:f.plan})})).status).toBe(200);
   const ws=new WebSocket(`ws://127.0.0.1:${port}/observatory/v1/runs/test/world`,{headers:{Authorization:'Bearer '+W}});
   const frames: any[]=[];ws.on('message',bytes=>frames.push(JSON.parse(bytes.toString())));
@@ -156,6 +164,8 @@ it('authenticates research/world channels; synchronizes shared selection and nev
   await new Promise(r=>setTimeout(r,20));
   const historical=await (await fetch(url+'/observatory/v1/runs/test/snapshot',{headers})).json() as any;
   expect(historical.sourceTick).toBe(0);expect(frames.at(-1).worldHash).toBe(historical.worldHash);expect(frames.at(-1).cursor).toBe(cursor);
+  const prefix=await(await fetch(url+'/observatory/v1/runs/test/history',{headers})).json() as any;
+  expect(prefix.records.length).toBeLessThan(4);expect(prefix.records.every((r:any)=>r.thinking.summaries.length===0)).toBe(true);
   expect((await fetch(url+'/observatory/v1/runs/test/events?after=bad',{headers})).status).toBe(409);
   expect((await fetch(url+'/observatory/v1/runs/test/selection',{method:'PUT',headers:{...headers,Origin:'https://evil.example'},body:JSON.stringify({cursor:null})})).status).toBe(403);
   ws.send('{}');await once(ws,'close');

@@ -17,7 +17,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot pin the renderer source.' }
 $version = (& $engine --version | Select-Object -Last 1).Trim()
 if ($LASTEXITCODE -ne 0 -or $version -notmatch '^4\.') { throw 'Godot 4 is required.' }
 New-Item -ItemType Directory -Path $target -Force | Out-Null
-$project = Join-Path $target 'source'
+$project = Join-Path $target ('source-' + $revision)
 New-Item -ItemType Directory -Path $project -Force | Out-Null
 foreach ($name in @('project.godot', 'scripts', 'scenes')) {
   Copy-Item -LiteralPath (Join-Path $repositoryRoot ('client/' + $name)) -Destination $project -Recurse -Force

@@ -26,6 +26,12 @@ application is required. Keep the launcher terminal open. The renderer and the 2
 consume the same committed world as the research timeline. The observer interface is
 operator-only and is never passed into an inhabitant request.
 
+The street material now receives the existing computed local weather field; the earlier
+helper was never applied to the ground. Stronger lit-surface gradients retain the visual
+contract's weather/heat/role meanings and measured anchors. A browser-compatible additive
+layer makes real station heat and overlapping radiance visible when HDR bloom is absent.
+No decorative crowd, movement, transactions or hidden event signals are generated.
+
 Use the experiment, world-tick, agent, phase and decision selectors. **Advance one tick**
 permits exactly one day through the existing validated/accounted controller. Waiting makes
 no provider request or reservation. Duplicate/stale permits, a world-only token,
@@ -33,6 +39,15 @@ cross-origin mutation and advance during historical playback are rejected. **Sto
 halts execution and retains partial evidence. **Play recorded ticks** changes only the
 shared replay cursor, including Godot; it never invokes a model or policy. **Follow latest**
 returns to the active run. The existing legacy Observatory and native clients remain supported.
+
+**Thinking history** selects the current decision, every returned block for the selected
+tick, or the agent's full chronological history through the selected evidence cursor.
+Each entry pairs the unabridged returned text with the actual authorized observation,
+decision, execution status and recorded resulting transition. A historical cursor does
+not reveal thinking from a later response. Model-controlled inhabitants are selected
+first by default; all role holders remain selectable. This is a behavioural record,
+not a reasoning-quality score. Provider-returned summaries are all that exist when the
+provider supplies summaries; absent or redacted internal content is not reconstructed.
 
 Every raw or readable results export now includes `ticks.json` and
 `agents/controlled-N/tick-0001.json`, in addition to each identity's chronological JSONL.

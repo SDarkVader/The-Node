@@ -90,7 +90,7 @@ export class SocietyObservatorySource {
       return {requestId:r.requestId??`tape-${r.person}-${r.day}-${r.phase}`,actorId:r.person!,tick:r.day!,phase:r.phase,
         observation:r.visible??r.authorizedVisible,legalChoices:r.legalChoices,reasoning:r.reasoning,
         latencyMs:(r.events.find(e=>e.kind==='response')?.data as any)?.elapsedMs??null,
-        proposal:r.proposedAction,admitted:r.validatedAction,executed:r.admission==='recorded_in_tape',
+        proposal:r.proposedAction,admitted:r.submittedAction??r.validatedAction,executed:r.admission==='recorded_in_tape',
         nextTick:r.worldTransition?.day??null,effects:[],usage:usage?{...usage,bookedMicroUsd:null}:null,heldMicroUsd:0,
         transition:r.worldTransition,rawRecord:r};
     });
@@ -101,7 +101,7 @@ export class SocietyObservatorySource {
       effects:[],usage:null,heldMicroUsd:0,transition:tape.transitions.find(t=>t.day===d.day)??null,rawRecord:d}));
     const calls=[...modelCalls,...autonomous].sort((a,b)=>a.tick-b.tick||(a.phase==='commit'?0:1)-(b.phase==='commit'?0:1));
     const control=this.#control;
-    return {...result,phase:'execution',calls,timeline:this.list().slice(0,this.#frames.indexOf(p)+1),
+    return {...result,evidenceRevision:this.#fingerprint,phase:'execution',calls,timeline:this.list().slice(0,this.#frames.indexOf(p)+1),
       control:{manual:!!this.active?.gate,waitingDay:control?.waitingDay??null,version:control?.version??null,
         canStop:cursor===null&&!!this.active&&!control?.closed&&input.status!=='completed'&&input.status!=='stopped',
         canAdvance:cursor===null&&p.cursor===this.latestCursor&&control?.waitingDay!==null&&control?.waitingDay!==undefined&&!control.closed,

@@ -136,9 +136,21 @@ export function startObservatory(options: Options) {
       }
       if (req.method === 'GET' && url.pathname === '/observatory/v1/runs') return json(res, 200, options.sources.map(s => ({ id: s.registration.id,
         status: failures.has(s.registration.id) ? 'evidence_unavailable' : s.latestCursor ? 'available' : 'awaiting_evidence', latestCursor: s.latestCursor })));
-      const match = url.pathname.match(/^\/observatory\/v1\/runs\/([A-Za-z0-9._-]+)\/(snapshot|events|timeline|evaluations|selection|configuration|advance|stop)$/);
+      const match = url.pathname.match(/^\/observatory\/v1\/runs\/([A-Za-z0-9._-]+)\/(snapshot|events|timeline|evaluations|selection|configuration|advance|stop|history)$/);
       if (!match) return json(res, 404, { error: 'not_found' });
       const s = sourceFor(match[1]!), endpoint = match[2];
+      if(req.method==='GET'&&endpoint==='history'){
+        const cursor=url.searchParams.get('cursor')??selection(s),agent=url.searchParams.get('agent');
+        if(agent!==null&&!/^[A-Za-z0-9._:-]{1,128}$/.test(agent))return json(res,400,{error:'agent_id_invalid'});
+        const value=s.snapshot(cursor,'researcher-history',true);
+        if(!('calls'in value)||!Array.isArray(value.calls))throw Error('observatory_research_projection');
+        return json(res,200,{experimentId:s.registration.id,cursor:value.cursor,sourceTick:value.sourceTick,
+          reasoningSource:value.providerReasoning,records:value.calls.filter(c=>!agent||c.actorId===agent).map(c=>({
+            agentId:c.actorId,day:c.tick,phase:'phase'in c?c.phase:null,requestId:c.requestId,
+            thinking:c.reasoning,observation:c.observation,legalChoices:'legalChoices'in c?c.legalChoices:null,
+            proposed:c.proposal,admitted:c.admitted,executed:c.executed,nextTick:c.nextTick,
+            transition:'transition'in c?c.transition:null,usage:c.usage}))});
+      }
       if(req.method==='POST'&&endpoint==='stop'&&s instanceof SocietyObservatorySource){
         if(selection(s)!==null)return json(res,409,{error:'read_only_replay'});
         const result=s.stop();publish();return json(res,200,result);

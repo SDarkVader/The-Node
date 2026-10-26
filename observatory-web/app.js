@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 let snapshot, timeline = [], stream, selectedCall = '', planLoaded = false, planVersion = 0;
 let runGeneration=0, replayTimer=null, embeddedGodot=false, godotRun='';
+let agentChosen=false,historyVersion=0,historyKey='';
 const base = () => `/observatory/v1/runs/${encodeURIComponent($('run').value)}`;
 async function api(path, options = {}) {
   const res = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
@@ -23,6 +24,7 @@ async function loadRuns() {
 }
 async function openRun() {
   const generation=++runGeneration,route=base();stopReplay();
+  agentChosen=false;historyKey='';historyVersion++;
   stream?.close(); planLoaded = false; planVersion++; $('validate').disabled=false; $('plan-status').textContent='';
   const nextTimeline=await api(route+'/timeline'),nextSnapshot=await api(route+'/snapshot');
   if(generation!==runGeneration)return;
@@ -43,7 +45,8 @@ async function select(cursor) { await api(base() + '/selection', { method: 'PUT'
 $('timeline').onchange = () => select(timeline[Number($('timeline').value)].cursor).catch(showError);
 $('follow').onclick = () => select(null).catch(showError);
 $('call').onchange = () => { selectedCall = $('call').value; renderCall(); };
-$('agent').onchange=()=>renderCalls();$('phase').onchange=()=>renderCalls();
+$('agent').onchange=()=>{agentChosen=true;renderCalls();};$('phase').onchange=()=>renderCalls();
+$('thinking-scope').onchange=()=>renderThinkingHistory();
 $('tick-select').onchange=()=>{stopReplay();select($('tick-select').value||null).catch(showError);};
 function recordedTicks(){const byTick=new Map();for(const p of timeline)if(p.cursor!=='live'&&Number.isInteger(p.sourceTick))byTick.set(p.sourceTick,p);return [...byTick.values()].sort((a,b)=>a.sourceTick-b.sourceTick);}
 function stopReplay(){if(replayTimer)clearInterval(replayTimer);replayTimer=null;$('replay-play').textContent='Play recorded ticks';}
@@ -84,8 +87,11 @@ function render(s) {
     [m.inputTokens.toLocaleString(), 'Known input tokens'], [m.bookedMicroUsd===null?'See accounting':(Number(m.bookedMicroUsd)/1e6).toFixed(6), 'USD booked · cursor'], [m.heldMicroUsd===null?'See accounting':(Number(m.heldMicroUsd)/1e6).toFixed(6), 'USD held · cursor']
   ].map(([value,label]) => { const el = document.createElement('div'); el.className='metric'; const v = document.createElement('strong'); v.textContent=value; const l=document.createElement('span'); l.textContent=label; el.append(v,l); return el; }));
   const agents=[...new Set([...(s.society?.controlled??[]),...(s.society?.people??[]).map(p=>p.person),...s.calls.map(c=>c.actorId)])],selectedAgent=$('agent').value;
-  $('agent').replaceChildren(new Option('All agents',''),...agents.map(id=>new Option(id,id)));
+  $('agent').replaceChildren(new Option('All agents',''),...agents.map(id=>{
+    const person=s.society?.people?.find(p=>p.person===id);return new Option(`${id}${person?' · '+(person.role??'roleless'):''}${s.society?.controlled?.includes(id)?' · model':''}`,id);
+  }));
   if(agents.includes(selectedAgent))$('agent').value=selectedAgent;
+  if(!agentChosen&&s.society?.controlled?.length)$('agent').value=s.society.controlled[0];
   const ticks=recordedTicks();$('tick-select').replaceChildren(new Option('Live / latest',''),...ticks.map(p=>new Option(`World tick ${p.sourceTick}`,p.cursor)));
   $('tick-select').value=s.following?'':s.cursor;
   $('advance').disabled=!s.control?.canAdvance;
@@ -125,6 +131,34 @@ function renderCall() {
   $('observation').textContent = c ? JSON.stringify(c.observation,null,2) : '';
   $('legal-choices').textContent=c?JSON.stringify(c.legalChoices??null,null,2):'';
   $('raw-record').textContent=c?JSON.stringify(c.rawRecord??{transition:c.transition??null},null,2):'';
+  renderThinkingHistory();
+}
+async function renderThinkingHistory(){
+  if(!snapshot)return;
+  const scope=$('thinking-scope').value,agent=$('agent').value,phase=$('phase').value,s=snapshot;
+  $('reasoning').hidden=scope!=='decision';$('thinking-history').hidden=scope==='decision';
+  if(scope==='decision'){historyVersion++;historyKey='';$('thinking-history-status').textContent='Complete thinking text returned for the selected decision; absent/redacted blocks stay marked.';return;}
+  const key=[base(),s.cursor,s.evidenceRevision??'',agent,phase,scope].join('|');if(key===historyKey)return;
+  historyKey=key;const version=++historyVersion,route=base();
+  $('thinking-history-status').textContent='Loading recorded thinking and decisions…';
+  try{
+    const history=await api(route+'/history?cursor='+encodeURIComponent(s.cursor)+(agent?'&agent='+encodeURIComponent(agent):''));
+    if(version!==historyVersion||route!==base())return;
+    const latestDay=s.calls.at(-1)?.tick??s.sourceTick;
+    const records=history.records.filter(r=>(scope==='full'||r.day===latestDay)&&(!phase||r.phase===phase));
+    $('thinking-history').replaceChildren();
+    for(const r of records){
+      const box=document.createElement('article'),heading=document.createElement('h3'),status=document.createElement('p'),thinking=document.createElement('pre');
+      heading.textContent=`${r.agentId} · day ${r.day} · ${r.phase??'decision'}`;
+      status.className='caption';status.textContent=`${r.thinking.source??history.reasoningSource} · ${r.thinking.status} · ${r.executed?'action executed':'not executed'} · ${r.nextTick===null?'day not committed':'world tick '+r.nextTick}`;
+      thinking.textContent=r.thinking.status==='not_a_model'?'Deterministic policy; no model thinking.':r.thinking.summaries.join('\n\n')||'No thinking text was returned. Missing or redacted content has not been reconstructed.';
+      const details=document.createElement('details'),summary=document.createElement('summary'),facts=document.createElement('pre');
+      summary.textContent='Observation, decision and resulting transition';facts.textContent=JSON.stringify({observation:r.observation,legalChoices:r.legalChoices,
+        proposed:r.proposed,admitted:r.admitted,executed:r.executed,transition:r.transition,usage:r.usage},null,2);
+      details.append(summary,facts);box.append(heading,status,thinking,details);$('thinking-history').append(box);
+    }
+    $('thinking-history-status').textContent=`${records.length} recorded decisions · ${scope==='full'?'complete history through the selected cursor':'selected tick'} · returned thinking reproduced verbatim, without interpretation.`;
+  }catch(error){if(version===historyVersion){historyKey='';$('thinking-history-status').textContent=error.message;}}
 }
 function draw(s) {
   const canvas=$('map'), ctx=canvas.getContext('2d'), {bounds,buildings,hub}=s.hello;

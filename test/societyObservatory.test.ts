@@ -53,6 +53,9 @@ it('authenticates manual control, rejects cross-origin requests and duplicate/st
   await invoke('/selection','PUT',{cursor:null});expect((await invoke('/advance','POST',command)).status).toBe(200);await permit;
   expect((await invoke('/advance','POST',command)).status).toBe(409);
   f.tick();const next=f.gate.wait(2);app.refresh();
+  const history=await(await fetch(base+'/history?agent=society-inhabitant%3A0',{headers:{Authorization:'Bearer '+researcherToken}})).json() as any;
+  expect(history.records).toHaveLength(2);expect(history.records.map((r:any)=>r.phase)).toEqual(['commit','act']);
+  expect(history.records.every((r:any)=>r.observation&&r.admitted&&r.thinking.status==='response_unavailable')).toBe(true);
   expect((await invoke('/advance','POST',command)).status).toBe(409);expect(f.gate.state.waitingDay).toBe(2);
   expect((await invoke('/advance','POST',{cursor:'live',day:2,version:f.gate.state.version})).status).toBe(200);await next;f.gate.close();
 });

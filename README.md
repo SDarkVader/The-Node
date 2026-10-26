@@ -42,7 +42,9 @@ powershell -NoProfile -File scripts/start-node-test.ps1
 Add `-Start -Ticks 3` for a real agent test. It prepares the exact review and asks the human
 to type `START` before funding or dispatch; manual tick clicks then run one complete day
 within those approved bounds. The interface includes run, tick, agent and phase selectors,
-read-only playback, individual contexts/choices/actions/summaries and transitions. Every
+read-only playback, per-tick or full chronological returned thinking, and the observations,
+decisions and transitions needed to study behaviour. Godot uses stronger contract-based
+colour gradients and overlapping heat glow, including browser-compatible radiance. Every
 export also includes separate chronological per-agent per-tick JSON files.
 [Unified PC workflow and private settings](docs/research/SOCIETY_OBSERVATORY_2026-10-26.md).
 This interface slice is undergoing offline/browser verification; no paid run is claimed.
