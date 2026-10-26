@@ -13,36 +13,42 @@ import { autonomousPolicy } from './policy.js';
 import type { Society } from './runtime.js';
 import {validateSocietyPostcardConfig,type SocietyPostcardConfig} from './postcards.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from './dailyOracle.js';
+import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from './routine.js';
 
 export interface SocietyRunPlan {
-  schema: 'node-accounted-society-v1'|'node-accounted-society-postcards-v2'|'node-accounted-society-daily-oracle-v3'; id: string; model: 'claude-haiku-5-5';
+  schema: 'node-accounted-society-v1'|'node-accounted-society-postcards-v2'|'node-accounted-society-daily-oracle-v3'|'node-accounted-society-routine-v4'; id: string; model: 'claude-haiku-5-5';
   ticks: number; maxCalls: number; deadlineMs: number; minIntervalMs: number;
   initialHash: string; sourceRevision: string; controlled: string[];
   allowance: { maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number };
   postcards?:SocietyPostcardConfig;
   dailyOracle?:SocietyDailyOracleConfig;
+  routine?:SocietyRoutineConfig;
 }
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
   const ticks = options.ticks ?? 3;
-  const plan: SocietyRunPlan = { schema: society.exportTape().dailyOracleConfig?'node-accounted-society-daily-oracle-v3':society.exportTape().postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
-    model: 'claude-haiku-5-5', ticks, maxCalls: ticks * 6, deadlineMs: options.deadlineMs ?? 20_000,
+  const tape=society.exportTape(),routine=tape.routineConfig;
+  const maxCalls=routine?Math.min(5000,ticks*3*(1+routine.maxTurnsPerDay)):ticks*6;
+  const plan: SocietyRunPlan = { schema: routine?'node-accounted-society-routine-v4':tape.dailyOracleConfig?'node-accounted-society-daily-oracle-v3':tape.postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
+    model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? 20_000,
     minIntervalMs: options.minIntervalMs ?? 1000, initialHash: society.hash,
     sourceRevision: society.inspect().genesis.sourceRevision, controlled: society.controlled,
-    allowance: { maxRequests: ticks * 6, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
+    allowance: { maxRequests: maxCalls, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
       perRequestMicroUsd: options.perRequestMicroUsd ?? 20_000 },
     ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}),
-    ...(society.exportTape().dailyOracleConfig?{dailyOracle:society.exportTape().dailyOracleConfig}:{}) };
+    ...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(routine?{routine}:{}) };
   validateSocietyPlan(plan); return structuredClone(plan);
 }
 export function validateSocietyPlan(p: SocietyRunPlan): void {
   if(p?.postcards!==undefined)validateSocietyPostcardConfig(p.postcards);
   if(p?.dailyOracle!==undefined)validateSocietyDailyOracleConfig(p.dailyOracle);
-  if (!['node-accounted-society-v1','node-accounted-society-postcards-v2','node-accounted-society-daily-oracle-v3'].includes(p?.schema)||
-    (p?.schema==='node-accounted-society-daily-oracle-v3')!==!!p?.dailyOracle ||
-    (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
-    p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== 6 * p.ticks ||
+  if(p?.routine!==undefined)validateSocietyRoutineConfig(p.routine);
+  if (!['node-accounted-society-v1','node-accounted-society-postcards-v2','node-accounted-society-daily-oracle-v3','node-accounted-society-routine-v4'].includes(p?.schema)||
+    (p?.schema==='node-accounted-society-routine-v4')!==!!p?.routine ||
+    (p?.schema==='node-accounted-society-daily-oracle-v3')!==(!p?.routine&&!!p?.dailyOracle) ||
+    (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.routine&&!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
+    p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== (p.routine?Math.min(5000,p.ticks*3*(1+p.routine.maxTurnsPerDay)):6*p.ticks) ||
     !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > 20_000 ||
     !Number.isSafeInteger(p.minIntervalMs) || p.minIntervalMs < 0 || p.minIntervalMs > 60_000 ||
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
@@ -55,7 +61,7 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
 
 /** All events are operator-private evidence, never an inhabitant message. A synchronous sink
  * must persist the exact request before dispatch and response before admitted world action. */
-export interface SocietyCallBinding { requestId:string; index:number; episodeId:string; actorId:string; tick:number; phase:'commit'|'act' }
+export interface SocietyCallBinding { requestId:string; index:number; episodeId:string; actorId:string; tick:number; phase:'commit'|'act';turn?:number }
 export type SocietyCallStage = 'prepared'|'reserved'|'dispatched'|'received'|'validated'|'submitted';
 export type SocietyCallStatus = 'submitted'|'cancelled'|'transport_failed'|'usage_unknown'|'model_mismatch'|'response_rejected'|'illegal_action'|
   'booking_failed'|'stale_response'|'usage_overrun'|'budget_stopped'|'execution_failed'|'evidence_failed';
@@ -100,6 +106,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     throw new SocietySecurityError('society_paid_initial_state');
   if(digest(plan.postcards??null)!==digest(society.exportTape().postcardConfig??null))throw new SocietySecurityError('society_paid_postcard_config');
   if(digest(plan.dailyOracle??null)!==digest(society.exportTape().dailyOracleConfig??null))throw new SocietySecurityError('society_paid_daily_oracle_config');
+  if(digest(plan.routine??null)!==digest(society.exportTape().routineConfig??null))throw new SocietySecurityError('society_paid_routine_config');
   if (!auth || !start.canReserve || start.requests.length || !/^[a-f0-9]{64}$/.test(options.expectedCarriedFingerprint) ||
     budget.carriedFingerprint() !== options.expectedCarriedFingerprint || auth.expectedCarriedFingerprint !== options.expectedCarriedFingerprint ||
     auth.instruction !== options.instruction || auth.manifestSha256 !== societyPlanHash(plan) || auth.model !== plan.model ||
@@ -127,6 +134,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     emit({kind:'start',data:{plan,planSha256:societyPlanHash(plan),runId:auth.runId,
       budgetHistoryHash:start.historyHash,carriedFingerprint:options.expectedCarriedFingerprint}});
     while(society.tick<plan.ticks&&!stoppedReason){
+      if(society.halted){halt(society.stoppedReason??'society_halted');break;}
       if(options.signal?.aborted){halt('society_cancelled');break;}
       if(options.awaitDayPermit&&permittedDay!==society.tick+1){
         const revision=society.revision,day=society.tick+1;
@@ -150,9 +158,10 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         const wire=buildSocietyRequest(view.visible,plan.model),current=budget.view();
         const ceiling=usageCost(wire.maxInputTokens,wire.maxOutputTokens,auth.prices);
         if(!current.canReserve||ceiling>auth.perRequestMicroUsd||BigInt(ceiling)>current.remainingMicroUsd!){halt('society_budget_stopped');break;}
-        const phase:'commit'|'act'=society.phase,tick:number=society.tick,episodeId=`${plan.id}:${phase}`;
+        const phase:'commit'|'act'=society.phase,tick:number=society.tick,turn=plan.routine?society.turn:undefined,
+          episodeId=`${plan.id}:${phase}${turn===undefined?'':`:turn-${turn}`}`;
         const requestId=sha256(JSON.stringify([auth.runId,episodeId,person,tick,wire.sha256]));
-        const binding:SocietyCallBinding={requestId,index:calls,episodeId,actorId:person,tick,phase};
+        const binding:SocietyCallBinding={requestId,index:calls,episodeId,actorId:person,tick,phase,...(turn===undefined?{}:{turn})};
         active={binding,stage:'prepared',beforeHash:society.hash,beforeTick:tick,finished:false};
         const currentLease=()=>!society.halted&&society.revision===revision&&society.tick===tick&&society.phase===phase&&society.pendingPeople().includes(person);
         const sent={...binding,body:wire.body,sha256:wire.sha256,provider:'anthropic' as const};
@@ -222,6 +231,11 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     const reason=message(error,'society_execution_failed');halt(reason);
     try{outcome(undeliveredEvents.length?'evidence_failed':'execution_failed',reason);}catch{/* finish carries undelivered evidence as well. */}
   }finally{running.delete(society);}
+  if(plan.routine)try{
+    const terminal=budget.view();
+    if(terminal.authorization&&!terminal.closure&&terminal.held===0n&&!terminal.overrun&&terminal.requests.every(q=>q.bookedMicroUsd!==null))
+      budget.closeAllowance({runId:auth.runId,manifestSha256:societyPlanHash(plan),closedAt:new Date().toISOString(),reason:stoppedReason?'stopped':'completed'});
+  }catch{halt('society_allowance_close_failed');}
   let end:ReturnType<ExperimentBudget['view']>;
   try{end=budget.view();}catch(error){
     halt('society_budget_read_failed');

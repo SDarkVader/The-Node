@@ -29,6 +29,7 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
     }
     return a;
   }
+  if(v.routine)return routinePolicy(v,a,preference);
   if(['Courier','Investigator','ImportExport'].includes(v.self.role))a.occupation={kind:'work'};
   if(v.legalChoices.purchaseDue){
     const options=v.wall.prices.filter(p=>p.available&&p.sellerRef!==v.self.ref&&p.price<=v.self.wealth);
@@ -73,5 +74,84 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
     const fusion=risky??safe;
     if(claim||fusion)a.postcards={claim,fusion:fusion?{tier:fusion.tier,stake:fusion.stake}:null};
   }
+  return a;
+}
+
+/** Shortest legal route over the resident's public district map. No private positions or
+ * researcher state are consulted. Equal routes use stable coordinates, not hidden RNG. */
+function toward(v:SocietyVisibleContext,target:{x:number;y:number}):SocietyAction['move']{
+  const key=(p:{x:number;y:number})=>`${p.x},${p.y}`;
+  const sites=v.routine?[v.routine.sites.wall,v.routine.sites.oracle]:[];
+  const points=new Map([...v.local.places,...sites].map(p=>[key(p),{x:p.x,y:p.y}]));
+  const targetKey=key(target),start=key(v.self);
+  if(start===targetKey)return null;
+  const queue=[target],steps=new Map<string,number>([[targetKey,0]]);
+  for(let i=0;i<queue.length;i++){
+    const p=queue[i]!,depth=steps.get(key(p))!;
+    for(const q of [{x:p.x-1,y:p.y},{x:p.x,y:p.y-1},{x:p.x,y:p.y+1},{x:p.x+1,y:p.y}]){
+      const k=key(q);if(!points.has(k)||steps.has(k))continue;steps.set(k,depth+1);queue.push(q);
+    }
+  }
+  return [...v.legalChoices.moves].filter(p=>steps.has(key(p))).sort((a,b)=>steps.get(key(a))!-steps.get(key(b))!||a.x-b.x||a.y-b.y)[0]??null;
+}
+
+/** Ordinary autonomous daily policy. The model-controlled residents may choose any other
+ * admitted route, wording, diary impression, purchase, production or participation. */
+function routinePolicy(v:SocietyVisibleContext,a:SocietyAction,preference:number):SocietyAction{
+  const r=v.routine!,at=(p:{x:number;y:number})=>p.x===v.self.x&&p.y===v.self.y;
+  const say=(partner:string)=>{a.communication={kind:'proximityUtterance',intent:v.heard.some(h=>h.speaker===partner)?'affirm':'inform',
+    tone:v.local.districtWeather>0.3?'guarded':'warm',referent:{kind:'player',playerId:partner},context:v.self.role==='Baker'?'myPrice':null};};
+  const customer=r.customers.find(p=>v.hearing.includes(p));
+  if(customer)say(customer);
+  const otherBaker=v.self.role==='Baker'?v.local.people.find(p=>p.role==='Baker'&&v.hearing.includes(p.ref)):undefined;
+  if(!a.communication&&otherBaker&&!r.can.wallPost)say(otherBaker.ref);
+  if(!a.communication&&!r.tasks.conversation){const p=v.hearing[0];if(p)say(p);}
+  if(r.can.wallPost&&!a.communication)a.communication={kind:'wallPost',state:v.local.districtWeather>0.3?'uneasy':v.self.wealth<0.3?'isolated':'hopeful'};
+  if(r.can.work)a.occupation={kind:'work'};
+  if(r.can.diary&&(preference<0.3||r.tasks.wall&&r.tasks.food&&r.tasks.oracle&&r.tasks.work)){
+    const subject=v.legalChoices.diarySubjects.find(p=>v.heard.some(h=>h.speaker===p));
+    const heard=subject?v.heard.find(h=>h.speaker===subject):undefined;
+    a.diary={subject:subject??null,observation:heard?.tone==='guarded'?'stayedGuarded':heard?'openedUpUnprompted':'stayedGuarded',reading:'cantTellYet',context:null};
+  }
+  if(r.can.oracle){
+    if(v.dailyOracle?.canEnter)a.dailyOracle='enter';
+    if(v.oracle.canRedeem)a.oracle='redeem';
+    else if(v.oracle.canEnter&&v.self.wealth>=v.oracle.entryCost+0.7&&v.oracle.winProbability>=0.1)a.oracle='enter';
+  }
+  if(v.postcards&&!r.postcardsUsed&&v.legalChoices.postcards){
+    const claim=v.legalChoices.postcards.canClaim,recipes=v.legalChoices.postcards.fusion.filter(q=>!q.requiresClaim||claim);
+    const tiers=['white','green','blue','purple'];
+    const safe=recipes.filter(q=>q.stake===5).sort((x,y)=>tiers.indexOf(y.tier)-tiers.indexOf(x.tier))[0];
+    const risky=preference>0.75?recipes.filter(q=>q.stake<5).sort((x,y)=>tiers.indexOf(y.tier)-tiers.indexOf(x.tier)||y.stake-x.stake)[0]:undefined;
+    const fusion=risky??safe;
+    if(claim||fusion)a.postcards={claim,fusion:fusion?{tier:fusion.tier,stake:fusion.stake}:null};
+  }
+  const regular=v.dealings.find(d=>d.kind==='purchase'&&d.as==='recipient'&&d.outcome==='served')?.counterparty;
+  const offers=v.wall.prices.filter(p=>p.available&&p.sellerRef!==v.self.ref).sort((x,y)=>
+    (x.price-(x.sellerRef===regular?0.03:0))-(y.price-(y.sellerRef===regular?0.03:0))||x.sellerRef.localeCompare(y.sellerRef));
+  const chosen=offers[0],bakery=chosen?r.sites.bakeries.find(b=>b.sellerRef===chosen.sellerRef):undefined;
+  if(!r.tasks.food){
+    if(chosen&&v.legalChoices.purchaseSellers.includes(chosen.sellerRef)){
+      a.purchase={seller:chosen.sellerRef,quantity:1};
+      if(!a.communication&&v.hearing.includes(chosen.sellerRef))say(chosen.sellerRef);
+    }else if(r.can.foodFailure)a.purchase={kind:'seekFood'};
+  }
+  if(r.can.finishDay){
+    a.occupation={kind:'finishDay'};a.move=null;return a;
+  }
+  let target:{x:number;y:number}|undefined;
+  // A seller answers waiting customers at the shop before seeking its own next service.
+  if(r.customers.length&&!customer)target=r.sites.workplace??undefined;
+  else if(r.awaitingSeller)target=r.sites.bakeries.find(b=>b.sellerRef===r.awaitingSeller);
+  else if(!r.tasks.work)target=r.sites.workplace??undefined;
+  else if(!r.tasks.wall)target=r.sites.wall;
+  else if(!r.tasks.food)target=bakery??r.sites.bakeries.find(b=>b.sellerRef!==v.self.ref);
+  else if(!r.tasks.oracle)target=r.sites.oracle;
+  else if(!r.tasks.conversation)target=v.local.people.find(p=>v.hearing.includes(p.ref))??r.sites.wall;
+  else if(!r.tasks.diary)target=r.home;
+  else if(v.self.role!=='Grifter')target=r.sites.workplace??r.sites.wall;
+  if(!r.tasks.leftHome&&(!target||at(target))){
+    a.move=[...v.legalChoices.moves].sort((x,y)=>x.x-y.x||x.y-y.y)[0]??null;
+  }else if(target&&!at(target))a.move=toward(v,target);
   return a;
 }

@@ -18,7 +18,7 @@ interface Active {
   stop:()=>void;
 }
 type State=ReturnType<Society['inspect']>;
-interface Frame {cursor:string;sourceTick:number;worldHash:string;type:string;state:State;throughDay:number}
+interface Frame {cursor:string;sourceTick:number;worldHash:string;type:string;state:State;throughDay:number;throughDecisions:number;sourceTurn?:number;latest?:boolean}
 export class SocietyObservatorySource {
   #frames:Frame[]=[];#input!:SocietyObservationInput;#fingerprint='';
   #report!:ReturnType<typeof buildSocietyResultsReport>;
@@ -45,19 +45,33 @@ export class SocietyObservatorySource {
       verifySocietyTape(input.tape,input.tape.genesis.sourceRevision,{allowPartial:true});
       const tape=input.tape,s=new Society({seed:tape.genesis.seed,sourceRevision:tape.genesis.sourceRevision,
         config:tape.genesis.config,observerSecret:tape.genesis.observerSecret,
-        ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{})});
+        ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{})});
       const frames:Frame[]=[];
-      const frame=(type:string,throughDay:number,suffix='')=>frames.push({cursor:`day-${s.tick}-${s.hash}${suffix}`,
-        sourceTick:s.tick,worldHash:s.hash,type,state:s.inspect(),throughDay});
+      let throughDecisions=0;
+      const frame=(type:string,throughDay:number,suffix='',latest=false)=>frames.push({cursor:`day-${s.tick}-${s.hash}${suffix}`,
+        sourceTick:s.tick,worldHash:s.hash,type,state:s.inspect(),throughDay,throughDecisions,...(tape.routineConfig?{sourceTurn:s.turn}:{}),...(latest?{latest:true}:{})});
       frame('genesis',0);
-      for(const decision of tape.decisions){const before=s.tick;s.submit(decision.person,decision.action);if(s.tick!==before)frame('day_committed',s.tick);}
+      for(const decision of tape.decisions){const before=s.tick,beforeTurn=s.turn,beforePhase=s.phase;s.submit(decision.person,decision.action);throughDecisions++;
+        if(s.tick!==before)frame('day_committed',s.tick);
+        else if(tape.routineConfig&&(s.turn!==beforeTurn||s.phase!==beforePhase))frame('turn_committed',decision.day,`-turn-${s.turn}`);}
       if(this.active||tape.decisions.at(-1)?.day!==s.tick&&tape.decisions.length)
-        frame(control?.waitingDay?'awaiting_manual_tick':'recorded_prefix',s.tick+1,'-latest');
+        frame(control?.waitingDay?'awaiting_manual_tick':'recorded_prefix',s.tick+1,'-latest',true);
       if(this.active)frames.at(-1)!.cursor='live';
       const report=buildSocietyResultsReport(input);
-      if(report.integrityIssues.some(i=>i.code==='event_unreadable'))throw Error('society_observatory_evidence_boundary');
+      // A shape-valid request is still unauthorised if its claimed observation differs
+      // from the replayed view. Missing archives/summaries are honest partial evidence;
+      // contradictory evidence cannot be labelled replay_verified or keep a live run going.
+      if(report.integrityIssues.some(i=>i.code==='event_unreadable'||i.code.endsWith('_conflict')||
+        ['tape_shape','request_digest_mismatch','request_archive_mismatch','response_archive_mismatch','admitted_action_mismatch'].includes(i.code)))
+        throw Error('society_observatory_evidence_boundary');
       for(const r of [...report.agents.flatMap(a=>a.records),...report.unassignedRecords])
-        if(r.request.body!==null)validateSocietyWire(Buffer.from(r.request.body),r.request.recordedSha256??r.request.actualSha256!);
+        if(r.request.body!==null){
+          validateSocietyWire(Buffer.from(r.request.body),r.request.recordedSha256??r.request.actualSha256!);
+          if(this.active&&r.admission!=='recorded_in_tape'&&r.visible!==null){
+            if(!r.person||!s.pendingPeople().includes(r.person)||digest(s.view(r.person).visible)!==digest(r.visible))
+              throw Error('society_observatory_unbound_observation');
+          }
+        }
       this.#input=structuredClone(input);this.#report=report;this.#control=control;
       this.#frames=frames;this.#fingerprint=fingerprint;return true;
     }catch(error){this.active?.stop();throw error;}
@@ -65,7 +79,7 @@ export class SocietyObservatorySource {
   get latestCursor(){return this.#frames.at(-1)?.cursor??null;}
   get revision(){return this.#fingerprint;}
   has(cursor:string){return this.#frames.some(f=>f.cursor===cursor);}
-  list(){return this.#frames.map((f,seq)=>({cursor:f.cursor,sourceTick:f.sourceTick,type:f.type,seq,eventHash:f.worldHash,segmentId:this.#input.tape.genesisHash}));}
+  list(){return this.#frames.map((f,seq)=>({cursor:f.cursor,sourceTick:f.sourceTick,type:f.type,seq,eventHash:f.worldHash,segmentId:this.#input.tape.genesisHash,...(f.sourceTurn===undefined?{}:{sourceTurn:f.sourceTurn})}));}
   point(cursor:string|null=null){const p=cursor===null?this.#frames.at(-1):this.#frames.find(f=>f.cursor===cursor);if(!p)throw Error('observatory_cursor_unknown');return p;}
   configuration(){const start=this.#input.eventsText.split(/\r?\n/).filter(Boolean).map(line=>parseSocietyEvidence<any>(line)).find(e=>e.kind==='start');return start?.data.plan??null;}
   advance(cursor:unknown,expectedDay:unknown,version:unknown){
@@ -81,25 +95,31 @@ export class SocietyObservatorySource {
       sourceRunId:this.registration.id,sourceRevision:tape.genesis.sourceRevision,genesisSourceRevision:tape.genesis.sourceRevision,
       cursor:p.cursor,eventHash:p.worldHash,sourceTick:p.sourceTick,worldHash:p.worldHash,segmentRoot:null,
       mode:this.registration.mode,status:input.status??'recorded',verification:'replay_verified',following:cursor===null,
-      synthetic:this.registration.mode!=='live',providerReasoning:this.registration.mode==='live'?'provider_returned':'synthetic_test_only'};
+      synthetic:this.registration.mode!=='live',providerReasoning:this.registration.mode==='live'?'provider_returned':'synthetic_test_only',
+      ...(p.sourceTurn===undefined?{}:{sourceTurn:p.sourceTurn})};
     const result={...meta,hello:{...projected.hello,...meta,type:'hello'},frame:{...projected.frame,...meta,type:'tick'}};
     if(!researcher)return result;
-    const records=this.#report.agents.flatMap(a=>a.records).filter(r=>r.day!==null&&r.day<=p.throughDay);
+    const prefix=tape.decisions.slice(0,p.throughDecisions);
+    const records=this.#report.agents.flatMap(a=>a.records).filter(r=>r.day!==null&&r.day<=p.throughDay&&
+      (!tape.routineConfig||p.latest||prefix.some(d=>d.person===r.person&&d.day===r.day&&d.phase===r.phase&&(d.visible as any).routine?.turn===r.turn)));
     const modelCalls=records.map(r=>{
       const parsed=r.response.parsed as any,usage=parsed?.receipt?.usage;
-      return {requestId:r.requestId??`tape-${r.person}-${r.day}-${r.phase}`,actorId:r.person!,tick:r.day!,phase:r.phase,
+      const transition=r.worldTransition&&r.worldTransition.day<=p.sourceTick?r.worldTransition:null;
+      const recordedTransition=r.turn===undefined?transition:{submission:r.decisionTransition??null,turn:r.turnTransition??null,daily:transition};
+      return {requestId:r.requestId??`tape-${r.person}-${r.day}-${r.phase}${r.turn===undefined?'':`-${r.turn}`}`,actorId:r.person!,tick:r.day!,phase:r.phase,...(r.turn===undefined?{}:{turn:r.turn}),
         observation:r.visible??r.authorizedVisible,legalChoices:r.legalChoices,reasoning:r.reasoning,
         latencyMs:(r.events.find(e=>e.kind==='response')?.data as any)?.elapsedMs??null,
         proposal:r.proposedAction,admitted:r.submittedAction??r.validatedAction,executed:r.admission==='recorded_in_tape',
-        nextTick:r.worldTransition?.day??null,effects:[],usage:usage?{...usage,bookedMicroUsd:null}:null,heldMicroUsd:0,
-        transition:r.worldTransition,rawRecord:r};
+        nextTick:transition?.day??null,effects:[],usage:usage?{...usage,bookedMicroUsd:null}:null,heldMicroUsd:0,
+        transition:recordedTransition,rawRecord:transition===r.worldTransition?r:{...r,worldTransition:null,transitionStatus:'not_recorded'}};
     });
-    const autonomous=tape.decisions.filter(d=>!d.controlled&&d.day<=p.throughDay).map(d=>({
-      requestId:`policy-${d.person}-${d.day}-${d.phase}`,actorId:d.person,tick:d.day,phase:d.phase,observation:d.visible,
+    const autonomous=(tape.routineConfig?prefix:tape.decisions).filter(d=>!d.controlled&&d.day<=p.throughDay).map(d=>({
+      requestId:`policy-${d.person}-${d.day}-${d.phase}${(d.visible as any).routine?`-${(d.visible as any).routine.turn}`:''}`,actorId:d.person,tick:d.day,phase:d.phase,...((d.visible as any).routine?{turn:(d.visible as any).routine.turn}:{}),observation:d.visible,
       legalChoices:d.legalChoices,reasoning:{source:'deterministic_policy',status:'not_a_model',summaries:[]},
-      latencyMs:null,proposal:d.action,admitted:d.action,executed:true,nextTick:tape.transitions.some(t=>t.day===d.day)?d.day:null,
-      effects:[],usage:null,heldMicroUsd:0,transition:tape.transitions.find(t=>t.day===d.day)??null,rawRecord:d}));
-    const calls=[...modelCalls,...autonomous].sort((a,b)=>a.tick-b.tick||(a.phase==='commit'?0:1)-(b.phase==='commit'?0:1));
+      latencyMs:null,proposal:d.action,admitted:d.action,executed:true,nextTick:tape.transitions.some(t=>t.day===d.day&&t.day<=p.sourceTick)?d.day:null,
+      effects:[],usage:null,heldMicroUsd:0,transition:d.turn===undefined?tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null:
+        {submission:d.transition??null,turn:tape.turnTransitions?.find(t=>t.day===d.day&&t.turn===d.turn)??null,daily:tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null},rawRecord:d}));
+    const calls=[...modelCalls,...autonomous].sort((a,b)=>a.tick-b.tick||(a.phase==='commit'?0:1)-(b.phase==='commit'?0:1)||((a as any).turn??0)-((b as any).turn??0));
     const control=this.#control;
     return {...result,evidenceRevision:this.#fingerprint,phase:'execution',calls,timeline:this.list().slice(0,this.#frames.indexOf(p)+1),
       control:{manual:!!this.active?.gate,waitingDay:control?.waitingDay??null,version:control?.version??null,

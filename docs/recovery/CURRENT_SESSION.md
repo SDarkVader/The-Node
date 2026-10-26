@@ -1,146 +1,49 @@
-# Current diary implementation — 2026-10-26
+# Current Society daily implementation checkpoint
 
-Branch codex/daily-routine-2026-10-26 starts from merged PR51 main0e8797a.
-The owner confirmed OPTIONAL subject with constrained vocabulary; the implementation now
-allows null subject through the full boundary and kernel. Old contexts stay subject-required.
-Canonical fresh PC tests select the new contract, and review/genesis mismatches fail.
-Slot drift and expiry remain unchanged. No new paid call or private credential/journal read.
-[Implementation scope](../research/DIARY_SUBJECT_OPTIONAL_2026-10-26.md).
+Updated 2026-10-26. Work in existing repo branch codex/sequential-days-2026-10-26, based on
+main a345a68099f22e7b0f723266be19e2b689c903d6 (PR52). PR51 and52 merged after exact-head
+Windows/Linux checks passed. Earlier PR43 duplicate closed,47 then49 merged in order;
+owner merged50. Preserve unrelated trace.pdf and all private experiment/accounting history.
 
-The mandatory multi-turn day, visits and task-completion gate are not yet implemented.
-Role/customer constrained speech, daily Wall, food and diary remain required. The owner
-confirmed a failed food attempt may be recorded and allow closure after the other duties;
-no guaranteed food, money or Oracle win. Full abode/trespass is further work, not a fake
-read-by-ID shortcut. Requested system-design DOCX also remains pending.
+Society v4 adds fresh sequential turns per day, physical home/task visits, mandatory daily
+Wall/food attempts/diary and role/customer lexical speech, completion gating and deterministic
+non-model policies. Null diary subject is allowed; named subjects still require recognition,
+and no free text is admitted. The owner permits a recorded failed food attempt to allow day
+closure after other duties. Established economy settles once/day; no fabricated food/money,
+extra recognition credit, ageing or guaranteed Oracle outcome. Existing tapes remain replayable.
+[Current mechanics and material assumptions](../research/SEQUENTIAL_DAYS_2026-10-26.md).
 
-Earlier source-specific handover follows:
+START-NODE.ps1 is a standalone PowerShell wrapper over the canonical PC launcher. It requires
+no active assistant or Work session; paid calls require a fresh human START and the latest
+carried ledger. V4 call bounds are explicit; USD1 total/USD0.02 request ceilings remain.
+Terminal unused authorisation closes through an append-only validated event, never reset,
+deleted history or invented requests. Unknown usage or overrun continues to block new tests.
 
-# Current development and experiment checkpoint
+Observatory displays actual partial turns, exact per-turn contexts/choices/returned blocks
+and resulting transitions, with no same-day future-thinking exposure at historical cursors.
+Godot remains embedded and uses the same cursor. Day exports contain all chronological turns.
+The requested seven-page SystemDesign template document is created separately, source0ee
+snapshot, with original package/style/section preservation and all-page visual verification.
 
-Owner merged PR50 into main at c5cf2af0c89ea7d5783c5fbbc49823cd757262df. Both hosted
-Windows/Linux suites pass on source0acc4f49f03b61e1b9efc1688769c0374f3cc0bb; full
-regression1910passed/150files/0fail/7environment skips. Actual PowerShell preview:
-3days51decisions,9individualagenttickfiles,independentcoldreplayverified,zero paid calls.
-Archived20day behaviour data opens in the new UI with complete returned thinking by tick
-or full chronology; private contents are not published. Main was synced locally.
+Candidate v4 focused checks pass, including natural policy days without injected actions;
+committed-source fullsuite and cold PowerShell/browser verification are still required.
+Source0ee baseline passed1921tests/151files/0fail/7environment skips and8recoverytests;
+three days cold-replayed51decisions42diaries. No new paid/provider call, credential or actual
+private journal read occurred during this work. Do not reuse consumed approvals.
 
-Current colour follow-up branch codex/observatory-colour-balance-2026-10-26: stronger
-2D settlement overview weather/heat gradients, merging additive glows and clear role
-markers; main3D radiance reduced after owner correction. Gameplay unchanged in this slice.
-
-IMPORTANT OWNER CLARIFICATIONS FOR NEXT SIMULATION IMPLEMENTATION:
-- Each tick is a day containing several sequential turns, with fresh observations.
-- Residents visit task locations; Bakers/Millers leave their abode for daily tasks.
-- Food purchasing, Wall posting and diary writing are daily duties.
-- Diary subject is OPTIONAL, while constrained vocabulary/menus remain required.
-- An entry may be a diversion; do not fact-check or fabricate the agent's chosen content.
-- The day stays open until they choose when to write, and writing precedes rollover.
-- Role holders, including Bakers, must communicate with customers using lexical rules.
-- Preserve the established daily economic-gift Oracle and minimal-cost lottery/gambling.
-- Audit original/latest rules before implementing: do not treat simplified runner gaps
-  as the design. A01 Oct20/21 supersedes Oct18 diary/trespass review; latest Oct26 owner
-  decisions supersede A01 subject requirement/optional daily admission in the new mode.
-- Existing one-act/day runtime does not fulfil this routine. New version must preserve
-  old replays, diary decay, recognition/hearing, economy and host isolation. No paid run
-  has been made. Whole programme and requested system-design DOCX remain unfinished.
-
-Earlier handover follows:
-
-
-Current interface slice: codex/society-observatory-2026-10-26, based on merged main
-fd72553cb5c1c49b77baa25435f7b6ff9d39b8f8. PR47 and then PR49 merged after their own
-Windows/Linux checks passed. PR43 is closed as already incorporated, verified by both
-API and refreshed browser; its handoff blob matches main exactly.
-
-The owner requires one PC workflow, including Godot inside the Observatory, manual ticks,
-run/agent/tick selection, historical replay and raw individual per-agent per-tick records.
-The new implementation connects the actual Society tape and live accounted runner to the
-existing authenticated server. A gate waits before each day without reserving or calling;
-replay has no sender. Stale/duplicate/cross-origin/world-token control is rejected.
-Raw request/view/replay violations stop the active simulation. Readable and raw exports
-share identical tick files and retain failures/missing provider summaries honestly.
-
-A real Godot4.7.2 web export has rendered inside the browser and followed an actual
-offline tick. The installed engine is reused; the matching official template archive was
-checksum-verified, and only its single-threaded Web template is used. Compiled assets
-and the machine preset/history registry are private/local. The same PowerShell launcher
-opens a model-free preview or, with -Start, prepares a fresh source-pinned review and
-requires human START before the existing funded path. No actual provider, credential or
-private accounting-journal content was accessed here. Pending further checks: full suite,
-committed-source PowerShell/browser/replay proof and hosted CI.
-
-[Interface commands](../research/SOCIETY_OBSERVATORY_2026-10-26.md).
-The system-design DOCX using the supplied template remains to deliver after this slice.
-
-Earlier PR-integration handover (preserved as dated history):
-
-Updated 2026-10-26. The owner directed PR issue checks and merges in dependency order
-before further interface work. PR #43 is closed as already incorporated: its complete
-Oracle/civic handoff at 139f98fb50317feeb573403eab2fa91cf6f316fc is byte-identical to
-the copy on main. Its original branch and external package remain preserved; the obsolete
-documentation-branch checkpoint was not substituted for current recovery.
-
-PR #48 was already incorporated into PR #47. At final head
-0c0e089b7884488204b30a89a6a7ca1325b64af8, hosted Windows verification, Linux conformance
-and dependency audit all passed, with no review threads. PR #47 merged into main at
-aadb99be1c5736d8c601eb12a8da7db52465a3b1. Both CI repairs preserve strict recovery,
-exact byte assertions and the original test deadline. [CI evidence](PR47_CI_2026-10-26.md).
-
-Active review branch: codex/oracle-agent-playtest-2026-10-26. PR #49 now targets main
-and includes that dependency merge. Wait for its own Windows and Linux checks at the
-final reviewed head before merging. Oracle source 8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe
-passed 1,901 tests / 148 files, zero failures and seven environment skips; project/CLI
-TypeScript and eight recovery tests passed. Ten-day saved evidence cold-replays 170
-decisions, 140 free entries, 51 wins and 2.95 game-wealth paid from the declared treasury.
-[Oracle verification](../research/evidence/oracle-agent-trial-2026-10-26.json).
-
-The owner approved the explicit provisional free daily Oracle profile: prizes
-0.05 / 0.15 / 0.30, poor-health weights 100:5:0.1 to healthy 100:10:1 and a one-off
-100 game-wealth trial endowment. The real Society/request/worker/accounted/PowerShell
-path supports it independently of the paid lottery. Full-roster backing, canonical
-resolution order, real payouts, applicable caps, private observations and v3 replay are
-implemented. Genesis, paid plan, bundle and fresh review pin the full profile.
-[Ready command and rules](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
-
-Postcards remain explicit opt-in accounts with a required rate, stable-person ownership,
-24-hour virtual days, private claim/fusion choices and exact issuance/burn accounting.
-At source 0561d56c3f6fe6a5e3be62b99e4abe3147dd9515, 1,866 tests / 145 files passed;
-a 20-day, 332-decision tape cold-replays and repeats byte-identically.
-[PowerShell preparation and start](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md)
-uses the actual latest count-closed carried journal and a fresh source-pinned review.
-Preparation/check was verified with synthetic inputs only and creates no allowance.
-
-No actual provider call, live run, credential/private-journal read or historical approval
-reuse occurred during this implementation and PR integration. A future human-started
-run remains separate from historical results. Study 1 remains paused.
-
-Further work requested by the owner: wire the existing Observatory to actual Society
-world/evidence, run/agent/tick selectors, manual tick permits and read-only historical
-replay; keep one reusable local launch workflow; export separate chronological per-agent,
-per-tick files with exact contexts, decisions, provider-returned summaries or explicit
-missing-summary status, transitions and failures. Never imply access to hidden reasoning.
-The requested system-design DOCX using the supplied template is also still to deliver.
-Complete these after the PR sequence; do not claim the whole programme is finished.
-
-The following paragraphs preserve the prior shared-main experiment status:
-[PR #39](https://github.com/SDarkVader/The-Node/pull/39) consolidates the cloud and original interface lines for main.
-[PR #40](https://github.com/SDarkVader/The-Node/pull/40) supplies the perception/observatory foundation;
-[PR #41](https://github.com/SDarkVader/The-Node/pull/41) supplies its accounted environmental runtime.
-The owner merged #41 into #40 at5f84cc0; both ancestries are retained in the consolidation.
-The current cloud interface is the default; original Thinking/History tools remain an explicit compatibility mode.
-The complete supplied archive now verifies through tick 38.
-The owner-approved fresh first-person test completed20 ticks/40 calls and is stopped.
-Each Baker returned7/20 summaries; Study1 remains paused.
-
-[Current workflow](../research/OBSERVATORY_RUNBOOK.md) · [Reasoning audit and selected test](../research/REASONING_PARITY_AND_FRESH_TEST_2026-10-25.md) · [Current experiment](../research/CURRENT_EXPERIMENT.md).
+Further work: full A04 trespass transactions, multi-district daily routing, later approved
+opportunity calibration and separately defined behavioural evaluation. The original study
+and source-scoped historical evidence remain unchanged. SystemDesign is a design snapshot,
+not a claim that every mechanic is complete.
 
 <!-- NODE_SESSION_CHECKPOINT
 {
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "0e8797aefaabb183e34d1f5946b289b7a43feb7e",
+  "verifiedBaseCommit": "a345a68099f22e7b0f723266be19e2b689c903d6",
   "completedWork": [
+    "PR52 optionaldiary source0ee1325a0650dc2430f5b0b4b7fc636988629081 full1921passed151files0fail7environment skips; project/CLItypecheckand8recoverytests pass. Cold3day51decisions42diaries final643870b4fb2b60591956b3297d5dc21c7ff6d03437addc6657a92ce41f756041, tapeSHAff706c43de177faf1134c33e0cc5b3191fcfdbec6a88039d6511f83f13bc0e41. Hosted Windows121732846814/Linux121732846992+121732249990 green, no reviews; mergedmaina345a68. Current v4 sequential-day integration and standalone START-NODE wrapper implemented, focused checks passing; fullsourceverification in progress. Requested SystemDesign DOCX rendered/visuallyverified7pages from retainedtemplate and delivered separately as source0ee snapshot. No paid/provider/privatecredential/journal operation.",
     "PR51 mergedmain0e8797a after exactheadf2a72b4 Windows121721553858/Linux121721957858 and121721347216 passed, no review threads. Actual browser Godot and expanded2D visual check completed. Subjectoptional diary implemented through strict context/schema/worker/kernel/replay and source-bound real-run preparation; menus, recognition and existing decay preserved. Canonical PC preview/newly reviewed real test selects it. Focused59 tests and new review binding test pass; full source-specific regression pending. No paid calls or actual credentials/journal read.",
     "Owner mergedPR50 atc5cf2af after exacthead0acc4f4 Windows121695168692 and Linux121695168324/121695139866 passed. Full1910/150files/0fail/7skips. ActualPowerShellpreview3days51decisions9tickfiles18controlleddecisionrecords independently coldreplayed SHA b6d017dcca5c012e757686b633eb89afe2c897216c6bb10b6dc889b6420195b0, finalworld7a0cbe6e8266b6a1c1c8cd1e7e21c1772420aadcebbd07b12df860145452832e. No paid call. Newowner corrected strongcolour targetto2D andrequested3D lessintense; rendering-onlyfollowup. Ownerdaily-routine/optional-subjectlexicaldiary/rolecustomercommunication clarifications above are mandatorynextwork, notyetimplemented.",
     "PR47 mergedmain aadb99b and PR49 mergedmainfd72553 after all respective Windows/Linuxchecks passed. PR43 duplicateclosed, handoffbyteidentical and refreshedbrowser/APIverified. SocietyObservatory sourceca1010c passes1910tests/150files/0fail/7environment skips, TypeScript and8recoverytests. ActualWindowsPowerShelldefaultlauncher exportsGodot4.7.2 and startsoneauthenticatedpanel; embeddedGodotrenderedandoneoffline tickobserved. Latestthinkinghistory enhancement adds per-tick/fullchronologicalreturnedblocks withactualobservations,decisionsandtransitions; source-specificchecks pending. Hostedca1010c stoppedbeforetests because a JavaScript replacement string expanded a historical dollar-one sequence inside recovery JSON; restoring validmetadata with a function replacement, strictverifierunchanged. Noactualpaidcall/credential/privatejournalread.",
@@ -219,6 +122,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
+    "Complete current v4 source-bound fullsuite/coldreplay, realWindowsPowerShell synthetic prepare/check and embeddedGodot/manualday/replay/browser proof; commit/push/openPR, exactheadgreenchecks thenmergeinorder. Standaloneusercommand START-NODE.ps1 -Start -Ticks1; freshhumanSTART/currentjournal required. FullA04 and multiDistrictdaily furtherwork.",
     "Finish new versioned sequential daily routine, physical visits, Wall/diary/food and role/customer speech duties before claiming completion. Owner permits recorded food failure to close day after other duties. Keep day open until chosen diary write before rollover. Preserve old replay, daily ageing/recognition caps, real resource accounting; no provider call during implementation.",
     "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
     "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
@@ -227,6 +131,6 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/daily-routine-2026-10-26"
+  "reviewBranch": "codex/sequential-days-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->

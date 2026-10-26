@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { parseAnthropicResponse } from '../agent/anthropicResponse.js';
 import { digest } from '../agent/replay.js';
 import { parseSocietyEvidence, stringifySocietyEvidence } from './codec.js';
-import type { SocietyTape, SocietyDecisionRecord, SocietyTransition } from './runtime.js';
+import type { SocietyTape, SocietyDecisionRecord, SocietyTransition, SocietyTurnTransition } from './runtime.js';
 
 type Data = Record<string, any>;
 interface ReportEvent {
@@ -22,6 +22,9 @@ export interface SocietyReportInput {
 export interface SocietyReportIssue { code: string; eventLine?: number; requestId?: string; detail?: string }
 export interface SocietyCallReport {
   sequence: number; person: string | null; initialRole: string | null; day: number | null; phase: string | null;
+  turn?:number;
+  decisionTransition?:SocietyDecisionRecord['transition'];
+  turnTransition?:SocietyTurnTransition|null;
   requestId: string | null; requestIndex: number | null;
   request: { eventLine: number | null; body: string | null; archiveBody: string | null; recordedSha256: string | null;
     actualSha256: string | null; model: string | null; exactVisibleText: string | null; wire: unknown };
@@ -129,7 +132,7 @@ export function buildSocietyResultsReport(input: SocietyReportInput): SocietyRes
     const meta = Object.assign({}, ...es.map(e => e.data), requestEvent?.data ?? {});
     const requestId = groupId.startsWith('archive-only-') ? null : groupId;
     const problem = (code: string, detail?: string) => local.push({ code, ...(requestId ? { requestId } : {}), ...(detail ? { detail } : {}) });
-    for (const key of ['index', 'actorId', 'tick', 'phase']) {
+    for (const key of ['index', 'actorId', 'tick', 'phase', 'turn']) {
       const values = es.map(e => e.data[key]).filter(v => v !== undefined);
       if (new Set(values.map(v => JSON.stringify(v))).size > 1) problem('event_metadata_conflict', key);
     }
@@ -152,12 +155,14 @@ export function buildSocietyResultsReport(input: SocietyReportInput): SocietyRes
     let person = str(meta.actorId) ?? str(meta.person);
     const callDay = integer(meta.tick) ? meta.tick + 1 : integer(visible?.day) ? visible.day : null;
     const phase = str(meta.phase) ?? str(visible?.phase);
+    const turn=integer(meta.turn)?meta.turn:integer(visible?.routine?.turn)?visible.routine.turn:undefined;
     if (person === null && exactVisibleText !== null && tape) {
       const exactContexts = tape.decisions.filter(d => d.day === callDay && d.phase === phase && JSON.stringify(d.visible) === exactVisibleText);
       if (exactContexts.length === 1) person = exactContexts[0]!.person;
       else if (exactContexts.length > 1) problem('archive_identity_ambiguous');
     }
-    const candidates = tape?.decisions.filter(d => d.person === person && d.day === callDay && d.phase === phase) ?? [];
+    const candidates = tape?.decisions.filter(d => d.person === person && d.day === callDay && d.phase === phase &&
+      (turn===undefined||(d.visible as any).routine?.turn===turn)) ?? [];
     if (candidates.length > 1) problem('duplicate_tape_decision');
     const admitted = candidates[0];
     if (admitted) {
@@ -191,7 +196,8 @@ export function buildSocietyResultsReport(input: SocietyReportInput): SocietyRes
     const record: SocietyCallReport = {
       sequence: first.line || Number.MAX_SAFE_INTEGER - 10000 + (index ?? 0), person,
       initialRole: str(tape?.decisions.find(d => d.person === person)?.visible.self.role) ?? str(visible?.self?.role),
-      day: callDay, phase, requestId, requestIndex: index,
+      day: callDay, phase, ...(turn===undefined?{}:{turn,decisionTransition:admitted?.transition,
+        turnTransition:tape?.turnTransitions?.find(t=>t.day===callDay&&t.turn===turn)??null}),requestId, requestIndex: index,
       request: { eventLine: requestEvent?.line ?? null, body, archiveBody: archive?.requestBody ?? null, recordedSha256: recordedSha,
         actualSha256: actualSha, model: obj(wire) ? str(wire.model) : null, exactVisibleText, wire },
       visible, authorizedVisible: admitted?.visible ?? null,
@@ -212,7 +218,8 @@ export function buildSocietyResultsReport(input: SocietyReportInput): SocietyRes
   for (const d of tape?.decisions ?? []) if (d.controlled && !usedDecisions.has(d)) {
     issues.push({ code: 'tape_decision_without_request', detail: `${d.person}:day${d.day}:${d.phase}` });
     records.push({ sequence: Number.MAX_SAFE_INTEGER - 1000 + d.day * 2 + (d.phase === 'act' ? 1 : 0), person: d.person,
-      initialRole: str(d.visible.self.role), day: d.day, phase: d.phase, requestId: null, requestIndex: null,
+      initialRole: str(d.visible.self.role), day: d.day, phase: d.phase,...(integer((d.visible as any).routine?.turn)?{turn:(d.visible as any).routine.turn,
+        decisionTransition:d.transition,turnTransition:tape?.turnTransitions?.find(t=>t.day===d.day&&t.turn===(d.visible as any).routine.turn)??null}:{}), requestId: null, requestIndex: null,
       request: { eventLine: null, body: null, archiveBody: null, recordedSha256: null, actualSha256: null, model: null, exactVisibleText: null, wire: null },
       visible: null, authorizedVisible: d.visible, legalChoices: d.legalChoices,
       response: { source: 'unavailable', rawBase64: null, archiveRawBase64: null, rawText: null, sha256: null, parsed: null, archiveStatus: null },
@@ -223,7 +230,7 @@ export function buildSocietyResultsReport(input: SocietyReportInput): SocietyRes
       events: [], outcomes: [], issues: [{ code: 'tape_decision_without_request' }] });
   }
   records.sort((a, b) => (a.day ?? Number.MAX_SAFE_INTEGER) - (b.day ?? Number.MAX_SAFE_INTEGER) ||
-    (a.phase === 'commit' ? 0 : 1) - (b.phase === 'commit' ? 0 : 1) || a.sequence - b.sequence);
+    (a.phase === 'commit' ? 0 : 1) - (b.phase === 'commit' ? 0 : 1) || (a.turn??0)-(b.turn??0) || a.sequence - b.sequence);
   return { format: 'node-society-results-v1', sourceRevision: str(start?.plan?.sourceRevision) ?? str(runStart?.sourceRevision) ?? tape?.genesis.sourceRevision ?? null,
     model: str(start?.plan?.model), controlled, summary, runStart: input.runStart ?? null, finalization: input.finalization ?? null,
     recordedErrors: { explicit: input.errors ?? null, summaryError: obj(summary) ? summary.error ?? null : null,
@@ -251,8 +258,8 @@ function callMarkdown(r: SocietyCallReport): string {
   const archive = r.requestIndex === null ? 'Unavailable call archive index.' : `Original run archives: calls/${String(r.requestIndex).padStart(5, '0')}/request.json and response.json (when present).`;
   const chronology = r.events.map(e => ({ line: e.line, kind: e.kind, provenance: e.provenance ?? null, recoveryIndex: e.recoveryIndex ?? null,
     ...Object.fromEntries(Object.entries(obj(e.data) ? e.data : {}).filter(([key]) =>
-      ['requestId', 'index', 'actorId', 'person', 'tick', 'phase', 'status', 'stage', 'reason', 'elapsedMs', 'bookingError'].includes(key))) }));
-  const parts = [`## Request ${r.requestIndex ?? 'unavailable'} — day ${r.day ?? 'unavailable'}, ${r.phase ?? 'unavailable'}`,
+      ['requestId', 'index', 'actorId', 'person', 'tick', 'phase', 'turn', 'status', 'stage', 'reason', 'elapsedMs', 'bookingError'].includes(key))) }));
+  const parts = [`## Request ${r.requestIndex ?? 'unavailable'} — day ${r.day ?? 'unavailable'}, ${r.phase ?? 'unavailable'}${r.turn===undefined?'':`, turn ${r.turn}`}`,
     `Request ID: ${r.requestId ?? 'unavailable'}. Admission: ${r.admission}. Transition: ${r.transitionStatus}.`,
     '### Exact visible context sent', societyReportFence(r.request.exactVisibleText ?? 'Unavailable: no decodable request observation.', 'json'),
     ...(r.request.exactVisibleText === null && r.authorizedVisible !== null
@@ -267,6 +274,7 @@ function callMarkdown(r: SocietyCallReport): string {
     submitted: r.submittedAction, admission: r.admission }), 'json'),
     '### Recorded outcomes and event chronology', societyReportFence(json({ responseSource: r.response.source, archiveStatus: r.response.archiveStatus,
       outcomes: r.outcomes, events: chronology }), 'json'),
+    ...(r.turn===undefined?[]:['### Submission and shared turn transition',societyReportFence(json({submission:r.decisionTransition??null,turn:r.turnTransition??null}),'json')]),
     '### Shared daily world transition', societyReportFence(r.worldTransition === null ? 'Unavailable: no proven transition for this request.' : json(r.worldTransition), 'json'),
     '### Integrity findings', societyReportFence(json(r.issues), 'json'));
   return parts.join('\n\n');

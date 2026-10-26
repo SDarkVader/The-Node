@@ -9,6 +9,13 @@ export interface ParticipantHooks {
   locationFor: (person: string) => string | null;
   allowAction: (category: 'communication' | 'diary', person: string) => boolean;
   bakerPrice: (buildingId: string) => number | undefined;
+  /** Already resolved sequential turns, opt-in only. Recognition still steps once per day. */
+  resolvedSocial?: {
+    rumours: import('../world/world.js').RumourEventLite[];
+    conversations: import('../world/world.js').ProximityConversationHeardEvent[];
+    interactions: import('./recognition.js').Interaction[];
+    diaryWrites: string[];
+  };
 }
 export const roleArrays = (w: World) => [
   ['miller', w.millers], ['baker', w.bakers], ['courier', w.couriers],

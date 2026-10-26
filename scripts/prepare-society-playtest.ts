@@ -12,15 +12,17 @@ import {sha256} from '../src/agent/accountingStore.js';
 import {parseSocietyEvidence} from '../src/society/codec.js';
 import {societyPlanHash,validateSocietyPlan,type SocietyRunPlan} from '../src/society/accounted.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
+import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/society/routine.js';
 
 interface PostcardConfig {rate:{numerator:number;denominator:number};startAtMs:number;dayDurationMs:86400000}
-interface PreparedBundle {plan:SocietyRunPlan & {postcards?:PostcardConfig};genesis:{config:{diarySubjectOptional?:true}};postcardConfig?:PostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig;planSha256:string}
+interface PreparedBundle {plan:SocietyRunPlan & {postcards?:PostcardConfig};genesis:{config:{diarySubjectOptional?:true}};postcardConfig?:PostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig;routineConfig?:SocietyRoutineConfig;planSha256:string}
 export interface PlaytestReview {
   schema:'node-society-playtest-review-v1';
   priorJournalSource:string;
   postcards:PostcardConfig;
   dailyOracle?:SocietyDailyOracleConfig;
   diarySubjectOptional?:true;
+  routine?:SocietyRoutineConfig;
   launch:Omit<SocietyLaunchConfig,'approved'> & {approved:false};
 }
 export interface PreparePlaytestOptions {
@@ -28,13 +30,14 @@ export interface PreparePlaytestOptions {
   postcardStartMs?:number;ticks?:number;seed?:number;
   oracleConfig?:string;
   optionalDiarySubject?:boolean;
+  dailyTurns?:number;
 }
 export interface PlaytestEnvironment {
   repositoryRoot:string;
   /** Unit tests only. The production CLI supplies no verifier or bundle-builder seam. */
   sourceRevision?:string;
   verifySource?:(root:string,expectedRevision:string)=>void;
-  prepareBundle?:(output:string,options:{ticks:number;seed:number;postcards:PostcardConfig;dailyOracle?:SocietyDailyOracleConfig;optionalDiarySubject?:true})=>void;
+  prepareBundle?:(output:string,options:{ticks:number;seed:number;postcards:PostcardConfig;dailyOracle?:SocietyDailyOracleConfig;optionalDiarySubject?:true;routine?:SocietyRoutineConfig})=>void;
 }
 const fail=(code:string):never=>{throw Error(code);};
 const object=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v)&&Object.getPrototypeOf(v)===Object.prototype;
@@ -73,7 +76,7 @@ function postcardConfig(rate:string,startAtMs:number):PostcardConfig {
 function readPrior(path:string):{bytes:Buffer;historyHash:string} {
   if(existsSync(join(dirname(path),'.accounting.lock'))||existsSync(join(dirname(path),'.accounting.next')))fail('society_playtest_prior_busy');
   const bytes=file(path,8*1024*1024),view=inspectSocietyFunding(bytes);
-  if(view.held!==0n||view.overrun||!view.authorization||view.requests.length<view.authorization.maxRequests||view.requests.some(q=>q.bookedMicroUsd===null))
+  if(view.held!==0n||view.overrun||!view.authorization||!view.closure&&view.requests.length<view.authorization.maxRequests||view.requests.some(q=>q.bookedMicroUsd===null))
     fail('society_playtest_prior_not_closed');
   return {bytes,historyHash:view.historyHash};
 }
@@ -86,7 +89,9 @@ function readBundle(path:string):PreparedBundle {
 function validateReview(value:unknown):asserts value is PlaytestReview {
   const hasDailyOracle=object(value)&&Object.hasOwn(value,'dailyOracle');
   const hasOptionalSubject=object(value)&&Object.hasOwn(value,'diarySubjectOptional');
-  exact(value,['schema','priorJournalSource','postcards','launch',...(hasDailyOracle?['dailyOracle']:[]),...(hasOptionalSubject?['diarySubjectOptional']:[])]);
+  const hasRoutine=object(value)&&Object.hasOwn(value,'routine');
+  exact(value,['schema','priorJournalSource','postcards','launch',...(hasDailyOracle?['dailyOracle']:[]),...(hasOptionalSubject?['diarySubjectOptional']:[]),...(hasRoutine?['routine']:[])]);
+  if(hasRoutine){validateSocietyRoutineConfig(value.routine);if(!hasOptionalSubject)fail('society_playtest_routine_diary');}
   if(hasOptionalSubject&&value.diarySubjectOptional!==true)fail('society_playtest_diary_contract');
   if(value.schema!=='node-society-playtest-review-v1'||typeof value.priorJournalSource!=='string'||!isAbsolute(value.priorJournalSource))fail('society_playtest_review');
   exact(value.launch,['schema','sourceRevision','bundle','planSha256','priorDirectory','priorJournalSha256','priorHistoryHash','credentialSource','outputRoot','instruction','approved','runId']);
@@ -109,12 +114,14 @@ function checkReview(path:string,environment:PlaytestEnvironment) {
   if(!isDeepStrictEqual(bundle.postcardConfig,review.postcards)||!isDeepStrictEqual(bundle.plan.postcards,review.postcards))fail('society_playtest_feature_binding');
   if(!isDeepStrictEqual(bundle.dailyOracleConfig,review.dailyOracle)||!isDeepStrictEqual(bundle.plan.dailyOracle,review.dailyOracle))fail('society_playtest_daily_oracle_binding');
   if(bundle.genesis.config.diarySubjectOptional!==review.diarySubjectOptional)fail('society_playtest_diary_binding');
+  if(!isDeepStrictEqual(bundle.routineConfig,review.routine)||!isDeepStrictEqual(bundle.plan.routine,review.routine))fail('society_playtest_routine_binding');
   return {review,checked};
 }
 export function checkSocietyPlaytest(reviewPath:string,environment:PlaytestEnvironment) {
   const {review,checked}=checkReview(reviewPath,environment);
   return {...checked,review:resolve(reviewPath),approved:false,postcards:review.postcards,...(review.dailyOracle?{dailyOracle:structuredClone(review.dailyOracle)}:{}),
     ...(review.diarySubjectOptional?{diarySubjectOptional:true}:{}),
+    ...(review.routine?{routine:structuredClone(review.routine)}:{}),
     instruction:review.launch.instruction,outputRoot:review.launch.outputRoot};
 }
 /** A review contains approved:false. No authorization, key copy, allowance or inference is created. */
@@ -122,6 +129,9 @@ export function prepareSocietyPlaytest(options:PreparePlaytestOptions,environmen
   const root=resolve(environment.repositoryRoot),ticks=options.ticks??3,seed=options.seed??42;
   if(!Number.isSafeInteger(ticks)||ticks<1||ticks>20||!Number.isSafeInteger(seed))fail('society_playtest_bounds');
   if(options.optionalDiarySubject!==undefined&&typeof options.optionalDiarySubject!=='boolean')fail('society_playtest_diary_contract');
+  const routine:SocietyRoutineConfig|undefined=options.dailyTurns===undefined?undefined:{maxTurnsPerDay:options.dailyTurns};
+  if(routine)validateSocietyRoutineConfig(routine);
+  const optionalDiarySubject=!!routine||options.optionalDiarySubject===true;
   const postcards=postcardConfig(options.postcardRate,options.postcardStartMs??0);
   let dailyOracle:SocietyDailyOracleConfig|undefined;
   if(options.oracleConfig!==undefined){
@@ -137,19 +147,20 @@ export function prepareSocietyPlaytest(options:PreparePlaytestOptions,environmen
   // Created once. Failures leave review artifacts for diagnosis and never retry automatically.
   mkdirSync(output,{mode:0o700});mkdirSync(priorDirectory,{mode:0o700});
   writeFileSync(join(priorDirectory,'accounting.journal.json'),prior.bytes,{flag:'wx',mode:0o600});
-  if(environment.prepareBundle)environment.prepareBundle(bundlePath,{ticks,seed,postcards,...(dailyOracle?{dailyOracle}:{} ),...(options.optionalDiarySubject?{optionalDiarySubject:true}:{})});
+  if(environment.prepareBundle)environment.prepareBundle(bundlePath,{ticks,seed,postcards,...(dailyOracle?{dailyOracle}:{} ),...(optionalDiarySubject?{optionalDiarySubject:true}:{}),...(routine?{routine}:{})});
   else execFileSync(process.execPath,['--import','tsx',join(root,'scripts','run-society-live.ts'),'--prepare','--bundle',bundlePath,
     '--ticks',String(ticks),'--seed',String(seed),'--postcard-rate',options.postcardRate,'--postcard-start-ms',String(postcards.startAtMs),
-    ...(options.oracleConfig!==undefined?['--oracle-config',resolve(options.oracleConfig)]:[]),...(options.optionalDiarySubject?['--optional-diary-subject']:[])],
+    ...(options.oracleConfig!==undefined?['--oracle-config',resolve(options.oracleConfig)]:[]),...(optionalDiarySubject?['--optional-diary-subject']:[]),...(routine?['--daily-turns',String(routine.maxTurnsPerDay)]:[])],
     {cwd:root,windowsHide:true,stdio:'pipe',maxBuffer:4*1024*1024});
   const bundle=readBundle(bundlePath);
   if(bundle.plan.sourceRevision!==sourceRevision||bundle.plan.ticks!==ticks||!isDeepStrictEqual(bundle.postcardConfig,postcards)||!isDeepStrictEqual(bundle.plan.postcards,postcards))
     fail('society_playtest_prepared_bundle');
   if(!isDeepStrictEqual(bundle.dailyOracleConfig,dailyOracle)||!isDeepStrictEqual(bundle.plan.dailyOracle,dailyOracle))fail('society_playtest_prepared_daily_oracle');
-  if(bundle.genesis.config.diarySubjectOptional!==(options.optionalDiarySubject?true:undefined))fail('society_playtest_prepared_diary_contract');
-  const instruction=`I approve this fresh postcard-enabled society playtest on source ${sourceRevision}: ${ticks} days, at most ${bundle.plan.maxCalls} model calls, at most USD ${(bundle.plan.allowance.limitMicroUsd/1_000_000).toFixed(6)}, carrying the pinned prior accounting unchanged.${dailyOracle?` This includes the reviewed free daily Oracle catalogue and a declared one-off trial treasury of ${dailyOracle.treasuryMicro/1_000_000} game-wealth, separate from USD model spending.`:''} Stop on any boundary, accounting or transport failure; do not retry.`;
+  if(bundle.genesis.config.diarySubjectOptional!==(optionalDiarySubject?true:undefined))fail('society_playtest_prepared_diary_contract');
+  if(!isDeepStrictEqual(bundle.routineConfig,routine)||!isDeepStrictEqual(bundle.plan.routine,routine))fail('society_playtest_prepared_routine');
+  const instruction=`I approve this fresh postcard-enabled society playtest on source ${sourceRevision}: ${ticks} days, at most ${bundle.plan.maxCalls} model calls, at most USD ${(bundle.plan.allowance.limitMicroUsd/1_000_000).toFixed(6)}, carrying the pinned prior accounting unchanged.${routine?` Each day allows at most ${routine.maxTurnsPerDay} sequential action turns. The existing per-request ceiling remains USD ${(bundle.plan.allowance.perRequestMicroUsd/1_000_000).toFixed(6)}. A turn, call or spending limit stops and preserves an unfinished day; it never completes duties for an inhabitant. When the run ends with no held or unbooked usage and no overrun, append a terminal closure revoking unused allowance capacity so the next reviewed test can carry its exact history.`:''}${dailyOracle?` This includes the reviewed free daily Oracle catalogue and a declared one-off trial treasury of ${dailyOracle.treasuryMicro/1_000_000} game-wealth, separate from USD model spending.`:''} Stop on any boundary, accounting or transport failure; do not retry.`;
   const review:PlaytestReview={schema:'node-society-playtest-review-v1',priorJournalSource:priorSource,postcards,
-    ...(options.optionalDiarySubject?{diarySubjectOptional:true}:{}),
+    ...(optionalDiarySubject?{diarySubjectOptional:true}:{}),...(routine?{routine:structuredClone(routine)}:{}),
     ...(dailyOracle?{dailyOracle}:{}),
     launch:{schema:'node-society-launch-v1',sourceRevision,bundle:bundlePath,planSha256:bundle.planSha256,priorDirectory,
       priorJournalSha256:sha256(prior.bytes),priorHistoryHash:prior.historyHash,credentialSource:credential,
@@ -163,12 +174,13 @@ export function approveSocietyPlaytest(reviewPath:string,explicitApproval:boolea
   const {review,checked}=checkReview(reviewPath,environment),launchPath=join(dirname(resolve(reviewPath)),'launch.json');
   writeFileSync(launchPath,JSON.stringify({...review.launch,approved:true},null,2)+'\n',{flag:'wx',mode:0o600});
   return {launch:launchPath,sourceRevision:checked.sourceRevision,planSha256:checked.planSha256,...(review.dailyOracle?{dailyOracle:structuredClone(review.dailyOracle)}:{}),
+    ...(review.routine?{routine:structuredClone(review.routine)}:{}),
     ticks:checked.ticks,maxCalls:checked.maxCalls,limitMicroUsd:checked.limitMicroUsd,providerCalls:0,allowanceCreated:false};
 }
 function main(){
   const {values}=parseArgs({options:{prepare:{type:'boolean'},check:{type:'boolean'},approve:{type:'boolean'},review:{type:'string'},
     'prior-journal':{type:'string'},credential:{type:'string'},output:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},
-    'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'}}});
+    'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'}}});
   if([values.prepare,values.check,values.approve].filter(Boolean).length!==1)fail('society_playtest_explicit_mode');
   const repositoryRoot=resolve(dirname(fileURLToPath(import.meta.url)),'..'),environment={repositoryRoot};
   let result:unknown;
@@ -176,9 +188,9 @@ function main(){
     if(!values['prior-journal']||!values.credential||!values.output||!values['postcard-rate']||values.review)return fail('society_playtest_prepare_inputs');
     result=prepareSocietyPlaytest({priorJournal:values['prior-journal'],credentialFile:values.credential,outputRoot:values.output,
       postcardRate:values['postcard-rate'],postcardStartMs:Number(values['postcard-start-ms']??0),ticks:Number(values.ticks),seed:Number(values.seed),
-      ...(values['oracle-config']!==undefined?{oracleConfig:values['oracle-config']}:{}),...(values['optional-diary-subject']?{optionalDiarySubject:true}:{})},environment);
+      ...(values['oracle-config']!==undefined?{oracleConfig:values['oracle-config']}:{}),...(values['optional-diary-subject']?{optionalDiarySubject:true}:{}),...(values['daily-turns']===undefined?{}:{dailyTurns:Number(values['daily-turns'])})},environment);
   }else{
-    if(!values.review||[values['prior-journal'],values.credential,values.output,values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject']].some(v=>v!==undefined))return fail('society_playtest_review_inputs');
+    if(!values.review||[values['prior-journal'],values.credential,values.output,values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns']].some(v=>v!==undefined))return fail('society_playtest_review_inputs');
     result=values.approve?approveSocietyPlaytest(values.review,true,environment):checkSocietyPlaytest(values.review,environment);
   }
   process.stdout.write(JSON.stringify(result,null,2)+'\n');

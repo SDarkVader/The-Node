@@ -38,6 +38,15 @@ it('halts on a prohibited raw request even if it was never submitted into the wo
   f.events=JSON.stringify(JSON.parse(stringifySocietyEvidence({kind:'request',data:{requestId:'bad',actorId:person,index:0,tick:0,phase:'commit',body,sha256:sha256(body)}})));
   expect(()=>f.source.refresh()).toThrow('society_worker_instructions');expect(f.society.halted).toBe(true);
 });
+it('halts on a valid-shape request whose rehashed observation conflicts with the admitted tape view',()=>{
+  const f=fixture(),p=f.society.pendingPeople()[0]!,view=f.society.view(p),request=buildSocietyRequest(view.visible);
+  const wire=JSON.parse(request.body),observation=JSON.parse(wire.messages[0].content[0].text);
+  observation.self.wealth=987654;wire.messages[0].content[0].text=JSON.stringify(observation);const body=JSON.stringify(wire);
+  f.society.submit(p,autonomousPolicy(view.visible));
+  f.events=JSON.stringify(JSON.parse(stringifySocietyEvidence({kind:'request',data:{requestId:'TEST-ONLY-conflict',actorId:p,index:0,tick:0,phase:'commit',body,sha256:sha256(body)}})));
+  expect(()=>f.source.refresh()).toThrow('society_observatory_evidence_boundary');
+  expect(f.stopped).toBe(1);expect(f.society.halted).toBe(true);
+});
 it('authenticates manual control, rejects cross-origin requests and duplicate/stale permits, and keeps replay read-only',async()=>{
   const f=fixture(),researcherToken='r'.repeat(64),worldToken='w'.repeat(64),permit=f.gate.wait(1);f.source.refresh();
   const app=startObservatory({sources:[f.source],researcherToken,worldToken,port:0,pollMs:10000});apps.push(app);

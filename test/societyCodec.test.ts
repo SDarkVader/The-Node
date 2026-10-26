@@ -6,6 +6,17 @@ import { autonomousPolicy } from '../src/society/policy.js';
 import { digest } from '../src/agent/replay.js';
 
 describe('lossless society disk evidence',()=>{
+  it('compresses only new routine evidence deterministically, preserving lossless values and rejecting tampered bounds',()=>{
+    const value={format:'node-society-routine-v4',zero:-0,optional:undefined,records:Array.from({length:500},()=>({menu:['one','two','three'],selected:null}))};
+    const first=stringifySocietyEvidence(value),second=stringifySocietyEvidence(value);
+    expect(first).toBe(second);expect(JSON.parse(first).format).toBe('node-society-routine-evidence-v2');
+    expect(digest(parseSocietyEvidence(first))).toBe(digest(value));
+    const corrupt=JSON.parse(first);corrupt.uncompressedBytes=1;
+    expect(()=>parseSocietyEvidence(JSON.stringify(corrupt))).toThrow();
+    corrupt.uncompressedBytes=256*1024*1024+1;
+    expect(()=>parseSocietyEvidence(JSON.stringify(corrupt))).toThrow();
+    expect(JSON.parse(stringifySocietyEvidence({format:'node-society-offline-v1'})).format).toBe('node-society-evidence-v1');
+  });
   it('preserves absent versus undefined configuration and negative zero without modifying the original',()=>{
     const original={a:undefined,nested:{b:undefined,zero:-0},list:[undefined,0,null]};
     const restored=parseSocietyEvidence<typeof original>(stringifySocietyEvidence(original));

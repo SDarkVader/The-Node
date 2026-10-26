@@ -31,3 +31,13 @@ it('always retains the newest real journal pointer and blocks unfinished allowan
   book(3);expect(finishLocalTest(f.path).status).toBe('latest_history_carried');
   expect(readLocalTestSettings(f.path)).toMatchObject({pendingRun:null,priorJournal:journal});
 });
+it('carries a terminally closed unused allowance without waiting for its unchanged expiry or rewriting its journal',()=>{
+  const f=settings(),directory=join(f.pendingRun,'execution','allowance');mkdirSync(join(f.pendingRun,'execution'));
+  const budget=continuationBudget(continuationPlan(4),directory);handles.push(budget);
+  const auth=budget.view().authorization!;
+  budget.closeAllowance({runId:auth.runId,manifestSha256:auth.manifestSha256,closedAt:new Date().toISOString(),reason:'stopped'});
+  const journal=join(directory,'accounting.journal.json'),before=readFileSync(journal);
+  expect(finishLocalTest(f.path)).toMatchObject({status:'latest_history_carried',requests:0,heldMicroUsd:'0'});
+  expect(readLocalTestSettings(f.path)).toMatchObject({pendingRun:null,priorJournal:journal});
+  expect(readFileSync(journal)).toEqual(before);expect(budget.view().authorization!.expiresAt).toBe(auth.expiresAt);
+});

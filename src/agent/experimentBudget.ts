@@ -48,7 +48,7 @@ const same = (a: unknown, b: unknown) => canonical(a) === canonical(b);
 const exact = (v: object, keys: string[]) => same(Object.keys(v).sort(), [...keys].sort());
 const fingerprint = (d: unknown) => sha256(canonical(d));
 
-export interface CarriedSummary { bookedMicroUsd: string; heldMicroUsd: string; requests: number; overrun: boolean; expiresAt: string | null; prices: AccountingPrices | null }
+export interface CarriedSummary { bookedMicroUsd: string; heldMicroUsd: string; requests: number; overrun: boolean; expiresAt: string | null; prices: AccountingPrices | null;closedAt?:string }
 export interface CarriedAllowance { kind: 'node-initial-test-budget-v1' | 'node-experiment-budget-v1'; document: unknown; fingerprint: string; summary: CarriedSummary }
 export interface ExperimentAuthorization {
   runId: string; authorizedAt: string; expiresAt: string; expectedCarriedFingerprint: string; instruction: string;
@@ -62,10 +62,14 @@ const participant = (p: unknown): p is ReservedParticipant => object(p) && exact
 export interface ExperimentUsageReceipt { requestId: string; receiptId: string; sourceSha256: string; model: string; inputTokens: number; outputTokens: number }
 /** Operator disposition of an unknown outcome: the full ceiling is booked as a liability. */
 export interface ExperimentSettlement { requestId: string; operator: string; note: string; settledAt: string; basis: 'book_full_reserved_ceiling' }
+/** Terminal revocation of unused capacity. The manifest binds the reviewed source and plan.
+ * This records no request, receipt, refund, balance change or replacement authorization. */
+export interface ExperimentClosure {runId:string;manifestSha256:string;closedAt:string;reason:'completed'|'stopped'}
 type Event = { kind: 'authorization'; value: ExperimentAuthorization }
   | { kind: 'settlement'; value: ExperimentSettlement }
   | { kind: 'reservation'; value: ExperimentReservation; at: string }
-  | { kind: 'usage'; value: ExperimentUsageReceipt };
+  | { kind: 'usage'; value: ExperimentUsageReceipt }
+  | { kind: 'closure'; value: ExperimentClosure };
 interface Document { kind: 'node-experiment-budget-v1'; carried: CarriedAllowance; events: Event[] }
 interface RequestState { request: ExperimentReservation; ceilingMicroUsd: number; receipt: ExperimentUsageReceipt | null; bookedMicroUsd: bigint | null; settlement: ExperimentSettlement | null; reservedAt: string }
 
@@ -77,7 +81,8 @@ function checkCarried(c: unknown): asserts c is CarriedAllowance {
   if (!object(c) || !exact(c, ['kind', 'document', 'fingerprint', 'summary']) || !['node-initial-test-budget-v1', 'node-experiment-budget-v1'].includes(c.kind) ||
     !hash(c.fingerprint) || fingerprint(c.document) !== c.fingerprint) return fail('experiment_carried_invalid');
   const s = c.summary;
-  if (!object(s) || !exact(s, ['bookedMicroUsd', 'heldMicroUsd', 'requests', 'overrun', 'expiresAt', 'prices']) || !/^\d+$/.test(s.bookedMicroUsd) || !/^\d+$/.test(s.heldMicroUsd) ||
+  if (!object(s) || !exact(s, ['bookedMicroUsd', 'heldMicroUsd', 'requests', 'overrun', 'expiresAt', 'prices',...(Object.hasOwn(s,'closedAt')?['closedAt']:[])]) ||
+    Object.hasOwn(s,'closedAt')&&(c.kind!=='node-experiment-budget-v1'||!iso(s.closedAt)) || !/^\d+$/.test(s.bookedMicroUsd) || !/^\d+$/.test(s.heldMicroUsd) ||
     !integer(s.requests) || typeof s.overrun !== 'boolean' || !(s.expiresAt === null || iso(s.expiresAt)) || !(s.prices === null || checkPrices(s.prices, s.prices.model))) return fail('experiment_carried_invalid');
   // A carried experiment allowance is re-validated in full; an initial allowance was validated by InitialTestBudget when carried.
   if (c.kind === 'node-experiment-budget-v1') {
@@ -87,17 +92,19 @@ function checkCarried(c: unknown): asserts c is CarriedAllowance {
 }
 function summarize(s: ReturnType<typeof replay>): CarriedSummary {
   return { bookedMicroUsd: s.booked.toString(), heldMicroUsd: s.held.toString(), requests: s.requests.length, overrun: s.overrun,
-    expiresAt: s.authorization?.expiresAt ?? null, prices: s.authorization?.prices ?? null };
+    expiresAt: s.authorization?.expiresAt ?? null, prices: s.authorization?.prices ?? null,...(s.closure?{closedAt:s.closure.closedAt}:{}) };
 }
 
 function replay(d: Document) {
-  if (!object(d) || !exact(d, ['kind', 'carried', 'events']) || d.kind !== 'node-experiment-budget-v1' || !Array.isArray(d.events) || d.events.length > 3 * MAX_REQUESTS + 1) return fail('experiment_budget_schema');
+  if (!object(d) || !exact(d, ['kind', 'carried', 'events']) || d.kind !== 'node-experiment-budget-v1' || !Array.isArray(d.events) || d.events.length > 3 * MAX_REQUESTS + 2) return fail('experiment_budget_schema');
   checkCarried(d.carried);
   const requests = new Map<string, RequestState>(), receipts = new Set<string>(), streams = new Map<string, { selfRef: string; tick: number }>();
   let authorization: ExperimentAuthorization | null = null, overrun = false;
+  let closure:ExperimentClosure|undefined;
   const totals = () => ({ booked: [...requests.values()].reduce((n, q) => n + (q.bookedMicroUsd ?? 0n), 0n), held: [...requests.values()].reduce((n, q) => n + (q.bookedMicroUsd === null ? BigInt(q.ceilingMicroUsd) : 0n), 0n) });
   for (const event of d.events) {
     if (!object(event)) return fail('experiment_budget_event');
+    if(closure)return fail('experiment_budget_closed');
     if (event.kind === 'authorization') {
       const a = event.value, carried = d.carried.summary;
       if (!exact(event, ['kind', 'value']) || !object(a) || authorization || !exact(a, ['runId', 'authorizedAt', 'expiresAt', 'expectedCarriedFingerprint', 'instruction', 'scope', 'manifestSha256', 'model', 'maxRequests', 'limitMicroUsd', 'perRequestMicroUsd', 'prices']) ||
@@ -142,9 +149,16 @@ function replay(d: Document) {
         q.bookedMicroUsd !== null || typeof v.operator !== 'string' || !v.operator.trim() || v.operator.length > 128 || typeof v.note !== 'string' || !v.note.trim() ||
         v.note.length > 2048 || !iso(v.settledAt) || v.settledAt < q.reservedAt || v.basis !== 'book_full_reserved_ceiling') return fail('experiment_budget_settlement');
       q.settlement = structuredClone(v); q.bookedMicroUsd = BigInt(q.ceilingMicroUsd);
+    } else if(event.kind==='closure'){
+      const v=event.value,a=authorization,t=totals();
+      if(!exact(event,['kind','value'])||!object(v)||!exact(v,['runId','manifestSha256','closedAt','reason'])||!a||
+        v.runId!==a.runId||v.manifestSha256!==a.manifestSha256||!iso(v.closedAt)||v.closedAt<a.authorizedAt||
+        !['completed','stopped'].includes(v.reason)||overrun||t.held!==0n||[...requests.values()].some(q=>q.bookedMicroUsd===null||q.reservedAt>v.closedAt))
+        return fail('experiment_budget_closure');
+      closure=structuredClone(v);
     } else return fail('experiment_budget_event');
   }
-  return { requests: [...requests.values()], authorization, overrun, ...totals() };
+  return { requests: [...requests.values()], authorization, overrun, ...totals(),...(closure?{closure}:{}) };
 }
 function validate(v: unknown): Document { replay(v as Document); return structuredClone(v) as Document; }
 
@@ -155,8 +169,9 @@ function countClosed(c: CarriedAllowance, authorizedAt: string): boolean {
   const d = c.document as Document, a = d.events.find(e => e.kind === 'authorization')?.value;
   const reservations = d.events.filter(e => e.kind === 'reservation');
   const usage = d.events.filter(e => e.kind === 'usage');
-  return !!a && authorizedAt >= a.authorizedAt && reservations.length >= a.maxRequests &&
-    usage.length === reservations.length && d.events.every(e => e.kind !== 'reservation' || e.at <= authorizedAt);
+  const closure=d.events.find(e=>e.kind==='closure')?.value;
+  return !!a && authorizedAt >= a.authorizedAt && d.events.every(e => e.kind !== 'reservation' || e.at <= authorizedAt) &&
+    (closure?closure.closedAt<=authorizedAt:reservations.length >= a.maxRequests&&usage.length === reservations.length);
 }
 
 export class ExperimentBudget {
@@ -204,7 +219,8 @@ export class ExperimentBudget {
     this.#append({ kind: 'authorization', value });
   }
   reserve(value: ExperimentReservation, at = new Date().toISOString()): 'reserved' | 'duplicate' {
-    const prior = this.view(at).requests.find(q => q.request.id === value.id);
+    const view=this.view(at);if(view.closure)return fail('experiment_budget_closed');
+    const prior = view.requests.find(q => q.request.id === value.id);
     if (prior) { if (!same(prior.request, value)) return fail('experiment_budget_reservation_conflict'); return 'duplicate'; }
     this.#append({ kind: 'reservation', value, at }); return 'reserved';
   }
@@ -222,6 +238,13 @@ export class ExperimentBudget {
   view(now = new Date().toISOString()) {
     return experimentView(this.store.current(), now);
   }
+  /** Revoke only unused capacity after a terminal run. Unknown usage remains held and blocks
+   * closure. Exact retries are no-ops; changing a recorded terminal fact is forbidden. */
+  closeAllowance(value:ExperimentClosure):'closed'|'duplicate'{
+    const prior=this.view().closure;
+    if(prior){if(!same(prior,value))return fail('experiment_budget_closure_conflict');return 'duplicate';}
+    this.#append({kind:'closure',value});return 'closed';
+  }
   close() { this.store.close(); }
 }
 
@@ -230,7 +253,7 @@ function experimentView(d: Document, now: string) {
   const s = replay(d), a = s.authorization;
   const outstanding = s.requests.some(q => q.bookedMicroUsd === null);
   const remaining = a ? BigInt(a.limitMicroUsd) - s.booked - s.held : null;
-  const stop = !a ? 'not_authorized' : now < a.authorizedAt ? 'not_yet_open' : now >= a.expiresAt ? 'expired' : s.overrun ? 'overrun'
+  const stop = !a ? 'not_authorized' : s.closure?'closed':now < a.authorizedAt ? 'not_yet_open' : now >= a.expiresAt ? 'expired' : s.overrun ? 'overrun'
     : outstanding ? 'outstanding_hold' : s.requests.length >= a.maxRequests ? 'request_limit' : remaining! <= 0n ? 'cost_limit' : null;
   return { ...s, historyHash: fingerprint(d), carried: structuredClone(d.carried.summary), remainingMicroUsd: remaining,
     historicalBillingReconciled: false as const, budgetScope: 'new_experiment_spending_only' as const, canReserve: stop === null, stopReason: stop };

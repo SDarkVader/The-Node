@@ -48,7 +48,8 @@ $('call').onchange = () => { selectedCall = $('call').value; renderCall(); };
 $('agent').onchange=()=>{agentChosen=true;renderCalls();};$('phase').onchange=()=>renderCalls();
 $('thinking-scope').onchange=()=>renderThinkingHistory();
 $('tick-select').onchange=()=>{stopReplay();select($('tick-select').value||null).catch(showError);};
-function recordedTicks(){const byTick=new Map();for(const p of timeline)if(p.cursor!=='live'&&Number.isInteger(p.sourceTick))byTick.set(p.sourceTick,p);return [...byTick.values()].sort((a,b)=>a.sourceTick-b.sourceTick);}
+function recordedTicks(){const points=timeline.filter(p=>p.cursor!=='live'&&Number.isInteger(p.sourceTick));if(points.some(p=>Number.isInteger(p.sourceTurn)))return points;
+  const byTick=new Map();for(const p of points)byTick.set(p.sourceTick,p);return [...byTick.values()].sort((a,b)=>a.sourceTick-b.sourceTick);}
 function stopReplay(){if(replayTimer)clearInterval(replayTimer);replayTimer=null;$('replay-play').textContent='Play recorded ticks';}
 $('replay-play').onclick=()=>{
   if(replayTimer){stopReplay();return;}
@@ -75,7 +76,7 @@ function render(s) {
   $('provenance').textContent = `Source ${s.sourceRevision.slice(0, 12)} · world ${s.worldHash.slice(0, 16)} · replay verified through day ${s.sourceTick}`;
   const event = s.timeline?.at(-1);
   $('cursor').textContent = `${event?.type ?? 'evidence'} · ${s.cursor}`;
-  $('tick').textContent = `Day ${s.sourceTick}`;
+  $('tick').textContent = Number.isInteger(s.sourceTurn)&&s.sourceTurn>0?`Day ${s.sourceTick+1} · turn ${s.sourceTurn}`:`Day ${s.sourceTick}`;
   $('godot').textContent = `NODE_OBSERVATORY_URL=${location.origin.replace(/^http/, 'ws')}${base()}/world`;
   // The full timeline remains available when browsing an earlier prefix.
   if (s.timeline?.length > timeline.length) timeline = s.timeline;
@@ -92,7 +93,7 @@ function render(s) {
   }));
   if(agents.includes(selectedAgent))$('agent').value=selectedAgent;
   if(!agentChosen&&s.society?.controlled?.length)$('agent').value=s.society.controlled[0];
-  const ticks=recordedTicks();$('tick-select').replaceChildren(new Option('Live / latest',''),...ticks.map(p=>new Option(`World tick ${p.sourceTick}`,p.cursor)));
+  const ticks=recordedTicks();$('tick-select').replaceChildren(new Option('Live / latest',''),...ticks.map(p=>new Option(p.sourceTurn>0?`Day ${p.sourceTick+1} · turn ${p.sourceTurn}`:`World tick ${p.sourceTick}`,p.cursor)));
   $('tick-select').value=s.following?'':s.cursor;
   $('advance').disabled=!s.control?.canAdvance;
   $('stop').disabled=!s.control?.canStop;
@@ -105,7 +106,7 @@ function render(s) {
 function renderCalls(previousCursor=snapshot?.cursor,previousActor){
   const s=snapshot;if(!s)return;
   const visible = s.calls.filter(c => c.tick === s.calls.at(-1)?.tick&&(!$('agent').value||c.actorId===$('agent').value)&&(!$('phase').value||c.phase===$('phase').value));
-  $('call').replaceChildren(...visible.map(c => new Option(`${c.actorId} · day ${c.tick} · ${c.phase??'decision'} · ${c.executed ? 'executed' : c.reasoning.status}`, c.requestId)));
+  $('call').replaceChildren(...visible.map(c => new Option(`${c.actorId} · day ${c.tick} · ${c.phase??'decision'}${Number.isInteger(c.turn)?' · turn '+c.turn:''} · ${c.executed ? 'executed' : c.reasoning.status}`, c.requestId)));
   selectedCall = previousCursor === s.cursor && visible.some(c => c.requestId === selectedCall) ? selectedCall
     : visible.find(c => c.actorId === previousActor)?.requestId ?? visible.at(-1)?.requestId ?? '';
   $('call').value = selectedCall; renderCall();
@@ -149,7 +150,7 @@ async function renderThinkingHistory(){
     $('thinking-history').replaceChildren();
     for(const r of records){
       const box=document.createElement('article'),heading=document.createElement('h3'),status=document.createElement('p'),thinking=document.createElement('pre');
-      heading.textContent=`${r.agentId} · day ${r.day} · ${r.phase??'decision'}`;
+      heading.textContent=`${r.agentId} · day ${r.day} · ${r.phase??'decision'}${Number.isInteger(r.turn)?' · turn '+r.turn:''}`;
       status.className='caption';status.textContent=`${r.thinking.source??history.reasoningSource} · ${r.thinking.status} · ${r.executed?'action executed':'not executed'} · ${r.nextTick===null?'day not committed':'world tick '+r.nextTick}`;
       thinking.textContent=r.thinking.status==='not_a_model'?'Deterministic policy; no model thinking.':r.thinking.summaries.join('\n\n')||'No thinking text was returned. Missing or redacted content has not been reconstructed.';
       const details=document.createElement('details'),summary=document.createElement('summary'),facts=document.createElement('pre');

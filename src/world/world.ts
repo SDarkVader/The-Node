@@ -2585,8 +2585,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   const occupantPositionById = new Map(occupants.map((o) => [o.playerId, { x: o.x, y: o.y }]));
   const proximityGraph = buildProximityGraph(occupants, config.commsProximityRange);
 
-  let lastRumourEvents: RumourEventLite[] = [];
-  for (const post of world.pendingWallPosts) {
+  const resolvedSocial = participant?.resolvedSocial;
+  let lastRumourEvents: RumourEventLite[] = resolvedSocial ? structuredClone(resolvedSocial.rumours) : [];
+  for (const post of resolvedSocial ? [] : world.pendingWallPosts) {
     if (participant && !participant.allowAction('communication', post.authorId)) continue;
     for (const { id: neighborId, weight } of proximityGraph.neighbors(post.authorId)) {
       const step = stepClarity(1, weight, { baseSuccessChance: 0.6, decayPerStep: 0.3, clarityFloor: 0.15 }, rng);
@@ -2622,7 +2623,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
       if (filled) districtOfIdentity.set(identityOf(buildingId), districtId);
     }
     for (const g of grifters) if (g.districtId) districtOfIdentity.set(identityOf(g.id), g.districtId);
-    for (const post of world.pendingWallPosts) {
+    for (const post of resolvedSocial ? [] : world.pendingWallPosts) {
       if (participant && !participant.allowAction('communication', post.authorId)) continue;
       const home = districtOfIdentity.get(post.authorId);
       if (home === undefined) continue;
@@ -2648,10 +2649,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // own design (no store, nothing to persist) — `lastProximityConversations` reports exactly
   // what happened this tick and nothing accumulates across ticks, same shape as
   // `lastRumourEvents`.
-  const lastProximityConversations: ProximityConversationHeardEvent[] = [];
+  const lastProximityConversations: ProximityConversationHeardEvent[] = resolvedSocial ? structuredClone(resolvedSocial.conversations) : [];
   const lastProximityRejections: Array<{ speakerId: PlayerId; reason: string }> = [];
-  const talkInteractions: Interaction[] = [];
-  for (const pending of world.pendingProximityUtterances) {
+  const talkInteractions: Interaction[] = resolvedSocial ? structuredClone(resolvedSocial.interactions) : [];
+  for (const pending of resolvedSocial ? [] : world.pendingProximityUtterances) {
     if (participant && !participant.allowAction('communication', pending.speakerId)) continue;
     const neighbors = proximityGraph.neighbors(pending.speakerId);
     const presentPlayerIds = new Set(neighbors.map((n) => n.id));
@@ -2713,7 +2714,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // writable the same day, not lagged a tick. `diary` is the one mutable exception to this
   // file's snapshot convention — see the `World.diary` field's own doc comment.
   const diary = world.diary;
-  const lastDiaryWrites: PlayerId[] = [];
+  const lastDiaryWrites: PlayerId[] = resolvedSocial ? [...resolvedSocial.diaryWrites] : [];
   const lastDiaryRejections: Array<{ authorId: PlayerId; reason: string }> = [];
   for (const entry of world.pendingDiaryEntries) {
     if (participant && !participant.allowAction('diary', entry.authorId)) continue;
@@ -2844,6 +2845,9 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
     // the plaza beside the Wall, never inside it.
     const district = districtById.get(districtId);
     if (!district) return { ...g, districtId };
+    // Sequential residents already walked through validated turns. Daily housing
+    // bookkeeping must not silently relocate their bodies after they returned home.
+    if (participant?.resolvedSocial && district.plots.some(p => p.x === g.x && p.y === g.y)) return {...g,districtId};
     const standable = district.plots.filter(
       (p) => !(p.x === shardWithWeather.hubPlot.x && p.y === shardWithWeather.hubPlot.y),
     );
