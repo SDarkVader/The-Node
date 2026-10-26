@@ -1,10 +1,20 @@
 # GitHub-first continuation — The Node
 
-The next active Oracle trial branch is `codex/oracle-agent-playtest-2026-10-26`.
-The owner-approved explicit daily profile and real PowerShell command are in
-[Oracle agent trial](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
-PR47's inherited branch checkpoint was repaired at1a9df17 after PR48 merged into it;
-the strict verifier was preserved. Inspect current refs and hosted results.
+Updated 2026-10-26. The shared branch is `main`. PR43 was closed as a duplicate;
+PR47, PR49, PR50, PR51 and PR52 are merged. [PR53](https://github.com/SDarkVader/The-Node/pull/53)
+contains the sequential-day implementation and standalone PC launcher, reviewed on
+`codex/sequential-days-2026-10-26`. Check its current merge state and exact head.
+Read [CURRENT_SESSION](CURRENT_SESSION.md) and
+[sequential days](../research/SEQUENTIAL_DAYS_2026-10-26.md) for current mechanics,
+source-scoped verification, remaining work and the ordinary PowerShell command.
+
+`START-NODE.ps1 -Start -Ticks 1` prepares a fresh real test without an assistant session.
+The operator must review the actual source, maximum calls and USD bounds and enter START.
+The launcher carries the latest private accounting history; a clone never supplies that
+history, credentials or permission to spend. This recovery guide grants no spending approval.
+
+The following records describe earlier integration stages. Their branch names and test
+counts are historical; they do not override the current handover or actual Git refs.
 
 Updated 2026-10-26. A fresh phone, PC or cloud session can recover development context from GitHub.
 The owner requested publication as implementation proceeds. PR #44 published the society runner
@@ -25,7 +35,7 @@ closes old real-dispatch paths while retaining historical verification.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and
 [CURRENT_SESSION](CURRENT_SESSION.md); verify actual refs instead of assuming a historical HEAD.
 
-## Active branch and current experiment
+## Earlier branch and experiment record
 
 Repository: `SDarkVader/The-Node`. Shared recovery branch: `main`; current review branch:
 `codex/postcard-shortcuts-2026-10-26`. The Oracle/civic work proceeds one verified slice at a time.

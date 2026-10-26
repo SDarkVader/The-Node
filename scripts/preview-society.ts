@@ -16,6 +16,7 @@ const {values}=parseArgs({options:{history:{type:'string'},'web-world':{type:'st
 const days=Number(values.ticks);if(!Number.isSafeInteger(days)||days<1||days>20)throw Error('society_preview_days');
 const sourceRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
 const society=new Society({seed:42,sourceRevision,config:{...societyConfig(),diarySubjectOptional:true},postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
+  routine:{maxTurnsPerDay:128},
   dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))});
 const output=values.output?resolve(values.output):join(mkdtempSync(join(tmpdir(),'node-society-preview-')),'run');
 mkdirSync(output,{recursive:true});
@@ -32,7 +33,7 @@ try{
     const day=society.tick+1;
     while(society.tick<day)for(const person of society.pendingPeople()){
       const view=society.view(person),action=autonomousPolicy(view.visible),controlled=society.controlled.includes(person);
-      const binding={requestId:`preview-${index}`,index,actorId:person,person,tick:society.tick,phase:society.phase};
+      const binding={requestId:`preview-${index}`,index,actorId:person,person,tick:society.tick,phase:society.phase,turn:society.turn};
       if(controlled){const request=buildSocietyRequest(view.visible);emit({kind:'request',data:{...binding,body:request.body,sha256:request.sha256}});}
       society.submit(person,action);
       if(controlled){emit({kind:'decision',data:{...binding,status:'validated',action}});index++;}

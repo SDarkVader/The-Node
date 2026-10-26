@@ -147,6 +147,7 @@ export function startObservatory(options: Options) {
         return json(res,200,{experimentId:s.registration.id,cursor:value.cursor,sourceTick:value.sourceTick,
           reasoningSource:value.providerReasoning,records:value.calls.filter(c=>!agent||c.actorId===agent).map(c=>({
             agentId:c.actorId,day:c.tick,phase:'phase'in c?c.phase:null,requestId:c.requestId,
+            ...('turn'in c?{turn:c.turn}:{}),
             thinking:c.reasoning,observation:c.observation,legalChoices:'legalChoices'in c?c.legalChoices:null,
             proposed:c.proposal,admitted:c.admitted,executed:c.executed,nextTick:c.nextTick,
             transition:'transition'in c?c.transition:null,usage:c.usage}))});

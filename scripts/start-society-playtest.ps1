@@ -10,6 +10,7 @@ param(
   [Parameter(ParameterSetName = 'Prepare')][int]$Seed = 42,
   [Parameter(ParameterSetName = 'Prepare')][ValidateNotNullOrEmpty()][string]$OracleConfig,
   [Parameter(ParameterSetName = 'Prepare')][switch]$OptionalDiarySubject,
+  [Parameter(ParameterSetName = 'Prepare')][ValidateRange(1,128)][int]$DailyTurns,
   [Parameter(Mandatory = $true, ParameterSetName = 'Review')][string]$Review,
   [Parameter(ParameterSetName = 'Review')][switch]$CheckOnly,
   [Parameter(ParameterSetName = 'Review')][switch]$ApprovePaidRun,
@@ -33,6 +34,7 @@ try {
       '--ticks', [string]$Ticks, '--seed', [string]$Seed)
     if (-not [string]::IsNullOrEmpty($OracleConfig)) { $prepareArguments += @('--oracle-config', $OracleConfig) }
     if ($OptionalDiarySubject) { $prepareArguments += '--optional-diary-subject' }
+    if ($PSBoundParameters.ContainsKey('DailyTurns')) { $prepareArguments += @('--daily-turns', [string]$DailyTurns) }
     $raw = & $nodeExecutable @prepareArguments
     if ($LASTEXITCODE -ne 0) { throw 'Playtest preparation failed. Preserve any new files and inspect the error; no live call was made.' }
     $result = ($raw -join "`n") | ConvertFrom-Json

@@ -2,7 +2,7 @@
  * Policies receive only boundary.visible. No provider, credential, shell or tool dispatcher
  * is imported here. Submitted JSON is data, never evaluated JavaScript.
  */
-import { createParticipantState, stepParticipantState, fixtureGenesis, type Genesis, type ParticipantState } from '../agent/participantWorld.js';
+import { createParticipantState, stepParticipantState, stepParticipantTurn, fixtureGenesis, type Genesis, type ParticipantState } from '../agent/participantWorld.js';
 import { digest, evidenceHash } from '../agent/replay.js';
 import { roleArrays } from '../engine/inhabitants.js';
 import { personBody, observerRef, refHexLength } from '../server/observer.js';
@@ -20,14 +20,17 @@ import { buildSocietyContext, validateSocietyAction, parseSocietyResponse, Socie
 import {SocietyPostcardBook,type SocietyPostcardConfig,type SocietyPostcardTransition} from './postcards.js';
 import type {PostcardAccount} from '../engine/postcardAccount.js';
 import {SocietyDailyOracleBook,type SocietyDailyOracleConfig,type SocietyDailyOracleTransition} from './dailyOracle.js';
+import {SocietyRoutineBook,validateSocietyRoutineConfig,type SocietyRoutineConfig} from './routine.js';
 
 export type Phase = 'commit' | 'act';
 export type SocietyView = ReturnType<typeof buildSocietyContext>['visible'];
 export interface SocietyOptions { seed: number; sourceRevision: string; config?: WorldConfig; observerSecret?: string;
-  postcards?:SocietyPostcardConfig;dailyOracle?:SocietyDailyOracleConfig }
+  postcards?:SocietyPostcardConfig;dailyOracle?:SocietyDailyOracleConfig;routine?:SocietyRoutineConfig }
 export interface SocietyDecisionRecord {
   day: number; phase: Phase; person: string; controlled: boolean;
   visible: SocietyView; legalChoices: unknown; action: SocietyAction;
+  turn?:number;
+  transition?:{beforeHash:string;afterHash:string;beforeTick:number;afterTick:number;effects:{person:string;category:string}[]};
 }
 export interface SocietyTransition {
   day: number; beforeHash: string; afterHash: string; effects: {person:string;category:string}[];
@@ -36,12 +39,15 @@ export interface SocietyTransition {
   conditions: {district:string;tension:number;state:string}[];
   postcards?:SocietyPostcardTransition[];
   dailyOracle?:SocietyDailyOracleTransition & {paidLotteryCapOverflow:number};
+  routine?:{turns:number;residents:ReturnType<SocietyRoutineBook['summary']>};
 }
+export interface SocietyTurnTransition {day:number;turn:number;beforeHash:string;afterHash:string;effects:{person:string;category:string}[]}
 export interface SocietyTape {
-  format: 'node-society-offline-v1'|'node-society-postcards-v2'|'node-society-daily-oracle-v3'; genesis: Genesis; controlled: string[];
+  format: 'node-society-offline-v1'|'node-society-postcards-v2'|'node-society-daily-oracle-v3'|'node-society-routine-v4'; genesis: Genesis; controlled: string[];
   genesisHash: string; decisions: SocietyDecisionRecord[]; transitions: SocietyTransition[];
   postcardConfig?:SocietyPostcardConfig; postcardAccounts?:[string,PostcardAccount][];
   dailyOracleConfig?:SocietyDailyOracleConfig;dailyOracleState?:ReturnType<SocietyDailyOracleBook['snapshot']>;
+  routineConfig?:SocietyRoutineConfig;routineState?:ReturnType<SocietyRoutineBook['snapshot']>;turnTransitions?:SocietyTurnTransition[];
 }
 const publicRole = {baker:'Baker',miller:'Miller',courier:'Courier',investigator:'Investigator',importExport:'ImportExport'} as const;
 
@@ -70,8 +76,13 @@ export class Society {
   #tape: SocietyTape;
   #postcards?:SocietyPostcardBook;
   #dailyOracle?:SocietyDailyOracleBook;
+  #routine?:SocietyRoutineBook;
+  #turnTransitions:SocietyTurnTransition[]=[];
+  #routineEvidenceBytes=0;
+  #routineEvidenceNodes=0;
   constructor(options: SocietyOptions) {
     const genesis = fixtureGenesis(options.seed, options.config ?? societyConfig());
+    if(options.routine!==undefined){validateSocietyRoutineConfig(options.routine);genesis.config={...genesis.config,diarySubjectOptional:true,purchaseCycleDays:1};}
     genesis.namespace = 'society-inhabitant'; genesis.sourceRevision = options.sourceRevision;
     if (options.observerSecret) genesis.observerSecret = options.observerSecret;
     if (genesis.config.recognition !== 'v2' || genesis.config.settlement === 'legacy') throw Error('society_requires_recognition_v2_funded_settlement');
@@ -80,31 +91,36 @@ export class Society {
     if (controlled.length !== 3 || genesis.config.rBaker !== 2 || genesis.config.rMiller !== 1) throw Error('society_initial_two_bakers_one_miller_required');
     if(options.postcards)this.#postcards=new SocietyPostcardBook(options.postcards,genesis.seed,this.#activePeople());
     if(options.dailyOracle)this.#dailyOracle=new SocietyDailyOracleBook(options.dailyOracle,genesis.seed);
+    if(options.routine!==undefined)this.#routine=new SocietyRoutineBook(options.routine,this.#state);
     this.#resetCommitments();
-    this.#tape = {format:this.#dailyOracle?'node-society-daily-oracle-v3':this.#postcards?'node-society-postcards-v2':'node-society-offline-v1',genesis:structuredClone(genesis),controlled,
+    this.#tape = {format:this.#routine?'node-society-routine-v4':this.#dailyOracle?'node-society-daily-oracle-v3':this.#postcards?'node-society-postcards-v2':'node-society-offline-v1',genesis:structuredClone(genesis),controlled,
       genesisHash:this.hash,decisions:[],transitions:[],...(this.#postcards?{postcardConfig:structuredClone(this.#postcards.config)}:{}),
-      ...(this.#dailyOracle?{dailyOracleConfig:structuredClone(this.#dailyOracle.config)}:{})};
+      ...(this.#dailyOracle?{dailyOracleConfig:structuredClone(this.#dailyOracle.config)}:{}),...(this.#routine?{routineConfig:structuredClone(this.#routine.config)}:{})};
   }
   get tick() { return this.#state.world.tick; }
   get phase() { return this.#phase; }
   get halted() { return this.#halted; }
   get revision() { return this.#revision; }
+  get turn(){return this.#routine?(this.#phase==='commit'?0:this.#routine.turn):undefined;}
+  get stoppedReason(){return this.#routine?.limitReached?'society_daily_turn_limit':this.#halted?'society_halted':null;}
   /** External transport/accounting failures revoke further execution, without a retry. */
   halt(): void { if (!this.#halted) { this.#halted=true; this.#revision++; } }
   get hash() { const original=[evidenceHash(this.#state),[...this.#oracle],this.#phase,[...this.#prices],[...this.#quantities],this.#wall];
     const cards=this.#postcards?[...original,this.#postcards.config,this.#postcards.exportAccounts()]:original;
-    return digest(this.#dailyOracle?[...cards,this.#dailyOracle.config,this.#dailyOracle.snapshot()]:cards); }
+    const daily=this.#dailyOracle?[...cards,this.#dailyOracle.config,this.#dailyOracle.snapshot()]:cards;
+    return digest(this.#routine?[...daily,this.#routine.snapshot(),[...this.#pending]]:daily); }
   get controlled() { return [...this.#tape.controlled]; }
   /** Researcher-only read. This must never be passed to a policy or provider. */
   inspect(): ParticipantState { return {...this.#state,world:structuredClone({...this.#state.world,rng:undefined}),registry:structuredClone(this.#state.registry),genesis:structuredClone(this.#state.genesis)} as unknown as ParticipantState; }
   exportTape(): SocietyTape { return {...structuredClone(this.#tape),...(this.#postcards?{postcardAccounts:this.#postcards.exportAccounts()}:{}),
-    ...(this.#dailyOracle?{dailyOracleState:this.#dailyOracle.snapshot()}:{})}; }
+    ...(this.#dailyOracle?{dailyOracleState:this.#dailyOracle.snapshot()}:{}),...(this.#routine?{routineState:this.#routine.snapshot(),turnTransitions:structuredClone(this.#turnTransitions)}:{})}; }
   #activePeople():string[] {return [...this.#state.registry.people.values()].filter(p=>p.location!==null).map(p=>p.id);}
   #beginAct():void {this.#postcards?.beginAct(this.#activePeople(),this.tick+1);}
   pendingPeople(): string[] {
     if (this.#halted) throw Error('society_halted');
     return [...this.#state.registry.people.values()].filter(p=>p.location!==null &&
-      (this.#phase==='act'||p.role==='baker'||p.role==='miller')&&!this.#pending.has(p.id)).map(p=>p.id);
+      (this.#phase==='act'||p.role==='baker'||p.role==='miller')&&!this.#pending.has(p.id)&&
+      (this.#phase!=='act'||!this.#routine?.closed(p.id))).map(p=>p.id);
   }
   #resetCommitments() {
     this.#prices = new Map(this.#state.world.bakers.filter(x=>x.slot.state==='FILLED').map(x=>[x.buildingId,x.value]));
@@ -122,6 +138,7 @@ export class Society {
     }));
     return buildSocietyContext(this.#state,person,{
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
+      ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase)}:{}),
       ...(this.#postcards?{postcards:this.#postcards.observation(person)}:{}),
       ...(this.#dailyOracle?{dailyOracle:this.#dailyOracle.observation(person,day,w.economicHealthWithExperience,this.#activePeople())}:{}),
       ownCommitment:this.#phase!=='act'?null:own.role==='Baker'
@@ -142,12 +159,26 @@ export class Society {
     try {
       if (!this.pendingPeople().includes(person)) throw new SocietySecurityError('stale_or_duplicate_submission');
       const view=this.view(person), action=typeof value==='string'?parseSocietyResponse(value,view.context):validateSocietyAction(value,view.context);
+      const beforeHash=this.#routine?this.hash:'',beforeTick=this.tick,turn=this.turn;
+      const record:SocietyDecisionRecord={day:this.tick+1,phase:this.#phase,person,controlled:this.controlled.includes(person),
+        visible:structuredClone(view.visible),legalChoices:structuredClone({menu:view.visible.legalChoices,schema:view.visible.decisionSchema}),action:structuredClone(action),...(turn!==undefined?{turn}:{})};
+      if(this.#routine){
+        // Stop before admission, leaving enough space for the current round/day book and
+        // exact transitions. A storage ceiling never fabricates completion or loses the
+        // already admitted prefix. Counters are deterministic functions of recorded data.
+        const bytes=Buffer.byteLength(JSON.stringify(record))+4096;
+        let nodes=0;const count=(v:unknown):void=>{nodes++;if(v&&typeof v==='object')for(const child of Object.values(v))count(child);};count(record);nodes+=128;
+        if(this.#routineEvidenceBytes+bytes>224*1024*1024||this.#routineEvidenceNodes+nodes>18_000_000)
+          throw new SocietySecurityError('society_evidence_capacity');
+        this.#routineEvidenceBytes+=bytes;this.#routineEvidenceNodes+=nodes;
+      }
       this.#postcards?.submit(person,this.tick+1,action.postcards);
       this.#revision++;
       this.#pending.set(person,action);
-      this.#tape.decisions.push({day:this.tick+1,phase:this.#phase,person,controlled:this.controlled.includes(person),
-        visible:structuredClone(view.visible),legalChoices:structuredClone({menu:view.visible.legalChoices,schema:view.visible.decisionSchema}),action:structuredClone(action)});
+      this.#tape.decisions.push(record);
+      const turnCount=this.#turnTransitions.length;
       if (this.pendingPeople().length===0) this.#finishPhase();
+      if(this.#routine)record.transition={beforeHash,afterHash:this.hash,beforeTick,afterTick:this.tick,effects:this.#turnTransitions.length>turnCount?structuredClone(this.#turnTransitions.at(-1)!.effects):[]};
     } catch (error) { this.halt(); throw error; }
   }
   #finishPhase() {
@@ -158,6 +189,16 @@ export class Society {
         if (a.occupation?.kind==='millerQuantity') this.#quantities.set(p.location!,a.occupation.quantity);
       }
       this.#pending.clear(); this.#phase='act'; this.#beginAct(); return;
+    }
+    if(this.#routine){
+      const beforeHash=this.hash,day=this.tick+1,turn=this.#routine.turn,previous=this.#state;
+      const actions=[...this.#pending].map(([person,a])=>({person,epoch:previous.registry.people.get(person)!.roleEpoch,tick:this.tick,
+        decision:{move:a.move,communication:a.communication,diary:a.diary,role:null}}));
+      const result=stepParticipantTurn(previous,actions,turn);this.#state=result.state;
+      this.#routine.acceptTurn(previous,this.#state,this.#pending,result);this.#pending.clear();
+      this.#turnTransitions.push({day,turn,beforeHash,afterHash:this.hash,effects:structuredClone(result.effects)});
+      if(!this.#routine.allClosed){if(this.#routine.limitReached)this.halt();return;}
+      this.#pending=this.#routine.dailyActions();
     }
     const beforeHash=this.hash, day=this.tick+1, oldHealth=this.#state.world.economicHealthWithExperience;
     const escrowBefore=oracleOpportunityEscrow([...this.#oracle.values()]);
@@ -176,18 +217,26 @@ export class Society {
     const actions=[...this.#pending].map(([person,a])=>{
       const p=this.#state.registry.people.get(person)!;
       let seller:string|null=null;
-      if (a.purchase) {
-        const match=[...this.#state.registry.people.values()].find(x=>x.location!==null&&this.#ref(person,x.id)===a.purchase!.seller);
+      if (a.purchase&&'seller' in a.purchase) {
+        const sellerRef=a.purchase.seller;
+        const match=[...this.#state.registry.people.values()].find(x=>x.location!==null&&this.#ref(person,x.id)===sellerRef);
         if (!match||match.role!=='baker') throw Error('society_seller_binding');
         seller=match.location;
       }
       choices.set(person,seller);
-      if (a.occupation?.kind==='work') working.add(p.location!);
+      if (a.occupation?.kind==='work'&&p.role!==null&&['courier','investigator','importExport'].includes(p.role)) working.add(p.location!);
       return {person,epoch:p.roleEpoch,tick:this.tick,decision:{move:a.move,communication:a.communication,diary:a.diary,role:null}};
     });
     const plan:SocietyEconomyPlan={bakerPrices:this.#prices,millerQuantities:this.#quantities,breadChoices:choices,working};
-    const result=stepParticipantState(this.#state,actions,[...this.#state.registry.locations.values()],plan);
+    if(this.#routine)this.#state.world={...this.#state.world,pendingWallPosts:this.#routine.posts()};
+    const routineSummary=this.#routine?{turns:this.#routine.turn-1,residents:this.#routine.summary()}:undefined;
+    const routineEffects=this.#routine?.effects()??[];
+    const result=stepParticipantState(this.#state,actions,[...this.#state.registry.locations.values()],plan,this.#routine?.social());
     this.#state=result.state;
+    if(this.#routine&&this.#state.world.societyEconomy){
+      const failed=new Set(this.#routine.noBakery());
+      for(const receipt of this.#state.world.societyEconomy.receipts)if(failed.has(receipt.customer)&&receipt.bakerSite===null&&receipt.paid===0)receipt.outcome='unavailable';
+    }
     const kernelResidual=this.#state.world.lastSettlement.residual;
     const oracleBefore=holdingTotal(this.#state)+accountsTotal(this.#state.world.settlement)+escrowBefore;
     const oracleResults:SocietyTransition['oracle']=[];
@@ -226,16 +275,17 @@ export class Society {
     this.#state.world.lastSettlement={...ledger,holdingsBefore:beforeHoldings,holdingsAfter:afterHoldings,accountsBefore:beforeAccounts,accountsAfter:afterAccounts,residual};
     const holdings=[...roleArrays(this.#state.world).flatMap(([,slots])=>slots.filter(s=>s.slot.state==='FILLED').map(s=>s.wealth)),...this.#state.world.grifters.map(g=>g.wealth)];
     this.#state.world.wealthGini=giniCoefficient(holdings);this.#state.world.wealthTop10Share=topShare(holdings,0.1);
-    this.#wall=[...this.#pending].flatMap(([author,a])=>a.communication?.kind==='wallPost'?[{author,state:a.communication.state as SelfState,day}]:[]);
+    this.#wall=this.#routine?this.#routine.posts().map(p=>({author:p.authorId,state:p.state,day})):[...this.#pending].flatMap(([author,a])=>a.communication?.kind==='wallPost'?[{author,state:a.communication.state as SelfState,day}]:[]);
     this.#postcards?.register(this.#activePeople(),this.tick);
     this.#pending.clear();this.#phase='commit';this.#resetCommitments();
+    this.#routine?.beginDay(this.#state);
     // An empty competitive cohort still lets mechanical backstops/roleless inhabitants act.
     if (this.pendingPeople().length===0) {this.#phase='act';this.#beginAct();}
-    this.#tape.transitions.push({day,beforeHash,afterHash:this.hash,effects:result.effects,
+    this.#tape.transitions.push({day,beforeHash,afterHash:this.hash,effects:this.#routine?routineEffects:result.effects,
       economy:structuredClone(this.#state.world.societyEconomy),oracle:oracleResults,
       accounting:{kernelResidual,oracleResidual,residual,escrow:escrowAfter},
       conditions:this.#state.world.shard.districts.map(d=>({district:d.id,tension:d.weatherHistory.at(-1)?.tension??0,state:this.#state.world.districtHealth[d.id]!.state})),
-      ...(this.#postcards?{postcards:this.#postcards.drain()}:{})});
+      ...(this.#postcards?{postcards:this.#postcards.drain()}:{}),...(routineSummary?{routine:routineSummary}:{})});
     if(daily)this.#tape.transitions.at(-1)!.dailyOracle={...daily,paidLotteryCapOverflow};
   }
   #setHoldings(location:string,role:keyof typeof publicRole|null,wealth:number,stock?:number) {
@@ -252,11 +302,12 @@ export class Society {
 /** Independent reconstruction uses recorded JSON decisions, never reruns a policy. It also
  * verifies each exact visible context, so hidden observation drift cannot pass as replay. */
 export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.genesis.sourceRevision, options:{allowPartial?:boolean}={}) {
-  if(!['node-society-offline-v1','node-society-postcards-v2','node-society-daily-oracle-v3'].includes(tape.format)||tape.genesis.sourceRevision!==expectedSourceRevision||
-    (tape.format==='node-society-daily-oracle-v3')!==!!tape.dailyOracleConfig||
-    (tape.format==='node-society-postcards-v2')!==(!tape.dailyOracleConfig&&!!tape.postcardConfig))throw Error('society_tape_source');
+  if(!['node-society-offline-v1','node-society-postcards-v2','node-society-daily-oracle-v3','node-society-routine-v4'].includes(tape.format)||tape.genesis.sourceRevision!==expectedSourceRevision||
+    (tape.format==='node-society-routine-v4')!==!!tape.routineConfig||
+    (!tape.routineConfig&&((tape.format==='node-society-daily-oracle-v3')!==!!tape.dailyOracleConfig||
+    (tape.format==='node-society-postcards-v2')!==(!tape.dailyOracleConfig&&!!tape.postcardConfig))))throw Error('society_tape_source');
   const society=new Society({seed:tape.genesis.seed,sourceRevision:expectedSourceRevision,config:tape.genesis.config,observerSecret:tape.genesis.observerSecret,
-    ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{})});
+    ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{})});
   if(society.hash!==tape.genesisHash||digest(society.controlled)!==digest(tape.controlled))throw Error('society_genesis_mismatch');
   for(const record of tape.decisions){
     if(society.tick+1!==record.day||society.phase!==record.phase||digest(society.view(record.person).visible)!==digest(record.visible))throw Error('society_visible_context_mismatch');

@@ -21,14 +21,15 @@ import { inspectSocietyFunding } from '../src/society/funding.js';
 import type {SocietyPostcardConfig} from '../src/society/postcards.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 import {openSocietyPanel} from '../src/observatory/societyPanel.js';
+import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/society/routine.js';
 
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -44,10 +45,12 @@ const privatePath=(path:string)=>{
   return target;
 };
 const bundlePath=privatePath(values.bundle);
-interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig}
+interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig;routineConfig?:SocietyRoutineConfig}
 if(values.prepare){
   if(existsSync(bundlePath))throw Error('society_bundle_exists');
   const seed=Number(values.seed),ticks=Number(values.ticks);
+  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns'])};
+  if(routine)validateSocietyRoutineConfig(routine);
   if(!Number.isSafeInteger(seed))throw Error('society_seed');
   if(values['postcard-start-ms']!==undefined&&!values['postcard-rate'])throw Error('society_postcard_rate_required');
   if(values['postcard-rate']&&!/^[1-9][0-9]*\/[1-9][0-9]*$/.test(values['postcard-rate']))throw Error('society_postcard_rate');
@@ -61,9 +64,9 @@ if(values.prepare){
     const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
-  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
+  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
-    ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{})};
+    ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{}),...(routine?{routineConfig:structuredClone(routine)}:{})};
   const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});
   mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,stringifySocietyEvidence(bundle),{flag:'wx',mode:0o600});
   console.log(JSON.stringify({bundle:bundlePath,planSha256:bundle.planSha256,plan,initialPackets:packets,
@@ -73,8 +76,9 @@ if(values.prepare){
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))throw Error('society_bundle_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))throw Error('society_bundle_daily_oracle_config');
+  if(digest(bundle.routineConfig??null)!==digest(bundle.plan.routine??null))throw Error('society_bundle_routine_config');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
-    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{})});
+    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
   const packets=society.pendingPeople().map(person=>{const q=buildSocietyRequest(society.view(person).visible);return {person,sha256:q.sha256,bytes:Buffer.byteLength(q.body),maxInputTokens:q.maxInputTokens};});
   if(values.preflight){
@@ -131,8 +135,8 @@ if(values.prepare){
           writeFileSync(events,JSON.stringify(JSON.parse(stringifySocietyEvidence(event)))+'\n');fsyncSync(events);
           panel?.event(event);
           if(event.kind==='decision'){
-            const d=event.data as {person:string;tick:number;phase:string};
-            console.log(JSON.stringify({event:'decision_validated',person:d.person,day:d.tick+1,phase:d.phase}));
+            const d=event.data as {person:string;tick:number;phase:string;turn?:number};
+            console.log(JSON.stringify({event:'decision_validated',person:d.person,day:d.tick+1,phase:d.phase,...(d.turn===undefined?{}:{turn:d.turn})}));
           }
         }});
     }catch(cause){
@@ -145,8 +149,14 @@ if(values.prepare){
       const tape=society.exportTape();
       attempt('society_tape_write_failed',()=>persist('society.json',tape,true));
       attempt('society_replay_failed',()=>{replay=verifySocietyTape(tape,revision,{allowPartial:true});});
+      attempt('society_allowance_finalize_failed',()=>{
+        if(!budget||!bundle.plan.routine)return;
+        const v=budget.view(),a=v.authorization;
+        if(a&&a.manifestSha256===bundle.planSha256&&!v.closure&&v.held===0n&&!v.overrun&&v.requests.every(q=>q.bookedMicroUsd!==null))
+          budget.closeAllowance({runId:a.runId,manifestSha256:a.manifestSha256,closedAt:new Date().toISOString(),reason:summary?.status==='completed'&&!error?'completed':'stopped'});
+      });
       let accounting:unknown=null;
-      attempt('society_accounting_snapshot_failed',()=>{if(budget){const v=budget.view();accounting={bookedMicroUsd:v.booked.toString(),heldMicroUsd:v.held.toString(),historyHash:v.historyHash,requests:v.requests.length};}});
+      attempt('society_accounting_snapshot_failed',()=>{if(budget){const v=budget.view();accounting={bookedMicroUsd:v.booked.toString(),heldMicroUsd:v.held.toString(),historyHash:v.historyHash,requests:v.requests.length,...(v.closure?{closure:v.closure}:{})};}});
       attempt('society_summary_write_failed',()=>persist('summary.json',{summary,replay,error,errors,
         sourceRevision:revision,requestedTicks:bundle.plan.ticks,finalTick:society.tick,halted:society.halted,accounting,
         originalBundleUnchanged:sha256(readFileSync(bundlePath))===originalBundle,finishedAt:new Date().toISOString()}));

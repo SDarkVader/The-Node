@@ -6,179 +6,54 @@ Authority, cooperation, information asymmetry and economic behaviour are part of
 programme. The current experiment studies reasoning continuity as world state and diary contents
 change. Its present implementation is a stage of development, not a ceiling on the programme.
 
-## Open the interface
+## Run on the configured PC
 
-In a terminal on the computer where you will open the browser:
+The standalone launcher works in ordinary PowerShell without this chat or Work running:
 
-```sh
-git clone --branch main https://github.com/SDarkVader/The-Node.git The-Node-main-review
-cd The-Node-main-review
-npm ci
-npm run preview
+```powershell
+powershell -NoProfile -File .\START-NODE.ps1
 ```
 
-Wait for **Observatory ready**, open the printed URL and paste the printed **interface login
-token**. Keep the terminal running. The default is a two-tick synthetic demo, with no provider
-key or paid calls. To view the owner's completed run, use
-`npm run preview -- <private-bundle>/registration.json` instead.
-
-For browser-only access, [open a private GitHub Codespace on main](https://codespaces.new/SDarkVader/The-Node?ref=main),
-wait for dependency setup, then run `npm run preview` in its terminal. Open the printed
-Codespaces HTTPS URL, keep port 8090 private, and use the printed interface token.
-`127.0.0.1` always refers to the device opening the browser; a cloud process is not reachable
-at that address from your phone or PC. `ERR_CONNECTION_REFUSED` means the server has not
-started on that device/forwarded port. This repository does not provision a public host.
+For a short real-agent test, use `-Start -Ticks 1`. Review the printed source, rules, call
+and spending bounds, then type `START`. Keep the terminal open. The script opens one
+Observatory containing Godot, manual day controls and saved-run replay. Its private preset
+reuses the PC's configured paths and latest accounting history. No live call starts by default.
+[Workflow, setup and raw output](docs/research/SEQUENTIAL_DAYS_2026-10-26.md).
 
 ## Current development — 2026-10-26
 
-PR51's colour follow-up is merged at `0e8797a` after Windows/Linux checks passed.
-The next diary change makes the subject optional while retaining the existing observation,
-reading and context menus. The configured PC launcher enables this contract for fresh previews
-and freshly reviewed real tests. Named subjects still require recognition; self-subjects and
-free text remain illegal. Older saved runs keep their original admission. The required
-multi-turn daily routine, location visits and completion gate are still being implemented;
-the existing one-act/day runner does not yet fulfil those duties.
+The new opt-in Society v4 contract supplies several fresh action turns per day. Residents
+visit their task locations, buy or attempt to buy food, post on the Wall, perform role work,
+communicate with customers under the lexical rules and write a diary before day closure.
+Diary subjects are optional; the vocabulary stays constrained. Prices lock before choices,
+and grain, flour, income and sales remain in the existing economy. A failed food attempt is
+recorded and can permit closure after the other duties. A turn or spending limit preserves
+the unfinished day. Old tape versions keep their original replay semantics.
 
-The Society Observatory now uses the actual Society world and evidence. On the configured
-PC, use one launcher for a manual model-free preview, saved-run replay and the embedded
-Godot world:
+The same PC interface provides run, day, turn, agent and decision selection, manual control,
+read-only replay and per-tick/full chronological provider-returned thinking. Raw exports
+retain each agent's exact contexts, choices, submissions and transitions across all turns;
+missing thinking remains explicit. Godot and the stronger 2D overview use recorded world
+state. No hidden reasoning or decorative simulation events are fabricated.
 
-```powershell
-powershell -NoProfile -File scripts/start-node-test.ps1
-```
+The approved free daily Oracle trial and independent paid lottery remain available, with
+health-linked odds, bounded prizes and separate game-resource accounting. Postcard accrual,
+safe/shortcut fusion, temporary vouchers and mechanical vacancy/backstop behaviour remain.
+Variable-call real runs close unused authorisation through an append-only journal event,
+then carry the latest history into the next separately reviewed test. USD ceilings remain.
 
-Add `-Start -Ticks 3` for a real agent test. It prepares the exact review and asks the human
-to type `START` before funding or dispatch; manual tick clicks then run one complete day
-within those approved bounds. The interface includes run, tick, agent and phase selectors,
-read-only playback, per-tick or full chronological returned thinking, and the observations,
-decisions and transitions needed to study behaviour. Godot uses stronger contract-based
-colour gradients and overlapping heat glow, including browser-compatible radiance. Every
-export also includes separate chronological per-agent per-tick JSON files.
-[Unified PC workflow and private settings](docs/research/SOCIETY_OBSERVATORY_2026-10-26.md).
-PR #50 merged at `c5cf2af`; Windows and Linux checks passed on `0acc4f4`, with
-1,910 tests / 150 files, zero failures and seven environment skips. The PowerShell
-model-free preview cold-replayed three days and 51 decisions, with nine per-agent tick
-files. No new paid run is claimed. The colour follow-up strengthens the **2D overview**
-and reduces the 3D world's radiance at the owner's request.
+PR51's colour follow-up merged at `0e8797a`; PR52's optional-subject diary merged at
+`a345a68` after Windows/Linux checks passed. Source `0ee1325` passed 1,921 tests /
+151 files, zero failures and seven environment skips; three offline days cold-replayed
+51 decisions and 42 diary writes. New v4 source `c4ac041` passes 1,964 tests /155 files,
+zero failures and seven environment skips. Three days cold-replay 1,148 decisions and
+42 diary writes with identical repeated tape bytes. Actual standalone Windows preparation
+and the embedded-Godot manual preview pass with zero provider calls. No new paid run is claimed. [Earlier source-specific history](docs/DEVLOG.md).
 
-The owner has clarified the next required behaviour: sequential turns within each day,
-visits to task locations, daily Wall posting and diary writing, optional diary subject
-within the constrained vocabulary, and compulsory role/customer communication. The
-current commit-plus-single-act loop does not yet implement that complete routine.
-
-The postcard-enabled society is now wired through the real agent runner. Prepare a small
-PowerShell behaviour test from this checkout:
-
-```powershell
-powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3
-```
-
-To include the approved free daily Oracle in that real-agent test:
-
-```powershell
-powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3 -OracleConfig experiments/oracle/daily-oracle-trial-2026-10-26.json
-```
-
-[Oracle trial rules and funding](docs/research/ORACLE_AGENT_TRIAL_2026-10-26.md).
-The Oracle source `8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe` passed **1,901 tests /
-148 files**, zero failures and seven environment skips. The actual PowerShell prepare/check
-path passed with the Oracle profile and synthetic inputs. [Oracle verification](docs/research/evidence/oracle-agent-trial-2026-10-26.json).
-
-PowerShell prompts for the latest completed accounting journal, credential file and a new
-private output folder. Preparation makes no calls and prints the exact command to start
-the reviewed run with `-ApprovePaidRun`. Three days allow at most 18 Haiku calls and USD 1;
-the source, rate, 24-hour game day, plan and carried history are pinned. Each agent can claim,
-bank or fuse its own postcards alongside ordinary work, movement, communication and purchases.
-[Real-agent test instructions and raw output locations](docs/research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
-At source `0561d56c3f6fe6a5e3be62b99e4abe3147dd9515`, **1,866 tests / 145 files pass**,
-with zero failures and seven environment skips, plus TypeScript and eight recovery tests.
-The actual Windows PowerShell preparation/check path passes with synthetic inputs; a 20-day
-integrated tape cold-replays and repeats byte-identically.
-[Verification record](docs/research/evidence/postcard-agent-playtest-2026-10-26.json) ·
-[PR #48](https://github.com/SDarkVader/The-Node/pull/48).
-PR #48 was incorporated into [PR #47](https://github.com/SDarkVader/The-Node/pull/47),
-which merged into `main` at `aadb99be1c5736d8c601eb12a8da7db52465a3b1` after Windows
-verification, Linux conformance and dependency audit all passed on `0c0e089`.
-The recovery-branch mismatch and proof-byte comparison timeout are repaired; the strict
-verifier, original timeout and all replay, overwrite and tamper assertions remain.
-[PR #49](https://github.com/SDarkVader/The-Node/pull/49) then merged at `fd72553` after its
-Windows and Linux checks passed. [PR #43](https://github.com/SDarkVader/The-Node/pull/43) is closed as
-already incorporated: its handoff document is byte-identical to the copy on `main`.
-The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
-enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth
-trial treasury. It does not change the USD model-call allowance or activate a default profile.
-
-The first two [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
-slices implement postcard accounts: explicit millisecond time, a required rational White/hour
-rate, a 16-hour unclaimed buffer, retained fractional credit and five-to-one safe fusion.
-An explicit v2 upgrade adds same-tier Green/Blue/Purple shortcuts: stake 1–5 cards for exact
-`k/5` odds, consume the whole stake and produce one next-tier card only on success. Five is
-guaranteed without a random draw; White stays safe-only and Orange is final. Named issuance
-on success and burns on loss reconcile every transaction. Stable transaction IDs prevent
-retries from consuming more cards or draws, including after a saved-state reopen.
-The existing v1 state, replay and proof sources remain unchanged.
-
-```powershell
-npm run postcards:proof -- --output .codex/session-recovery/postcard-proof.json
-npm run postcards:proof -- --verify .codex/session-recovery/postcard-proof.json
-npm run postcards:shortcut-proof -- --output .codex/session-recovery/postcard-shortcut-proof.json
-npm run postcards:shortcut-proof -- --verify .codex/session-recovery/postcard-shortcut-proof.json
-```
-
-Both proofs use explicit synthetic clock/asset events at the original illustrative 2 White/hour,
-with zero provider calls. The new shortcut proof covers 31 fixed cases, v1 acquisition tapes,
-v2 snapshots, delayed duplicates and atomic failures. At implementation source
-`e173dbf37f401111a876ccea835bd334f7e1d085`, all **1,779 tests / 140 files pass**, with zero
-failures and seven environment skips, plus project/CLI TypeScript and eight recovery tests.
-This includes 111 new tests and 15,000 seeded transactions. Two cold proof files are identical;
-40 v2 records, nine restored checkpoints and ten rejected attempts verify.
-[Source-anchored shortcut evidence](docs/research/evidence/postcard-shortcuts-2026-10-26.json).
-[Mechanics, accounting and current verification](docs/research/POSTCARD_SHORTCUTS_2026-10-26.md).
-The earlier v1 source `8011e60972948990b5f5d00e84663bc5542c3a79` passed 1,668 tests / 137 files,
-with seven environment skips, plus TypeScript and eight recovery tests; its cold proof verified
-five scenarios/183 events/three checkpoints with identical repeat bytes.
-[Preserved v1 evidence](docs/research/evidence/postcard-core-2026-10-26.json).
-PR #44 published the society runner; PR #46 integrated the postcard core into main at `1217c9b`.
-[PR #47](https://github.com/SDarkVader/The-Node/pull/47) publishes the verified shortcut slice.
-The opt-in playtest now binds accounts to stable person identities and provides allowlisted
-agent menus, validated actions and an explicit 24-hour virtual day. Ticket migration,
-individual abodes and subsequent Oracle/civic slices remain further work. No default rate
-or paid experiment is activated by checkout or preparation.
-
-### Preserved society mechanics
-
-An opt-in secure society now runs two initially controlled Bakers and one Miller, with autonomous
-Courier, Investigator, Import/Export and roleless residents. Daily locked Wall prices, explicit
-production/customer choices, finite grain/flour, genuine sales/completion, local observations,
-communication, eligible diaries and escrow-backed expiring Oracle entries are implemented.
-Invalid actions halt execution. Old leaking paid-dispatch paths are closed; archived replay stays
-available. Historical worlds, private journals and stopped studies are preserved.
-
-```powershell
-npm run society -- --ticks 14 --output .codex/session-recovery/society/proof-14.json
-npm run society -- --verify .codex/session-recovery/society/proof-14.json
-npm run society -- --interactive --ticks 3 --output .codex/session-recovery/society/supervised-3.json
-```
-
-The first commands use deterministic model fixtures; interactive play supervises local JSON
-choices. Neither bills a model. The new accounted model runner requires separately reviewed
-approval, a matching carried allowance and private evidence paths; it has only been exercised
-with synthetic senders. Saved tapes/plans use lossless evidence encoding, including optional
-configuration values, and are checked after reopening. [Implementation, assumptions, security trace and exact run commands](docs/research/SECURE_AGENT_SOCIETY_2026-10-25.md).
-[PR #42](https://github.com/SDarkVader/The-Node/pull/42) merged after all three hosted workflows passed.
-The twenty-tick follow-up, published through [PR #44](https://github.com/SDarkVader/The-Node/pull/44), supplies a standalone PowerShell launcher:
-`powershell -File scripts/start-society-live.ps1 -Config <private-launch.json>`. Add `-CheckOnly`
-for read-only readiness. This belongs to the earlier society task. The postcard work invokes no live path and grants no
-spending authorization; historical approvals must not be reused.
-Explicit plans support at most twenty ticks/120 calls with a USD1 cap. Raw per-inhabitant JSONL
-contains exact contexts, legal choices, returned summaries, actions, transitions and failures;
-`npm run society:dump -- --input <private-run> --output <new-private-dump> --raw` exports them.
-At runtime source `acb0d0b`, **1,568 Vitest tests / 131 files pass**,
-with seven explicit environment skips, plus TypeScript. **80 compiled native checks** against the
-original kernel and **eight recovery tests** also pass. Independent saved-file replay passes for
-14 and 60 ticks. The longer run records 889 decisions, 78 real bread orders, 306 diary writes,
-natural District Weather changes and 75 voucher redemptions; maximum accounting residual is
-`1.45e-13`. [Scoped verification evidence](docs/research/evidence/secure-society-offline-2026-10-25.json).
+Initial v4 assumptions are explicit: one district, existing residential capacity, shared
+Wall/Oracle hub, and minimal deterministic streets joining previously unreachable plots.
+Full A04 trespass and multi-district daily routing remain further work. These are not claims
+that all future society mechanics are finished. Study 1 and historical evidence stay intact.
 
 ## Historical first-person development — 2026-10-25
 

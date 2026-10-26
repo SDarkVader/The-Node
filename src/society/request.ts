@@ -14,8 +14,9 @@ export const SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS = SOCIETY_POSTCARD_INH
   + '\nThe optional dailyOracle draw is separate from the paid oracle lottery. Use only the public chances, conditional prize menu and your own prior result; null declines either independently.';
 export const SOCIETY_POSTCARD_DAILY_ORACLE_INHABITANT_INSTRUCTIONS = SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS.replace('seven-field decision JSON', 'eight-field decision JSON');
 export function societyInhabitantInstructions(view: SocietyVisibleContext): string {
-  return view.dailyOracle ? view.postcards ? SOCIETY_POSTCARD_DAILY_ORACLE_INHABITANT_INSTRUCTIONS : SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS
+  const original=view.dailyOracle ? view.postcards ? SOCIETY_POSTCARD_DAILY_ORACLE_INHABITANT_INSTRUCTIONS : SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS
     : view.postcards ? SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS : SOCIETY_INHABITANT_INSTRUCTIONS;
+  return original+(view.routine?'\nSeveral sequential turns make this day. Use the fresh observation and your own task progress to choose what to do next. Visit the mapped task locations; choose when and what to write in the constrained diary, including a null subject if you wish. Answer your own listed customers through the speech menu. The day stays open until your duties are complete and you choose the legal finishDay occupation. Failed food attempts are recorded; no purchase or prize is guaranteed.': '');
 }
 
 /** A transport-independent prompt: no identity binding, world hash, deployment status,
