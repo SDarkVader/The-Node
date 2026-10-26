@@ -45,6 +45,9 @@ powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1
 ```
 
 [Oracle trial rules and funding](docs/research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+The Oracle source `8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe` passed **1,901 tests /
+148 files**, zero failures and seven environment skips. The actual PowerShell prepare/check
+path passed with the Oracle profile and synthetic inputs. [Oracle verification](docs/research/evidence/oracle-agent-trial-2026-10-26.json).
 
 PowerShell prompts for the latest completed accounting journal, credential file and a new
 private output folder. Preparation makes no calls and prints the exact command to start

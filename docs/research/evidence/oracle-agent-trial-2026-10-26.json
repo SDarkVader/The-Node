@@ -1,0 +1,104 @@
+{
+  "format": "node-oracle-agent-trial-verification-v1",
+  "date": "2026-10-26",
+  "sourceRevision": "8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe",
+  "ownerApprovedProfile": {
+    "format": "node-society-daily-oracle-config-v1",
+    "funding": "declaredTrialEndowment",
+    "treasuryMicro": 100000000,
+    "catalogue": {
+      "format": "node-oracle-daily-config-v1",
+      "revision": "owner-approved-trial-2026-10-26",
+      "rewards": [
+        {
+          "id": "commonWealth",
+          "amountMicro": 50000,
+          "logWeightAtFloor": 4.605170185988092,
+          "logWeightAtReference": 4.605170185988092
+        },
+        {
+          "id": "uncommonWealth",
+          "amountMicro": 150000,
+          "logWeightAtFloor": 1.6094379124341003,
+          "logWeightAtReference": 2.302585092994046
+        },
+        {
+          "id": "exceptionalWealth",
+          "amountMicro": 300000,
+          "logWeightAtFloor": -2.3025850929940455,
+          "logWeightAtReference": 0
+        }
+      ]
+    }
+  },
+  "verification": {
+    "passed": 1901,
+    "failed": 0,
+    "skipped": 7,
+    "files": 148,
+    "projectTypeScript": "passed",
+    "cliTypeScript": "passed",
+    "syntheticAccountedRun": {
+      "days": 3,
+      "calls": 18,
+      "actualEightFieldWorker": true,
+      "knownUsageBooked": true,
+      "rawPerIdentityExport": true
+    },
+    "coldPowerShell": {
+      "verified": true,
+      "productionWindowsPowerShell": true,
+      "approved": false,
+      "sourcePinned": true,
+      "dailyOracleProfilePinned": true,
+      "executionCreated": false,
+      "allowanceCreated": false,
+      "providerCalls": 0,
+      "inputs": "TEST ONLY synthetic history and invalid credential placeholder"
+    }
+  },
+  "integratedRun": {
+    "verified": true,
+    "ticks": 10,
+    "decisions": 170,
+    "finalHash": "6352d19fb1c76cea17b3e3775e084b0dccb95be30dd99889bdb0e1812d9eceab",
+    "providerCalls": 0,
+    "mode": "deterministic_synthetic_policies",
+    "tapeSha256": "dc0f4c1d6f926d371180e9a6028d11ee2d057cf8e0ee7d69efe03705ddb66f1c",
+    "freeEntries": 140,
+    "wins": 51,
+    "prizes": {
+      "commonWealth": 47,
+      "uncommonWealth": 4,
+      "exceptionalWealth": 0
+    },
+    "startingTreasuryMicro": 100000000,
+    "remainingTreasuryMicro": 97050000,
+    "grossPaidMicro": 2950000,
+    "receivedMicro": 2950000,
+    "capOverflowMicro": 0,
+    "maximumCurrencyResidual": 4.263256414560601e-14
+  },
+  "coverage": [
+    "Every implemented role and zero-wealth access",
+    "Independent free daily and paid/voucher choices",
+    "All decline without draws or depletion",
+    "Canonical roster order independent of submission map order",
+    "Full-roster insufficient funding rejection",
+    "Actual wealth credits and applicable cap overflow",
+    "Unauthorized action halt before a payout",
+    "Own previous result only and strict last-egress schema",
+    "Legacy postcard-only replay regression"
+  ],
+  "pr47Repair": {
+    "failure": "Inherited child reviewBranch after PR48 merged into parent",
+    "fixedCommit": "1a9df1782bd6035da757c7e94d12e19af2062f60",
+    "freshCleanRecoveryVerified": true,
+    "verifierWeakened": false
+  },
+  "actualProviderCalls": 0,
+  "actualCredentialAccess": false,
+  "actualJournalAccess": false,
+  "accountingReset": false,
+  "behaviouralEvaluation": false
+}
