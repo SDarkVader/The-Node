@@ -1,58 +1,52 @@
 # Current development and experiment checkpoint
 
-Updated 2026-10-26. Active implementation branch: `codex/oracle-agent-playtest-2026-10-26`,
-including `main` at `1217c9b4573f7a4792b8015b7618750ca706905d`.
-The owner approved the provisional free daily Oracle profile: prizes0.05/0.15/0.30,
-poor-health weights100:5:0.1 to healthy100:10:1 and a declared100game-wealth trial endowment.
-It is now integrated into the real agent/PowerShell path as an explicit profile, independently
-of the existing paid lottery. [Ready command and rules](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
-The new profile is pinned into genesis, v3 paid plan, bundle and review. Whole-roster reserves,
-actual personal payouts, existing applicable caps, strict views/actions and replay are implemented.
-PR47's two failed jobs were branch-checkpoint mismatches after PR48 merged into its parent;
-the documentation-only repair1a9df1782bd6035da757c7e94d12e19af2062f60 is pushed there.
-The owner requested ongoing publication and PRs. PR #44 merged the earlier society runner;
-PR #45 merged postcard core into its former stacked parent; PR #46 then integrated that
-same verified core into main. [PR #47](https://github.com/SDarkVader/The-Node/pull/47)
-publishes the shortcut slice; its code source is `e173dbf37f401111a876ccea835bd334f7e1d085`.
-Its three hosted workflows passed. The owner's latest priority is a real-agent behaviour
-test they can start themselves from PowerShell. The current slice adds opt-in postcard
-accounts to the actual Society/request/worker/accounted path, with seven-field legal
-actions, stable-person persistence, explicit 24-hour virtual days and versioned replay.
-The new PowerShell prepare/review/start flow delegates to the existing financial launcher;
-it requires the actual latest completed journal and a fresh source-pinned review.
-See [real-agent playtest commands](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
-Implementation source `0561d56c3f6fe6a5e3be62b99e4abe3147dd9515` passed 1,866 tests /
-145 files, zero failures and seven environment skips; TypeScript and eight recovery tests
-pass. A clean-source Windows PowerShell preparation/check succeeded with synthetic inputs,
-zero calls/allowance and an unapproved review. Two 20-day tapes are byte-identical and cold
-replay verifies 332 decisions. [PR #48](https://github.com/SDarkVader/The-Node/pull/48)
-merged into PR #47's branch at `35fe129c7261ff33b9b16f134dd73437414f2196`.
-The parent PR now includes the verified real-agent playtest implementation. Its checkpoint
-names the actual parent review branch so a fresh CI checkout can verify its ancestry.
-The two failed jobs at that merge stopped at recovery verification before running tests;
-this handover repair changes no game, launch, accounting or recovery-validation code.
-PR #43 documentation head `139f98fb` and its checksummed full Drive package define the
-[Oracle/civic handoff](../research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md).
-The first slice implements per-person postcard accrual, 16-hour unclaimed storage,
-claims and guaranteed five-to-one fusion. The new v2 account explicitly upgrades v1 and
-adds same-tier Green/Blue/Purple shortcuts with k/5 odds, atomic stake consumption,
-named success issuance/loss burn, deterministic rejection-sampled draws, stable transaction
-IDs and complete receipt/snapshot replay. Existing v1 source/evidence remains byte-unchanged.
-At that source 1,779 tests / 140 files pass, zero fail and seven environment checks skip;
-project/proof-CLI TypeScript and eight recovery tests pass. The 111 new tests include
-15,000 seeded transactions. Two cold proof files are byte-identical: 31 scenarios,
-40 v2 records, nine restored snapshots and ten rejected attempts. V1 proof still verifies.
-See [source-scoped evidence](../research/evidence/postcard-shortcuts-2026-10-26.json).
-See [shortcut mechanics and verification](../research/POSTCARD_SHORTCUTS_2026-10-26.md).
-The hourly rate is required configuration; 2/hour is only an explicit proof fixture.
-A tick remains a day. The opt-in integration now adds authorized own-card information and
-legal choices; the default legacy world/view/action contract remains unchanged. No role,
-currency, migration or standing advantage is granted.
-[Source-anchored integration evidence](../research/evidence/postcard-agent-playtest-2026-10-26.json)
-records the full checks. No actual live result is inferred from synthetic verification.
-No paid provider calls, live run, private credential access or historical approval reuse is authorized.
-The handoff reports a completed historical 20-tick run at e2a16e6; that evidence has not been
-reopened here and is not proof of these new mechanisms. Current checks are offline only.
+Updated 2026-10-26. The owner directed PR issue checks and merges in dependency order
+before further interface work. PR #43 is closed as already incorporated: its complete
+Oracle/civic handoff at 139f98fb50317feeb573403eab2fa91cf6f316fc is byte-identical to
+the copy on main. Its original branch and external package remain preserved; the obsolete
+documentation-branch checkpoint was not substituted for current recovery.
+
+PR #48 was already incorporated into PR #47. At final head
+0c0e089b7884488204b30a89a6a7ca1325b64af8, hosted Windows verification, Linux conformance
+and dependency audit all passed, with no review threads. PR #47 merged into main at
+aadb99be1c5736d8c601eb12a8da7db52465a3b1. Both CI repairs preserve strict recovery,
+exact byte assertions and the original test deadline. [CI evidence](PR47_CI_2026-10-26.md).
+
+Active review branch: codex/oracle-agent-playtest-2026-10-26. PR #49 now targets main
+and includes that dependency merge. Wait for its own Windows and Linux checks at the
+final reviewed head before merging. Oracle source 8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe
+passed 1,901 tests / 148 files, zero failures and seven environment skips; project/CLI
+TypeScript and eight recovery tests passed. Ten-day saved evidence cold-replays 170
+decisions, 140 free entries, 51 wins and 2.95 game-wealth paid from the declared treasury.
+[Oracle verification](../research/evidence/oracle-agent-trial-2026-10-26.json).
+
+The owner approved the explicit provisional free daily Oracle profile: prizes
+0.05 / 0.15 / 0.30, poor-health weights 100:5:0.1 to healthy 100:10:1 and a one-off
+100 game-wealth trial endowment. The real Society/request/worker/accounted/PowerShell
+path supports it independently of the paid lottery. Full-roster backing, canonical
+resolution order, real payouts, applicable caps, private observations and v3 replay are
+implemented. Genesis, paid plan, bundle and fresh review pin the full profile.
+[Ready command and rules](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+
+Postcards remain explicit opt-in accounts with a required rate, stable-person ownership,
+24-hour virtual days, private claim/fusion choices and exact issuance/burn accounting.
+At source 0561d56c3f6fe6a5e3be62b99e4abe3147dd9515, 1,866 tests / 145 files passed;
+a 20-day, 332-decision tape cold-replays and repeats byte-identically.
+[PowerShell preparation and start](../research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md)
+uses the actual latest count-closed carried journal and a fresh source-pinned review.
+Preparation/check was verified with synthetic inputs only and creates no allowance.
+
+No actual provider call, live run, credential/private-journal read or historical approval
+reuse occurred during this implementation and PR integration. A future human-started
+run remains separate from historical results. Study 1 remains paused.
+
+Further work requested by the owner: wire the existing Observatory to actual Society
+world/evidence, run/agent/tick selectors, manual tick permits and read-only historical
+replay; keep one reusable local launch workflow; export separate chronological per-agent,
+per-tick files with exact contexts, decisions, provider-returned summaries or explicit
+missing-summary status, transitions and failures. Never imply access to hidden reasoning.
+The requested system-design DOCX using the supplied template is also still to deliver.
+Complete these after the PR sequence; do not claim the whole programme is finished.
 
 The following paragraphs preserve the prior shared-main experiment status:
 [PR #39](https://github.com/SDarkVader/The-Node/pull/39) consolidates the cloud and original interface lines for main.
@@ -141,8 +135,8 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
-    "Postcardv2 is now opt-in integrated into Society with stable owner binding, explicit virtual day clock and all-role choices; no individual abode model exists, so claims are personal act-phase choices. Required2/1 trial rate is illustrative, not a default calibration. Unkeyed hashes prove replay consistency rather than external provenance, and predictable RNG seed/cursor stays operator-only. Universal dailyOracle core is not activated without catalogue/funding integration; ticket forging/migration, signeddeedreputation,monuments,universalcap and finalPowerShell whole-programme proof remain further work. No actual paid run launched or historical approval reused.",
-    "Historical society launcher/evidence is preserved. The latest handoff reports that the earlier20tick run at e2a16e6 completed; its private results and current financial journal were not reopened under this goal. Older checkpoint paragraphs describing its preparation are dated history, not current launch instructions. Do not invoke old starters, access credentials or reuse consumed approvals. Godot/observatory integration for the six-field society contract remains further work.",
+    "Postcardv2 is now opt-in integrated into Society with stable owner binding, explicit virtual day clock and all-role choices; no individual abode model exists, so claims are personal act-phase choices. Required2/1 trial rate is illustrative, not a default calibration. Unkeyed hashes prove replay consistency rather than external provenance, and predictable RNG seed/cursor stays operator-only. The optional funded daily Oracle is integrated and verified; ticket forging/migration, signeddeedreputation,monuments,universalcap and finalPowerShell whole-programme proof remain further work. No actual paid run launched or historical approval reused.",
+    "Historical society launcher/evidence is preserved. The latest handoff reports that the earlier20tick run at e2a16e6 completed; its private results and current financial journal were not reopened under this goal. Older checkpoint paragraphs describing its preparation are dated history, not current launch instructions. Do not invoke old starters, access credentials or reuse consumed approvals. Godot/observatory integration for current Society v1/v2/v3 contracts remains further work.",
     "The authorized fresh20 run is complete and stopped; its40-call cap is consumed. No further paid/count calls or allowance activation without new explicit instruction. Future funding must carry the latest new cloud journal bound to this fresh ledger, not the preserved older uploaded tick38 journal. Equal7/20 summary counts in one fresh run do not prove causality or guarantee adaptive summary emission.",
     "Study 1 remains paused and frozen. Full A04 abode transactions, transcript degradation/comparison conditions, embedded-browser Godot and annotation authoring remain further work. No causal memory-benefit or reasoning-quality result is claimed.",
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."

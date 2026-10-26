@@ -61,12 +61,14 @@ The actual Windows PowerShell preparation/check path passes with synthetic input
 integrated tape cold-replays and repeats byte-identically.
 [Verification record](docs/research/evidence/postcard-agent-playtest-2026-10-26.json) ·
 [PR #48](https://github.com/SDarkVader/The-Node/pull/48).
-PR #48 merged into [PR #47](https://github.com/SDarkVader/The-Node/pull/47)'s parent branch at
-`35fe129`. The parent recovery checkpoint now names `codex/postcard-shortcuts-2026-10-26`;
-the earlier Windows/Linux failures stopped on that inherited branch mismatch before tests.
-The subsequent Windows run reached all tests and found a 20-second timeout in the proof
-byte-comparison test. Exact native byte comparison now replaces per-element assertion work;
-the timeout and all replay, overwrite and tamper assertions are unchanged.
+PR #48 was incorporated into [PR #47](https://github.com/SDarkVader/The-Node/pull/47),
+which merged into `main` at `aadb99be1c5736d8c601eb12a8da7db52465a3b1` after Windows
+verification, Linux conformance and dependency audit all passed on `0c0e089`.
+The recovery-branch mismatch and proof-byte comparison timeout are repaired; the strict
+verifier, original timeout and all replay, overwrite and tamper assertions remain.
+[PR #49](https://github.com/SDarkVader/The-Node/pull/49) now targets `main` for the daily
+Oracle integration. [PR #43](https://github.com/SDarkVader/The-Node/pull/43) is closed as
+already incorporated: its handoff document is byte-identical to the copy on `main`.
 The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
 enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth
 trial treasury. It does not change the USD model-call allowance or activate a default profile.
