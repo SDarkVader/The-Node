@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, lstatSync, realpathSync, openSync, fsyncSy
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { SOCIETY_INHABITANT_INSTRUCTIONS } from '../src/society/request.js';
+import { SOCIETY_INHABITANT_INSTRUCTIONS,SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS } from '../src/society/request.js';
 import { assertSerializedSocietyVisibleContext } from '../src/society/boundary.js';
 import { anthropicSchema } from '../src/agent/anthropicRequest.js';
 
@@ -14,17 +14,19 @@ export function validateSocietyWire(bytes:Buffer,expectedSha256:string): void {
   if(bytes.length<1||bytes.length>65_536||!/^[a-f0-9]{64}$/.test(expectedSha256)||hash(bytes)!==expectedSha256)throw Error('society_worker_request_binding');
   let q:any;try{q=JSON.parse(bytes.toString('utf8'));}catch{throw Error('society_worker_request_json');}
   if(!q||!exact(q,['model','max_tokens','system','messages','thinking','output_config'])||q.model!=='claude-haiku-5-5'||q.max_tokens!==2048||
-    q.system!==SOCIETY_INHABITANT_INSTRUCTIONS||!Array.isArray(q.messages)||q.messages.length!==1||q.messages[0].role!=='user'||
+    !Array.isArray(q.messages)||q.messages.length!==1||q.messages[0].role!=='user'||
     !exact(q.messages[0],['role','content'])||q.messages[0].content?.length!==1||q.messages[0].content[0].type!=='text'||
     !exact(q.messages[0].content[0],['type','text'])||!q.thinking||!exact(q.thinking,['type','display'])||q.thinking.type!=='adaptive'||q.thinking.display!=='summarized'||
     !q.output_config||!exact(q.output_config,['effort','format'])||q.output_config.effort!=='high'||q.output_config.format?.type!=='json_schema'||
     !exact(q.output_config.format,['type','schema'])||q.output_config.format?.schema?.additionalProperties!==false)throw Error('society_worker_wire');
   const observation=JSON.parse(q.messages[0].content[0].text);
   assertSerializedSocietyVisibleContext(observation);
+  if(q.system!==(observation.postcards?SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS:SOCIETY_INHABITANT_INSTRUCTIONS))throw Error('society_worker_instructions');
   if(JSON.stringify(q.output_config.format.schema)!==JSON.stringify(anthropicSchema(observation.decisionSchema)))throw Error('society_worker_schema');
   // These keys have no inhabitant meaning and were the original leak. Reject at the last
   // egress boundary as well as using a branded view in the parent request builder.
-  const forbidden=new Set(['sourceRevision','observerSecret','worldHash','requestId','agentId','developmentUpdate','packageInformation','sources','profile','engine','genesis','credential','tools','tool_calls']);
+  const forbidden=new Set(['sourceRevision','observerSecret','worldHash','requestId','agentId','developmentUpdate','packageInformation','sources','profile','engine','genesis','credential','tools','tool_calls',
+    'seed','drawCount','rngVersion','transactions','origin','issuedWhite','burnedWhite']);
   const walk=(v:unknown):void=>{if(v&&typeof v==='object')for(const [k,x]of Object.entries(v)){if(forbidden.has(k))throw Error('society_worker_metadata');walk(x);}};
   walk(observation);
 }

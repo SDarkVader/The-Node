@@ -31,6 +31,22 @@ started on that device/forwarded port. This repository does not provision a publ
 
 ## Current development — 2026-10-26
 
+The postcard-enabled society is now wired through the real agent runner. Prepare a small
+PowerShell behaviour test from this checkout:
+
+```powershell
+powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3
+```
+
+PowerShell prompts for the latest completed accounting journal, credential file and a new
+private output folder. Preparation makes no calls and prints the exact command to start
+the reviewed run with `-ApprovePaidRun`. Three days allow at most 18 Haiku calls and USD 1;
+the source, rate, 24-hour game day, plan and carried history are pinned. Each agent can claim,
+bank or fuse its own postcards alongside ordinary work, movement, communication and purchases.
+[Real-agent test instructions and raw output locations](docs/research/POSTCARD_AGENT_PLAYTEST_2026-10-26.md).
+The original paid Oracle/vouchers remain available. A separate configured daily Oracle ledger
+is implemented but remains inactive pending reward calibration and world funding integration.
+
 The first two [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
 slices implement postcard accounts: explicit millisecond time, a required rational White/hour
 rate, a 16-hour unclaimed buffer, retained fractional credit and five-to-one safe fusion.
@@ -63,8 +79,10 @@ five scenarios/183 events/three checkpoints with identical repeat bytes.
 [Preserved v1 evidence](docs/research/evidence/postcard-core-2026-10-26.json).
 PR #44 published the society runner; PR #46 integrated the postcard core into main at `1217c9b`.
 [PR #47](https://github.com/SDarkVader/The-Node/pull/47) publishes the verified shortcut slice.
-World-clock/abode ownership, agent menus, ticket migration and subsequent Oracle/civic slices
-remain further work. No default rate, daily-tick conversion or paid experiment is activated.
+The opt-in playtest now binds accounts to stable person identities and provides allowlisted
+agent menus, validated actions and an explicit 24-hour virtual day. Ticket migration,
+individual abodes and subsequent Oracle/civic slices remain further work. No default rate
+or paid experiment is activated by checkout or preparation.
 
 ### Preserved society mechanics
 
