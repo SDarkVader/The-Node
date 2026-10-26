@@ -8,6 +8,7 @@ param(
   [Parameter(ParameterSetName = 'Prepare')][long]$PostcardStartMs = 0,
   [Parameter(ParameterSetName = 'Prepare')][ValidateRange(1, 20)][int]$Ticks = 3,
   [Parameter(ParameterSetName = 'Prepare')][int]$Seed = 42,
+  [Parameter(ParameterSetName = 'Prepare')][ValidateNotNullOrEmpty()][string]$OracleConfig,
   [Parameter(Mandatory = $true, ParameterSetName = 'Review')][string]$Review,
   [Parameter(ParameterSetName = 'Review')][switch]$CheckOnly,
   [Parameter(ParameterSetName = 'Review')][switch]$ApprovePaidRun
@@ -22,9 +23,12 @@ if ($LASTEXITCODE -ne 0 -or [int]$nodeMajor -lt 24) { throw 'Node 24 or newer is
 Push-Location -LiteralPath $repositoryRoot
 try {
   if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
-    $raw = & $nodeExecutable --import tsx scripts/prepare-society-playtest.ts --prepare `
-      --prior-journal $PriorJournal --credential $CredentialFile --output $OutputRoot `
-      --postcard-rate $PostcardRate --postcard-start-ms $PostcardStartMs --ticks $Ticks --seed $Seed
+    $prepareArguments = @('--import', 'tsx', 'scripts/prepare-society-playtest.ts', '--prepare',
+      '--prior-journal', $PriorJournal, '--credential', $CredentialFile, '--output', $OutputRoot,
+      '--postcard-rate', $PostcardRate, '--postcard-start-ms', [string]$PostcardStartMs,
+      '--ticks', [string]$Ticks, '--seed', [string]$Seed)
+    if (-not [string]::IsNullOrEmpty($OracleConfig)) { $prepareArguments += @('--oracle-config', $OracleConfig) }
+    $raw = & $nodeExecutable @prepareArguments
     if ($LASTEXITCODE -ne 0) { throw 'Playtest preparation failed. Preserve any new files and inspect the error; no live call was made.' }
     $result = ($raw -join "`n") | ConvertFrom-Json
     $raw | Write-Output

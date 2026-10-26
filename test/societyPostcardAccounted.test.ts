@@ -16,14 +16,16 @@ import {validateSocietyWire} from '../scripts/society-request-worker.js';
 import {parseSocietyEvidence,stringifySocietyEvidence} from '../src/society/codec.js';
 import {buildSocietyResultsReport,writeSocietyRawResults,type SocietyCallReport} from '../src/society/report.js';
 import type {Sender} from '../src/eval/accountedRunner.js';
+import type {SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 
 const handles:{close():void}[]=[];
 afterEach(()=>{for(const h of handles.splice(0))h.close();cleanup();});
 const instruction='TEST ONLY SYNTHETIC POSTCARD APPROVAL. No actual provider, financial authority, credential or prior private account.';
 const source='a'.repeat(40);
 const postcardConfig={rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86_400_000 as const};
-function fixture(ticks=3){
+function fixture(ticks=3,dailyOracle?:SocietyDailyOracleConfig){
   const society=new Society({seed:42,sourceRevision:source,postcards:structuredClone(postcardConfig),
+    ...(dailyOracle?{dailyOracle}:{}),
     config:{...societyConfig(),pMonthly:0,arrivalPDaily:0,migrationK:0,saboteurCount:0}});
   const plan=createSocietyPlan(society,{id:'TEST-ONLY-accounted-postcards',ticks,minIntervalMs:0,deadlineMs:2000});
   const {ledger}=setup(),priorDirectory=join(root(),'TEST-ONLY-expired-prior');
@@ -67,6 +69,21 @@ function coldVerify(path:string,allowPartial=false){
 }
 
 describe('production postcard accounted path with disposable synthetic approvals only',()=>{
+  it('runs the actual daily Oracle eight-field worker/accounting/raw-export path for eighteen synthetic responses',async()=>{
+    const dailyOracle=JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8')) as SocietyDailyOracleConfig;
+    const f=fixture(3,dailyOracle),result=await runAccountedSociety(f.society,f.budget,f.sender(),f.options);
+    expect(f.plan.schema).toBe('node-accounted-society-daily-oracle-v3');expect(f.plan.dailyOracle).toEqual(dailyOracle);
+    expect(result).toMatchObject({status:'completed',calls:18,ticks:3,heldMicroUsd:'0'});
+    const tape=f.society.exportTape();expect(verifySocietyTape(tape).verified).toBe(true);
+    expect(tape.dailyOracleState!.treasuryMicro).toBeLessThan(dailyOracle.treasuryMicro);
+    for(const sent of f.sent){const wire=JSON.parse(sent.body),view=JSON.parse(wire.messages[0].content[0].text);
+      expect(wire.output_config.format.schema.required).toHaveLength(8);expect(view.dailyOracle.entryCost).toBe(0);
+      expect(view).not.toHaveProperty('dailyOracleState');expect(view.dailyOracle).not.toHaveProperty('treasuryMicro');}
+    const report=buildSocietyResultsReport({eventsText:eventText(f.events),tape,summary:result});
+    expect(report.counts.integrityIssues).toBe(0);
+    expect(report.agents.every(a=>a.records.every(r=>(r.submittedAction as any).dailyOracle!==undefined))).toBe(true);
+    writeSocietyRawResults(report,join(root(),'TEST-ONLY-daily-oracle-raw'));
+  });
   it('uses real seven-field requests, final egress validation, accounting and cold replay for three ticks/eighteen fixture calls',async()=>{
     const f=fixture(),result=await runAccountedSociety(f.society,f.budget,f.sender(),f.options);
     expect(f.plan.schema).toBe('node-accounted-society-postcards-v2');expect(f.plan.postcards).toEqual(postcardConfig);

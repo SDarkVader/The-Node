@@ -1,7 +1,7 @@
 /** Explicit prepare -> review/fund separately -> approve -> one bounded accounted run.
  * No command here creates an allowance, reuses a historical world, or resets accounting. */
 import { parseArgs } from 'node:util';
-import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync, openSync, fsyncSync, closeSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync, openSync, fsyncSync, closeSync, lstatSync } from 'node:fs';
 import { resolve, dirname, join, relative, isAbsolute, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { execFileSync, execFile } from 'node:child_process';
@@ -19,12 +19,14 @@ import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/c
 import { readSocietyResults, writeSocietyRawResults } from '../src/society/report.js';
 import { inspectSocietyFunding } from '../src/society/funding.js';
 import type {SocietyPostcardConfig} from '../src/society/postcards.js';
+import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -40,7 +42,7 @@ const privatePath=(path:string)=>{
   return target;
 };
 const bundlePath=privatePath(values.bundle);
-interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig}
+interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig}
 if(values.prepare){
   if(existsSync(bundlePath))throw Error('society_bundle_exists');
   const seed=Number(values.seed),ticks=Number(values.ticks);
@@ -50,9 +52,16 @@ if(values.prepare){
   const [numerator,denominator]=(values['postcard-rate']??'0/1').split('/').map(Number);
   const postcards:SocietyPostcardConfig|undefined=values['postcard-rate']?{rate:{numerator:numerator!,denominator:denominator!},
     startAtMs:Number(values['postcard-start-ms']??0),dayDurationMs:86_400_000}:undefined;
-  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(postcards?{postcards}:{})});
+  let dailyOracle:SocietyDailyOracleConfig|undefined;
+  if(values['oracle-config']!==undefined){
+    const path=resolve(values['oracle-config']),stat=lstatSync(path);
+    if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||stat.size<1||stat.size>65_536)throw Error('society_oracle_config_bounds');
+    const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
+    const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
+  }
+  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
-    ...(postcards?{postcardConfig:structuredClone(postcards)}:{})};
+    ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{})};
   const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});
   mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,stringifySocietyEvidence(bundle),{flag:'wx',mode:0o600});
   console.log(JSON.stringify({bundle:bundlePath,planSha256:bundle.planSha256,plan,initialPackets:packets,
@@ -61,8 +70,9 @@ if(values.prepare){
   const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))throw Error('society_bundle_postcard_config');
+  if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))throw Error('society_bundle_daily_oracle_config');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
-    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{})});
+    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
   const packets=society.pendingPeople().map(person=>{const q=buildSocietyRequest(society.view(person).visible);return {person,sha256:q.sha256,bytes:Buffer.byteLength(q.body),maxInputTokens:q.maxInputTokens};});
   if(values.preflight){

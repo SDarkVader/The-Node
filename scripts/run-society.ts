@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, lstatSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { createInterface } from 'node:readline/promises';
@@ -8,10 +8,12 @@ import { fileURLToPath } from 'node:url';
 import { Society, verifySocietyTape, type SocietyTape } from '../src/society/runtime.js';
 import { autonomousPolicy } from '../src/society/policy.js';
 import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
+import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'}}});
 if(values.verify){
+  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
@@ -27,7 +29,14 @@ if(values.verify){
   if(values['postcard-rate']&&!/^[1-9][0-9]*\/[1-9][0-9]*$/.test(values['postcard-rate']))throw Error('society_postcard_rate');
   const [numerator,denominator]=(values['postcard-rate']??'0/1').split('/').map(Number);
   const postcards=values['postcard-rate']?{rate:{numerator:numerator!,denominator:denominator!},startAtMs:Number(values['postcard-start-ms']??0),dayDurationMs:86_400_000 as const}:undefined;
-  const society=new Society({seed,sourceRevision,...(postcards?{postcards}:{})});
+  let dailyOracle:SocietyDailyOracleConfig|undefined;
+  if(values['oracle-config']!==undefined){
+    const path=resolve(values['oracle-config']),stat=lstatSync(path);
+    if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||stat.size<1||stat.size>65_536)throw Error('society_oracle_config_bounds');
+    const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
+    const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
+  }
+  const society=new Society({seed,sourceRevision,...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{})});
   const terminal=values.interactive?createInterface({input:stdin,output:stdout}):null;
   let failure:unknown;
   try{

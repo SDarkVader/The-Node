@@ -11,6 +11,7 @@ import { parseSocietyEvidence } from './codec.js';
 import { digest } from '../agent/replay.js';
 import type { Genesis } from '../agent/participantWorld.js';
 import type {SocietyPostcardConfig} from './postcards.js';
+import type {SocietyDailyOracleConfig} from './dailyOracle.js';
 
 export interface SocietyLaunchConfig {
   schema:'node-society-launch-v1'; sourceRevision:string; bundle:string; planSha256:string;
@@ -62,7 +63,7 @@ function derived(config:SocietyLaunchConfig):SocietyLaunchExecution {
     approval:join(resolve(config.outputRoot),'approval.json'),credential:join(resolve(config.outputRoot),'key.raw'),
     output:join(resolve(config.outputRoot),'run'),sourceRevision:config.sourceRevision};
 }
-interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig}
+interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcardConfig?:SocietyPostcardConfig;dailyOracleConfig?:SocietyDailyOracleConfig}
 function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment) {
   validateSocietyLaunchConfig(config);
   const root=resolve(environment.repositoryRoot);
@@ -79,8 +80,9 @@ function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment
     bundle.genesis.sourceRevision!==config.sourceRevision||bundle.plan.sourceRevision!==config.sourceRevision||
     bundle.plan.ticks>20||bundle.plan.maxCalls>120||bundle.plan.allowance.limitMicroUsd>1_000_000)fail('society_launch_bundle');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))fail('society_launch_postcard_config');
+  if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))fail('society_launch_daily_oracle_config');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:config.sourceRevision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
-    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{})});
+    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis)||digest(society.controlled)!==digest(bundle.plan.controlled))fail('society_launch_genesis');
   const priorPath=join(config.priorDirectory,'accounting.journal.json'),priorBytes=file(priorPath,8*1024*1024);
   if(sha256(priorBytes)!==config.priorJournalSha256)fail('society_launch_prior_bytes');

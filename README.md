@@ -38,6 +38,17 @@ PowerShell behaviour test from this checkout:
 powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3
 ```
 
+To include the approved free daily Oracle in that real-agent test:
+
+```powershell
+powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3 -OracleConfig experiments/oracle/daily-oracle-trial-2026-10-26.json
+```
+
+[Oracle trial rules and funding](docs/research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+The Oracle source `8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe` passed **1,901 tests /
+148 files**, zero failures and seven environment skips. The actual PowerShell prepare/check
+path passed with the Oracle profile and synthetic inputs. [Oracle verification](docs/research/evidence/oracle-agent-trial-2026-10-26.json).
+
 PowerShell prompts for the latest completed accounting journal, credential file and a new
 private output folder. Preparation makes no calls and prints the exact command to start
 the reviewed run with `-ApprovePaidRun`. Three days allow at most 18 Haiku calls and USD 1;
@@ -50,14 +61,17 @@ The actual Windows PowerShell preparation/check path passes with synthetic input
 integrated tape cold-replays and repeats byte-identically.
 [Verification record](docs/research/evidence/postcard-agent-playtest-2026-10-26.json) ·
 [PR #48](https://github.com/SDarkVader/The-Node/pull/48).
-PR #48 merged into [PR #47](https://github.com/SDarkVader/The-Node/pull/47)'s parent branch at
-`35fe129`. The parent recovery checkpoint now names `codex/postcard-shortcuts-2026-10-26`;
-the earlier Windows/Linux failures stopped on that inherited branch mismatch before tests.
-The subsequent Windows run reached all tests and found a 20-second timeout in the proof
-byte-comparison test. Exact native byte comparison now replaces per-element assertion work;
-the timeout and all replay, overwrite and tamper assertions are unchanged.
-The original paid Oracle/vouchers remain available. A separate configured daily Oracle ledger
-is implemented but remains inactive pending reward calibration and world funding integration.
+PR #48 was incorporated into [PR #47](https://github.com/SDarkVader/The-Node/pull/47),
+which merged into `main` at `aadb99be1c5736d8c601eb12a8da7db52465a3b1` after Windows
+verification, Linux conformance and dependency audit all passed on `0c0e089`.
+The recovery-branch mismatch and proof-byte comparison timeout are repaired; the strict
+verifier, original timeout and all replay, overwrite and tamper assertions remain.
+[PR #49](https://github.com/SDarkVader/The-Node/pull/49) now targets `main` for the daily
+Oracle integration. [PR #43](https://github.com/SDarkVader/The-Node/pull/43) is closed as
+already incorporated: its handoff document is byte-identical to the copy on `main`.
+The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
+enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth
+trial treasury. It does not change the USD model-call allowance or activate a default profile.
 
 The first two [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
 slices implement postcard accounts: explicit millisecond time, a required rational White/hour

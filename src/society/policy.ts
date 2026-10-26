@@ -11,6 +11,7 @@ export const emptySocietyAction=():SocietyAction=>({move:null,communication:null
 export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
   const a=emptySocietyAction(), preference=parseInt(v.self.ref.slice(0,4),16)/65535;
   if(v.postcards)a.postcards=null;
+  if(v.dailyOracle)a.dailyOracle=null;
   if(v.phase==='commit'){
     if(v.self.role==='Baker'){
       // Sustainable cost estimate comes only from one's own observed input market.
@@ -57,6 +58,7 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
   }
   if(v.oracle.canRedeem)a.oracle='redeem';
   else if(v.oracle.canEnter&&v.self.wealth>=v.oracle.entryCost+0.7&&v.oracle.winProbability>=0.1)a.oracle='enter';
+  if(v.dailyOracle?.canEnter)a.dailyOracle='enter';
   if(v.postcards&&v.legalChoices.postcards){
     const claim=v.legalChoices.postcards.canClaim;
     const recipes=v.legalChoices.postcards.fusion.filter(r=>!r.requiresClaim||claim);
