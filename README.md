@@ -50,6 +50,9 @@ The actual Windows PowerShell preparation/check path passes with synthetic input
 integrated tape cold-replays and repeats byte-identically.
 [Verification record](docs/research/evidence/postcard-agent-playtest-2026-10-26.json) ·
 [PR #48](https://github.com/SDarkVader/The-Node/pull/48).
+PR #48 merged into [PR #47](https://github.com/SDarkVader/The-Node/pull/47)'s parent branch at
+`35fe129`. The parent recovery checkpoint now names `codex/postcard-shortcuts-2026-10-26`;
+the earlier Windows/Linux failures stopped on that inherited branch mismatch before tests.
 The original paid Oracle/vouchers remain available. A separate configured daily Oracle ledger
 is implemented but remains inactive pending reward calibration and world funding integration.
 
