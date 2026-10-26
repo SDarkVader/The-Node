@@ -1,0 +1,55 @@
+# Society tests in one PC interface
+
+From the repository, open a model-free manual preview and registered previous runs:
+
+```powershell
+powershell -NoProfile -File scripts/start-node-test.ps1
+```
+
+Prepare and start a real three-day agent test through the same interface:
+
+```powershell
+powershell -NoProfile -File scripts/start-node-test.ps1 -Start -Ticks 3
+```
+
+The launcher uses one private machine settings file at
+`%LOCALAPPDATA%\The-Node\test.local.json`. It retains the credential path, latest journal
+pointer, output parent, Godot binary/template paths and saved-run registry. None belongs
+in Git. Preparation prints the exact source, rules, call and spending bounds. Typing
+`START` approves that prepared run; there is no automatic approval or provider retry.
+Three days permit at most 18 calls and USD 1. A tick is still a complete game day.
+
+The launcher builds the existing Godot scene for the browser when the source changes,
+starts the Observatory and opens its URL. Paste the interface token printed in the
+terminal. Godot runs inside the world panel; no separate editor, Godot window or accounting
+application is required. Keep the launcher terminal open. The renderer and the 2D overview
+consume the same committed world as the research timeline. The observer interface is
+operator-only and is never passed into an inhabitant request.
+
+Use the experiment, world-tick, agent, phase and decision selectors. **Advance one tick**
+permits exactly one day through the existing validated/accounted controller. Waiting makes
+no provider request or reservation. Duplicate/stale permits, a world-only token,
+cross-origin mutation and advance during historical playback are rejected. **Stop test**
+halts execution and retains partial evidence. **Play recorded ticks** changes only the
+shared replay cursor, including Godot; it never invokes a model or policy. **Follow latest**
+returns to the active run. The existing legacy Observatory and native clients remain supported.
+
+Every raw or readable results export now includes `ticks.json` and
+`agents/controlled-N/tick-0001.json`, in addition to each identity's chronological JSONL.
+Each tick file contains agent ID, exact recorded contexts and legal choices, submitted
+actions, provider-returned summaries or explicit absence, outcomes, transition and errors.
+Autonomous residents' actual contexts/actions remain in the full tape and are inspectable
+in the interface. Their deterministic policy is identified explicitly; no model reasoning
+is invented. No hidden reasoning is reconstructed or evaluated.
+
+Completed runs enter the private registry automatically. The latest financial journal
+pointer advances even when a run stops unfinished. Existing count-closed/expired, no-held-
+liability and no-overrun requirements still apply before another paid run; an unfinished
+allowance cannot be replaced with an older journal. An unstarted review may be released
+without deleting its files. One local lock prevents overlapping launcher sessions.
+
+For another PC, supply its private settings and installed Godot 4 binary plus the matching
+single-threaded Web release template, then use the same launcher. The build command is
+`scripts/build-godot-web.ps1 -Godot <binary> -WebTemplate <web_nothreads_release.zip>`.
+Build assets are local/ignored. Template provenance and actual verification are recorded
+separately from paid-model results. No paid run is claimed by an offline interface check.

@@ -1,15 +1,19 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, lstatSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { ObservatorySource, points } from './source.js';
+import { SocietyObservatorySource } from './societySource.js';
+import {validateSocietyPlan,societyPlanHash} from '../society/accounted.js';
 import { readEvaluations } from './evaluations.js';
 import { validateContinuationPlan, continuationPlanHash } from '../eval/continuationRunner.js';
 import { validateFreshPerceptionPlan, freshPerceptionPlanHash } from './freshPerception.js';
 import { validatePerceptionPlan, perceptionPlanHash } from './perceptionContinuation.js';
 
-interface Options { sources: ObservatorySource[]; researcherToken: string; worldToken: string; host?: string; port?: number; pollMs?: number; secureCookie?: boolean }
+type Source=ObservatorySource|SocietyObservatorySource;
+interface Options { sources: Source[]; researcherToken: string; worldToken: string; host?: string; port?: number; pollMs?: number; secureCookie?: boolean; webWorldDirectory?:string }
 type Role = 'researcher' | 'world';
 const equal = (a: string, b: string) => timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
 export function startObservatory(options: Options) {
@@ -17,8 +21,8 @@ export function startObservatory(options: Options) {
   const sources = new Map(options.sources.map(s => [s.registration.id, s]));
   if (!sources.size || sources.size !== options.sources.length) throw Error('observatory_sources_required');
   const selected = new Map<string, string | null>(), failures = new Set<string>();
-  const sockets = new Map<WebSocket, { source: ObservatorySource; secret: string; sent: string }>();
-  const streams = new Map<ServerResponse, { source: ObservatorySource; secret: string; sent: string; after: string | null }>();
+  const sockets = new Map<WebSocket, { source: Source; secret: string; sent: string }>();
+  const streams = new Map<ServerResponse, { source: Source; secret: string; sent: string; after: string | null }>();
   const sessions = new Map<string, { role: Role; expires: number }>();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
   const role = (req: IncomingMessage): Role | null => {
@@ -37,10 +41,10 @@ export function startObservatory(options: Options) {
     return JSON.parse(bytes);
   };
   const sourceFor = (id: string) => { const s = sources.get(id); if (!s || failures.has(id) || !s.latestCursor) throw Error('source_unavailable'); return s; };
-  const selection = (s: ObservatorySource) => selected.get(s.registration.id) ?? null;
-  const snapshot = (s: ObservatorySource, secret: string, cursor: string | null = selection(s)) => {
+  const selection = (s: Source) => selected.get(s.registration.id) ?? null;
+  const snapshot = (s: Source, secret: string, cursor: string | null = selection(s)) => {
     const value = s.snapshot(cursor, secret, true);
-    if (!('calls' in value)) throw Error('observatory_research_projection');
+    if (!('calls' in value)||!Array.isArray(value.calls)) throw Error('observatory_research_projection');
     // History is retrieved by selecting its cursor, rather than resending every actor's
     // entire observation history on every SSE update. Telemetry retains the full prefix.
     const tick = value.calls.at(-1)?.tick ?? null;
@@ -55,7 +59,7 @@ export function startObservatory(options: Options) {
       const id = client.source.registration.id;
       if (failures.has(id)) { ws.close(1011, 'evidence_unavailable'); continue; }
       const cursor = selection(client.source) ?? client.source.latestCursor;
-      const display = `${cursor}:${selection(client.source) === null ? 'follow' : 'replay'}`;
+      const display = `${cursor}:${selection(client.source) === null ? 'follow' : 'replay'}:${client.source instanceof SocietyObservatorySource&&selection(client.source)===null?client.source.revision:''}`;
       if (display === client.sent || !cursor) continue;
       if (ws.bufferedAmount > 1024 * 1024) { ws.close(1013, 'reconnect_for_snapshot'); continue; }
       const s = client.source.snapshot(selection(client.source), client.secret, false);
@@ -65,7 +69,7 @@ export function startObservatory(options: Options) {
       const id = client.source.registration.id;
       if (failures.has(id)) { eventWrite(res, 'source_error', { status: 'evidence_unavailable' }); res.end(); streams.delete(res); continue; }
       const cursor = selection(client.source) ?? client.source.latestCursor;
-      const display = `${cursor}:${selection(client.source) === null ? 'follow' : 'replay'}`;
+      const display = `${cursor}:${selection(client.source) === null ? 'follow' : 'replay'}:${client.source instanceof SocietyObservatorySource&&selection(client.source)===null?client.source.revision:''}`;
       if (display === client.sent || !cursor) continue;
       const all = client.source.list(), after = client.after ? all.findIndex(p => p.cursor === client.after) : all.length - 1;
       for (const p of all.slice(after + 1)) eventWrite(res, 'execution', p, p.cursor);
@@ -99,10 +103,27 @@ export function startObservatory(options: Options) {
         return json(res, 200, { role: 'researcher' });
       }
       if (role(req) !== 'researcher') return json(res, 401, { error: 'unauthorized' });
+      if(req.method==='GET'&&url.pathname==='/observatory/v1/capabilities')return json(res,200,{godotEmbedded:!!options.webWorldDirectory});
+      if(req.method==='GET'&&url.pathname.startsWith('/godot/')){
+        if(!options.webWorldDirectory)return json(res,404,{error:'godot_web_export_not_configured'});
+        const name=url.pathname.slice(7);
+        if(!/^index(?:\.[A-Za-z0-9_-]+)*\.(?:html|js|wasm|pck|png|svg|ico)$/.test(name))return json(res,404,{error:'not_found'});
+        const path=join(options.webWorldDirectory,name),stat=lstatSync(path);
+        if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||stat.size>128*1024*1024)throw Error('godot_asset_bounds');
+        const bytes=readFileSync(path);
+        if(name.endsWith('.html')){
+          const hashes=[...bytes.toString('utf8').matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(m=>`'sha256-${createHash('sha256').update(m[1]!).digest('base64')}'`).join(' ');
+          res.setHeader('Content-Security-Policy',`default-src 'self'; script-src 'self' 'wasm-unsafe-eval' ${hashes}; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);
+        }
+        res.setHeader('Content-Type',name.endsWith('.wasm')?'application/wasm':name.endsWith('.js')?'text/javascript':name.endsWith('.html')?'text/html':name.endsWith('.png')?'image/png':'application/octet-stream');
+        return res.end(bytes);
+      }
       if (req.method === 'GET' && url.pathname === '/observatory/v1/configuration/fresh-first-person')
         return json(res, 200, { plan: JSON.parse(readFileSync(fileURLToPath(new URL('../../experiments/two-baker-first-person-reasoning-20-ticks.json',import.meta.url)),'utf8')), spendingAuthorized: false });
       if (req.method === 'POST' && url.pathname === '/observatory/v1/configuration/validate') {
         const { plan } = await body(req);
+        if(typeof plan?.schema==='string'&&plan.schema.startsWith('node-accounted-society-')){validateSocietyPlan(plan);return json(res,200,{planSha256:societyPlanHash(plan),spendingAuthorized:false});}
         if (plan?.schema === 'node-accounted-perception-fresh-v1') { validateFreshPerceptionPlan(plan); return json(res,200,{planSha256:freshPerceptionPlanHash(plan),spendingAuthorized:false}); }
         if (plan?.schema === 'node-accounted-perception-continuation-v1') { validatePerceptionPlan(plan); return json(res,200,{planSha256:perceptionPlanHash(plan),spendingAuthorized:false}); }
         validateContinuationPlan(plan);
@@ -115,14 +136,23 @@ export function startObservatory(options: Options) {
       }
       if (req.method === 'GET' && url.pathname === '/observatory/v1/runs') return json(res, 200, options.sources.map(s => ({ id: s.registration.id,
         status: failures.has(s.registration.id) ? 'evidence_unavailable' : s.latestCursor ? 'available' : 'awaiting_evidence', latestCursor: s.latestCursor })));
-      const match = url.pathname.match(/^\/observatory\/v1\/runs\/([A-Za-z0-9._-]+)\/(snapshot|events|timeline|evaluations|selection|configuration)$/);
+      const match = url.pathname.match(/^\/observatory\/v1\/runs\/([A-Za-z0-9._-]+)\/(snapshot|events|timeline|evaluations|selection|configuration|advance|stop)$/);
       if (!match) return json(res, 404, { error: 'not_found' });
       const s = sourceFor(match[1]!), endpoint = match[2];
-      if (req.method === 'GET' && endpoint === 'configuration') return json(res, 200, { plan: s.point().start.plan, spendingAuthorized: false });
+      if(req.method==='POST'&&endpoint==='stop'&&s instanceof SocietyObservatorySource){
+        if(selection(s)!==null)return json(res,409,{error:'read_only_replay'});
+        const result=s.stop();publish();return json(res,200,result);
+      }
+      if (req.method === 'GET' && endpoint === 'configuration') return json(res, 200, { plan: s instanceof SocietyObservatorySource?s.configuration():s.point().start.plan, spendingAuthorized: false });
+      if(req.method==='POST'&&endpoint==='advance'){
+        if(!(s instanceof SocietyObservatorySource)||selection(s)!==null)return json(res,409,{error:'read_only_replay'});
+        const request=await body(req),result=s.advance(request.cursor,request.day,request.version);publish();return json(res,200,result);
+      }
       if (req.method === 'GET' && endpoint === 'snapshot') return json(res, 200, snapshot(s, 'researcher-http', url.searchParams.get('cursor') ?? selection(s)));
       if (req.method === 'GET' && endpoint === 'timeline') return json(res, 200, s.list());
       if (req.method === 'GET' && endpoint === 'evaluations') {
         const cursor = url.searchParams.get('cursor') ?? selection(s) ?? s.latestCursor!; s.point(cursor);
+        if(s instanceof SocietyObservatorySource)return json(res,200,[]);
         return json(res, 200, readEvaluations(s.registration.evaluations, s.registration.id, points(s.tail.read()), cursor));
       }
       if (req.method === 'PUT' && endpoint === 'selection') {

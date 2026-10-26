@@ -1028,6 +1028,15 @@ func _hide_icons_from(n: int) -> void:
 ## own port and path: `godot --path client -- --world-url=ws://127.0.0.1:8090/observatory/v1/godot?run=<id>&token=<renderer token>`,
 ## or NODE_WORLD_URL. Without either, the standalone world server at SERVER_HOST, as before.
 func _world_url() -> String:
+	if OS.has_feature("web"):
+		# Same-origin HttpOnly Observatory session authenticates the browser socket.
+		# Only the non-secret registered run ID appears in the iframe URL.
+		var location = JavaScriptBridge.get_interface("window").location
+		var params = JavaScriptBridge.create_object("URLSearchParams", str(location.search))
+		var run_id = params.get("run")
+		if run_id != null and str(run_id).is_valid_filename():
+			return ("wss://" if str(location.protocol) == "https:" else "ws://") + str(location.host) + "/observatory/v1/runs/" + str(run_id).uri_encode() + "/world"
+		return ""
 	var cloud_url := OS.get_environment("NODE_OBSERVATORY_URL")
 	if cloud_url != "":
 		return cloud_url

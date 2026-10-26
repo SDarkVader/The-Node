@@ -3,6 +3,7 @@ dist/
 *.log
 .DS_Store
 .codex/session-recovery/
+.codex/godot-web/
 
 # Godot
 client/.godot/

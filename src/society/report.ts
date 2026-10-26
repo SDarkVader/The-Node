@@ -327,9 +327,29 @@ export interface SocietyReportPaths {
   outputDirectory: string; reportJson: string; reportMarkdown: string; indexJson: string;
   agents: { person: string; jsonl: string; markdown: string }[];
 }
+/** Identical raw tick records in every export mode, including incomplete/failing days. */
+function writeTickRecords(report:SocietyResultsReport,directory:string):void{
+  const index:{person:string;day:number|null;path:string}[]=[];
+  for(const agent of report.agents){
+    const folder=join(directory,'agents',agent.filename);mkdirSync(folder,{recursive:true,mode:0o700});
+    const days=new Set(agent.records.map(r=>r.day));
+    for(const day of [...days].sort((a,b)=>(a??Number.MAX_SAFE_INTEGER)-(b??Number.MAX_SAFE_INTEGER))){
+      const name=day===null?'tick-unknown.json':`tick-${String(day).padStart(4,'0')}.json`;
+      const records=agent.records.filter(r=>r.day===day);
+      writeFileSync(join(folder,name),stringifySocietyEvidence({format:'node-society-agent-tick-v1',
+        agentId:agent.person,initialRole:agent.initialRole,day,records,
+        errors:report.recordedErrors,integrityIssues:report.integrityIssues}),{flag:'wx',mode:0o600});
+      index.push({person:agent.person,day,path:`agents/${agent.filename}/${name}`});
+    }
+  }
+  writeFileSync(join(directory,'ticks.json'),stringifySocietyEvidence({format:'node-society-tick-index-v1',
+    records:index.sort((a,b)=>(a.day??Number.MAX_SAFE_INTEGER)-(b.day??Number.MAX_SAFE_INTEGER)||a.person.localeCompare(b.person)),
+    unassignedRecords:report.unassignedRecords}),{flag:'wx',mode:0o600});
+}
 export function writeSocietyResults(report: SocietyResultsReport, outputDirectory: string): SocietyReportPaths {
   const directory = resolve(outputDirectory); if (existsSync(directory)) throw Error('society_report_output_exists');
   mkdirSync(directory, { recursive: true, mode: 0o700 });
+  writeTickRecords(report,directory);
   const write = (name: string, text: string) => writeFileSync(join(directory, name), text, { flag: 'wx', mode: 0o600 });
   write('report.json', stringifySocietyEvidence(report)); write('report.md', societyResultsMarkdown(report));
   write('index.json', stringifySocietyEvidence({ format: report.format, counts: report.counts,
@@ -352,6 +372,7 @@ export interface SocietyRawReportPaths {
 export function writeSocietyRawResults(report: SocietyResultsReport, outputDirectory: string): SocietyRawReportPaths {
   const directory = resolve(outputDirectory); if (existsSync(directory)) throw Error('society_report_output_exists');
   mkdirSync(directory, { recursive: true, mode: 0o700 });
+  writeTickRecords(report,directory);
   const write = (name: string, text: string) => writeFileSync(join(directory, name), text, { flag: 'wx', mode: 0o600 });
   write('report.json', stringifySocietyEvidence(report));
   write('index.json', stringifySocietyEvidence({ format: report.format, counts: report.counts,

@@ -11,7 +11,10 @@ param(
   [Parameter(ParameterSetName = 'Prepare')][ValidateNotNullOrEmpty()][string]$OracleConfig,
   [Parameter(Mandatory = $true, ParameterSetName = 'Review')][string]$Review,
   [Parameter(ParameterSetName = 'Review')][switch]$CheckOnly,
-  [Parameter(ParameterSetName = 'Review')][switch]$ApprovePaidRun
+  [Parameter(ParameterSetName = 'Review')][switch]$ApprovePaidRun,
+  [Parameter(ParameterSetName = 'Review')][string]$WebWorld,
+  [Parameter(ParameterSetName = 'Review')][string]$History,
+  [Parameter(ParameterSetName = 'Review')][switch]$WithoutInterface
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -48,7 +51,7 @@ try {
   $raw | Write-Output
   # The reviewed existing launcher carries accounting, parses a private credential copy,
   # starts the fixed worker, retains raw/partial evidence and removes only its key copy.
-  & (Join-Path $PSScriptRoot 'start-society-live.ps1') -Config $approved.launch
+  & (Join-Path $PSScriptRoot 'start-society-live.ps1') -Config $approved.launch -WebWorld $WebWorld -History $History -WithoutInterface:$WithoutInterface
   exit $LASTEXITCODE
 } finally {
   Pop-Location

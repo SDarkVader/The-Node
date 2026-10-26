@@ -3,7 +3,10 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)][string]$Config,
-  [switch]$CheckOnly
+  [switch]$CheckOnly,
+  [string]$WebWorld,
+  [string]$History,
+  [switch]$WithoutInterface
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -16,6 +19,10 @@ $runExitCode = 1
 $createdCredential = $null
 Push-Location -LiteralPath $repositoryRoot
 try {
+  if (-not $CheckOnly -and -not $WithoutInterface) {
+    if ([string]::IsNullOrWhiteSpace($WebWorld)) { $WebWorld=Join-Path $repositoryRoot '.codex/godot-web' }
+    if (-not [IO.File]::Exists((Join-Path $WebWorld 'build.json'))) { throw 'Build the embedded Godot renderer with start-node-test.ps1 before spending preparation.' }
+  }
   & $nodeExecutable --import tsx scripts/prepare-society-launch.ts --config $configPath --check
   if ($LASTEXITCODE -ne 0) { throw 'Read-only launch checks failed. No live call was made.' }
   if ($CheckOnly) { return }
@@ -30,9 +37,27 @@ try {
   }
   $createdCredential = $credentialPath
   Write-Host 'Starting the bounded run. Ctrl+C stops it. Do not restart a stopped attempt.'
-  & $nodeExecutable --import tsx scripts/run-society-live.ts --owner-approved `
-    --bundle $execution.bundle --budget $execution.budget --carried-fingerprint $execution.carriedFingerprint `
-    --approval $execution.approval --credential $execution.credential --output $execution.output |
+  $runArguments=@('--import','tsx','scripts/run-society-live.ts','--owner-approved',
+    '--bundle',$execution.bundle,'--budget',$execution.budget,'--carried-fingerprint',$execution.carriedFingerprint,
+    '--approval',$execution.approval,'--credential',$execution.credential,'--output',$execution.output)
+  if (-not $WithoutInterface) {
+    $runArguments+=@('--observatory','--manual-ticks','--web-world',$WebWorld)
+    if (-not [string]::IsNullOrWhiteSpace($History)) { $runArguments+=@('--history',$History) }
+  }
+  & $nodeExecutable @runArguments | ForEach-Object {
+    $line=$_;Write-Output $line
+    try { $event=$line | ConvertFrom-Json } catch { return }
+    if ($null -ne $event.PSObject.Properties['event']) {
+      if ($event.event -eq 'observatory_ready') {
+        Write-Host ('Interface token: '+$event.loginToken)
+        Start-Process -FilePath $event.url
+      }
+      if ($event.event -eq 'society_run_finalized' -and $null -ne $createdCredential -and [IO.File]::Exists($createdCredential)) {
+        Remove-Item -LiteralPath $createdCredential -Force
+        $createdCredential=$null
+      }
+    }
+  } |
     Tee-Object -FilePath (Join-Path $executionRoot 'console.jsonl')
   $runExitCode = $LASTEXITCODE
   # Export again after finalization, including late errors. Existing raw artifacts stay intact.

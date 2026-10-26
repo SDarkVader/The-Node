@@ -187,6 +187,16 @@ describe('factual society evidence exporter', () => {
     }
     expect(() => writeSocietyResults(report, paths.outputDirectory)).toThrow('society_report_output_exists');
     const rawPaths = writeSocietyRawResults(report, join(root, 'raw-export'));
+    const rawTicks=parseSocietyEvidence<any>(readFileSync(join(rawPaths.outputDirectory,'ticks.json'),'utf8'));
+    const richTicks=parseSocietyEvidence<any>(readFileSync(join(paths.outputDirectory,'ticks.json'),'utf8'));
+    expect(rawTicks).toEqual(richTicks);expect(rawTicks.records.length).toBeGreaterThan(0);
+    for(const tick of rawTicks.records){
+      const raw=readFileSync(join(rawPaths.outputDirectory,tick.path)),rich=readFileSync(join(paths.outputDirectory,tick.path));
+      expect(raw.equals(rich)).toBe(true);
+      const value=parseSocietyEvidence<any>(raw.toString('utf8'));
+      expect(value).toMatchObject({agentId:tick.person,day:tick.day});
+      expect(value.records.every((r:SocietyCallReport)=>r.person===tick.person&&r.day===tick.day)).toBe(true);
+    }
     expect(rawPaths.agents).toHaveLength(3); expect(existsSync(join(rawPaths.outputDirectory, 'report.md'))).toBe(false);
     expect(rawPaths.agents.every(a => existsSync(a.jsonl) && !existsSync(a.jsonl.replace(/jsonl$/, 'md')))).toBe(true);
     expect(societyReportFence('```\nverbatim')).toBe('````\n```\nverbatim\n````');
