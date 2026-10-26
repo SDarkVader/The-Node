@@ -50,14 +50,19 @@ npm run postcards:shortcut-proof -- --verify .codex/session-recovery/postcard-sh
 
 Both proofs use explicit synthetic clock/asset events at the original illustrative 2 White/hour,
 with zero provider calls. The new shortcut proof covers 31 fixed cases, v1 acquisition tapes,
-v2 snapshots, delayed duplicates and atomic failures. The shortcut candidate passes 111 new
-tests, including 15,000 seeded transactions; committed-source full regression is still to record.
+v2 snapshots, delayed duplicates and atomic failures. At implementation source
+`e173dbf37f401111a876ccea835bd334f7e1d085`, all **1,779 tests / 140 files pass**, with zero
+failures and seven environment skips, plus project/CLI TypeScript and eight recovery tests.
+This includes 111 new tests and 15,000 seeded transactions. Two cold proof files are identical;
+40 v2 records, nine restored checkpoints and ten rejected attempts verify.
+[Source-anchored shortcut evidence](docs/research/evidence/postcard-shortcuts-2026-10-26.json).
 [Mechanics, accounting and current verification](docs/research/POSTCARD_SHORTCUTS_2026-10-26.md).
 The earlier v1 source `8011e60972948990b5f5d00e84663bc5542c3a79` passed 1,668 tests / 137 files,
 with seven environment skips, plus TypeScript and eight recovery tests; its cold proof verified
 five scenarios/183 events/three checkpoints with identical repeat bytes.
 [Preserved v1 evidence](docs/research/evidence/postcard-core-2026-10-26.json).
 PR #44 published the society runner; PR #46 integrated the postcard core into main at `1217c9b`.
+[PR #47](https://github.com/SDarkVader/The-Node/pull/47) publishes the verified shortcut slice.
 World-clock/abode ownership, agent menus, ticket migration and subsequent Oracle/civic slices
 remain further work. No default rate, daily-tick conversion or paid experiment is activated.
 

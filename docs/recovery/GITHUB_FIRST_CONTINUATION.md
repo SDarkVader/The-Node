@@ -3,8 +3,9 @@
 Updated 2026-10-26. A fresh phone, PC or cloud session can recover development context from GitHub.
 The owner requested publication as implementation proceeds. PR #44 published the society runner
 and PR #46 integrated the first postcard slice into `main` at `1217c9b`.
-The next bounded shortcut slice is on `codex/postcard-shortcuts-2026-10-26`; check the current
-remote head and [CURRENT_SESSION](CURRENT_SESSION.md) rather than assuming it is already merged.
+The verified shortcut slice is on `codex/postcard-shortcuts-2026-10-26`, [PR #47](https://github.com/SDarkVader/The-Node/pull/47),
+code source `e173dbf37f401111a876ccea835bd334f7e1d085`; check the current remote head and
+[CURRENT_SESSION](CURRENT_SESSION.md) rather than assuming it is already merged.
 The [secure society implementation](../research/SECURE_AGENT_SOCIETY_2026-10-25.md)
 closes old real-dispatch paths while retaining historical verification.
 Start with the [current experiment](../research/CURRENT_EXPERIMENT.md) and

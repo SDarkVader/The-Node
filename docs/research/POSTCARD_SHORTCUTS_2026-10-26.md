@@ -42,14 +42,16 @@ Exact shapes reject extra fields, executable getters, inherited/non-dense arrays
 
 ## Offline evidence
 
-The implementation candidate passes 82 core tests, 26 replay tests and three CLI tests, including 15,000 real seeded transactions across 1,000 seeds × five stakes × three eligible tiers. For that fixed seed fixture, success counts are `182,367,557,777,1000` for stakes 1–5, repeated across all three tiers. These counts are recorded fixture output, not an estimate of agent behaviour. A separate injected raw-word boundary test verifies rejection/cursor recovery; no injection callback is exposed by the production API.
+At implementation source `e173dbf37f401111a876ccea835bd334f7e1d085`, the full suite passes **1,779 tests across 140 files**, zero failures and seven explicit environment skips (six require configured real Godot workers; one POSIX fake-PowerShell check skips Windows). Project and both proof-CLI TypeScript checks plus eight recovery tests pass. The 111 new tests comprise 82 core, 26 replay and three CLI checks, including 15,000 real seeded transactions across 1,000 seeds × five stakes × three eligible tiers. For that fixed seed fixture, success counts are `182,367,557,777,1000` for stakes 1–5, repeated across all three tiers. These counts are recorded fixture output, not an estimate of agent behaviour. A separate injected raw-word boundary test verifies rejection/cursor recovery; no injection callback is exposed by the production API.
 
 ```powershell
 npm run postcards:shortcut-proof -- --output .codex/session-recovery/postcard-shortcut-proof.json
 npm run postcards:shortcut-proof -- --verify .codex/session-recovery/postcard-shortcut-proof.json
 ```
 
-Use a new output file. The proof records 31 fixed synthetic scenarios with complete v1 acquisitions, v2 transactions, snapshots, exact ledgers and rejected attempts. Seeds 4 and 5 deliberately cover first-draw success and failure; this is fixture selection, not manufactured inhabitant behaviour. Verification checks the source hashes, specified fixtures, event replay, snapshot resumption and failure receipts. Separate CLI processes produce identical proof bytes and refuse overwrite. Source-anchored full regression and saved-file results will be recorded after committing this implementation.
+Use a new output file. The retained proof records 31 fixed synthetic scenarios with 2,292 recorded v1 acquisition events, 40 v2 transaction records, nine reopened checkpoints, ten rejected attempts and one delayed duplicate. Repeated acquisitions across scenarios are independent fixture openings, not 2,292 distinct population actions. Seeds 4 and 5 deliberately cover first-draw success and failure; this is fixture selection, not manufactured inhabitant behaviour. Verification checks the source hashes, specified fixtures, event replay, snapshot resumption and failure receipts. Separate CLI processes produce identical proof bytes and refuse overwrite. The proof SHA-256 is `b6c59438be56b1850860c8604d861c38eebcfda9ffca946fd55be9cab39fcee5`.
+
+The saved original v1 proof reopens unchanged at this new source, retaining SHA-256 `fc97b4d150664bcc6edea71a20a14b935a471156f9ced6efdafe1753c8c5994e`. [Exact aggregate evidence and scenario results](evidence/postcard-shortcuts-2026-10-26.json) are tracked; complete synthetic tapes and raw test output remain in ignored local recovery storage. [PR #47](https://github.com/SDarkVader/The-Node/pull/47) publishes this slice after PR #46 brought v1 to main. Hosted CI results are separate from the local source-specific results above.
 
 ## Further work
 

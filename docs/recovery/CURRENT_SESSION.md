@@ -4,7 +4,8 @@ Updated 2026-10-26. Active implementation branch: `codex/postcard-shortcuts-2026
 including `main` at `1217c9b4573f7a4792b8015b7618750ca706905d`.
 The owner requested ongoing publication and PRs. PR #44 merged the earlier society runner;
 PR #45 merged postcard core into its former stacked parent; PR #46 then integrated that
-same verified core into main. The shortcut slice is the next separate review diff.
+same verified core into main. [PR #47](https://github.com/SDarkVader/The-Node/pull/47)
+publishes the shortcut slice; its code source is `e173dbf37f401111a876ccea835bd334f7e1d085`.
 PR #43 documentation head `139f98fb` and its checksummed full Drive package define the
 [Oracle/civic handoff](../research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md).
 The first slice implements per-person postcard accrual, 16-hour unclaimed storage,
@@ -12,7 +13,11 @@ claims and guaranteed five-to-one fusion. The new v2 account explicitly upgrades
 adds same-tier Green/Blue/Purple shortcuts with k/5 odds, atomic stake consumption,
 named success issuance/loss burn, deterministic rejection-sampled draws, stable transaction
 IDs and complete receipt/snapshot replay. Existing v1 source/evidence remains byte-unchanged.
-The candidate passes 111 new tests; committed-source full regression is still to record.
+At that source 1,779 tests / 140 files pass, zero fail and seven environment checks skip;
+project/proof-CLI TypeScript and eight recovery tests pass. The 111 new tests include
+15,000 seeded transactions. Two cold proof files are byte-identical: 31 scenarios,
+40 v2 records, nine restored snapshots and ten rejected attempts. V1 proof still verifies.
+See [source-scoped evidence](../research/evidence/postcard-shortcuts-2026-10-26.json).
 See [shortcut mechanics and verification](../research/POSTCARD_SHORTCUTS_2026-10-26.md).
 The hourly rate is required configuration; 2/hour is only an explicit proof fixture.
 A tick remains a day. No World, model information, role, money or migration path is changed.
@@ -37,8 +42,9 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "8011e60972948990b5f5d00e84663bc5542c3a79",
+  "verifiedBaseCommit": "e173dbf37f401111a876ccea835bd334f7e1d085",
   "completedWork": [
+    "Shortcut implementation committed and pushed at e173dbf37f401111a876ccea835bd334f7e1d085; PR47 targets main. Saved proof created twice at this exact clean source, byte-identical SHA256 b6c59438be56b1850860c8604d861c38eebcfda9ffca946fd55be9cab39fcee5; fresh process verifies all31scenarios/2292recorded v1 acquisition events/40v2records/9checkpoints/10rejections/1duplicate. Full source regression1779passed/140files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Preserved v1 proof independently reverified unchanged. Exact aggregate docs/research/evidence/postcard-shortcuts-2026-10-26.json. No paid or private financial operation. Full programme remains active.",
     "Second bounded postcard slice candidate: explicit v2 origin-preserving upgrade; Green/Blue/Purple same-tier k/5 shortcuts; five-card recipes without RNG; whole-stake loss burn and success issuance; exact transaction ledger; deterministic Mulberry32/rejection5 physical cursor; mandatory stable IDs with delayed retry no-op; strict snapshots and origin/seed receipt replay. Added separate31-scenario proof CLI. Existingv1,World,Society,Agent,economic,role,reputation and migration source paths preserved. Root README/current/continuation documentation updated. No provider/credential/accounting operation.",
     "Owner requested publish-as-you-proceed and PRs. Published PR44 society runner and PR45 postcard core. After PR45 merged into its former stacked parent rather thanmain, opened PR46 againstmain; it merged at1217c9b4573f7a4792b8015b7618750ca706905d. Shortcut branch fast-forwarded to that main merge, retaining all uncommitted new files and unrelatedtrace.pdf. HostedPR44 research,Windowsintegration andaudit passed. No new paid authority inferred.",
     "First postcard slice committed at8011e60972948990b5f5d00e84663bc5542c3a79 and independently reopened/replayed in fresh CLI processes:5scenarios/183events/3checkpoints, repeatproofbytesidentical SHAfc97b4d150664bcc6edea71a20a14b935a471156f9ced6efdafe1753c8c5994e. Full committed-source regression1668passed/137files/0failed/7skips; TypeScript and8recoverytests pass. All existing World/Society/Agent/economic/reputation paths are byte-unchanged frombaselinee2a16e6. Sanitized evidence docs/research/evidence/postcard-core-2026-10-26.json. No live/provider/credential/accounting operation.",
@@ -74,6 +80,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "At exact e173dbf37f401111a876ccea835bd334f7e1d085:1779Vitest tests pass across140files,0fail,7skips(6realGodot workers unconfigured,1POSIXfakepwshWindows); project and both proof-CLI TypeScript pass;8recoverytests pass.31fixedmechanicalscenarios/40v2records/9snapshotresumes/10atomicrejections/1delayedduplicate pass cold replay; repeat proof bytes match. Existing v1 snapshot/tape/proof sources and World/Society/Agent/economy/RNG/reputation/migration paths are byte-unchanged. No behavioural score or new paid-run evidence claimed.",
     "Shortcut candidate based on1217c9b:82core+26replay+3CLItests pass(111new tests). Includes15000seededtier/staketransactions, exact bucket/rejection/resume, issuance/burn, duplicate/conflict/illegal atomicity, hostile shape validation, fresh-process snapshot/tape replay and31fixedproofscenarios. CLIrepeatbytesidentical andalternate self-consistent fixtures rejected. Committed-source full regression/cold retained proof still to record.",
     "Exact implementation8011e60972948990b5f5d00e84663bc5542c3a79:1668Vitestpassed,0failed,7explicit skips(6realGodotnotconfigured,1POSIXfakepwshcaseonWindows),137files;59targetedpostcardtests;projectandproofCLI TypeScript pass;8sessionrecoverytests pass. Fresh saved-file verification proves12h24White/24h32White+16overflow/twice12h48White;625Whitevia156safe fusions->1Orange preservedafter1year;fractionalcheckpointresumptionexact;5scenarios183events3checkpoints. Byte-reproducibility confirmed withtwo separate CLI creations. No empirical LLM-behaviour claim.",
     "Postcard implementation candidate based on e2a16e6:36 core tests,20 final replay tests and3 fresh-process proof CLI tests passed (59total); project and explicit proof CLI TypeScript passed. Earlier full regression at the initial postcard candidate passed1663tests/136files/0failed/7environment skips; final source-anchored full regression/cold evidence still to record. Development proof demonstrates12h=24White,24h=32White+16overflow, twice12h=48White, fractionalcheckpointrestore,625White->1Orange through156safe fusions andheldOrangeafter1year. Illustrative2/hour only; no production calibration chosen.",
@@ -103,7 +110,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
-    "Finish source-anchored full regression/cold proof and commit the shortcut slice, publish its separate PR againstmain. Then proceed to universal negligible-cost Oracle and separately optional small lottery, health-conditioned nonlinear configurable rarity/rewards and audited resources. Do not activate uncalibrated numeric costs/weights/payouts. Preserve v1,existingworld/economy,original evidence and full active goal; implement one verified slice at a time.",
+    "Shortcut slice verified/published as PR47; inspect hosted checks before integration and retain source-specific local evidence. Next bounded slice: universal negligible-cost daily Oracle and separately optional small lottery, health-conditioned nonlinear configurable rarity/rewards and audited resources. Do not activate uncalibrated numeric costs/weights/payouts. Preserve v1/v2, existing world/economy and original evidence; keep full goal active and implement one verified slice at a time.",
     "No new paid run is requested or authorized by the Oracle/civic implementation goal. Preserve historical live outputs/accounting and keep all model/provider/credential/allowance paths closed. Run only the explicit offline mechanical proofs and relevant regression.",
     "Use main as shared recovery source. Run npm run preview on the viewing PC or inside a private Codespace; wait for the ready URL and enter its interface token. Pass the private completed-run bundle registration to view actual evidence.",
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
