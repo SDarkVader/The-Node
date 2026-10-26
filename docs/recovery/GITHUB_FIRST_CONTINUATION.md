@@ -1,5 +1,11 @@
 # GitHub-first continuation — The Node
 
+The next active Oracle trial branch is `codex/oracle-agent-playtest-2026-10-26`.
+The owner-approved explicit daily profile and real PowerShell command are in
+[Oracle agent trial](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+PR47's inherited branch checkpoint was repaired at1a9df17 after PR48 merged into it;
+the strict verifier was preserved. Inspect current refs and hosted results.
+
 Updated 2026-10-26. A fresh phone, PC or cloud session can recover development context from GitHub.
 The owner requested publication as implementation proceeds. PR #44 published the society runner
 and PR #46 integrated the first postcard slice into `main` at `1217c9b`.

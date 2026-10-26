@@ -10,6 +10,13 @@ export const SOCIETY_INHABITANT_INSTRUCTIONS = [
   'Consider the current situation before deciding. Return exactly the six-field decision JSON matching the supplied decision schema, without prose or additional fields.',
 ].join('\n');
 export const SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS = SOCIETY_INHABITANT_INSTRUCTIONS.replace('six-field decision JSON', 'seven-field decision JSON');
+export const SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS = SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS
+  + '\nThe optional dailyOracle draw is separate from the paid oracle lottery. Use only the public chances, conditional prize menu and your own prior result; null declines either independently.';
+export const SOCIETY_POSTCARD_DAILY_ORACLE_INHABITANT_INSTRUCTIONS = SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS.replace('seven-field decision JSON', 'eight-field decision JSON');
+export function societyInhabitantInstructions(view: SocietyVisibleContext): string {
+  return view.dailyOracle ? view.postcards ? SOCIETY_POSTCARD_DAILY_ORACLE_INHABITANT_INSTRUCTIONS : SOCIETY_DAILY_ORACLE_INHABITANT_INSTRUCTIONS
+    : view.postcards ? SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS : SOCIETY_INHABITANT_INSTRUCTIONS;
+}
 
 /** A transport-independent prompt: no identity binding, world hash, deployment status,
  * experiment notes, provider configuration, prior run, other-person history or technical source map.
@@ -18,7 +25,7 @@ export function buildSocietyPolicyPacket(view: SocietyVisibleContext) {
   if (!isSocietyVisibleContext(view)) throw new SocietySecurityError('society_request_unbound_view');
   assertSerializedSocietyVisibleContext(view);
   return Object.freeze({
-    system: view.postcards ? SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS : SOCIETY_INHABITANT_INSTRUCTIONS,
+    system: societyInhabitantInstructions(view),
     observation: view,
     decisionSchema: view.decisionSchema,
   });

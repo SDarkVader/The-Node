@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, lstatSync, realpathSync, openSync, fsyncSy
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { SOCIETY_INHABITANT_INSTRUCTIONS,SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS } from '../src/society/request.js';
+import { societyInhabitantInstructions } from '../src/society/request.js';
 import { assertSerializedSocietyVisibleContext } from '../src/society/boundary.js';
 import { anthropicSchema } from '../src/agent/anthropicRequest.js';
 
@@ -21,7 +21,7 @@ export function validateSocietyWire(bytes:Buffer,expectedSha256:string): void {
     !exact(q.output_config.format,['type','schema'])||q.output_config.format?.schema?.additionalProperties!==false)throw Error('society_worker_wire');
   const observation=JSON.parse(q.messages[0].content[0].text);
   assertSerializedSocietyVisibleContext(observation);
-  if(q.system!==(observation.postcards?SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS:SOCIETY_INHABITANT_INSTRUCTIONS))throw Error('society_worker_instructions');
+  if(q.system!==societyInhabitantInstructions(observation))throw Error('society_worker_instructions');
   if(JSON.stringify(q.output_config.format.schema)!==JSON.stringify(anthropicSchema(observation.decisionSchema)))throw Error('society_worker_schema');
   // These keys have no inhabitant meaning and were the original leak. Reject at the last
   // egress boundary as well as using a branded view in the parent request builder.

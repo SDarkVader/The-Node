@@ -1,7 +1,15 @@
 # Current development and experiment checkpoint
 
-Updated 2026-10-26. Active review branch: `codex/postcard-shortcuts-2026-10-26`,
+Updated 2026-10-26. Active implementation branch: `codex/oracle-agent-playtest-2026-10-26`,
 including `main` at `1217c9b4573f7a4792b8015b7618750ca706905d`.
+The owner approved the provisional free daily Oracle profile: prizes0.05/0.15/0.30,
+poor-health weights100:5:0.1 to healthy100:10:1 and a declared100game-wealth trial endowment.
+It is now integrated into the real agent/PowerShell path as an explicit profile, independently
+of the existing paid lottery. [Ready command and rules](../research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+The new profile is pinned into genesis, v3 paid plan, bundle and review. Whole-roster reserves,
+actual personal payouts, existing applicable caps, strict views/actions and replay are implemented.
+PR47's two failed jobs were branch-checkpoint mismatches after PR48 merged into its parent;
+the documentation-only repair1a9df1782bd6035da757c7e94d12e19af2062f60 is pushed there.
 The owner requested ongoing publication and PRs. PR #44 merged the earlier society runner;
 PR #45 merged postcard core into its former stacked parent; PR #46 then integrated that
 same verified core into main. [PR #47](https://github.com/SDarkVader/The-Node/pull/47)
@@ -65,6 +73,7 @@ Each Baker returned7/20 summaries; Study1 remains paused.
   "branch": "main",
   "verifiedBaseCommit": "0561d56c3f6fe6a5e3be62b99e4abe3147dd9515",
   "completedWork": [
+    "Owner approved the explicit provisional dailyOracle trial configuration and100gamewealth declared endowment. Integrated free entry as independent8thaction, shared health/rarity/prize menu, own prior result, whole-roster backed reserves, canonical roster resolution, real person wealth/capoverflow and v3 replay/plan. ExistingpaidOracle remains independent. Newprofile experiments/oracle/daily-oracle-trial-2026-10-26.json is opt-in, not a default or USD budget.43focused boundary/runtime/launch/regression tests plus6accountedtests pass; final fullsuite/coldPowerShell evidence to record. No actual provider/private financial operation.",
     "PR48 merged into PR47 parent branch at35fe129c7261ff33b9b16f134dd73437414f2196. Hosted Windows job121617817317 and Linux job121617815244 both stopped at recovery:verify because inherited reviewBranch still named the child postcard-playtest branch. Corrected only tracked branch handover/README/continuation guide to the actual postcard-shortcuts parent; preserved verifiedBase0561d56 and strict verifier. No runtime, financial, model or historical evidence change.",
     "Real agent postcard test implementation committed/pushed at0561d56c3f6fe6a5e3be62b99e4abe3147dd9515, PR48 stacked onPR47. Source-specific full regression1866passed/145files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Actual WindowsPowerShell5.1 production prepare/check succeeded using synthetic inputs only: unapproved3day18callreview, zeroallowance/execution/provider, keyplaceholder/journal unchanged.20days332decisions/120controlledfixtures/212autonomous/272claims/241safefusions/31shortcuts independently cold-replayed; repeat tape SHA0626bace63a8a840bd4e663737df2a12d32150d2e6a6522056676e26699ea666 identical. Per-account exact mass; maxcurrencyresidual4.085620730620576e-14. Evidence docs/research/evidence/postcard-agent-playtest-2026-10-26.json. No actual behavioural/paid result claimed.",
     "Owner clarified real agent behaviour tests from PowerShell, not only offline mechanics. Added optional postcard-enabled Society and real branded view/request/serialized-worker/action/accounted pipeline; explicit rate/start/24-hour-day config; stable person accounts, claim then one fusion, independent old actions, all-role deterministic parity, v2 tape and paid plan. New PowerShell entrypoint prepares approved:false review and prints separate human -ApprovePaidRun command, delegating existing carried-accounting/key-copy launcher. Old six-field/default mode matches archived b8d42f4 complete tape and world hashes. Candidate tests cover20dayrepeat,30daychurn,18fakecalls,illegalactionstop andrawchronology. Full committed-source regression/coldPS proof pending.",
@@ -143,6 +152,6 @@ Each Baker returned7/20 summaries; Study1 remains paused.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/postcard-shortcuts-2026-10-26"
+  "reviewBranch": "codex/oracle-agent-playtest-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->

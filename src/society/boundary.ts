@@ -11,6 +11,7 @@ import { OBSERVATIONS, READINGS, CONTEXT_TAGS as DIARY_CONTEXTS } from '../engin
 import { SOCIETY_ORACLE_RULES } from '../engine/oracleOpportunities.js';
 import { DAILY_ACTIVITY_MULTIPLIER } from '../engine/wealth.js';
 import { COMPLETION_REWARD, SUPPORT_TASK_FRICTION_BAR } from '../engine/roleCompletion.js';
+import { oracleWinProbability } from '../engine/oracle.js';
 import { POSTCARD_TIERS, POSTCARD_BUFFER_HOURS, POSTCARD_HOUR_MS, postcardAccrualDenominator,
   type PostcardTier, type PostcardRate } from '../engine/postcards.js';
 
@@ -39,6 +40,18 @@ export interface SocietyPostcardFusionChoice {
   requiresClaim: boolean;
 }
 export interface SocietyPostcardChoices { canClaim: boolean; fusion: SocietyPostcardFusionChoice[] }
+export interface SocietyDailyOracleObservation {
+  economicHealth: number;
+  winProbability: number;
+  rewards: readonly { id: string; amount: number; probability: number }[];
+  lastResult: null | { day: number; entered: boolean; won: boolean; prizeId: string | null;
+    grossAward: number; received: number; capOverflow: number };
+}
+export interface SocietyDailyOracleView extends SocietyDailyOracleObservation {
+  entryCost: 0;
+  canEnter: boolean;
+  rules: string;
+}
 export interface SocietyContextOptions {
   phase: 'commit' | 'act';
   ownCommitment?: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | null;
@@ -49,6 +62,7 @@ export interface SocietyContextOptions {
   opportunities?: readonly { kind: 'oracleEntryVoucher'; expiresOnDay: number }[];
   wall?: readonly { author: string; state: SelfState; day: number }[];
   postcards?: SocietyPostcardObservation;
+  dailyOracle?: SocietyDailyOracleObservation;
 }
 export interface SocietyDecisionContext extends DecisionContext {
   phase: 'commit' | 'act';
@@ -56,6 +70,7 @@ export interface SocietyDecisionContext extends DecisionContext {
   offers: SocietyMarketOffer[];
   oracle: { canEnter: boolean; canRedeem: boolean };
   postcards?: SocietyPostcardView;
+  dailyOracle?: SocietyDailyOracleView;
 }
 export interface SocietyAction {
   move: Decision['move']; communication: Decision['communication']; diary: Decision['diary'];
@@ -63,6 +78,7 @@ export interface SocietyAction {
   purchase: { seller: string; quantity: 1 } | null;
   oracle: 'enter' | 'redeem' | null;
   postcards?: { claim: boolean; fusion: { tier: PostcardTier; stake: number } | null } | null;
+  dailyOracle?: 'enter' | null;
 }
 const object = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v) &&
   (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
@@ -121,6 +137,47 @@ export function societyPostcardChoices(p: SocietyPostcardView, phase: 'commit' |
       fusion.push({ tier, stake, successProbability: stake / 5, requiresClaim: held < stake });
   }
   return { canClaim, fusion };
+}
+export const SOCIETY_DAILY_ORACLE_RULES = 'The daily Oracle is optional and costs no wealth. During act, choose dailyOracle enter once that day, or null to decline. '
+  + 'Every inhabitant has the same public health-linked win chance and conditional prize distribution, regardless of role, wealth or history. No winner is guaranteed; zero, several or repeated winners are possible. '
+  + 'The listed economic health determines today\'s chance and nonlinear prize quality. Prize probabilities are conditional on winning. A loss pays nothing. '
+  + 'A win pays the listed bounded wealth amount, subject to any applicable existing wealth cap; redirected cap overflow is recorded rather than received personally. '
+  + 'The daily draw is independent of the optional paid lottery and prepaid voucher selected through the separate oracle field. Either, both or neither may be chosen. '
+  + 'A reward grants no role, reputation, permanent advantage, eligibility exemption or travel entitlement. The last result shown is only your own prior result.';
+
+function dailyOracleProjection(value: unknown, currentDay: number, phase: 'commit' | 'act'): SocietyDailyOracleView {
+  assertJsonData(value);
+  if (!object(value) || !exact(value, ['economicHealth', 'winProbability', 'rewards', 'lastResult']) ||
+    !finite(value.economicHealth) || Object.is(value.economicHealth, -0) || value.economicHealth < 0 || value.economicHealth > 1 ||
+    value.winProbability !== oracleWinProbability(value.economicHealth) ||
+    !Array.isArray(value.rewards) || Object.getPrototypeOf(value.rewards) !== Array.prototype ||
+    value.rewards.length < 2 || value.rewards.length > 5000 || Reflect.ownKeys(value.rewards).length !== value.rewards.length + 1)
+    fail('society_daily_oracle_observation');
+  const rewards: SocietyDailyOracleObservation['rewards'][number][] = [], ids = new Set<string>();
+  let total = 0;
+  for (const q of value.rewards) {
+    if (!object(q) || !exact(q, ['id', 'amount', 'probability']) || !site(q.id) || ids.has(q.id) ||
+      !finite(q.amount) || q.amount <= 0 || !finite(q.probability) || q.probability <= 0 || q.probability > 1 ||
+      rewards.length > 0 && (q.amount <= rewards.at(-1)!.amount || q.probability >= rewards.at(-1)!.probability))
+      fail('society_daily_oracle_rewards');
+    ids.add(q.id);total += q.probability;rewards.push({ id: q.id, amount: q.amount, probability: q.probability });
+  }
+  if (Math.abs(total - 1) > 1e-12) fail('society_daily_oracle_probability');
+  const r = value.lastResult;
+  let lastResult: SocietyDailyOracleObservation['lastResult'] = null;
+  if (r !== null) {
+    if (!object(r) || !exact(r, ['day', 'entered', 'won', 'prizeId', 'grossAward', 'received', 'capOverflow']) ||
+      !postcardInteger(r.day) || r.day < 1 || r.day >= currentDay || typeof r.entered !== 'boolean' || typeof r.won !== 'boolean' ||
+      ![r.grossAward, r.received, r.capOverflow].every(n => finite(n) && !Object.is(n, -0) && n >= 0) ||
+      Math.abs(Number(r.grossAward) - Number(r.received) - Number(r.capOverflow)) > 1e-9 ||
+      (r.won ? !r.entered || !rewards.some(q => q.id === r.prizeId && q.amount === r.grossAward)
+        : r.prizeId !== null || r.grossAward !== 0 || r.received !== 0 || r.capOverflow !== 0))
+      fail('society_daily_oracle_result');
+    lastResult = { day: r.day, entered: r.entered, won: r.won, prizeId: r.prizeId as string | null,
+      grossAward: r.grossAward as number, received: r.received as number, capOverflow: r.capOverflow as number };
+  }
+  return { economicHealth: value.economicHealth, winProbability: value.winProbability as number, rewards, lastResult,
+    entryCost: 0, canEnter: phase === 'act', rules: SOCIETY_DAILY_ORACLE_RULES };
 }
 const authorizedViews = new WeakSet<object>();
 /** Only immutable views created here may be handed to an external policy request builder. */
@@ -199,11 +256,14 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     return { author: q.author, state: q.state, day: q.day };
   });
   const postcards = options.postcards === undefined ? undefined : postcardProjection(options.postcards);
+  const dailyOracle = options.dailyOracle === undefined ? undefined : dailyOracleProjection(options.dailyOracle, base.tick + 1, options.phase);
+  if (dailyOracle && dailyOracle.economicHealth !== state.world.economicHealthWithExperience) fail('society_daily_oracle_health');
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
     legalMoves: base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
     phase: options.phase, purchaseDue: options.purchaseDue === true, offers,
-    oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}) };
+    oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
+    ...(dailyOracle ? { dailyOracle } : {}) };
   const locations = district.buildings.filter(b => distance(own, b) <= state.world.config.commsProximityRange).map(b => {
     const station = p.city.stations.find(s => s.buildingId === b.id);
     const role = roleArrays(state.world).find(([, slots]) => slots.some(s => s.buildingId === b.id))?.[0] ?? null;
@@ -244,11 +304,13 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
         maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld } },
     rules: societyPublicRules(base.rules === 'v2'),
     ...(postcards ? { postcards } : {}),
+    ...(dailyOracle ? { dailyOracle } : {}),
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
       purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef).map(q => q.sellerRef),
       oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])],
-      ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase) } : {}) },
+      ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase) } : {}),
+      ...(dailyOracle ? { dailyOracle: dailyOracle.canEnter ? ['enter'] : [] } : {}) },
     decisionSchema: societyDecisionSchema(context),
   };
   const safe = freeze(visible);
@@ -270,15 +332,24 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const nullable = (v: unknown, check: (item: any) => boolean): boolean => v === null || check(v);
   const point = (q: unknown): boolean => record(q, ['x', 'y']) && coordinate(q.x) && coordinate(q.y);
   const hasPostcards = object(value) && Object.hasOwn(value, 'postcards');
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : [])])) fail('society_serialized_view');
+  const hasDailyOracle = object(value) && Object.hasOwn(value, 'dailyOracle');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : [])])) fail('society_serialized_view');
   const v = value;
   let postcards: SocietyPostcardView | undefined;
+  let dailyOracle: SocietyDailyOracleView | undefined;
   if (hasPostcards) {
     if (!record(v.postcards, ['held', 'unclaimedUnits', 'rate', 'clockMs', 'lastClaimAtMs', 'claimableWhite', 'unitDenominator', 'capHours', 'rules'])) fail('society_serialized_postcards');
     postcards = postcardProjection({ held: v.postcards.held, unclaimedUnits: v.postcards.unclaimedUnits, rate: v.postcards.rate,
       clockMs: v.postcards.clockMs, lastClaimAtMs: v.postcards.lastClaimAtMs });
     if (v.postcards.claimableWhite !== postcards.claimableWhite || v.postcards.unitDenominator !== postcards.unitDenominator ||
       v.postcards.capHours !== postcards.capHours || v.postcards.rules !== postcards.rules) fail('society_serialized_postcards');
+  }
+  if (hasDailyOracle) {
+    if (!record(v.dailyOracle, ['economicHealth', 'winProbability', 'rewards', 'lastResult', 'entryCost', 'canEnter', 'rules'])) fail('society_serialized_daily_oracle');
+    dailyOracle = dailyOracleProjection({ economicHealth: v.dailyOracle.economicHealth, winProbability: v.dailyOracle.winProbability,
+      rewards: v.dailyOracle.rewards, lastResult: v.dailyOracle.lastResult }, v.day, v.phase);
+    if (v.dailyOracle.entryCost !== 0 || Object.is(v.dailyOracle.entryCost, -0) || v.dailyOracle.canEnter !== dailyOracle.canEnter ||
+      v.dailyOracle.rules !== dailyOracle.rules) fail('society_serialized_daily_oracle');
   }
   if (!day(v.day) || v.day < 1 || !member(v.phase, ['commit', 'act']) ||
     !record(v.self, ['ref', 'role', 'x', 'y', 'workplace', 'wealth', 'stock', 'price', 'quantity', 'flourCost', 'flourSalePrice', 'progress', 'completion']) ||
@@ -311,24 +382,25 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
     ownRoleStockCap: SOCIETY_ORACLE_RULES.personalResourceCap, entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
     conditionalPrizeProbability: v.self.role === 'Grifter' ? 1 / 2 : 1 / 3, maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld };
   if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true))) fail('society_serialized_rules');
-  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(postcards ? ['postcards'] : [])]) || !list(v.legalChoices.moves, point) ||
+  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(postcards ? ['postcards'] : []), ...(dailyOracle ? ['dailyOracle'] : [])]) || !list(v.legalChoices.moves, point) ||
     !list(v.legalChoices.present, ref) || !list(v.legalChoices.diarySubjects, ref) || typeof v.legalChoices.purchaseDue !== 'boolean' ||
     JSON.stringify(v.legalChoices.present) !== JSON.stringify(v.local.people.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.diarySubjects) !== JSON.stringify(v.recognition.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.purchaseSellers) !== JSON.stringify(v.wall.prices.filter((q: any) => q.available && q.sellerRef !== v.self.ref).map((q: any) => q.sellerRef)) ||
     JSON.stringify(v.legalChoices.oracle) !== JSON.stringify([...(v.oracle.canEnter ? ['enter'] : []), ...(v.oracle.canRedeem ? ['redeem'] : [])])) fail('society_serialized_choices');
   if (postcards && JSON.stringify(v.legalChoices.postcards) !== JSON.stringify(societyPostcardChoices(postcards, v.phase))) fail('society_serialized_postcard_choices');
+  if (dailyOracle && JSON.stringify(v.legalChoices.dailyOracle) !== JSON.stringify(dailyOracle.canEnter ? ['enter'] : [])) fail('society_serialized_daily_oracle_choices');
   const context: SocietyDecisionContext = { tick: v.day - 1, selfRef: v.self.ref, role: v.self.role, roleEpoch: 0,
     legalMoves: v.legalChoices.moves, presentRefs: v.legalChoices.present, knownSubjects: v.legalChoices.diarySubjects,
     rules: 'v2', hearingRefs: v.hearing, phase: v.phase, offers: v.wall.prices, purchaseDue: v.legalChoices.purchaseDue,
-    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}) };
+    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
 }
 
 /** A violation aborts the controller; it is never silently converted into a stay/work fallback. */
 export function validateSocietyAction(value: unknown, c: SocietyDecisionContext): SocietyAction {
   assertJsonData(value);
-  if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'occupation', 'purchase', 'oracle', ...(c.postcards ? ['postcards'] : [])])) fail('society_action_shape');
+  if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'occupation', 'purchase', 'oracle', ...(c.postcards ? ['postcards'] : []), ...(c.dailyOracle ? ['dailyOracle'] : [])])) fail('society_action_shape');
   const old = validateDecision({ move: value.move, communication: value.communication, diary: value.diary, role: null }, c);
   if (!old) fail('society_action_illegal');
   const occupation = value.occupation;
@@ -346,6 +418,7 @@ export function validateSocietyAction(value: unknown, c: SocietyDecisionContext)
   if (value.purchase !== null && (!object(value.purchase) || !exact(value.purchase, ['seller', 'quantity']) || value.purchase.quantity !== 1 ||
     !c.purchaseDue || !c.offers.some(q => q.available && q.sellerRef !== c.selfRef && q.sellerRef === (value.purchase as Record<string, unknown>).seller))) fail('society_purchase');
   if (value.oracle !== null && !(value.oracle === 'enter' && c.oracle.canEnter || value.oracle === 'redeem' && c.oracle.canRedeem)) fail('society_oracle');
+  if (c.dailyOracle && value.dailyOracle !== null && !(value.dailyOracle === 'enter' && c.phase === 'act' && c.dailyOracle.canEnter)) fail('society_daily_oracle');
   if (c.postcards && value.postcards !== null) {
     const p = value.postcards, choices = societyPostcardChoices(c.postcards, c.phase);
     if (c.phase !== 'act' || !object(p) || !exact(p, ['claim', 'fusion']) || typeof p.claim !== 'boolean' || p.claim && !choices.canClaim) fail('society_postcards');
@@ -386,5 +459,6 @@ export function societyDecisionSchema(c: SocietyDecisionContext): Record<string,
     communication: c.phase === 'act' ? original.properties.communication : nil, diary: c.phase === 'act' ? original.properties.diary : nil,
     occupation, purchase: c.phase === 'act' && c.purchaseDue && sellers.length ? optional(obj({ seller: { type: 'string', enum: sellers }, quantity: { type: 'number', enum: [1] } })) : nil,
     oracle: c.phase === 'act' && oracle.length ? optional({ type: 'string', enum: oracle }) : nil,
-    ...(c.postcards ? { postcards: postcardSchema } : {}) });
+    ...(c.postcards ? { postcards: postcardSchema } : {}),
+    ...(c.dailyOracle ? { dailyOracle: c.phase === 'act' && c.dailyOracle.canEnter ? optional(kind('enter')) : nil } : {}) });
 }

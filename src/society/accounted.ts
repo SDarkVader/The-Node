@@ -12,31 +12,36 @@ import { buildSocietyRequest } from './request.js';
 import { autonomousPolicy } from './policy.js';
 import type { Society } from './runtime.js';
 import {validateSocietyPostcardConfig,type SocietyPostcardConfig} from './postcards.js';
+import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from './dailyOracle.js';
 
 export interface SocietyRunPlan {
-  schema: 'node-accounted-society-v1'|'node-accounted-society-postcards-v2'; id: string; model: 'claude-haiku-5-5';
+  schema: 'node-accounted-society-v1'|'node-accounted-society-postcards-v2'|'node-accounted-society-daily-oracle-v3'; id: string; model: 'claude-haiku-5-5';
   ticks: number; maxCalls: number; deadlineMs: number; minIntervalMs: number;
   initialHash: string; sourceRevision: string; controlled: string[];
   allowance: { maxRequests: number; limitMicroUsd: number; perRequestMicroUsd: number };
   postcards?:SocietyPostcardConfig;
+  dailyOracle?:SocietyDailyOracleConfig;
 }
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
   const ticks = options.ticks ?? 3;
-  const plan: SocietyRunPlan = { schema: society.exportTape().postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
+  const plan: SocietyRunPlan = { schema: society.exportTape().dailyOracleConfig?'node-accounted-society-daily-oracle-v3':society.exportTape().postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
     model: 'claude-haiku-5-5', ticks, maxCalls: ticks * 6, deadlineMs: options.deadlineMs ?? 20_000,
     minIntervalMs: options.minIntervalMs ?? 1000, initialHash: society.hash,
     sourceRevision: society.inspect().genesis.sourceRevision, controlled: society.controlled,
     allowance: { maxRequests: ticks * 6, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
       perRequestMicroUsd: options.perRequestMicroUsd ?? 20_000 },
-    ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}) };
+    ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}),
+    ...(society.exportTape().dailyOracleConfig?{dailyOracle:society.exportTape().dailyOracleConfig}:{}) };
   validateSocietyPlan(plan); return structuredClone(plan);
 }
 export function validateSocietyPlan(p: SocietyRunPlan): void {
   if(p?.postcards!==undefined)validateSocietyPostcardConfig(p.postcards);
-  if (!['node-accounted-society-v1','node-accounted-society-postcards-v2'].includes(p?.schema)||
-    (p?.schema==='node-accounted-society-postcards-v2')!==!!p?.postcards || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
+  if(p?.dailyOracle!==undefined)validateSocietyDailyOracleConfig(p.dailyOracle);
+  if (!['node-accounted-society-v1','node-accounted-society-postcards-v2','node-accounted-society-daily-oracle-v3'].includes(p?.schema)||
+    (p?.schema==='node-accounted-society-daily-oracle-v3')!==!!p?.dailyOracle ||
+    (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
     p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== 6 * p.ticks ||
     !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > 20_000 ||
     !Number.isSafeInteger(p.minIntervalMs) || p.minIntervalMs < 0 || p.minIntervalMs > 60_000 ||
@@ -92,6 +97,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     society.hash !== plan.initialHash || society.inspect().genesis.sourceRevision !== plan.sourceRevision || digest(society.controlled) !== digest(plan.controlled))
     throw new SocietySecurityError('society_paid_initial_state');
   if(digest(plan.postcards??null)!==digest(society.exportTape().postcardConfig??null))throw new SocietySecurityError('society_paid_postcard_config');
+  if(digest(plan.dailyOracle??null)!==digest(society.exportTape().dailyOracleConfig??null))throw new SocietySecurityError('society_paid_daily_oracle_config');
   if (!auth || !start.canReserve || start.requests.length || !/^[a-f0-9]{64}$/.test(options.expectedCarriedFingerprint) ||
     budget.carriedFingerprint() !== options.expectedCarriedFingerprint || auth.expectedCarriedFingerprint !== options.expectedCarriedFingerprint ||
     auth.instruction !== options.instruction || auth.manifestSha256 !== societyPlanHash(plan) || auth.model !== plan.model ||

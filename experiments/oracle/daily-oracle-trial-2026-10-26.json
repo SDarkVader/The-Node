@@ -1,0 +1,14 @@
+{
+  "format": "node-society-daily-oracle-config-v1",
+  "funding": "declaredTrialEndowment",
+  "treasuryMicro": 100000000,
+  "catalogue": {
+    "format": "node-oracle-daily-config-v1",
+    "revision": "owner-approved-trial-2026-10-26",
+    "rewards": [
+      { "id": "commonWealth", "amountMicro": 50000, "logWeightAtFloor": 4.605170185988092, "logWeightAtReference": 4.605170185988092 },
+      { "id": "uncommonWealth", "amountMicro": 150000, "logWeightAtFloor": 1.6094379124341003, "logWeightAtReference": 2.302585092994046 },
+      { "id": "exceptionalWealth", "amountMicro": 300000, "logWeightAtFloor": -2.3025850929940455, "logWeightAtReference": 0 }
+    ]
+  }
+}

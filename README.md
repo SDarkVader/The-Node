@@ -38,6 +38,14 @@ PowerShell behaviour test from this checkout:
 powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3
 ```
 
+To include the approved free daily Oracle in that real-agent test:
+
+```powershell
+powershell -NoProfile -File scripts/start-society-playtest.ps1 -PostcardRate 2/1 -Ticks 3 -OracleConfig experiments/oracle/daily-oracle-trial-2026-10-26.json
+```
+
+[Oracle trial rules and funding](docs/research/ORACLE_AGENT_TRIAL_2026-10-26.md).
+
 PowerShell prompts for the latest completed accounting journal, credential file and a new
 private output folder. Preparation makes no calls and prints the exact command to start
 the reviewed run with `-ApprovePaidRun`. Three days allow at most 18 Haiku calls and USD 1;
@@ -53,8 +61,9 @@ integrated tape cold-replays and repeats byte-identically.
 PR #48 merged into [PR #47](https://github.com/SDarkVader/The-Node/pull/47)'s parent branch at
 `35fe129`. The parent recovery checkpoint now names `codex/postcard-shortcuts-2026-10-26`;
 the earlier Windows/Linux failures stopped on that inherited branch mismatch before tests.
-The original paid Oracle/vouchers remain available. A separate configured daily Oracle ledger
-is implemented but remains inactive pending reward calibration and world funding integration.
+The original paid Oracle/vouchers remain available independently. The explicit Oracle profile
+enables free daily entry, the owner-approved provisional prizes and a declared 100 game-wealth
+trial treasury. It does not change the USD model-call allowance or activate a default profile.
 
 The first two [Oracle/civic handoff](docs/research/NODE_ORACLE_CIVIC_IMPLEMENTATION_HANDOFF_2026-10-26.md)
 slices implement postcard accounts: explicit millisecond time, a required rational White/hour
