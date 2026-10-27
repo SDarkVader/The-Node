@@ -66,6 +66,16 @@ describe('sequential daily inhabitant contract',()=>{
   expect(()=>validateSocietyAction({...emptySocietyAction(),diary:entry},after.context)).toThrow('society_routine_diary');
   expect(after.visible.decisionSchema).toHaveProperty('properties.diary.type','null');
  });
+ it('retains the closed diary and proximity grammars on sequential turns',()=>{
+  const f=fixture(),entry={subject:null,observation:'stayedGuarded',reading:'cantTellYet',context:null};
+  expect(()=>validateSocietyAction({...emptySocietyAction(),diary:{...entry,observation:'free text'}},f.context)).toThrow();
+  expect(()=>validateSocietyAction({...emptySocietyAction(),diary:{...entry,notes:'free text'}},f.context)).toThrow();
+  const utterance={kind:'proximityUtterance',intent:'ask',tone:'warm',referent:{kind:'room'},context:null};
+  expect(validateSocietyAction({...emptySocietyAction(),communication:utterance},f.context).communication).toEqual(utterance);
+  expect(()=>validateSocietyAction({...emptySocietyAction(),communication:{...utterance,intent:'free text'}},f.context)).toThrow();
+  expect(()=>validateSocietyAction({...emptySocietyAction(),communication:{...utterance,referent:{kind:'player',playerId:f.context.selfRef}}},f.context)).toThrow();
+  expect(()=>validateSocietyAction({...emptySocietyAction(),communication:{...utterance,referent:{kind:'player',playerId:'a'.repeat(16)}}},f.context)).toThrow();
+ });
  it('cannot forge a capability inconsistent with the actor location or unfinished tasks',()=>{
   const f=fixture();f.routine.can.wallPost=true;expect(()=>f.build()).toThrow('society_routine_capabilities');
   const bad=structuredClone(f.visible) as any;bad.routine.can.finishDay=true;

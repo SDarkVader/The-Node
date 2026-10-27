@@ -20,7 +20,14 @@ Observatory containing Godot, manual day controls and saved-run replay. Its priv
 reuses the PC's configured paths and latest accounting history. No live call starts by default.
 [Workflow, setup and raw output](docs/research/SEQUENTIAL_DAYS_2026-10-26.md).
 
-## Current development — 2026-10-26
+## Current development — 2026-10-27
+
+The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
+evidence recovery. The private interrupted run was independently reconstructed only through
+its last recorded outcome; no day was committed. Future v4 runs record each accepted
+submission for source-pinned offline recovery. The existing adjacent-step movement and
+constrained communication rules remain unchanged. See the
+[repair record](docs/research/SOCIETY_V4_REPAIR_2026-10-27.md).
 
 The new opt-in Society v4 contract supplies several fresh action turns per day. Residents
 visit their task locations, buy or attempt to buy food, post on the Wall, perform role work,

@@ -135,9 +135,6 @@ var _plot_shade: Array[float] = []
 var _plot_pos: Array[Vector2] = []
 var _plot_local: Array[Color] = []
 var _plot_local_w: Array[float] = []
-var _occupied: Dictionary = {}
-var _building_at: Dictionary = {}
-var _building_by_id: Dictionary = {}
 var _route_mm: MultiMeshInstance3D
 var _logged_routes := false
 var _building_mm: MultiMeshInstance3D
@@ -465,9 +462,6 @@ func _build_buildings() -> void:
 	mm.instance_count = buildings.size()
 	for i in buildings.size():
 		var b = buildings[i]
-		# Position lookups, built here because this is the one place every building is walked.
-		_building_at["%d,%d" % [int(round(float(b["x"]))), int(round(float(b["y"])))]] = b["id"]
-		_building_by_id[b["id"]] = b
 		mm.set_instance_transform(i, _building_transform(b))
 		mm.set_instance_color(i, Color(COLOUR_PLAIN, 0.0))
 	_building_mm = MultiMeshInstance3D.new()
@@ -609,16 +603,8 @@ func _build_wall() -> void:
 	_wall_root.add_child(_wall_light)
 
 
-## COURIER ROUTES — real economic geometry, not decoration.
-##
-## `courierPay.ts` pays a Courier for the Manhattan distance from their own station to the
-## shard hub, so this line IS the thing being paid for: the corridor they walk every day and
-## earn from. Drawn as a flat ribbon on the stones rather than a floating line, because it is
-## a route through the town, not a link on a diagram.
-##
-## Gated on OCCUPANCY: a route exists because somebody runs it. An unstaffed Courier post has
-## no line, which is the same rule the station glow follows — activity requires someone doing
-## it.
+## The protocol does not provide an actual route or attendance. Keep the route pool empty
+## until a future authoritative projection supplies that information.
 func _build_routes() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -645,23 +631,15 @@ void fragment() {
 
 
 func _update_routes() -> void:
+	# The world protocol does not report routes or station attendance. Do not infer
+	# either from a person's role and position.
 	var routes: Array = []
-	for b in buildings:
-		if b.get("role") != "courier":
-			continue
-		if not _occupied.has(b["id"]):
-			continue
-		routes.append(b)
 
 	var mm := _route_mm.multimesh
 	mm.instance_count = routes.size()
 	if not _logged_routes:
 		_logged_routes = true
-		var courier_posts := 0
-		for b in buildings:
-			if b.get("role") == "courier":
-				courier_posts += 1
-		print("[NODE] courier routes: %d of %d posts staffed" % [routes.size(), courier_posts])
+		print("[NODE] courier routes unavailable in this world projection")
 	var hub3 := Vector3(hub.x, 0.09, hub.y)
 	var col: Color = ROLE_COLOUR["courier"]
 	for i in routes.size():
@@ -750,24 +728,16 @@ func _update_dynamic() -> void:
 	if _shot_path != "" and _frames == 3:
 		call_deferred("_capture")
 
-	# ---- OCCUPANCY, FIRST ------------------------------------------------------------------
-	# A role-holder standing at their own station is INSIDE it, working — not hovering on the
-	# step outside. So they are not drawn as a figure in the street: their presence is what
-	# makes the building glow, and their glyph hangs above the roof like the sign over a door.
-	# Only people actually out in the open get a body.
-	#
-	# Computed FIRST, before anything reads it. It was originally worked out further down,
-	# after the station glow and the courier routes had already used it — so routes saw an
-	# empty map and drew nothing at all, and the glow ran a tick behind. Occupancy is the first
-	# thing established each tick, because nearly everything else is a consequence of it.
-	_occupied.clear()
+	# A person on a building may be a visitor, resident or worker. The projection carries
+	# position and role, not attendance; retain every person without inferring a duty.
+	var layout: Array = preload("res://scripts/WorldPeople.gd").layout(people, buildings)
 	var street_people: Array = []
-	for pp in people:
-		var key := "%d,%d" % [int(round(float(pp["x"]))), int(round(float(pp["y"])))]
-		if pp.get("role") != null and _building_at.has(key):
-			_occupied[_building_at[key]] = pp
+	var building_people: Array = []
+	for entry in layout:
+		if entry["building"] == null:
+			street_people.append(entry)
 		else:
-			street_people.append(pp)
+			building_people.append(entry)
 
 	# Emotional weather rides on AMBIENT LIGHT only — it tints every surface in the town,
 	# including shadowed faces, which is the 3D equivalent of the 2D ground wash and a truer
@@ -790,13 +760,7 @@ func _update_dynamic() -> void:
 			continue
 		var heat: float = clampf(float(st["heat"]) / HEAT_OBSERVED_MAX, 0.0, 1.0)
 		var brightness: float = float(STATE_BRIGHTNESS.get(st["state"], 1.0))
-		# Activity requires somebody doing it. An occupied station carries a floor of warmth
-		# even on a quiet day — someone is in there with the lights on — while an unoccupied
-		# one cannot glow no matter what its heat value says.
-		if _occupied.has(b["id"]):
-			heat = 0.18 + 0.82 * heat
-		else:
-			heat *= 0.16
+		# Heat and station status come directly from the selected world frame.
 		# Albedo stays a real, lit surface at every heat level — the building is always there.
 		# Alpha carries heat, and drives emission alone.
 		var col: Color = COLOUR_PLAIN.lerp(HEAT_HOT, heat * 0.75)
@@ -835,9 +799,11 @@ func _update_dynamic() -> void:
 	var pmm := _people_mm.multimesh
 	pmm.instance_count = street_people.size()
 	for i in street_people.size():
-		var p = street_people[i]
+		var entry = street_people[i]
+		var p = entry["person"]
 		var role = p.get("role")
-		var off := Vector3.ZERO
+		var offset: Vector2 = entry["offset"]
+		var off := Vector3(offset.x, 0.0, offset.y)
 		pmm.set_instance_transform(i, Transform3D(Basis(),
 			Vector3(float(p["x"]), PERSON_HEIGHT * 0.5 + Geo.PERSON_LIFT, float(p["y"])) + off))
 		# Role-specific colour, the same six hues the 2D view and the station signs use. A
@@ -848,16 +814,14 @@ func _update_dynamic() -> void:
 		pmm.set_instance_color(i, pc)
 		_place_icon(i, Vector3(float(p["x"]), 0.0, float(p["y"])) + off, role, pc)
 
-	# A working occupant's glyph rides above their ROOF — the sign over the door, telling you
-	# who is in there without drawing a body you could not see anyway.
+	# Above-roof markers make all people at a building visible, without claiming they work there.
 	var n := street_people.size()
-	for bid in _occupied:
-		var occ = _occupied[bid]
-		var b = _building_by_id.get(bid)
-		if b == null:
-			continue
-		var rc: Color = ROLE_COLOUR.get(occ.get("role"), COLOUR_GRIFTER)
-		_place_icon(n, Vector3(float(b["x"]), _roof_height(b), float(b["y"])), occ.get("role"), rc)
+	for entry in building_people:
+		var person = entry["person"]
+		var b = entry["building"]
+		var offset: Vector2 = entry["offset"]
+		var rc: Color = ROLE_COLOUR.get(person.get("role"), COLOUR_GRIFTER)
+		_place_icon(n, Vector3(float(b["x"]) + offset.x, _roof_height(b), float(b["y"]) + offset.y), person.get("role"), rc)
 		n += 1
 	_hide_icons_from(n)
 
@@ -882,7 +846,7 @@ func _accumulate_local_weather() -> void:
 		if state == "BACKSTOPPED":
 			tone = BACKSTOP_TONE
 			strength = 0.42
-		elif state == "VACANT" or not _occupied.has(b["id"]):
+		elif state == "VACANT":
 			tone = TENSION_COLD
 			strength = 0.38
 		else:

@@ -8,6 +8,8 @@ import {projectWorld} from '../src/observatory/worldProjection.js';
 import {buildSocietyRequest} from '../src/society/request.js';
 import {sha256} from '../src/agent/accountingStore.js';
 import {stringifySocietyEvidence} from '../src/society/codec.js';
+import WebSocket from 'ws';
+import {once} from 'node:events';
 const apps:{close:()=>Promise<void>}[]=[];
 afterEach(async()=>{for(const app of apps.splice(0))await app.close();});
 function fixture(){
@@ -72,4 +74,33 @@ it('cancels and closes pending manual waits without retaining abort listeners or
   const gate=new ManualTickGate(),controller=new AbortController(),waiting=gate.wait(1,controller.signal);
   controller.abort();await expect(waiting).rejects.toThrow('society_cancelled');expect(gate.state.waitingDay).toBeNull();
   const second=gate.wait(2);gate.close();await expect(second).rejects.toThrow('society_cancelled');expect(()=>gate.advance(2)).toThrow();
+});
+
+it('keeps a v4 partial day and historical turn synchronized across researcher and Godot projections',async()=>{
+  const society=new Society({seed:42,sourceRevision:'a'.repeat(40),routine:{maxTurnsPerDay:128}});
+  const source=new SocietyObservatorySource({kind:'society',id:'sync-test',directory:'',mode:'synthetic'},
+    {stop:()=>society.halt(),read:()=>({tape:society.exportTape(),eventsText:''})});
+  source.refresh();
+  const R='r'.repeat(64),W='w'.repeat(64),app=startObservatory({sources:[source],researcherToken:R,worldToken:W,port:0,pollMs:60000});apps.push(app);
+  const port=await app.ready,base=`http://127.0.0.1:${port}/observatory/v1/runs/sync-test`,headers={Authorization:'Bearer '+R,'Content-Type':'application/json'};
+  const ws=new WebSocket(base.replace('http:','ws:')+'/world',{headers:{Authorization:'Bearer '+W}}),frames:any[]=[];
+  ws.on('message',b=>frames.push(JSON.parse(b.toString())));await once(ws,'open');
+  while(society.phase==='commit')for(const p of society.pendingPeople())society.submit(p,autonomousPolicy(society.view(p).visible));
+  for(let turn=0;turn<2;turn++)for(const p of society.pendingPeople())society.submit(p,autonomousPolicy(society.view(p).visible));
+  app.refresh();await new Promise(r=>setTimeout(r,30));
+  const latest=await(await fetch(base+'/snapshot',{headers})).json() as any;
+  const coordinates=(people:any[])=>people.map(p=>[p.x,p.y,p.role]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  expect(latest.sourceTick).toBe(0);expect(latest.worldHash).toBe(society.hash);
+  expect(frames.at(-1).worldHash).toBe(latest.worldHash);
+  expect(coordinates(frames.at(-1).people)).toEqual(coordinates(latest.frame.people));
+  const earlier=source.list().find(p=>p.type==='turn_committed'&&p.sourceTurn===2)!;
+  expect(earlier).toBeTruthy();
+  expect((await fetch(base+'/selection',{method:'PUT',headers,body:JSON.stringify({cursor:earlier.cursor})})).status).toBe(200);
+  await new Promise(r=>setTimeout(r,30));
+  const replay=await(await fetch(base+'/snapshot',{headers})).json() as any;
+  expect(replay.cursor).toBe(earlier.cursor);expect(frames.at(-1).cursor).toBe(replay.cursor);
+  expect(frames.at(-1).worldHash).toBe(replay.worldHash);
+  expect(coordinates(frames.at(-1).people)).toEqual(coordinates(replay.frame.people));
+  expect(replay.worldHash).not.toBe(latest.worldHash);
+  ws.close();await once(ws,'close');
 });
