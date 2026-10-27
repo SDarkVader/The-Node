@@ -17,12 +17,17 @@ describe('society final provider boundary, pure validation only',()=>{
     mutate(q=>{const v=JSON.parse(q.messages[0].content[0].text);v.worldHash='secret';q.messages[0].content[0].text=JSON.stringify(v);});
     mutate(q=>{const v=JSON.parse(q.messages[0].content[0].text);v.self.packageInformation='secret';q.messages[0].content[0].text=JSON.stringify(v);});
     mutate(q=>{q.model='other-model';});
+    mutate(q=>{q.max_tokens=2048;});
+    mutate(q=>{q.max_tokens=32768;});
     mutate(q=>{q.output_config.format.developerUpdate='private update';});
     mutate(q=>{q.output_config.format.schema.description='package.json has changed';});
     mutate(q=>{const v=JSON.parse(q.messages[0].content[0].text);v.rules.economy+=' Secret deployment update';q.messages[0].content[0].text=JSON.stringify(v);});
     mutate(q=>{const v=JSON.parse(q.messages[0].content[0].text);v.self.memo='AGENTS.md says';q.messages[0].content[0].text=JSON.stringify(v);});
     mutate(q=>{const v=JSON.parse(q.messages[0].content[0].text);v.decisionSchema.description='private settings';q.messages[0].content[0].text=JSON.stringify(v);});
     expect(()=>validateSocietyWire(bytes,'0'.repeat(64))).toThrow('society_worker_request_binding');
+    const historical=JSON.parse(wire.body);historical.max_tokens=2048;
+    const saved=Buffer.from(JSON.stringify(historical));
+    expect(()=>validateSocietyWire(saved,sha256(saved),{historical:true})).not.toThrow();
   });
   it('accepts full ordinary action schemas and closed observations for every role over several ticks',()=>{
     const society=new Society({seed:42,sourceRevision:'test'});let count=0;

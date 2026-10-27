@@ -45,7 +45,7 @@ describe('daily Oracle inhabitant boundary and actual provider wire',()=>{
     expect(()=>validateSocietyWire(Buffer.from(wire.body),wire.sha256)).not.toThrow();
     expect(societyInhabitantInstructions(f.visible)).toContain(postcards?'eight-field':'seven-field');
     const body=JSON.parse(wire.body);expect(body.system).toBe(societyInhabitantInstructions(f.visible));
-    expect(body.output_config.effort).toBe('high');expect(body.max_tokens).toBe(2048);expect(body).not.toHaveProperty('tools');
+    expect(body.output_config.effort).toBe('high');expect(body.max_tokens).toBe(16384);expect(body).not.toHaveProperty('tools');
   });
   it.each(['baker','miller','courier','investigator','importExport',null])('offers the same zero-cost daily choice to %s',role=>{
     const f=fixture(role),a={...stay(),dailyOracle:'enter' as const};

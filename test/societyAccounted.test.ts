@@ -54,7 +54,7 @@ function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = fals
     content.push({ type: 'text', text: JSON.stringify(fault === 'action' ? { ...action, hostOperation: 'exec' } : action) });
     return Buffer.from(JSON.stringify({ type: 'message', role: 'assistant', id: 'msg_TEST_ONLY_society_' + input.index,
       model: fault === 'model' ? 'wrong-model' : plan.model, stop_reason: 'end_turn', content,
-      usage: fault === 'unknown' ? null : { input_tokens: 1200, output_tokens: fault === 'overrun' ? 3000 : 80 } }));
+      usage: fault === 'unknown' ? null : { input_tokens: 1200, output_tokens: fault === 'overrun' ? JSON.parse(input.body).max_tokens+1 : 80 } }));
   };
   return { society, plan, budget, events, options, sent, sender };
 }
@@ -80,7 +80,11 @@ describe('accounted society, fake provider and disposable money fixtures only', 
       expect(visible).not.toHaveProperty('requestId'); expect(visible).not.toHaveProperty('worldHash');
       expect(JSON.stringify(wire.messages)).not.toContain(instruction);
       expect(JSON.stringify(wire.messages)).not.toContain('TEST_ONLY_signature');
+      expect(wire.max_tokens).toBe(16384);
     }
+    expect(f.budget.view().requests.every(q=>q.request.maxOutputTokens===16384)).toBe(true);
+    expect(createSocietyPlan(f.society).deadlineMs).toBe(120000);
+    expect(f.plan.allowance.perRequestMicroUsd).toBe(32000);
     const duplicate = fixture();
     const replayed = await runAccountedSociety(duplicate.society, duplicate.budget, duplicate.sender(), duplicate.options);
     expect(replayed.finalHash).toBe(result.finalHash);

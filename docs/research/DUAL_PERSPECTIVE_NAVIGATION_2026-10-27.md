@@ -5,7 +5,23 @@ The candidate branch `codex/dual-perspective-navigation-2026-10-27` builds on PR
 attempt is documented below; preceding development checks used no paid calls. The policy responses below are explicitly scripted;
 they establish execution integrity, not model reasoning quality or provider acceptance.
 
-## Supervised paid attempts and provider correction
+## Accepted transport and output headroom
+
+At source de26b05, all five requests returned HTTP200. Four decisions executed; the fifth
+response ended with max_tokens after2048outputtokens, with a thinking summary and no decision.
+The controller stopped without admitting it. All5exactsource/private-state noninterference checks,
+4decision partial replay and raw export pass; zero report integrity issues and no observed leakage
+or outside-game action. Booked22917microUSD/held0/closed/carried; prior journals unchanged.
+[Sanitized result](evidence/eighteen-call-navigation-headroom-2026-10-27.json).
+
+Owner requested ample output headroom. New current-source requests use16384tokens,120s deadline
+and32000microUSD per-request ceiling, reserved in full. Reviewed rates and the combined400000cap
+remain unchanged: prior73340leaves326660for a fresh18-call run. Model high effort remains unchanged;
+no intermediate movement call or automatic retry is introduced. Historical2048bodies remain readable.
+The initial-test and original accounting-ledger token limits remain unchanged; the model-specific
+experiment reservation upper bound admits the new explicitly source-bound Haiku requests.
+
+## Earlier supervised paid attempts and provider correction
 
 Source323794f and source8de00b0 each made four requests: three successful commit decisions followed
 by an HTTP400 on the first action. The first rejection concerned anyOf siblings, the second compiled

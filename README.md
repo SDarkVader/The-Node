@@ -22,15 +22,18 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
-Two supervised paid attempts each stopped after four requests: three commit decisions succeeded,
-then the first action schema was rejected (first anyOf siblings, then compiled grammar size).
-All observations, admitted responses and partial replay verified, with no observed leakage or
-outside-game admission. Original evidence and accounting are preserved; unknown usage was booked
-conservatively at full reserved ceilings and closed append-only on explicit owner-authorized reruns.
-The provider grammar is now compact, with the full game menu and strict local admission unchanged.
-24focused checks, TypeScript and a two-day nativeGodot/fake-provider controller pass. The owner has
-approved another18-call run within the original combined USD0.40 cap; actual acceptance and paid
-travel remain to verify. [Transport evidence](docs/research/evidence/eighteen-call-navigation-grammar-2026-10-27.json).
+The compact transport was accepted by Anthropic at source de26b05: five HTTP200responses.
+Four decisions executed; the fifth response exhausted2048outputtokens during thinking and
+returned no decision. The runner stopped before admission. All5exactrequest/privacy checks
+and partial replay pass, with no observed leakage or outside-game action. All evidence and
+accounting are preserved. [Observed result](docs/research/evidence/eighteen-call-navigation-headroom-2026-10-27.json).
+
+The headroom candidate passed 136 tests across 10 files, native Godot integration and project TypeScript.
+The owner-requested headroom change raises current Society output to16384tokens, allows120s
+per request and reserves up to USD0.032 before dispatch. Actual usage is booked normally;
+prior journals remain unchanged. A newly source-bound18-call test will use the remaining
+USD0.326660 of the original combined USD0.40 cap. The pending larger-output run grants no
+automatic retry. The complete local game validator and privacy boundaries remain authoritative.
 
 Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
 Godot first-person view per decision. Agents select reachable geographical destinations;

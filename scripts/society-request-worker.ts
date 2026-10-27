@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, lstatSync, realpathSync, openSync, fsyncSy
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { societyInhabitantInstructions,societyOutputSchema } from '../src/society/request.js';
+import { societyInhabitantInstructions,societyOutputSchema,SOCIETY_MAX_OUTPUT_TOKENS,SOCIETY_REQUEST_TIMEOUT_MS } from '../src/society/request.js';
 import { assertSerializedSocietyVisibleContext } from '../src/society/boundary.js';
 import {anthropicSchema} from '../src/agent/anthropicRequest.js';
 
@@ -13,7 +13,8 @@ const exact=(v:Record<string,unknown>,keys:string[])=>Object.keys(v).sort().join
 export function validateSocietyWire(bytes:Buffer,expectedSha256:string,options:{historical?:boolean}={}): void {
   if(bytes.length<1||bytes.length>65_536||!/^[a-f0-9]{64}$/.test(expectedSha256)||hash(bytes)!==expectedSha256)throw Error('society_worker_request_binding');
   let q:any;try{q=JSON.parse(bytes.toString('utf8'));}catch{throw Error('society_worker_request_json');}
-  if(!q||!exact(q,['model','max_tokens','system','messages','thinking','output_config'])||q.model!=='claude-haiku-5-5'||q.max_tokens!==2048||
+  if(!q||!exact(q,['model','max_tokens','system','messages','thinking','output_config'])||q.model!=='claude-haiku-5-5'||
+    !(q.max_tokens===SOCIETY_MAX_OUTPUT_TOKENS||options.historical&&q.max_tokens===2048)||
     !Array.isArray(q.messages)||q.messages.length!==1||q.messages[0].role!=='user'||
     !exact(q.messages[0],['role','content'])||q.messages[0].content?.length!==1||q.messages[0].content[0].type!=='text'||
     !exact(q.messages[0].content[0],['type','text'])||!q.thinking||!exact(q.thinking,['type','display'])||q.thinking.type!=='adaptive'||q.thinking.display!=='summarized'||
@@ -46,7 +47,7 @@ async function main(){
   // and budget reservation. A malformed request cannot even trigger a credential read.
   const key=privateFile(resolve(keyArg),4096).toString('utf8').trim();
   if(!/^sk-ant-[A-Za-z0-9_-]{16,}$/.test(key))throw Error('society_worker_credential_format');
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20_000);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),SOCIETY_REQUEST_TIMEOUT_MS);
   try{
     const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',redirect:'error',
       headers:{'content-type':'application/json','anthropic-version':'2023-06-01','x-api-key':key},body:request.toString('utf8'),signal:controller.signal});

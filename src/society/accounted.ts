@@ -8,7 +8,7 @@ import type { ExperimentBudget } from '../agent/experimentBudget.js';
 import type { Sender } from '../eval/accountedRunner.js';
 import { digest } from '../agent/replay.js';
 import { SocietySecurityError, validateSocietyAction } from './boundary.js';
-import { buildSocietyRequest } from './request.js';
+import { buildSocietyRequest,SOCIETY_REQUEST_TIMEOUT_MS,SOCIETY_PER_REQUEST_MICRO_USD } from './request.js';
 import { autonomousPolicy } from './policy.js';
 import type { Society } from './runtime.js';
 import {validateSocietyPostcardConfig,type SocietyPostcardConfig} from './postcards.js';
@@ -31,11 +31,11 @@ export function createSocietyPlan(society: Society, options: { id?: string; tick
   const tape=society.exportTape(),routine=tape.routineConfig;
   const maxCalls=routine?Math.min(5000,ticks*3*(1+routine.maxTurnsPerDay)):ticks*6;
   const plan: SocietyRunPlan = { schema: routine?'node-accounted-society-routine-v4':tape.dailyOracleConfig?'node-accounted-society-daily-oracle-v3':tape.postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
-    model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? 20_000,
+    model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? SOCIETY_REQUEST_TIMEOUT_MS,
     minIntervalMs: options.minIntervalMs ?? 1000, initialHash: society.hash,
     sourceRevision: society.inspect().genesis.sourceRevision, controlled: society.controlled,
     allowance: { maxRequests: maxCalls, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
-      perRequestMicroUsd: options.perRequestMicroUsd ?? 20_000 },
+      perRequestMicroUsd: options.perRequestMicroUsd ?? SOCIETY_PER_REQUEST_MICRO_USD },
     ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}),
     ...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(routine?{routine}:{}) };
   validateSocietyPlan(plan); return structuredClone(plan);
@@ -49,7 +49,7 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
     (p?.schema==='node-accounted-society-daily-oracle-v3')!==(!p?.routine&&!!p?.dailyOracle) ||
     (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.routine&&!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
     p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== (p.routine?Math.min(5000,p.ticks*3*(1+p.routine.maxTurnsPerDay)):6*p.ticks) ||
-    !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > 20_000 ||
+    !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > SOCIETY_REQUEST_TIMEOUT_MS ||
     !Number.isSafeInteger(p.minIntervalMs) || p.minIntervalMs < 0 || p.minIntervalMs > 60_000 ||
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
     !Array.isArray(p.controlled) || p.controlled.length !== 3 || new Set(p.controlled).size !== 3 ||

@@ -3,6 +3,11 @@ import { createHash } from 'node:crypto';
 import { anthropicSchema, ANTHROPIC_THINKING } from '../agent/anthropicRequest.js';
 import { isSocietyVisibleContext, assertSerializedSocietyVisibleContext, SocietySecurityError, type SocietyVisibleContext } from './boundary.js';
 
+/** Shared thinking + decision headroom. Source-bound plans reserve this full ceiling. */
+export const SOCIETY_MAX_OUTPUT_TOKENS = 16_384;
+export const SOCIETY_REQUEST_TIMEOUT_MS = 120_000;
+export const SOCIETY_PER_REQUEST_MICRO_USD = 32_000;
+
 export const SOCIETY_INHABITANT_INSTRUCTIONS = [
   'You are one inhabitant of this settlement. The current observations, personal memory, public rules and legal choices are your information.',
   'Consider your duties, incentives, other people\'s generally knowable roles and your own past dealings. Choose freely among the listed actions; null declines an optional action.',
@@ -39,7 +44,7 @@ export interface SocietyPreparedRequest {
   readonly sha256: string;
   readonly countBody: string;
   readonly maxInputTokens: number;
-  readonly maxOutputTokens: 2048;
+  readonly maxOutputTokens: typeof SOCIETY_MAX_OUTPUT_TOKENS;
 }
 
 /** Compact provider grammar, separate from the authoritative permission schema.
@@ -103,12 +108,12 @@ export function buildSocietyRequest(view: SocietyVisibleContext, model = 'claude
   const input = { system: packet.system,
     messages: [{ role: 'user', content: [{ type: 'text', text: JSON.stringify(packet.observation) }] }],
     thinking: { ...ANTHROPIC_THINKING } };
-  const body = JSON.stringify({ model, max_tokens: 2048, ...input,
+  const body = JSON.stringify({ model, max_tokens: SOCIETY_MAX_OUTPUT_TOKENS, ...input,
     output_config: { effort: 'high', format: { type: 'json_schema', schema: societyOutputSchema(view) } } });
   const bytes = Buffer.byteLength(body, 'utf8');
   if (bytes > 65_536) throw new SocietySecurityError('society_request_bounds');
   // Conservative existing byte ceiling plus schema/format overhead; paid dispatch still
   // requires its own explicit allowance, real current accounting journal and approval.
   return Object.freeze({ model, body, sha256: createHash('sha256').update(body).digest('hex'),
-    countBody: JSON.stringify({ model, ...input }), maxInputTokens: bytes + 4096, maxOutputTokens: 2048 as const });
+    countBody: JSON.stringify({ model, ...input }), maxInputTokens: bytes + 4096, maxOutputTokens: SOCIETY_MAX_OUTPUT_TOKENS });
 }
