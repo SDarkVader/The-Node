@@ -202,10 +202,16 @@ function draw(s) {
     ctx.strokeRect(x(b.x)-scale*.29,y(b.y)-scale*.29,scale*.58,scale*.58);
   }
   ctx.setLineDash([]);
-  for(const p of s.frame.people){
+  // Display shared cells as a small fan so visitors are not hidden under one another.
+  // The offsets are only drawing positions; every person's recorded cell is unchanged.
+  const groups=new Map();
+  for(const p of s.frame.people){const key=`${p.x},${p.y}`,group=groups.get(key)??[];group.push(p);groups.set(key,group);}
+  for(const group of groups.values())for(const [index,p] of group.entries()){
+    const angle=2*Math.PI*index/group.length,offset=group.length>1?scale*.22:0;
+    const px=x(p.x)+Math.cos(angle)*offset,py=y(p.y)+Math.sin(angle)*offset;
     const colour=colors[p.role]??'#eee3d2',radius=Math.max(3.5,scale*.155);
     ctx.save();ctx.shadowColor=colour;ctx.shadowBlur=scale*.30;ctx.fillStyle=colour;
-    ctx.beginPath();ctx.arc(x(p.x),y(p.y),radius,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.beginPath();ctx.arc(px,py,radius,0,Math.PI*2);ctx.fill();ctx.restore();
     ctx.strokeStyle='#100d0b';ctx.lineWidth=1.5;ctx.stroke();
   }
   ctx.strokeStyle='#efdcae';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x(hub.x),y(hub.y),scale*.35,0,Math.PI*2);ctx.stroke();

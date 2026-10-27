@@ -43,8 +43,6 @@ func _draw() -> void:
 		if heat <= 0.001:
 			continue
 		var strength := float(view.STATE_BRIGHTNESS.get(station["state"], 1.0))
-		if not view._occupied.has(b["id"]):
-			strength *= 0.16
 		var cool: Color = view.HEAT_COOL
 		var hot: Color = view.HEAT_HOT
 		var colour := cool.lerp(hot, heat)
@@ -58,10 +56,11 @@ func _draw() -> void:
 	var soul: Color = view._soul_colour(view.economic_health)
 	soul.a = 0.14
 	_halo(camera, origin + Vector3.UP * 0.3, cell * 4.3, soul)
-	for person in view.people:
-		var key := "%d,%d" % [int(round(float(person["x"]))), int(round(float(person["y"])))]
-		if person.get("role") != null and view._building_at.has(key):
-			continue
+	for entry in preload("res://scripts/WorldPeople.gd").layout(view.people, view.buildings):
+		var person = entry["person"]
+		var offset: Vector2 = entry["offset"]
+		var building = entry["building"]
+		var height: float = view._roof_height(building) + 0.25 if building != null else 0.25
 		var colour: Color = view.ROLE_COLOUR.get(person.get("role"), view.COLOUR_GRIFTER)
 		colour.a = 0.14
-		_halo(camera, Vector3(float(person["x"]), 0.25, float(person["y"])), cell * 0.85, colour)
+		_halo(camera, Vector3(float(person["x"]) + offset.x, height, float(person["y"]) + offset.y), cell * 0.85, colour)

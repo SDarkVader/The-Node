@@ -1,5 +1,6 @@
 /** Researcher adapter for the actual Society tape. Replay never runs a policy or sender. */
-import {readFileSync,lstatSync} from 'node:fs';
+import {readFileSync,lstatSync,existsSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {Society,verifySocietyTape,type SocietyTape} from '../society/runtime.js';
 import {buildSocietyResultsReport,readSocietyResults,type SocietyReportInput} from '../society/report.js';
@@ -35,10 +36,34 @@ export class SocietyObservatorySource {
         if(!stat.isFile()||stat.isSymbolicLink()||stat.size>128*1024*1024)throw Error('society_observatory_tape_bounds');
         const eventsFile=join(this.registration.directory,'events.jsonl'),eventStat=lstatSync(eventsFile);
         if(!eventStat.isFile()||eventStat.isSymbolicLink()||eventStat.size>128*1024*1024)throw Error('society_observatory_events_bounds');
-        const tape=parseSocietyEvidence<SocietyTape>(readFileSync(file,'utf8'));
+        const tapeBytes=readFileSync(file),eventBytes=readFileSync(eventsFile);
+        const tape=parseSocietyEvidence<SocietyTape>(tapeBytes.toString('utf8'));
         const report=readSocietyResults(this.registration.directory);
-        input={tape,eventsText:readFileSync(eventsFile,'utf8'),summary:report.summary,
-          errors:report.recordedErrors,runStart:report.runStart,finalization:report.finalization,status:'recorded'};
+        const recoveryFile=join(this.registration.directory,'recovery.json');let status='recorded';
+        if(existsSync(recoveryFile)){
+          const recoveryStat=lstatSync(recoveryFile);
+          if(!recoveryStat.isFile()||recoveryStat.isSymbolicLink()||recoveryStat.size>65536)throw Error('society_observatory_recovery_bounds');
+          const recovery=JSON.parse(readFileSync(recoveryFile,'utf8'));
+          if(recovery.sourceRevision!==tape.genesis.sourceRevision)
+            throw Error('society_observatory_recovery_provenance');
+          if(recovery.format==='node-society-submission-recovery-v1')status='reconstructed';
+          else if(recovery.format==='node-society-policy-prefix-reconstruction-v1'){
+            const sha=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
+            if(recovery.tapeSha256!==sha(tapeBytes)||recovery.eventsSha256!==sha(eventBytes)||
+              recovery.endpoint!=='last_recorded_controlled_outcome'||recovery.unrecordedLaterActionsAssumed!==false||!tape.decisions.at(-1)?.controlled||
+              recovery.controlledOutcomes!==tape.decisions.filter(d=>d.controlled).length||
+              recovery.policyDecisions!==tape.decisions.filter(d=>!d.controlled).length)
+              throw Error('society_observatory_recovery_provenance');
+            const records=report.agents.flatMap(a=>a.records);
+            const last=[...records].sort((a,b)=>(b.requestIndex??-1)-(a.requestIndex??-1))[0];
+            if(records.length!==recovery.controlledOutcomes||last?.decisionTransition?.afterHash!==tape.decisions.at(-1)?.transition?.afterHash||records.some(r=>r.requestIndex===null||r.admission!=='recorded_in_tape'||r.issues.length||
+              !r.decisionTransition||!r.outcomes.some((o:any)=>o.status==='submitted'&&o.beforeHash===r.decisionTransition!.beforeHash&&o.afterHash===r.decisionTransition!.afterHash)))
+              throw Error('society_observatory_recovery_provenance');
+            status='policy_reconstructed';
+          }else throw Error('society_observatory_recovery_provenance');
+        }
+        input={tape,eventsText:eventBytes.toString('utf8'),summary:report.summary,
+          errors:report.recordedErrors,runStart:report.runStart,finalization:report.finalization,status};
       }
       const control=this.active?.gate?.state??null,fingerprint=digest([input,control]);
       if(fingerprint===this.#fingerprint)return true;
@@ -115,8 +140,8 @@ export class SocietyObservatorySource {
     });
     const autonomous=(tape.routineConfig?prefix:tape.decisions).filter(d=>!d.controlled&&d.day<=p.throughDay).map(d=>({
       requestId:`policy-${d.person}-${d.day}-${d.phase}${(d.visible as any).routine?`-${(d.visible as any).routine.turn}`:''}`,actorId:d.person,tick:d.day,phase:d.phase,...((d.visible as any).routine?{turn:(d.visible as any).routine.turn}:{}),observation:d.visible,
-      legalChoices:d.legalChoices,reasoning:{source:'deterministic_policy',status:'not_a_model',summaries:[]},
-      latencyMs:null,proposal:d.action,admitted:d.action,executed:true,nextTick:tape.transitions.some(t=>t.day===d.day&&t.day<=p.sourceTick)?d.day:null,
+      legalChoices:d.legalChoices,reasoning:{source:input.status==='policy_reconstructed'?'reconstructed_deterministic_policy':'deterministic_policy',status:'not_a_model',summaries:[]},
+      latencyMs:null,proposal:d.action,admitted:d.action,executed:input.status!=='policy_reconstructed',nextTick:tape.transitions.some(t=>t.day===d.day&&t.day<=p.sourceTick)?d.day:null,
       effects:[],usage:null,heldMicroUsd:0,transition:d.turn===undefined?tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null:
         {submission:d.transition??null,turn:tape.turnTransitions?.find(t=>t.day===d.day&&t.turn===d.turn)??null,daily:tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null},rawRecord:d}));
     const calls=[...modelCalls,...autonomous].sort((a,b)=>a.tick-b.tick||(a.phase==='commit'?0:1)-(b.phase==='commit'?0:1)||((a as any).turn??0)-((b as any).turn??0));

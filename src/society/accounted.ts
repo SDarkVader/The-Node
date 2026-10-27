@@ -69,7 +69,7 @@ export interface SocietyCallOutcome extends SocietyCallBinding {
   status:SocietyCallStatus; reason:string|null; stage:SocietyCallStage; requestBooked:boolean|null;
   beforeHash:string; afterHash:string; beforeTick:number; afterTick:number;
 }
-export interface SocietyRunEvent { kind: 'start' | 'request' | 'reserved' | 'dispatched' | 'response' | 'decision' | 'outcome' | 'finish'; data: unknown }
+export interface SocietyRunEvent { kind: 'start' | 'request' | 'reserved' | 'dispatched' | 'response' | 'decision' | 'submission' | 'outcome' | 'finish'; data: unknown }
 export interface AccountedSocietyOptions {
   plan: SocietyRunPlan; ownerApproved: boolean; instruction: string; expectedCarriedFingerprint: string;
   sink: (event: SocietyRunEvent) => void; signal?: AbortSignal;
@@ -118,7 +118,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     try{options.sink(detached);}catch(error){undeliveredEvents.push(structuredClone(event));throw error;}
   };
   running.add(society);
-  let calls=0,stoppedReason:string|null=null,lastDispatch=-Infinity,permittedDay=0;
+  let calls=0,stoppedReason:string|null=null,lastDispatch=-Infinity,permittedDay=0,submissionSequence=0;
   let active:{binding:SocietyCallBinding;stage:SocietyCallStage;beforeHash:string;beforeTick:number;finished:boolean}|null=null;
   const halt=(reason:string)=>{stoppedReason??=reason;society.halt();};
   const outcome=(status:SocietyCallStatus,reason:string|null)=>{
@@ -132,7 +132,18 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
   const stop=(status:SocietyCallStatus,reason:string)=>{halt(reason);outcome(status,reason);};
   try{
     emit({kind:'start',data:{plan,planSha256:societyPlanHash(plan),runId:auth.runId,
+      ...(plan.routine?{genesis:society.exportTape().genesis,submissionJournal:'node-society-submissions-v1'}:{}),
       budgetHistoryHash:start.historyHash,carriedFingerprint:options.expectedCarriedFingerprint}});
+    // Each accepted action, including autonomous actions, is durably journaled before
+    // the next decision. The sink owns private storage; this never enters an agent view.
+    // If the sink fails or the process dies between execution and persistence, recovery
+    // conservatively stops at the last recorded action and never assumes the missing one.
+    const submit=(person:string,action:ReturnType<typeof validateSocietyAction>,afterAdmission?:()=>void)=>{
+      const beforeHash=society.hash,tick=society.tick,phase=society.phase,turn=society.turn;
+      society.submit(person,action);afterAdmission?.();
+      if(plan.routine)emit({kind:'submission',data:{sequence:submissionSequence++,person,tick,phase,turn,
+        action,beforeHash,afterHash:society.hash,afterTick:society.tick}});
+    };
     while(society.tick<plan.ticks&&!stoppedReason){
       if(society.halted){halt(society.stoppedReason??'society_halted');break;}
       if(options.signal?.aborted){halt('society_cancelled');break;}
@@ -152,7 +163,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         if(!plan.controlled.includes(person)){
           const action=autonomousPolicy(view.visible);
           if(options.signal?.aborted){halt('society_cancelled');break;}
-          society.submit(person,action);continue;
+          submit(person,action);continue;
         }
         if(calls>=plan.maxCalls){halt('society_call_limit');break;}
         const wire=buildSocietyRequest(view.visible,plan.model),current=budget.view();
@@ -224,7 +235,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         active.stage='validated';emit({kind:'decision',data:{...binding,person,status:'validated',action}});
         if(options.signal?.aborted){stop('cancelled','society_cancelled');break;}
         if(!currentLease()){stop('stale_response','society_stale_response');break;}
-        society.submit(person,action);active.stage='submitted';outcome('submitted',null);
+        submit(person,action,()=>{active!.stage='submitted';});outcome('submitted',null);
       }
     }
   }catch(error){

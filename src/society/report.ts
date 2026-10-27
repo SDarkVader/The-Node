@@ -33,7 +33,7 @@ export interface SocietyCallReport {
     archiveRawBase64: string | null; rawText: string | null; sha256: string | null; parsed: unknown; archiveStatus: unknown };
   reasoning: { source: 'provider_returned_summary'; status: string; summaries: string[]; signatureSha256: string[]; redactedBlocks: number | null };
   proposedAction: unknown; validatedAction: unknown; submittedAction: unknown;
-  admission: 'recorded_in_tape' | 'controller_submitted_without_tape_record' | 'validated_without_tape_record' | 'not_recorded';
+  admission: 'recorded_in_tape' | 'replayed_from_submission_journal' | 'controller_submitted_without_tape_record' | 'validated_without_tape_record' | 'not_recorded';
   worldTransition: SocietyTransition | null;
   transitionStatus: 'daily_transition_recorded' | 'not_recorded';
   events: { line: number; kind: string; data: unknown; provenance?: string; recoveryIndex?: number }[];
@@ -292,17 +292,20 @@ export function societyResultsMarkdown(report: SocietyResultsReport): string {
 
 /** Reads only named run artifacts and numeric call directories. It never opens an allowance
  * or credential, follows no paths from event content, and performs no provider operation. */
-export function readSocietyResults(inputDirectory: string): SocietyResultsReport {
+export function readSocietyResults(inputDirectory: string, recoveredTape?:SocietyTape, pinnedEvents?:string): SocietyResultsReport {
   const directory = resolve(inputDirectory), inputIssues: SocietyReportIssue[] = [];
   const read = (name: string): string | undefined => {
     const path = join(directory, name); if (!existsSync(path)) return undefined;
     try { return readFileSync(path, 'utf8'); } catch { inputIssues.push({ code: 'artifact_unreadable', detail: name }); return undefined; }
   };
-  const eventsText = read('events.jsonl') ?? '';
+  const eventsText = pinnedEvents ?? read('events.jsonl') ?? '';
   if (!existsSync(join(directory, 'events.jsonl'))) inputIssues.push({ code: 'events_file_missing' });
-  let tape: SocietyTape | undefined;
+  let tape: SocietyTape | undefined = recoveredTape;
   const tapeText = read('society.json');
-  if (tapeText !== undefined) try { tape = parseSocietyEvidence<SocietyTape>(tapeText); } catch { inputIssues.push({ code: 'tape_file_unreadable' }); }
+  if(tapeText!==undefined&&recoveredTape)throw Error('society_recovery_tape_exists');
+  if (tapeText !== undefined) try {
+    tape = parseSocietyEvidence<SocietyTape>(tapeText);
+  } catch { inputIssues.push({ code: 'tape_file_unreadable' }); }
   const document = (name: string): unknown => {
     const text = read(name); if (text === undefined) return undefined;
     try { const plain = JSON.parse(text); return plain?.format === 'node-society-evidence-v1' ? parseSocietyEvidence(text) : plain; }
@@ -326,8 +329,14 @@ export function readSocietyResults(inputDirectory: string): SocietyResultsReport
     if (Object.keys(status).length) archive.status = status;
     archives.push(archive);
   }
-  return buildSocietyResultsReport({ eventsText, tape, summary: document('summary.json'), errors: document('errors.json'),
+  const report=buildSocietyResultsReport({ eventsText, tape, summary: document('summary.json'), errors: document('errors.json'),
     runStart: document('run-start.json'), finalization: document('finalization.json'), archives, inputIssues });
+  if(recoveredTape){
+    for(const record of [...report.agents.flatMap(a=>a.records),...report.unassignedRecords])
+      if(record.admission==='recorded_in_tape')record.admission='replayed_from_submission_journal';
+    report.notes.unshift('World state and transitions were reconstructed from the durable submission journal with the matching committed source; no original tape was available. A missing final submission is not inferred.');
+  }
+  return report;
 }
 
 /** Fresh-directory-only exports keep the original evidence and earlier reports intact. */
