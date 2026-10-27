@@ -1,0 +1,51 @@
+{
+  "format": "node-supervised-navigation-stop-v1",
+  "date": "2026-10-27",
+  "sourceRevision": "323794fbbed1ee4448fdbdbd726359893a6ade9e",
+  "approvedMaximumCalls": 18,
+  "approvedLimitMicroUsd": 400000,
+  "actualProviderRequests": 4,
+  "successfulAdmittedDecisions": 3,
+  "returnedNonemptySummaries": 3,
+  "committedDays": 0,
+  "stoppedReason": "society_usage_unknown",
+  "httpStatuses": [
+    200,
+    200,
+    200,
+    400
+  ],
+  "providerErrorType": "invalid_request_error",
+  "providerErrorMessage": "output_config.format.schema: For 'anyOf', '$defs, additionalProperties, properties, required, type' is not supported",
+  "bookedMicroUsd": 11077,
+  "heldMicroUsd": 14643,
+  "automaticRetry": false,
+  "exactAuthoritativeRequestChecks": 4,
+  "systemDataLeaksObserved": 0,
+  "outsideGameActionsAdmitted": 0,
+  "priorJournalUnchanged": true,
+  "temporaryCredentialCopyRemoved": true,
+  "newestHistoryRetained": true,
+  "pendingRunRetained": true,
+  "replay": {
+    "verified": true,
+    "ticks": 0,
+    "decisions": 3,
+    "complete": false,
+    "finalHash": "2715da9de984ab6ae39c885a17d346117561ec706bd5b55dda4593285b9aa079"
+  },
+  "reportIntegrityIssues": [
+    "response_decode_failed"
+  ],
+  "offlineFix": {
+    "authoritativeGameSchemaChanged": false,
+    "providerFormat": "bare anyOf of complete closed alternatives; internal references inlined",
+    "equivalenceGuard": true,
+    "liveDispatchRejectsLegacyFormat": true,
+    "readOnlyHistoricalInspectionRetained": true,
+    "focusedTestsPassed": 23,
+    "realGodotFullFeatureTwoDayControllerTestPassed": true,
+    "correctedFormatSentToProvider": false
+  },
+  "reasoningEvaluation": "not_performed"
+}

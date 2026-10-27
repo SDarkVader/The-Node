@@ -22,6 +22,15 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+The authorized 18-call paid navigation check stopped after four requests at source `323794f`:
+three commit decisions succeeded, and the provider rejected the first action schema with HTTP 400.
+No paid travel or subsequent behaviour was observed. All four authorized observations and three
+admitted actions verified; no system-data leakage or outside-game action was observed. USD
+0.011077 is booked and 0.014643 remains held for missing usage; no retry or assumed refund occurred.
+The transport-format defect is corrected offline, with semantic-equivalence guards and regression
+checks. Actual provider acceptance of that correction remains to verify after accounting recovery.
+[Preserved outcome](docs/research/evidence/eighteen-call-navigation-stop-2026-10-27.json).
+
 Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
 Godot first-person view per decision. Agents select reachable geographical destinations;
 Godot routes the journey through existing legal adjacent plots without extra model calls.
@@ -67,7 +76,7 @@ exact observation inspection, raw exports and cold replay. Preserved actual evid
 replayed all 98 requests/responses through 383 decisions with zero conflicts. The owner approved
 append-only closure of the historical authorization; previous entries, USD 0.304048 booked and
 zero held remain intact. Final-source PowerShell preparation with STOP passed with no allowance,
-execution or journal mutation. No new paid test is approved. [Verification and commands](docs/research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
+execution or journal mutation. That historical verification granted no new paid approval. [Verification and commands](docs/research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
 
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through

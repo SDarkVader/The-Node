@@ -123,7 +123,7 @@ export class SocietyObservatorySource {
         throw Error('society_observatory_evidence_boundary');
       for(const r of [...report.agents.flatMap(a=>a.records),...report.unassignedRecords])
         if(r.request.body!==null){
-          validateSocietyWire(Buffer.from(r.request.body),r.request.recordedSha256??r.request.actualSha256!);
+          validateSocietyWire(Buffer.from(r.request.body),r.request.recordedSha256??r.request.actualSha256!,{historical:!this.active});
           if(this.active&&r.admission!=='recorded_in_tape'&&r.visible!==null){
             if(r.person&&s.dualNavigation){
               const events=input.eventsText?.split('\n').filter(Boolean).map(line=>parseSocietyEvidence<any>(line))??[];

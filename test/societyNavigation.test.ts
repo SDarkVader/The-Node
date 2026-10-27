@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {Society,societyConfig,verifySocietyTape} from '../src/society/runtime.js';
 import {autonomousPolicy} from '../src/society/policy.js';
 import {validateSocietyAction,assertSerializedSocietyVisibleContext} from '../src/society/boundary.js';
-import {buildSocietyRequest} from '../src/society/request.js';
+import {buildSocietyRequest,societyOutputSchema} from '../src/society/request.js';
 import {validateSocietyWire} from '../scripts/society-request-worker.js';
 import {openSocietySenses} from '../src/society/senses.js';
 import {shortestGridPath,assertGridPath} from '../src/engine/navigation.js';
@@ -16,6 +16,8 @@ import {spawn} from 'node:child_process';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {createHash} from 'node:crypto';
+import {anthropicSchema} from '../src/agent/anthropicRequest.js';
 
 const create=()=>new Society({seed:42,sourceRevision:'navigation-test',config:{...societyConfig(),commsProximityRange:1},routine:{maxTurnsPerDay:64,information:'inhabitant-v1',navigation:'dual-v1'}});
 const nil=()=>({move:null,communication:null,diary:null,occupation:null,purchase:null,oracle:null});
@@ -52,6 +54,20 @@ describe('destination navigation boundary',()=>{
     const target=v.visible.legalChoices.moves.find(q=>Math.abs(q.x-v.visible.self.x)+Math.abs(q.y-v.visible.self.y)>1)!;
     expect(target).toBeDefined();
     const schema=v.visible.decisionSchema as any;
+    const output=societyOutputSchema(v.visible) as any;
+    expect(Object.keys(output)).toEqual(['anyOf']);
+    expect(output.anyOf).toHaveLength(2);
+    for(const branch of output.anyOf){expect(branch.additionalProperties).toBe(false);expect(branch.required).toEqual(schema.required);}
+    expect(JSON.stringify(output)).not.toContain('$ref');expect(JSON.stringify(output)).not.toContain('$defs');
+    const providerSubset=(q:any)=>{if(q&&typeof q==='object'){
+      if(Array.isArray(q.anyOf))expect(Object.keys(q)).toEqual(['anyOf']);
+      Object.values(q).forEach(providerSubset);
+    }};providerSubset(output);
+    const built=buildSocietyRequest(v.visible);validateSocietyWire(Buffer.from(built.body),built.sha256);
+    const legacy=JSON.parse(built.body);legacy.output_config.format.schema=anthropicSchema(v.visible.decisionSchema);
+    const bytes=Buffer.from(JSON.stringify(legacy)),sha=createHash('sha256').update(bytes).digest('hex');
+    expect(()=>validateSocietyWire(bytes,sha)).toThrow('society_worker_schema');
+    expect(()=>validateSocietyWire(bytes,sha,{historical:true})).not.toThrow();
     const inspect=(q:any)=>{if(q&&typeof q==='object'){
       if(q.type==='object')expect(q.additionalProperties).toBe(false);
       if(q.enum)expect(q.enum.every((x:unknown)=>x===null||['number','string','boolean'].includes(typeof x))).toBe(true);

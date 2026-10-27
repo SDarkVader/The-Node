@@ -42,6 +42,36 @@ export interface SocietyPreparedRequest {
   readonly maxOutputTokens: 2048;
 }
 
+/** The provider requires a bare anyOf, with no sibling object keywords. Keep
+ * the authoritative observation schema unchanged; compile its complete closed
+ * alternatives into an equivalent provider format. Internal refs are inlined. */
+export function societyOutputSchema(view:SocietyVisibleContext):Record<string,unknown>{
+  const schema=anthropicSchema(view.decisionSchema) as Record<string,any>;
+  if(!view.dual||!schema.anyOf)return schema;
+  if(Object.keys(schema).sort().join(',')!=='$defs,additionalProperties,anyOf,properties,required,type')throw new SocietySecurityError('society_provider_schema_equivalence');
+  const inline=(node:any,active=new Set<string>()):any=>{
+    if(Array.isArray(node))return node.map(q=>inline(q,active));
+    if(node===null||typeof node!=='object')return node;
+    if(Object.hasOwn(node,'$ref')){
+      const name=typeof node.$ref==='string'&&node.$ref.startsWith('#/$defs/')?node.$ref.slice(8):null;
+      if(Object.keys(node).length!==1||!name||!Object.hasOwn(schema.$defs??{},name)||active.has(name))throw new SocietySecurityError('society_provider_schema_ref');
+      return inline(schema.$defs[name],new Set([...active,name]));
+    }
+    return Object.fromEntries(Object.entries(node).map(([k,v])=>[k,inline(v,active)]));
+  };
+  const base=inline(schema.properties),same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
+  const subset=(child:any,parent:any):boolean=>same(child,parent)||
+    Array.isArray(parent?.anyOf)&&(Array.isArray(child?.anyOf)?child.anyOf.every((c:any)=>parent.anyOf.some((p:any)=>same(c,p))):parent.anyOf.some((p:any)=>same(child,p)));
+  const alternatives=schema.anyOf.map((branch:any)=>inline(branch));
+  for(const branch of alternatives){
+    if(schema.type!=='object'||schema.additionalProperties!==false||branch.type!=='object'||branch.additionalProperties!==false||
+      Object.keys(branch).sort().join(',')!=='additionalProperties,properties,required,type'||
+      !same(branch.required,schema.required)||!same(Object.keys(branch.properties??{}),Object.keys(base))||
+      Object.keys(base).some(k=>!subset(branch.properties[k],base[k])))throw new SocietySecurityError('society_provider_schema_equivalence');
+  }
+  return {anyOf:alternatives};
+}
+
 /** Existing reviewed Messages configuration, with the new six-field society schema.
  * Number bounds remain in the visible legal menu and local validator; the established
  * provider adapter removes unsupported minimum/maximum keywords from its output schema.
@@ -54,7 +84,7 @@ export function buildSocietyRequest(view: SocietyVisibleContext, model = 'claude
     messages: [{ role: 'user', content: [{ type: 'text', text: JSON.stringify(packet.observation) }] }],
     thinking: { ...ANTHROPIC_THINKING } };
   const body = JSON.stringify({ model, max_tokens: 2048, ...input,
-    output_config: { effort: 'high', format: { type: 'json_schema', schema: anthropicSchema(packet.decisionSchema) } } });
+    output_config: { effort: 'high', format: { type: 'json_schema', schema: societyOutputSchema(view) } } });
   const bytes = Buffer.byteLength(body, 'utf8');
   if (bytes > 65_536) throw new SocietySecurityError('society_request_bounds');
   // Conservative existing byte ceiling plus schema/format overhead; paid dispatch still

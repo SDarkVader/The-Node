@@ -1,9 +1,34 @@
 # Dual-perspective navigation — 2026-10-27
 
 The candidate branch `codex/dual-perspective-navigation-2026-10-27` builds on PR57's
-`47b3000`. The original paid runs and their journals remain unchanged. No new paid
-model call was made for this work. The policy responses below are explicitly scripted;
+`47b3000`. The original paid runs and their journals remain unchanged. The later owner-approved paid
+attempt is documented below; preceding development checks used no paid calls. The policy responses below are explicitly scripted;
 they establish execution integrity, not model reasoning quality or provider acceptance.
+
+## Supervised paid attempt
+
+The owner approved 18 calls with a USD0.40 total ceiling and a stop on system leakage or
+outside-game behaviour. Source323794f launched from PowerShell with native Godot, Observatory,
+the reviewed postcard/Oracle configuration, and at most five action turns after commit.
+Three commit calls succeeded. The fourth request, the first action call, returned HTTP400
+because the provider rejects anyOf with sibling object keywords. The controller stopped before
+travel admission; the remaining fourteen requests were never sent. No paid subsequent behaviour
+or completed day is claimed. Three returned summaries are preserved verbatim, without grading.
+
+Four exact authorized observation checks and three response/admitted-action comparisons pass.
+No system-data leakage or outside-game action was observed in that evidence. The three-decision
+partial tape replays. USD0.011077 is booked; USD0.014643 remains held because the rejected response
+contains no usage receipt. This is an unresolved reservation, not a confirmed additional charge.
+The previous journal is unchanged, the key copy is removed, and the newest history/pending run
+remain preserved. No automatic retry, zero-cost assumption or reset occurred.
+
+The offline correction preserves the authoritative game schema while generating a bare anyOf
+of complete closed alternatives for the provider. Internal refs are inlined, and an equivalence
+guard checks every alternative against the original property constraints. The live worker accepts
+only the corrected format. Historical read-only inspection retains exact original format checks.
+23 focused checks and a native-Godot/fake-provider two-day controller check pass. Acceptance of
+the corrected format by the actual provider remains further verification after accounting recovery.
+See the [sanitized stop evidence](evidence/eighteen-call-navigation-stop-2026-10-27.json).
 
 ## Implemented contract
 
@@ -47,7 +72,7 @@ during route computation stops before admission.
 
 ## Execution evidence
 
-The full candidate suite passed **1,989 tests across 158 files**, with one Windows
+Implementation e8369f9 passed **1,990 tests across 158 files**, with one Windows
 platform skip and native Godot enabled. Eight session-recovery tests and strict project
 and affected CLI TypeScript passed. Subsequent browser testing exposed a pending-request
 journal-decoder fault; that was corrected and a native regression test now covers a live
@@ -113,6 +138,6 @@ An unconfigured clone can instead supply an explicit Godot 4 executable. The ord
 offline CLI also accepts `--daily-turns 64 --dual-navigation --godot <executable>`.
 
 Actual-provider use remains behind the existing source-pinned, fresh-plan review and
-spending authorization flow. The new contract has not been sent to a paid provider in this
-verification. No merge is required to run this checkout; another checkout must contain
+spending authorization flow. The corrected output format has not been retried against the provider;
+the rejected request still requires usage reconciliation. No merge is required to run this checkout; another checkout must contain
 the navigation branch or its merged changes.
