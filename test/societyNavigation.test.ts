@@ -12,6 +12,10 @@ import {SocietyObservatorySource} from '../src/observatory/societySource.js';
 import {stringifySocietyEvidence} from '../src/society/codec.js';
 import {dualObservation} from '../src/society/navigation.js';
 import {writeDiaryEntry} from '../src/engine/diary.js';
+import {spawn} from 'node:child_process';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
 
 const create=()=>new Society({seed:42,sourceRevision:'navigation-test',config:{...societyConfig(),commsProximityRange:1},routine:{maxTurnsPerDay:64,information:'inhabitant-v1',navigation:'dual-v1'}});
 const nil=()=>({move:null,communication:null,diary:null,occupation:null,purchase:null,oracle:null});
@@ -78,6 +82,27 @@ describe('destination navigation boundary',()=>{
 });
 
 describe.skipIf(!process.env.NODE_GODOT_BIN)('actual Godot destination → arrival → interaction',()=>{
+  it('exits the real preview CLI after authenticated stop and preserves the run',async()=>{
+    const parent=mkdtempSync(join(tmpdir(),'node-navigation-cli-')),output=join(parent,'run');
+    const child=spawn(process.execPath,['--import','tsx','scripts/preview-society.ts','--dual-navigation','--godot',process.env.NODE_GODOT_BIN!,
+      '--port','0','--ticks','1','--output',output],{windowsHide:true,stdio:['ignore','pipe','pipe']});
+    let log='';const exited=new Promise<number|null>(resolve=>child.once('exit',resolve));
+    try{
+      const ready=await new Promise<any>((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(Error('preview_not_ready')),10000);
+        child.stdout.on('data',b=>{log+=b.toString();for(const line of log.split('\n')){try{const v=JSON.parse(line);if(v.event==='observatory_ready'){clearTimeout(timer);resolve(v);}}catch{}}});
+        child.stderr.on('data',b=>{log+=b.toString();});
+      });
+      expect(ready.providerCalls).toBe(0);
+      const response=await fetch(ready.url+'observatory/v1/runs/deterministic-preview/stop',{method:'POST',headers:{Authorization:'Bearer '+ready.loginToken,'Content-Type':'application/json'},body:'{}'});
+      expect(response.status).toBe(200);
+      let timer:ReturnType<typeof setTimeout>|undefined;
+      try{expect(await Promise.race([exited,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('preview_did_not_exit')),5000);})])).toBe(0);}
+      finally{if(timer)clearTimeout(timer);}
+      expect(readFileSync(join(output,'society.json'),'utf8').length).toBeGreaterThan(0);
+      expect(log).toContain('preview_complete');
+    }finally{if(child.exitCode===null)child.kill();await exited;rmSync(parent,{recursive:true,force:true});}
+  },20000);
   it('moves a non-adjacent trip in one decision, obtains arrival sight/options, executes work and cold-replays in Observatory',async()=>{
     const senses=await openSocietySenses();
     try{

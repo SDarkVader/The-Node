@@ -52,3 +52,6 @@ finally{
 }
 if(!controller.signal.aborted)await new Promise<void>(resolve=>controller.signal.addEventListener('abort',()=>resolve(),{once:true}));
 await panel.close();
+// This foreground CLI owns the preview and has already persisted all evidence and
+// closed both servers. Browser/loader handles must not retain the PC settings lock.
+process.exit(0);

@@ -61,7 +61,7 @@ Provider acceptance remains untested by an actual paid request.
 Saved-run polling now hashes the actual named evidence bytes and call archives before deciding
 whether expensive decoding/replay is needed. Same-size edits with restored timestamps are
 still detected. Trusted controller revisions avoid repeatedly cloning an unchanged live tape.
-Shutdown closes unfinished browser requests so they cannot retain the PowerShell settings lock.
+Shutdown closes unfinished browser requests; the foreground preview explicitly exits after finalizing evidence and closing its servers. A native child-process regression authenticates, stops the real CLI, verifies exit zero and checks that its tape was retained.
 
 The actual production controller completed one day using native Godot and a fake provider.
 Each controlled decision has exactly one request and its own perception record; each move

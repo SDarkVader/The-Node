@@ -23,6 +23,8 @@ A standalone proof selected (1,-6) from (2,-1), navigated six legal steps in one
 then received the real first-person arrival view, gained work permission and recorded work.
 Its 31-decision partial tape cold-replays; no completed day is claimed for that short proof.
 A separate model-free run completed one day with 227 decisions, 320 movement steps and 14 diaries.
+Implementation 7b6b211 contains the native proof and compatible scalar-coordinate schema.
+A follow-up verifies explicit foreground CLI exit after authenticated stop and retained evidence.
 The actual PowerShell/browser preview completed one day with 227 decisions and 51 controlled
 policy packets, rendered embedded Godot and reported replay verified through day 1. Browser checks
 also fixed pending-request decoding and expensive historical polling; cache checks still hash the
