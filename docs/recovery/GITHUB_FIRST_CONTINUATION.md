@@ -2,8 +2,9 @@
 
 Updated 2026-10-26. The shared branch is `main`. PR43 was closed as a duplicate;
 PR47, PR49, PR50, PR51 and PR52 are merged. [PR53](https://github.com/SDarkVader/The-Node/pull/53)
-contains the sequential-day implementation and standalone PC launcher, reviewed on
-`codex/sequential-days-2026-10-26`. Check its current merge state and exact head.
+merged the sequential-day implementation and standalone PC launcher at `bb1b232`.
+The subsequent supervised live run was interrupted during day 1; its private accounting
+history is not count-closed. Preserve it and see the current handover before any later test.
 Read [CURRENT_SESSION](CURRENT_SESSION.md) and
 [sequential days](../research/SEQUENTIAL_DAYS_2026-10-26.md) for current mechanics,
 source-scoped verification, remaining work and the ordinary PowerShell command.

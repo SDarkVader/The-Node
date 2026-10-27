@@ -1,0 +1,45 @@
+{
+  "format": "node-scoped-live-execution-evidence-v1",
+  "date": "2026-10-26",
+  "sourceRevision": "bb1b23282421553c3e996ac487b0f43e786f4445",
+  "requestedClicks": 3,
+  "startedClicks": 1,
+  "committedDays": 0,
+  "status": "operator_stopped_partial_day",
+  "stopReason": "owner_requested_credit_preservation",
+  "lastObserved": { "day": 1, "phase": "act", "turn": 32 },
+  "accounting": {
+    "requests": 98,
+    "bookedMicroUsd": 304048,
+    "heldMicroUsd": 0,
+    "historyStatus": "latest_history_preserved_not_closed"
+  },
+  "export": {
+    "recordedCalls": 98,
+    "responsesAvailable": 98,
+    "controlledRecords": [
+      { "role": "Miller", "count": 32 },
+      { "role": "Baker", "count": 33 },
+      { "role": "Baker", "count": 33 }
+    ],
+    "tapeAdmissions": 0,
+    "dailyTransitions": 0,
+    "integrityIssues": 0,
+    "nonemptyReturnedReasoningSummaries": 98,
+    "nullWorldTransitionFields": 98,
+    "providerCallsDuringExport": 0
+  },
+  "observedStopConditions": {
+    "boundaryViolation": false,
+    "illegalAction": false,
+    "transportFailure": false,
+    "retry": false
+  },
+  "privateEvidence": "Raw contexts, choices, responses, returned reasoning, events and accounting history remain outside Git.",
+  "behaviorInterpretation": "not_performed",
+  "notes": [
+    "The first launcher preparation stopped before approval or provider calls because its configured output parent did not exist; the directory was created before the approved run.",
+    "The run was interrupted before day one committed, so normal finalization and the completed-day tape were not produced. A read-only export recovered the partial chronological records.",
+    "The pending run and latest accounting history remain preserved and are not count-closed."
+  ]
+}
