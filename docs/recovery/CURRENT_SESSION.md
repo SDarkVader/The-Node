@@ -178,6 +178,6 @@ not a claim that every mechanic is complete.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/society-v4-repair-2026-10-27"
+  "reviewBranch": "codex/operational-agent-contract-2026-10-27"
 }
 NODE_SESSION_CHECKPOINT -->
