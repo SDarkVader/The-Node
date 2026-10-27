@@ -21,6 +21,11 @@ Each decision receives a single immutable, allowlisted packet containing:
 - Existing personal state, own memory and feedback, independently bounded hearing
   and recognition, public rules, duties and current interaction permissions.
 
+To avoid sending the same map twice, local geometry contains the occupied plot and locations
+selected by Godot sight. The overhead packet retains the full district geometry, every public
+location and inhabitant. This keeps the default postcard/daily-Oracle packet within the existing
+65,536-byte request ceiling; no request or spending ceiling was increased.
+
 The agent chooses a reachable same-district coordinate in `move`. Travel requires all
 other fields to be null. Godot AStar2D finds a route over existing plots; Node independently
 checks reachability, shortest route length, adjacency, plot membership and arrival, then

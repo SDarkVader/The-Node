@@ -353,7 +353,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     phase: options.phase, purchaseDue: options.purchaseDue === true&&(!information||options.phase==='act'&&!routine?.tasks.food), offers:routineOffers(offers,routine,own),
     oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}) };
-  const locations = district.buildings.filter(b => distance(own, b) <= state.world.config.commsProximityRange).map(b => {
+  const locations = district.buildings.filter(b => dual?dual.firstPerson.locations.some(q=>q.buildingId===b.id):distance(own, b) <= state.world.config.commsProximityRange).map(b => {
     const station = p.city.stations.find(s => s.buildingId === b.id);
     const role = roleArrays(state.world).find(([, slots]) => slots.some(s => s.buildingId === b.id))?.[0] ?? null;
     const measure = station?.heat ?? 0;
@@ -371,7 +371,9 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     local: { district: district.id, districtWeather: p.city.tension.find(d => d.districtId === district.id)?.tension ?? 0,
       districtCondition: state.world.districtHealth[district.id]?.state ?? 'ACTIVE',
       economicHealth: p.city.economicHealth,
-      places: district.plots.map(q => ({ x: q.x, y: q.y, kind: q.kind })), locations,
+      // The complete geometry is supplied once, in overhead. Locally retain the
+      // occupied plot and Godot-visible locations; hearing remains independent.
+      places: district.plots.filter(q=>!dual||q.x===own.x&&q.y===own.y).map(q => ({ x: q.x, y: q.y, kind: q.kind })), locations,
       people: nearby.map(q => ({ ref: q.ref, x: q.x, y: q.y, role: q.role })) },
     recognition: p.recognition.map(q => ({ ref: q.ref, face: { hue: q.face.hue, skinTone: q.face.skinTone,
       faceShape: q.face.faceShape, hairStyle: q.face.hairStyle, markCount: q.face.markCount } })),

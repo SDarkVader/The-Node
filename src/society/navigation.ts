@@ -49,14 +49,15 @@ export function destinationChoices(d:DualObservation,district:string,from:{x:num
   return reachablePlots(plots,from).map(q=>({x:q.x,y:q.y}));
 }
 /** Cross-check the map against the local packet at the final serialized egress gate. */
-export function assertDualSpatialContext(d:DualObservation,self:{ref:string;x:number;y:number;role:string},local:{district:string;districtWeather:number;districtCondition:string;economicHealth:number;places:unknown;people:{ref:string;x:number;y:number;role:string}[]}):void{
+export function assertDualSpatialContext(d:DualObservation,self:{ref:string;x:number;y:number;role:string},local:{district:string;districtWeather:number;districtCondition:string;economicHealth:number;places:unknown;locations:{buildingId:string}[];people:{ref:string;x:number;y:number;role:string}[]}):void{
   const o=d.overhead,region=o.districts.find(q=>q.id===local.district),same=(a:any,b:any)=>a.x===b.x&&a.y===b.y;
   const roles:Record<string,string|null>={Baker:'baker',Miller:'miller',Courier:'courier',Investigator:'investigator',ImportExport:'importExport',Grifter:null};
   const people=new Map(o.inhabitants.map(q=>[q.ref,q])),locations=new Map(o.districts.flatMap(q=>q.locations).map(q=>[q.buildingId,q]));
   const own=people.get(self.ref);
   if(!region||!own||!same(own,self)||own.role!==self.role||people.size!==o.inhabitants.length||
     new Set(o.districts.map(q=>q.id)).size!==o.districts.length||locations.size!==o.districts.reduce((n,q)=>n+q.locations.length,0)||
-    JSON.stringify(region.plots)!==JSON.stringify(local.places)||region.weather!==local.districtWeather||region.condition!==local.districtCondition||o.economicHealth!==local.economicHealth||
+    JSON.stringify(region.plots.filter(p=>same(p,self)))!==JSON.stringify(local.places)||region.weather!==local.districtWeather||region.condition!==local.districtCondition||o.economicHealth!==local.economicHealth||
+    JSON.stringify(local.locations.map(p=>p.buildingId))!==JSON.stringify(region.locations.filter(p=>d.firstPerson.locations.some(q=>q.buildingId===p.buildingId)).map(p=>p.buildingId))||
     local.people.some(p=>{const q=people.get(p.ref);return !q||!same(p,q)||p.role!==q.role;})||
     d.firstPerson.bodies.some(b=>{const p=people.get(b.ref);return b.ref===self.ref||!p||roles[p.role]!==b.role||Math.abs(p.x-self.x-b.dx)>0.001||Math.abs(p.y-self.y-b.dy)>0.001;})||
     d.firstPerson.locations.some(b=>{const p=locations.get(b.buildingId);return !p||p.role!==b.role||(p.state==='housing'?null:p.state)!==b.state||Math.abs(p.x-self.x-b.dx)>0.001||Math.abs(p.y-self.y-b.dy)>0.001;}))throw Error('society_dual_spatial_context');

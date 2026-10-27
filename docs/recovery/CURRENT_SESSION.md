@@ -24,7 +24,10 @@ then received the real first-person arrival view, gained work permission and rec
 Its 31-decision partial tape cold-replays; no completed day is claimed for that short proof.
 A separate model-free run completed one day with 227 decisions, 320 movement steps and 14 diaries.
 Implementation 7b6b211 contains the native proof and compatible scalar-coordinate schema.
-A follow-up verifies explicit foreground CLI exit after authenticated stop and retained evidence.
+PR58 is the navigation follow-up, stacked on PR57. Follow-ups verify explicit foreground CLI
+exit after authenticated stop and retained evidence, and the full PC postcard/daily-Oracle contract.
+The complete geometry appears only in overhead; local geometry contains the occupied plot and
+Godot-visible locations. This removes redundant public map data without raising request bounds.
 The actual PowerShell/browser preview completed one day with 227 decisions and 51 controlled
 policy packets, rendered embedded Godot and reported replay verified through day 1. Browser checks
 also fixed pending-request decoding and expensive historical polling; cache checks still hash the
