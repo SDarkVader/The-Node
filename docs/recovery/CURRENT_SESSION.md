@@ -3,7 +3,17 @@
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
-The current development branch is codex/operational-agent-contract-2026-10-27.
+The current development branch is codex/operational-agent-contract-2026-10-27; PR57 is open.
+
+The latest owner-authorized check ran from PowerShell at source 70d71bdf0ef0ad28d8c741aa2dc616f8fe4313de.
+It made exactly six actual Haiku calls: commit plus one act decision per controlled inhabitant.
+All six nonempty returned summaries, exact authorized request bytes, response/action agreement,
+private-state noninterference checks and fresh-process partial replay pass with zero conflicts.
+The intentionally bounded day remains unfinished (17 total decisions, including 11 non-model).
+USD 0.020403 is booked, zero held; terminal closure is recorded, newest history carried and
+pendingRun released. The temporary key copy is removed. No further paid calls are authorized.
+The run is available in the configured saved-run selector. Raw/model traces stay private.
+[Sanitized verification](../research/evidence/six-call-schema-check-2026-10-27.json).
 PR51 and PR52 merged after checks passed on their exact heads. Earlier PR43 was closed
 as a duplicate; PR47 and PR49 merged in order; the owner merged PR50. Preserve unrelated
 trace.pdf and all private experiment and accounting history.
@@ -92,6 +102,7 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "Owner-authorized real six-call check at70d71bd launched throughPowerShell canonical preparer/accounting/worker with inhabitant-v1 and maxTurns1, giving eachMiller/Baker commit+act. All6returnednonemptythinking andexecuted;17totaldecisions,0completeddays byexpectedbound. Exactauthoritativewire/private-statenoninterference/response-actionagreement/coldreplay/Godotprivacy passed0issues. Booked20403microUSD/held0/terminalclosure/latesthistorycarried/pendingnull/keycopyremoved. Private individualMarkdown+JSONLtraces supplied. No furtherpaidcalls authorized.",
     "Operational agent contract verified at 6665eef: 1979tests/157files/1platformskip with realGodot; eight recovery tests; strict types. Exact all-role requests/local synthetic responses/kernel/replay 3days1148decisions283controlled packets897moves42diaries42foodreceipts0issues; maxpacketceiling10973microUSD. RealPowerShell/browser manualday389decisions94packets with Godot/history/observation/effects; actual paid preparation STOP made0calls/noallowance/noexecution and preserved latest closed history. Owner approved only append-only stopped-run closure: all98requests304048microUSD/0held/earlier events preserved. Actual98response historical prefix replay passes; viewing bundle registered. No new paid approval.",
     "Society v4 repair based on merged PR54: exact historical-source offline reconstruction matched all 98 recorded requests and before/after hashes, 285 deterministic-policy actions reconstructed, 383 decisions replayed, zero committed days. New append-only submissions and source-pinned recovery preserve future interrupted prefixes. 2D/3D display retains co-located people without inferring work. No paid call, accounting mutation, or experimental-rule change.",
     "Supervised live run at bb1b232 stopped during day 1 act turn 32 to preserve credit. 98 requests and responses, 304048 microUSD booked, zero held, zero committed days. Private read-only export has 32 Miller and 33 records for each Baker; no boundary violation or illegal action observed. Sanitised aggregate evidence only in Git; raw data and accounting remain private.",
@@ -169,13 +180,13 @@ not a claim that every mechanic is complete.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
-    "No new paid-model test is approved or executed. A future test requires the freshly printed plan, latest carried accounting history and human START; historical approval is never reused.",
+    "The owner-authorized six-call check is complete and stopped. Its six-request authority is consumed; no further paid calls without a fresh instruction/human START and latest carried history.",
     "The preserved interrupted run has zero committed days. Its last recorded prefix contains285historicalpolicy-reconstructed non-model actions; no later action or completed day is inferred.",
     "Full A04 trespass, multi-district daily routing, further civic reputation/monuments/opportunity calibration and detailed same-day supplier dialogue remain development work; their actions are not fabricated.",
     "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "Review/publish the operational-agent-contract branch and preserve private evidence. Use README and OPERATIONAL_AGENT_CONTRACT_2026-10-27.md for exact source-scoped checks.",
+    "PR57 is open. Review/merge separately when appropriate; the checked-out branch already runs locally. Latest six-call evidence is six-call-schema-check-2026-10-27.json.",
     "Launch START-NODE.ps1 without -Start for no-cost society+Observatory+Godot. Enter the printed interface token, keep terminal open and use Advance one tick. Choose saved society-partial-98-2026-10-26 to inspect original returned summaries.",
     "For a separately approved paid test, use START-NODE.ps1 -Start -Ticks1 and human START after reviewing source/bounds; no new paid approval is supplied by this checkpoint.",
     "Keep planned civic/multidistrict/A04 mechanics and separately designed behavioural evaluation distinct from this verified current society."

@@ -22,6 +22,13 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+A separately authorized PowerShell check at `70d71bd` completed six actual Haiku calls: two
+decisions per Miller/Baker, all with nonempty returned thinking summaries. Exact requests,
+action execution, private-state noninterference and cold replay passed with zero integrity
+issues. It intentionally stops after one action turn without completing a day. USD 0.020403
+is booked, zero held; its closed history is now carried. Raw traces remain private and the
+run is saved in the Observatory selector. [Sanitized check](docs/research/evidence/six-call-schema-check-2026-10-27.json).
+
 Fresh PC runs now select the versioned `inhabitant-v1` information contract within Society v4.
 Every resident receives the active public economic parameters, own role tenure, own last food
 receipt and paid Oracle result, alongside existing personal assets, diary, heard speech, local
