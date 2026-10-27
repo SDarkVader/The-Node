@@ -15,19 +15,21 @@ validation. Existing v1-v4 tapes without the marker retain their original bytes 
 Preview honours the requested seed. `scripts/verify-node-operational.ts --output <fresh-dir>`
 exercises exact request bytes, local synthetic responses, production parsing/validation, all-role
 execution, resource outcomes, raw exports and replay without any provider or allowance.
-Implementation b829072 passed 1,979 tests across 157 files with actual Godot enabled and one
-platform skip; eight recovery tests and project/CLI strict TypeScript pass. Three offline days
-verified 1,148 all-role transports, 283 controlled packets, 897 moves, 42 diary writes and 42 food
-receipts; maximum conservative packet ceiling 10,973 microUSD, zero integrity issues. The actual
-PowerShell browser preview completed two manually advanced days, 781 decisions and 192 controlled
-packets; Godot, historical selection, exact observations and raw exports verified with no browser
-errors. Offline cold replay passed. A subsequent Observatory correction labels policy previews
-truthfully, distinguishes days from source ticks and displays recorded own turn effects.
-The preserved 98 actual requests/responses replayed through 383 decisions with zero conflicts.
-The owner explicitly approved terminal closure only, with no new paid calls. Production recovery
-verified the interrupted lock owner dead and appended one closure; all earlier events, carried
-history, 304048 microUSD booked and zero held are unchanged. Original journal/lock backed up
-privately. No new paid test is approved. Final standalone preparation/stop checks follow.
+Final implementation 6665eef3cafdf9efcc9187e84270b9cb156b4cba passed 1,979 tests across
+157 files with actual Godot and one platform skip. Eight recovery tests and project/affected
+CLI strict TypeScript pass. Three no-cost days verified 1,148 exact all-role transports,
+283 controlled packets, 897 moves, 42 diary writes and 42 food receipts; zero integrity issues,
+maximum conservative request ceiling 10,973 microUSD. Independent cold replay passes. The actual
+PowerShell/browser run at final source completed one manual day (389 decisions/94 packets),
+rendered Godot and verified truthful policy/day labels, exact observations, recorded turn effects
+and preserved actual summaries. An earlier two-day browser run at b829072 also cold-replays.
+The preserved 98 actual requests/responses replay through 383 decisions with zero conflicts.
+Owner-approved terminal closure only was appended after production stale-owner recovery; all
+earlier journal events/carried history, 304048 microUSD booked and zero held are unchanged.
+Original journal/lock backed up privately; raw experiment files unchanged. Current pendingRun
+is null and latest history is carried. Actual PowerShell paid preparation with this latest history
+passed using STOP: approved false, zero calls, no allowance/execution and no journal mutation.
+No new paid test is approved. See the [verification and commands](../research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
 
 Society v4 adds fresh sequential turns per day, physical home/task visits, mandatory daily
 Wall/food attempts/diary and role/customer lexical speech, completion gating and deterministic
@@ -64,7 +66,8 @@ run at bb1b232 was stopped during day 1, act turn 32, to preserve credit: 98 req
 responses, USD 0.304048 booked, zero held, and zero committed days. The read-only export
 recovered 32 Miller and 33 records for each Baker with zero reported integrity issues. No
 boundary violation or illegal action was observed. Raw evidence and the unfinished latest
-accounting history remain private; do not reset, close, retry or reuse approval. See the
+accounting history remain private. The later owner-authorized closure above revokes unused
+authorization only; do not reset, retry or reuse approval. See the
 [sanitised evidence](../research/evidence/society-live-partial-day-2026-10-26.json).
 
 The offline repair pass independently reconstructed the old run only to its last recorded
@@ -87,8 +90,9 @@ not a claim that every mechanic is complete.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "0be1ba89f78b56c7226b5dc01b69fd74e0df13b8",
+  "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "Operational agent contract verified at 6665eef: 1979tests/157files/1platformskip with realGodot; eight recovery tests; strict types. Exact all-role requests/local synthetic responses/kernel/replay 3days1148decisions283controlled packets897moves42diaries42foodreceipts0issues; maxpacketceiling10973microUSD. RealPowerShell/browser manualday389decisions94packets with Godot/history/observation/effects; actual paid preparation STOP made0calls/noallowance/noexecution and preserved latest closed history. Owner approved only append-only stopped-run closure: all98requests304048microUSD/0held/earlier events preserved. Actual98response historical prefix replay passes; viewing bundle registered. No new paid approval.",
     "Society v4 repair based on merged PR54: exact historical-source offline reconstruction matched all 98 recorded requests and before/after hashes, 285 deterministic-policy actions reconstructed, 383 decisions replayed, zero committed days. New append-only submissions and source-pinned recovery preserve future interrupted prefixes. 2D/3D display retains co-located people without inferring work. No paid call, accounting mutation, or experimental-rule change.",
     "Supervised live run at bb1b232 stopped during day 1 act turn 32 to preserve credit. 98 requests and responses, 304048 microUSD booked, zero held, zero committed days. Private read-only export has 32 Miller and 33 records for each Baker; no boundary violation or illegal action observed. Sanitised aggregate evidence only in Git; raw data and accounting remain private.",
     "Sequentialsourcec4ac041d537a58694cfee8c49fac38548c9002bd full1964passed155files0fail7environment skips, TypeScript/CLI and8recoverytests. Three days1148decisions897moves42diaries1.4breadunits coldreplay+independent repeatbytes SHA69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73. ActualWindowsPowerShell START-NODE prepare/check syntheticonly passed approvedfalse/noexecution/noallowance/journalunchanged; all94packetsmax9771microUSDfit. ActualbrowserGodot/manualday389decisions andturnhistory/privateexports verified. Initial44ee fullsuite1963pass1newtest30sectimeout; repairedtouseexistingglobalsuite60; nooldtestbudgetchanged. Cold44ee GetFileHashmodulefailurebeforeanyfunding repairedportableNETSHA256. P1 rawcontextmismatchnowhalts activebeforeadmission oraftertape; longrecordsv4boundedlosslessgzip withcapacityguard,20candidate7286decisions10.6Mnodes7.8MBcoldreplayed. No actualpaidcall/credential/journalread.",
@@ -165,24 +169,16 @@ not a claim that every mechanic is complete.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
-    "The historical prefix stops at its last recorded outcome; later actions and day completion cannot be inferred. Its non-model actions are explicitly labelled policy-reconstructed. The latest actual accounting history remains not count-closed and pending, and must be preserved.",
-    "The interrupted live run has zero committed days and its latest accounting history is preserved but not count-closed, with pending run state. Do not reset or close it, reuse approval, retry calls, or relaunch without appropriate verified recovery and fresh authorization.",
-    "Postcardv2 is now opt-in integrated into Society with stable owner binding, explicit virtual day clock and all-role choices; no individual abode model exists, so claims are personal act-phase choices. Required2/1 trial rate is illustrative, not a default calibration. Unkeyed hashes prove replay consistency rather than external provenance, and predictable RNG seed/cursor stays operator-only. The optional funded daily Oracle is integrated and verified; ticket forging/migration, signeddeedreputation,monuments,universalcap and finalPowerShell whole-programme proof remain further work. No actual paid run launched or historical approval reused.",
-    "Historical society launcher/evidence is preserved. The latest handoff reports that the earlier20tick run at e2a16e6 completed; its private results and current financial journal were not reopened under this goal. Older checkpoint paragraphs describing its preparation are dated history, not current launch instructions. Do not invoke old starters, access credentials or reuse consumed approvals. Godot/observatory integration for current Society v1/v2/v3 contracts remains further work.",
-    "The authorized fresh20 run is complete and stopped; its40-call cap is consumed. No further paid/count calls or allowance activation without new explicit instruction. Future funding must carry the latest new cloud journal bound to this fresh ledger, not the preserved older uploaded tick38 journal. Equal7/20 summary counts in one fresh run do not prove causality or guarantee adaptive summary emission.",
-    "Study 1 remains paused and frozen. Full A04 abode transactions, transcript degradation/comparison conditions, embedded-browser Godot and annotation authoring remain further work. No causal memory-benefit or reasoning-quality result is claimed.",
-    "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
+    "No new paid-model test is approved or executed. A future test requires the freshly printed plan, latest carried accounting history and human START; historical approval is never reused.",
+    "The preserved interrupted run has zero committed days. Its last recorded prefix contains285historicalpolicy-reconstructed non-model actions; no later action or completed day is inferred.",
+    "Full A04 trespass, multi-district daily routing, further civic reputation/monuments/opportunity calibration and detailed same-day supplier dialogue remain development work; their actions are not fabricated.",
+    "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "Preserve the private historical replay bundle and actual pending accounting history. Do not resume the interrupted run or start another experiment without a separately verified procedure and fresh authorization. Adjacent-cell movement remains the established v4 rule.",
-    "Deliver the private chronological traces. Preserve the interrupted run and accounting history; any later recovery or live test requires its own verified procedure and fresh authorization. Do not infer a completed day or behavioural evaluation.",
-    "Finish exactfinalheadWindows/Linuxchecks for PR53 and no reviews, mergeonlygreen; updatecleanmainrecovery. Userstandalonecommand powershell -NoProfile -File .\\START-NODE.ps1 -Start -Ticks1, humanSTARTrequired, noassistantonline dependency. FullA04,multiDistrictdaily and detailedsupplierspeech are furtherwork. Noactualpaidrunbydeveloper.",
-    "Finish new versioned sequential daily routine, physical visits, Wall/diary/food and role/customer speech duties before claiming completion. Owner permits recorded food failure to close day after other duties. Keep day open until chosen diary write before rollover. Preserve old replay, daily ageing/recognition caps, real resource accounting; no provider call during implementation.",
-    "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
-    "Deliver the real PowerShell playtest command from POSTCARD_AGENT_PLAYTEST_2026-10-26.md. User will run actual small agent tests themselves; required parameters prompt for latest count-closedjournal, privatecredential path and new outputfolder. Preparation writes approved:false review and prints exact -ApprovePaidRun command. No dispatch on their behalf or actual credential/journal read as setup. Check hosted PR48 after publication; retarget main afterPR47 integration beforemerge. Preserve count-closed/nohold gate and all raw results.",
-    "Continue universal dailyOracle catalogue/funding/agent integration after this runnable postcard slice; no uncalibrated reward numbers activated. Preserve old paidOracle/temporaryvoucher behavior, legacyworld/hash evidence and separateoldreputationProgress. Fullprogramme remains unfinished.",
-    "Use main as shared recovery source. Run npm run preview on the viewing PC or inside a private Codespace; wait for the ready URL and enter its interface token. Pass the private completed-run bundle registration to view actual evidence.",
-    "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
+    "Review/publish the operational-agent-contract branch and preserve private evidence. Use README and OPERATIONAL_AGENT_CONTRACT_2026-10-27.md for exact source-scoped checks.",
+    "Launch START-NODE.ps1 without -Start for no-cost society+Observatory+Godot. Enter the printed interface token, keep terminal open and use Advance one tick. Choose saved society-partial-98-2026-10-26 to inspect original returned summaries.",
+    "For a separately approved paid test, use START-NODE.ps1 -Start -Ticks1 and human START after reviewing source/bounds; no new paid approval is supplied by this checkpoint.",
+    "Keep planned civic/multidistrict/A04 mechanics and separately designed behavioural evaluation distinct from this verified current society."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
   "reviewBranch": "codex/operational-agent-contract-2026-10-27"
