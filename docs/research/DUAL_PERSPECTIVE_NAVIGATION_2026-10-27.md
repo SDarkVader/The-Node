@@ -5,6 +5,29 @@ The candidate branch `codex/dual-perspective-navigation-2026-10-27` builds on PR
 attempt is documented below; preceding development checks used no paid calls. The policy responses below are explicitly scripted;
 they establish execution integrity, not model reasoning quality or provider acceptance.
 
+## Verified actual-provider execution
+
+Source30d9527 completed18actual HTTP200/end_turn calls,18admitted model decisions and18nonempty
+returned summaries,6per controlled inhabitant. The full prefix contains73decisions. Six controlled
+journeys used33legal nativeGodot steps; one non-adjacent6step workplace journey was followed by the
+correct first-person arrival/work permission, an admitted work action and next-observation task
+confirmation. One model call selected each journey; intermediate movement used no model calls.
+
+All18exactsource/private-state noninterference comparisons, action agreement and independent
+partial replay pass, with0report integrity issues. Actual world WebSocket packets contain no
+private thinking/observations/diaries/credential; browser historical cursor and Godot inspection
+pass with0observed browser errors. The five-turn limit deliberately preserved an unfinished day:
+0completed days, no claimed day-end settlement. No reasoning-quality evaluation was performed.
+
+All requests used16384outputtokens. The run booked85607microUSD with0held, closed append-only
+and carried the newest exact history. All4attempt conservative exposure158947<400000microUSD.
+Original prior journals/evidence unchanged, temporary key removed, pendingRun cleared and settings
+lock released after closing the finalized read-only viewer. No further paid test is authorized.
+136scoped tests/10files, final3request checks/types/8recovery tests passed on the headroom candidate.
+[Final sanitized evidence](evidence/eighteen-call-navigation-verified-2026-10-27.json).
+
+The following attempts and corrections are historical and retain their original outcomes.
+
 ## Accepted transport and output headroom
 
 At source de26b05, all five requests returned HTTP200. Four decisions executed; the fifth

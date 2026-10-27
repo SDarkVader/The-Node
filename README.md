@@ -22,18 +22,21 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
-The compact transport was accepted by Anthropic at source de26b05: five HTTP200responses.
-Four decisions executed; the fifth response exhausted2048outputtokens during thinking and
-returned no decision. The runner stopped before admission. All5exactrequest/privacy checks
-and partial replay pass, with no observed leakage or outside-game action. All evidence and
-accounting are preserved. [Observed result](docs/research/evidence/eighteen-call-navigation-headroom-2026-10-27.json).
+The supervised run at source30d9527 completed all18actual Anthropic calls:6decisions per
+inhabitant,18returned summaries and73total society decisions. Six agent-selected trips traversed
+33legal Godot steps. An agent reached a non-adjacent workplace in one decision, received its
+correct first-person work option and recorded work. All18exactrequest/privacy checks, response
+agreement and partial replay pass; no system leakage/outside-game action was observed.
+The approved five-turn bound left the day unfinished; no full paid day or settlement is claimed.
+[Sanitized execution evidence](docs/research/evidence/eighteen-call-navigation-verified-2026-10-27.json).
 
-The headroom candidate passed 136 tests across 10 files, native Godot integration and project TypeScript.
-The owner-requested headroom change raises current Society output to16384tokens, allows120s
-per request and reserves up to USD0.032 before dispatch. Actual usage is booked normally;
-prior journals remain unchanged. A newly source-bound18-call test will use the remaining
-USD0.326660 of the original combined USD0.40 cap. The pending larger-output run grants no
-automatic retry. The complete local game validator and privacy boundaries remain authoritative.
+Current Society requests have16384outputtokens,120s timeout and a USD0.032 per-request ceiling,
+fully reserved before dispatch. The successful run booked USD0.085607 with zero held; combined
+conservative exposure across all four preserved attempts is USD0.158947, within the original
+USD0.40 cap. Prior journals, failed attempts and raw evidence are preserved; latest history is
+closed/carried and the launcher is ready for the owner's next reviewed run. No further paid
+calls are authorized by that completed test. Source30d9527 passed136scoped tests/10files,
+final3request checks, strict types and8recovery tests, including nativeGodot integration.
 
 Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
 Godot first-person view per decision. Agents select reachable geographical destinations;

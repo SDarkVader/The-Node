@@ -5,39 +5,32 @@ bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover a
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
 The current development branch is codex/dual-perspective-navigation-2026-10-27, based on PR57's head 47b3000. PR57 remains the inherited information-contract change.
 
-Latest provider execution — source de26b05: all five requests returned HTTP200, proving acceptance
-of the compact transport. Four decisions were admitted. The fifth response exhausted2048output
-tokens during thinking and supplied no decision; the controller stopped before admission. Five
-exact requests, privacy noninterference checks and the four-decision partial replay pass, with
-zero report integrity issues and no observed leakage/outside-game action. USD0.022917 booked,
-zeroheld, closed and carried. No paid movement or complete day occurred. Raw traces/screenshots
-are preserved privately; [sanitized outcome](../research/evidence/eighteen-call-navigation-headroom-2026-10-27.json).
+Latest verified execution — source30d952722af3778ae164e1e7a52d7489b2b4b3ea:
+all18actual Anthropic requests returned HTTP200/end_turn and were admitted, with18nonempty
+provider summaries and6decisions per controlled inhabitant. The society executed73total decisions,
+including6model-selected trips spanning33legal steps. A real agent selected a non-adjacent
+workplace, traversed6nativeGodot steps in one decision, received the correct arrival first-person
+view/work option, chose work and subsequently observed its work task recorded.
 
-The owner requested ample output headroom. The next source uses16384outputtokens, a120second
-worker/controller deadline and USD0.032 per-request reservation ceiling. The full ceiling is
-reserved before every call; actual usage remains booked at existing reviewed conservative rates.
-All four attempts retain the original combined USD0.40 cap:73340microUSD prior exposure leaves
-326660 for the fresh18-call test. The full game contract, strict admission and no-retry stop remain.
+All18exact source-authorized request comparisons, other-private-state noninterference checks,
+response/action agreement and separate-process73decision replay pass. World WebSocket packets
+exclude private thinking/observations/diaries/credentials. Historical world/turn/decision inspection
+rendered Godot correctly with0browser errors. Report integrity issues:0. The approved five-action-turn
+bound stopped the unfinished day;0completed days and no day-end settlement are claimed.
 
-Earlier supervised paid evidence: source323794f and source8de00b0 each stopped after four
-requests, with three commit admissions and no paid travel. The first provider rejection concerned
-anyOf siblings; the second rejected compiled grammar size. Both exact request/observation/action
-checks and partial replay pass. Neither showed system leakage or outside-game admissions.
-Original evidence and all journal entries are preserved. On explicit owner-authorized reruns, each
-unknown request was conservatively booked at its full reserved ceiling and closed append-only.
-Combined conservative exposure is50423microUSD; this is liability accounting, not a provider bill.
+The owner-requested output headroom is16384tokens, with120s worker/controller timeout and USD0.032
+per-request reservation. All18requests used it; every response completed. Booked85607microUSD,
+held0, append-only closed and newesthistory carried. Combined conservative exposure across all
+four preserved attempts is158947microUSD<400000. This is conservative accounting, not a provider
+invoice. Previous journals and original evidence remain intact, temporary credential copy removed,
+pendingRun cleared, finalized read-only viewer closed and launcher settings lock released. No
+further paid run is authorized. The branch runs locally without merging. PR58 remains stacked onPR57.
 
-The next transport uses a compact closed output object while retaining the full authoritative game
-schema and legal choices in each observation. Local admission still enforces exact geographical
-pairs, exclusive travel, hearing, lexical rules and interaction permissions. Historical formats
-remain accepted only for read-only verification. The captured rejected action now has2675schema
-bytes,8unions,0optional parameters and0tools, within Anthropic's documented explicit limits.
-24focused tests, strict TypeScript and the full-feature two-day nativeGodot/fake-provider controller
-pass. The owner explicitly requested another actual-provider run after requirements verification;
-use a fresh18-call/349577microUSD allowance so all three attempts remain within USD0.40. No automatic
-retry. Actual provider acceptance and paid movement remain unverified until that run executes.
-[First stopped attempt](../research/evidence/eighteen-call-navigation-stop-2026-10-27.json).
-[Second stopped attempt and compact correction](../research/evidence/eighteen-call-navigation-grammar-2026-10-27.json).
+Headroom implementation checks:136tests/10files, final3request assertions, strict types and8recovery
+tests pass, including nativeGodot two-day fake-provider controller execution. Historical fullsuite
+1990tests at e8369f9 remains separately scoped. The earlier failed attempts are preserved in their
+original sanitized records; they were not edited to claim success.
+[Final sanitized execution](../research/evidence/eighteen-call-navigation-verified-2026-10-27.json).
 
 Current navigation implementation: fresh PC preview and preparation select routine.navigation
 `dual-v1` alongside `inhabitant-v1`. Every decision receives one public overhead map
@@ -171,6 +164,7 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
     "Compact transport accepted by actual provider atde26b05:5HTTP200/5summaries/4admissions; fifth max_tokens2048thinkingonly correctly rejected. All5exactwire/private-state noninterference and4decision partial replay pass,0report issues/no observed leakage/outside-game action. Booked22917microUSD/held0/closed/carried; combined3attempt exposure73340. Original journals/raw traces/screenshots preserved.",
     "Two source-pinned paid attempts at323794f and8de00b0 each stopped after4requests/3commit admissions, respectively anyOf siblings and grammar complexity HTTP400. Exact source-authorized observations/actions and partial replay verified; no observed leakage/outside-game admission. Both histories preserved, unknown requests conservatively booked at full reserved ceilings and append-only closed on owner-authorized reruns; combined exposure50423microUSD. Compact closed output shape retains complete game menus and strict local validation; both historical transports supported read-only only.",
     "Owner-authorized real six-call check at70d71bd launched throughPowerShell canonical preparer/accounting/worker with inhabitant-v1 and maxTurns1, giving eachMiller/Baker commit+act. All6returnednonemptythinking andexecuted;17totaldecisions,0completeddays byexpectedbound. Exactauthoritativewire/private-statenoninterference/response-actionagreement/coldreplay/Godotprivacy passed0issues. Booked20403microUSD/held0/terminalclosure/latesthistorycarried/pendingnull/keycopyremoved. Private individualMarkdown+JSONLtraces supplied. No furtherpaidcalls authorized.",
@@ -223,6 +217,7 @@ not a claim that every mechanic is complete.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "Headroom implementation30d9527:136scoped tests/10files passed including nativeGodot full-feature2daycontroller, accounting/cancellation/overrun, launch and historicalcompatibility. Final3request ceiling checks/types/8recovery tests pass. Actual18call execution and separateprocess73decision exactreplay audited; no fullsuite rerun claimed beyond historical1990at e8369f9.",
     "Owner-requested headroom candidate:136tests across10files pass, including full accounting/old-study compatibility, cancellation/overrun paths, actual PowerShell preparation, strict egress, nativeGodot navigation and full-feature2day fake-provider controller. Project TypeScript and three focused reservation-bound assertions pass. Full1990suite remains historicale8369f9.",
     "Compact transport candidate:24focused tests and project TypeScript pass; full-feature nativeGodot/fake-provider two-day accounted controller passes with exact requests, navigation, replay and recovery. Captured rejected act compacts to2675schema bytes/8unions/0optional/0tools, within documented Anthropic explicit limits. Provider acceptance still pending. Earlier fullsuite1990passed158files1platformskip is scoped to e8369f9.",
     "Partial-run read-only export: 98 recorded calls, 98 available responses, 32/33/33 controlled records, 98 nonempty returned reasoning summaries, 98 null world-transition fields, zero tape admissions, zero daily transitions and zero reported integrity issues; zero provider calls during export. No behavioural interpretation performed.",
@@ -253,15 +248,15 @@ not a claim that every mechanic is complete.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
-    "No paid travel or complete day in the latest5call run. Owner requested ample headroom:16384outputtokens/120s/32000microUSD per request, fullreservationbeforedispatch. Fresh18call326660microUSD allowance retains original combined400000cap. No fourth run yet.",
+    "The paid18call check intentionally stopped at five action turns: no day-end income/food/Oracle settlement claimed. Full-day execution is established by nativeGodot fake-provider controller tests; a future longer actual-provider run needs fresh review/approval.",
     "The preserved interrupted run has zero committed days. Its last recorded prefix contains285historicalpolicy-reconstructed non-model actions; no later action or completed day is inferred.",
     "Full A04 trespass, multi-district daily routing, further civic reputation/monuments/opportunity calibration and detailed same-day supplier dialogue remain development work; their actions are not fabricated.",
     "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "Pin verified headroom source, then execute owner-authorized fresh18-call run with16384outputtokens/120s/326660microUSD total/32000perrequest. Combinedallattempts400000cap. Stop on leakage, outside-game/illegal action, accounting or transport failure; no automatic retry.",
-    "Audit every actual request against reconstructed authorized world context, response/action agreement, routes, arrival options, privacy noninterference and independent partial replay; export individual raw traces without grading reasoning.",
-    "Update README/checkpoint/PR58 with observed outcomes. PR58 remains stacked on PR57; do not infer merge authorization. Further game mechanics and separately designed behavioural evaluation remain distinct."
+    "Deliver individual rawMiller/Baker1/Baker2 traces, exactnavigation/privacy/replay proof and ordinary PowerShell START-NODE command. Current checkout runs without merging; PR58 is stacked onPR57 and neither is merged by this task.",
+    "No further paid calls authorized. For an owner-run paid launch use START-NODE.ps1 -Start -Ticks1, review actual source/calls/USD bounds and enterSTART; keep terminalopen. Preview omits-Start and requires no provider. Latest closed history is carried automatically.",
+    "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
   "reviewBranch": "codex/dual-perspective-navigation-2026-10-27"
