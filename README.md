@@ -48,7 +48,13 @@ PR51's colour follow-up merged at `0e8797a`; PR52's optional-subject diary merge
 51 decisions and 42 diary writes. New v4 source `c4ac041` passes 1,964 tests /155 files,
 zero failures and seven environment skips. Three days cold-replay 1,148 decisions and
 42 diary writes with identical repeated tape bytes. Actual standalone Windows preparation
-and the embedded-Godot manual preview pass with zero provider calls. No new paid run is claimed. [Earlier source-specific history](docs/DEVLOG.md).
+and the embedded-Godot manual preview pass with zero provider calls. [Earlier source-specific history](docs/DEVLOG.md).
+
+A supervised live run at `bb1b232` was stopped during day 1 to preserve credit. It recorded
+98 responses, with USD 0.304048 booked and zero held; no day was committed. The private
+chronological exports contain 32 Miller and 33 records for each Baker. No boundary violation
+or illegal action was observed. [Sanitised run evidence](docs/research/evidence/society-live-partial-day-2026-10-26.json).
+The interrupted accounting history and raw traces remain private and must be preserved.
 
 Initial v4 assumptions are explicit: one district, existing residential capacity, shared
 Wall/Oracle hub, and minimal deterministic streets joining previously unreachable plots.

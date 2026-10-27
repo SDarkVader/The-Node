@@ -1,8 +1,8 @@
 # Current Society daily implementation checkpoint
 
-Updated 2026-10-26. Shared branch: main. PR53 contains the sequential-day implementation
-from codex/sequential-days-2026-10-26, based on main
-a345a68099f22e7b0f723266be19e2b689c903d6 (PR52). Verify its current merge state and refs.
+Updated 2026-10-26. Shared branch: main. PR53 merged the sequential-day implementation at
+bb1b23282421553c3e996ac487b0f43e786f4445. The current review branch records the partial
+live-run handover; verify its current merge state and refs.
 PR51 and PR52 merged after checks passed on their exact heads. Earlier PR43 was closed
 as a duplicate; PR47 and PR49 merged in order; the owner merged PR50. Preserve unrelated
 trace.pdf and all private experiment and accounting history.
@@ -37,8 +37,13 @@ preview completed 389 decisions and 94 controlled contexts with embedded Godot, 
 and three raw agent/day files; independent cold replay passed. All 94 packets fit the
 USD 0.02 ceiling (maximum 9,771 micro-USD). A subsequent assertion also proves that an
 unsubmitted false context halts before dispatch. [Verification](../research/evidence/sequential-days-2026-10-26.json).
-No new paid/provider call, credential or actual private journal read occurred during this
-work. Do not reuse consumed approvals.
+Those implementation checks used no actual provider calls. Subsequently, a supervised live
+run at bb1b232 was stopped during day 1, act turn 32, to preserve credit: 98 requests and
+responses, USD 0.304048 booked, zero held, and zero committed days. The read-only export
+recovered 32 Miller and 33 records for each Baker with zero reported integrity issues. No
+boundary violation or illegal action was observed. Raw evidence and the unfinished latest
+accounting history remain private; do not reset, close, retry or reuse approval. See the
+[sanitised evidence](../research/evidence/society-live-partial-day-2026-10-26.json).
 
 Further work: full A04 trespass transactions, multi-district daily routing, later approved
 opportunity calibration, detailed same-day supply/service dialogue beyond Baker replies,
@@ -51,8 +56,9 @@ not a claim that every mechanic is complete.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "a345a68099f22e7b0f723266be19e2b689c903d6",
+  "verifiedBaseCommit": "bb1b23282421553c3e996ac487b0f43e786f4445",
   "completedWork": [
+    "Supervised live run at bb1b232 stopped during day 1 act turn 32 to preserve credit. 98 requests and responses, 304048 microUSD booked, zero held, zero committed days. Private read-only export has 32 Miller and 33 records for each Baker; no boundary violation or illegal action observed. Sanitised aggregate evidence only in Git; raw data and accounting remain private.",
     "Sequentialsourcec4ac041d537a58694cfee8c49fac38548c9002bd full1964passed155files0fail7environment skips, TypeScript/CLI and8recoverytests. Three days1148decisions897moves42diaries1.4breadunits coldreplay+independent repeatbytes SHA69d4fc84105773e7fd717959d84c364eddeaa46b7f719cdecd93892c9d653b73. ActualWindowsPowerShell START-NODE prepare/check syntheticonly passed approvedfalse/noexecution/noallowance/journalunchanged; all94packetsmax9771microUSDfit. ActualbrowserGodot/manualday389decisions andturnhistory/privateexports verified. Initial44ee fullsuite1963pass1newtest30sectimeout; repairedtouseexistingglobalsuite60; nooldtestbudgetchanged. Cold44ee GetFileHashmodulefailurebeforeanyfunding repairedportableNETSHA256. P1 rawcontextmismatchnowhalts activebeforeadmission oraftertape; longrecordsv4boundedlosslessgzip withcapacityguard,20candidate7286decisions10.6Mnodes7.8MBcoldreplayed. No actualpaidcall/credential/journalread.",
     "PR52 optionaldiary source0ee1325a0650dc2430f5b0b4b7fc636988629081 full1921passed151files0fail7environment skips; project/CLItypecheckand8recoverytests pass. Cold3day51decisions42diaries final643870b4fb2b60591956b3297d5dc21c7ff6d03437addc6657a92ce41f756041, tapeSHAff706c43de177faf1134c33e0cc5b3191fcfdbec6a88039d6511f83f13bc0e41. Hosted Windows121732846814/Linux121732846992+121732249990 green, no reviews; mergedmaina345a68. Current v4 sequential-day integration and standalone START-NODE wrapper implemented, focused checks passing; fullsourceverification in progress. Requested SystemDesign DOCX rendered/visuallyverified7pages from retainedtemplate and delivered separately as source0ee snapshot. No paid/provider/privatecredential/journal operation.",
     "PR51 mergedmain0e8797a after exactheadf2a72b4 Windows121721553858/Linux121721957858 and121721347216 passed, no review threads. Actual browser Godot and expanded2D visual check completed. Subjectoptional diary implemented through strict context/schema/worker/kernel/replay and source-bound real-run preparation; menus, recognition and existing decay preserved. Canonical PC preview/newly reviewed real test selects it. Focused59 tests and new review binding test pass; full source-specific regression pending. No paid calls or actual credentials/journal read.",
@@ -99,6 +105,7 @@ not a claim that every mechanic is complete.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "Partial-run read-only export: 98 recorded calls, 98 available responses, 32/33/33 controlled records, 98 nonempty returned reasoning summaries, 98 null world-transition fields, zero tape admissions, zero daily transitions and zero reported integrity issues; zero provider calls during export. No behavioural interpretation performed.",
     "Exact Oracle source8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe:1901passed/148files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Actual production WindowsPowerShell prepare/check with approvedOracleprofile andTESTONLYinputs pins3day18callreview, approved:false, noexecution/allowance/provider, originalsunchanged. Ten-daycoldreplay170decisions/140dailyentries/51wins/2.95gamewealthpaid/97.05remaining/maxcurrencyresidual4.263256414560601e-14. Real8fieldworker/accounted path18syntheticcalls andrawexports pass. No actualmodelorprivatefinancialaccess. Parentnative-byte proof test repair0c0e089 merged; focused3CLItests pass with unchanged20seconddeadline and exactassertions.",
     "PR47 follow-up Windows CI reached npm test after branch repair:1865passed/7skipped/1failed solely because the cold proof byte-comparison test exceeded its unchanged20second timer at21.507seconds. Replaced Vitest's per-element Buffer deep comparisons with exact native Buffer.equals assertions; all CLI creations, independent cold replay, repeat bytes, overwrite refusal and tamper checks remain. Focused3tests passed in3.06seconds locally; no timeout increase, production/proof change or assertion removal. Hosted rerun pending.",
     "Exact0561d56 fullsuite1866passed/145files/0failed/7skips;87new tests(19boundary,18launcher,5accounted/worker,9runtime,36Oraclecore).3ticks18syntheticresponse productionpipeline; badOrangefusiononcallindex9 booksusage/stopsafter10calls/tick1,rawresponse preserved andpartialtapereplay passes.20dayrepeat/coldtapeexact;30daynaturalchurn retainingowneraccounts; originalv1archived4dayworld/tapedigests identical. Both old saved postcard proofs still verify. Cold real PowerShell prepared/rechecked same source with TESTONLYinputs andnoapproval/spending. All further live behaviour must be measured separately by owner's fresh test.",
@@ -126,6 +133,7 @@ not a claim that every mechanic is complete.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
+    "The interrupted live run has zero committed days and its latest accounting history is preserved but not count-closed, with pending run state. Do not reset or close it, reuse approval, retry calls, or relaunch without appropriate verified recovery and fresh authorization.",
     "Postcardv2 is now opt-in integrated into Society with stable owner binding, explicit virtual day clock and all-role choices; no individual abode model exists, so claims are personal act-phase choices. Required2/1 trial rate is illustrative, not a default calibration. Unkeyed hashes prove replay consistency rather than external provenance, and predictable RNG seed/cursor stays operator-only. The optional funded daily Oracle is integrated and verified; ticket forging/migration, signeddeedreputation,monuments,universalcap and finalPowerShell whole-programme proof remain further work. No actual paid run launched or historical approval reused.",
     "Historical society launcher/evidence is preserved. The latest handoff reports that the earlier20tick run at e2a16e6 completed; its private results and current financial journal were not reopened under this goal. Older checkpoint paragraphs describing its preparation are dated history, not current launch instructions. Do not invoke old starters, access credentials or reuse consumed approvals. Godot/observatory integration for current Society v1/v2/v3 contracts remains further work.",
     "The authorized fresh20 run is complete and stopped; its40-call cap is consumed. No further paid/count calls or allowance activation without new explicit instruction. Future funding must carry the latest new cloud journal bound to this fresh ledger, not the preserved older uploaded tick38 journal. Equal7/20 summary counts in one fresh run do not prove causality or guarantee adaptive summary emission.",
@@ -133,6 +141,7 @@ not a claim that every mechanic is complete.
     "The two explicit registration/API contracts are preserved for compatibility. A future single presentation API or richer first-person Thinking/History adapter can be added without rewriting historical evidence; the original viewer refuses unsupported perception schemas. This managed cloud has no public inbound preview URL or configured VPN. Localhost opens only on the machine running preview; PC startup or a private Codespaces forwarded HTTPS URL is required."
   ],
   "nextSteps": [
+    "Deliver the private chronological traces. Preserve the interrupted run and accounting history; any later recovery or live test requires its own verified procedure and fresh authorization. Do not infer a completed day or behavioural evaluation.",
     "Finish exactfinalheadWindows/Linuxchecks for PR53 and no reviews, mergeonlygreen; updatecleanmainrecovery. Userstandalonecommand powershell -NoProfile -File .\\START-NODE.ps1 -Start -Ticks1, humanSTARTrequired, noassistantonline dependency. FullA04,multiDistrictdaily and detailedsupplierspeech are furtherwork. Noactualpaidrunbydeveloper.",
     "Finish new versioned sequential daily routine, physical visits, Wall/diary/food and role/customer speech duties before claiming completion. Owner permits recorded food failure to close day after other duties. Keep day open until chosen diary write before rollover. Preserve old replay, daily ageing/recognition caps, real resource accounting; no provider call during implementation.",
     "Complete current thinking/behaviour history API and browser proof, exact committedsourcePowerShell 3daypreview and coldreplay/exports, then updatePR50 withsource-scoped results and waitforhostedchecks. No modelcallneededforverification. Requested systemdesignDOCX remains pending afterward.",
@@ -142,6 +151,6 @@ not a claim that every mechanic is complete.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/sequential-days-2026-10-26"
+  "reviewBranch": "codex/live-three-clicks-2026-10-26"
 }
 NODE_SESSION_CHECKPOINT -->
