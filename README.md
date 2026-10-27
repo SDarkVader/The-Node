@@ -22,14 +22,15 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
-The authorized 18-call paid navigation check stopped after four requests at source `323794f`:
-three commit decisions succeeded, and the provider rejected the first action schema with HTTP 400.
-No paid travel or subsequent behaviour was observed. All four authorized observations and three
-admitted actions verified; no system-data leakage or outside-game action was observed. USD
-0.011077 is booked and 0.014643 remains held for missing usage; no retry or assumed refund occurred.
-The transport-format defect is corrected offline, with semantic-equivalence guards and regression
-checks. Actual provider acceptance of that correction remains to verify after accounting recovery.
-[Preserved outcome](docs/research/evidence/eighteen-call-navigation-stop-2026-10-27.json).
+Two supervised paid attempts each stopped after four requests: three commit decisions succeeded,
+then the first action schema was rejected (first anyOf siblings, then compiled grammar size).
+All observations, admitted responses and partial replay verified, with no observed leakage or
+outside-game admission. Original evidence and accounting are preserved; unknown usage was booked
+conservatively at full reserved ceilings and closed append-only on explicit owner-authorized reruns.
+The provider grammar is now compact, with the full game menu and strict local admission unchanged.
+24focused checks, TypeScript and a two-day nativeGodot/fake-provider controller pass. The owner has
+approved another18-call run within the original combined USD0.40 cap; actual acceptance and paid
+travel remain to verify. [Transport evidence](docs/research/evidence/eighteen-call-navigation-grammar-2026-10-27.json).
 
 Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
 Godot first-person view per decision. Agents select reachable geographical destinations;

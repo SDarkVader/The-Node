@@ -1,0 +1,37 @@
+{
+  "format": "node-supervised-navigation-grammar-v1",
+  "date": "2026-10-27",
+  "sourceRevision": "8de00b092a1165594d77eb827f46d612c27cc555",
+  "actualProviderRequests": 4,
+  "successfulAdmittedDecisions": 3,
+  "returnedNonemptySummaries": 3,
+  "committedDays": 0,
+  "httpStatuses": [
+    200,
+    200,
+    200,
+    400
+  ],
+  "providerFailure": "compiled grammar too large",
+  "exactSourceRequestChecks": 4,
+  "systemDataLeaksObserved": 0,
+  "outsideGameActionsAdmitted": 0,
+  "replayVerified": true,
+  "originalEvidencePreserved": true,
+  "appendOnlySettlementAndClosure": true,
+  "conservativeBookedMicroUsd": 24703,
+  "heldMicroUsd": 0,
+  "combinedPriorAttemptExposureMicroUsd": 50423,
+  "compactCorrection": {
+    "schemaBytes": 2675,
+    "unions": 8,
+    "optionalParameters": 0,
+    "tools": 0,
+    "authoritativeGameSchemaChanged": false,
+    "strictLocalAdmissionRetained": true,
+    "focusedTestsPassed": 24,
+    "nativeGodotFakeProviderTwoDayControllerPassed": true,
+    "actualProviderAcceptance": "pending"
+  },
+  "reasoningEvaluation": "not_performed"
+}

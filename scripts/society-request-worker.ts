@@ -23,7 +23,7 @@ export function validateSocietyWire(bytes:Buffer,expectedSha256:string,options:{
   assertSerializedSocietyVisibleContext(observation);
   if(q.system!==societyInhabitantInstructions(observation))throw Error('society_worker_instructions');
   if(JSON.stringify(q.output_config.format.schema)!==JSON.stringify(societyOutputSchema(observation))&&
-    !(options.historical&&JSON.stringify(q.output_config.format.schema)===JSON.stringify(anthropicSchema(observation.decisionSchema))))throw Error('society_worker_schema');
+    !(options.historical&&[anthropicSchema(observation.decisionSchema),societyOutputSchema(observation,{legacyUnion:true})].some(s=>JSON.stringify(q.output_config.format.schema)===JSON.stringify(s))))throw Error('society_worker_schema');
   // These keys have no inhabitant meaning and were the original leak. Reject at the last
   // egress boundary as well as using a branded view in the parent request builder.
   const forbidden=new Set(['sourceRevision','observerSecret','worldHash','requestId','agentId','developmentUpdate','packageInformation','sources','profile','engine','genesis','credential','tools','tool_calls',

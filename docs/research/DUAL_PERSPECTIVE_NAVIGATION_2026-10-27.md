@@ -5,30 +5,32 @@ The candidate branch `codex/dual-perspective-navigation-2026-10-27` builds on PR
 attempt is documented below; preceding development checks used no paid calls. The policy responses below are explicitly scripted;
 they establish execution integrity, not model reasoning quality or provider acceptance.
 
-## Supervised paid attempt
+## Supervised paid attempts and provider correction
 
-The owner approved 18 calls with a USD0.40 total ceiling and a stop on system leakage or
-outside-game behaviour. Source323794f launched from PowerShell with native Godot, Observatory,
-the reviewed postcard/Oracle configuration, and at most five action turns after commit.
-Three commit calls succeeded. The fourth request, the first action call, returned HTTP400
-because the provider rejects anyOf with sibling object keywords. The controller stopped before
-travel admission; the remaining fourteen requests were never sent. No paid subsequent behaviour
-or completed day is claimed. Three returned summaries are preserved verbatim, without grading.
+Source323794f and source8de00b0 each made four requests: three successful commit decisions followed
+by an HTTP400 on the first action. The first rejection concerned anyOf siblings, the second compiled
+grammar complexity. All exact source-authorized observations and three admitted actions in each
+run verified; both partial tapes replay. No paid navigation or complete day is claimed. Raw provider
+summaries and all original accounting events remain private and preserved, without behavioural grading.
 
-Four exact authorized observation checks and three response/admitted-action comparisons pass.
-No system-data leakage or outside-game action was observed in that evidence. The three-decision
-partial tape replays. USD0.011077 is booked; USD0.014643 remains held because the rejected response
-contains no usage receipt. This is an unresolved reservation, not a confirmed additional charge.
-The previous journal is unchanged, the key copy is removed, and the newest history/pending run
-remain preserved. No automatic retry, zero-cost assumption or reset occurred.
+On the owner's explicit corrected-rerun instructions, unknown usage was conservatively booked at
+full reserved ceilings, then both stopped authorizations closed append-only. Attempt1 liability25720
+and attempt2 liability24703microUSD total50423. This is conservative accounting, not a provider invoice
+or assumed refund. A fresh18-call allowance349577 keeps combined exposure within the original400000.
 
-The offline correction preserves the authoritative game schema while generating a bare anyOf
-of complete closed alternatives for the provider. Internal refs are inlined, and an equivalence
-guard checks every alternative against the original property constraints. The live worker accepts
-only the corrected format. Historical read-only inspection retains exact original format checks.
-23 focused checks and a native-Godot/fake-provider two-day controller check pass. Acceptance of
-the corrected format by the actual provider remains further verification after accounting recovery.
-See the [sanitized stop evidence](evidence/eighteen-call-navigation-stop-2026-10-27.json).
+Anthropic's [structured-output documentation](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+requires closed objects, supports scalar enums and limits optional parameters to24 and union parameters
+to16; additional internal grammar limits also apply. The compact correction has2675schema bytes,
+8unions,0optional parameters and0tools on the captured failed action. All fields remain required;
+large destination/reference menus and coupled combinations stay in the complete observation schema
+and strict local validator. Arbitrary coordinates, remote references and travel combined with work
+remain rejected before admission. Historical mixed-root and bare-union bodies remain verifiable only
+through read-only compatibility. No live fallback or automatic retry exists.
+
+Candidate verification:24focused tests, strict TypeScript and a full-feature two-day controller with
+nativeGodot and a fake provider pass. Actual provider acceptance remains pending the newly approved
+run. See [first stop](evidence/eighteen-call-navigation-stop-2026-10-27.json) and
+[second stop/compact correction](evidence/eighteen-call-navigation-grammar-2026-10-27.json).
 
 ## Implemented contract
 
@@ -138,6 +140,4 @@ An unconfigured clone can instead supply an explicit Godot 4 executable. The ord
 offline CLI also accepts `--daily-turns 64 --dual-navigation --godot <executable>`.
 
 Actual-provider use remains behind the existing source-pinned, fresh-plan review and
-spending authorization flow. The corrected output format has not been retried against the provider;
-the rejected request still requires usage reconciliation. No merge is required to run this checkout; another checkout must contain
-the navigation branch or its merged changes.
+spending authorization flow. The owner explicitly approved a corrected supervised rerun as recorded above. No merge is required to run this checkout; another checkout must contain the navigation branch or its merged changes.

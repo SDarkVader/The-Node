@@ -30,6 +30,39 @@ const navigate=async(r:NavigationRequest)=>{const response={type:'navigation',sc
 async function commit(s:Society,senses={perceive,navigate}){for(const p of s.pendingPeople()){const v=await s.prepareView(p,senses.perceive);s.submit(p,autonomousPolicy(v.visible));}}
 
 describe('destination navigation boundary',()=>{
+  it('keeps the full-feature provider grammar within documented Anthropic limits while retaining the full legal menu',async()=>{
+    const s=new Society({seed:42,sourceRevision:'transport-test',config:societyConfig(),
+      routine:{maxTurnsPerDay:64,information:'inhabitant-v1',navigation:'dual-v1'},
+      postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
+      dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))});
+    let actMenus=0;
+    for(let i=0;i<60;i++){
+      const person=s.pendingPeople()[0]!,v=await s.prepareView(person,perceive),wire=buildSocietyRequest(v.visible);
+      validateSocietyWire(Buffer.from(wire.body),wire.sha256);
+      const sent=JSON.parse(wire.body),schema=sent.output_config.format.schema;
+      expect(JSON.parse(sent.messages[0].content[0].text)).toEqual(v.visible);
+      let unions=0,optional=0;
+      const inspect=(q:any):void=>{if(q&&typeof q==='object'){
+        if(q.anyOf||Array.isArray(q.type))unions++;
+        if(q.anyOf)expect(Object.keys(q)).toEqual(['anyOf']);
+        if(q.type==='object'){
+          expect(q.additionalProperties).toBe(false);
+          optional+=Object.keys(q.properties).filter(k=>!q.required.includes(k)).length;
+        }
+        for(const k of ['minimum','maximum','minLength','maxLength','maxItems','$ref','$defs'])expect(q).not.toHaveProperty(k);
+        Object.values(q).forEach(inspect);
+      }};inspect(schema);
+      expect(unions).toBeLessThanOrEqual(16);expect(optional).toBe(0);
+      if(v.visible.phase==='act'){
+        actMenus++;expect(v.visible.legalChoices.moves.length).toBeGreaterThan(1);
+        // A small output shape must never turn arbitrary coordinates into permission.
+        expect(()=>validateSocietyAction({...nil(),postcards:null,dailyOracle:null,move:{x:99999,y:99999}},v.context)).toThrow();
+      }else expect(schema.properties.move).toEqual({type:'null'});
+      const action=autonomousPolicy(v.visible);
+      await s.prepareTravel(person,action,navigate);s.submit(person,action);
+    }
+    expect(actMenus).toBeGreaterThan(0);
+  });
   it('rejects gaps, shortcuts, repeated steps and unreachable destinations',()=>{
     const grid=[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:3,y:0}];
     expect(shortestGridPath(grid,grid[0]!,grid[2]!)).toEqual([grid[1],grid[2]]);
@@ -55,9 +88,9 @@ describe('destination navigation boundary',()=>{
     expect(target).toBeDefined();
     const schema=v.visible.decisionSchema as any;
     const output=societyOutputSchema(v.visible) as any;
-    expect(Object.keys(output)).toEqual(['anyOf']);
-    expect(output.anyOf).toHaveLength(2);
-    for(const branch of output.anyOf){expect(branch.additionalProperties).toBe(false);expect(branch.required).toEqual(schema.required);}
+    expect(output.type).toBe('object');expect(output.additionalProperties).toBe(false);expect(output.required).toEqual(schema.required);
+    expect(output).not.toHaveProperty('anyOf');
+    expect(output.properties.move).toEqual({anyOf:[{type:'null'},{type:'object',properties:{x:{type:'integer'},y:{type:'integer'}},required:['x','y'],additionalProperties:false}]});
     expect(JSON.stringify(output)).not.toContain('$ref');expect(JSON.stringify(output)).not.toContain('$defs');
     const providerSubset=(q:any)=>{if(q&&typeof q==='object'){
       if(Array.isArray(q.anyOf))expect(Object.keys(q)).toEqual(['anyOf']);
@@ -68,6 +101,10 @@ describe('destination navigation boundary',()=>{
     const bytes=Buffer.from(JSON.stringify(legacy)),sha=createHash('sha256').update(bytes).digest('hex');
     expect(()=>validateSocietyWire(bytes,sha)).toThrow('society_worker_schema');
     expect(()=>validateSocietyWire(bytes,sha,{historical:true})).not.toThrow();
+    legacy.output_config.format.schema=societyOutputSchema(v.visible,{legacyUnion:true});
+    const union=Buffer.from(JSON.stringify(legacy)),unionSha=createHash('sha256').update(union).digest('hex');
+    expect(()=>validateSocietyWire(union,unionSha)).toThrow('society_worker_schema');
+    expect(()=>validateSocietyWire(union,unionSha,{historical:true})).not.toThrow();
     const inspect=(q:any)=>{if(q&&typeof q==='object'){
       if(q.type==='object')expect(q.additionalProperties).toBe(false);
       if(q.enum)expect(q.enum.every((x:unknown)=>x===null||['number','string','boolean'].includes(typeof x))).toBe(true);

@@ -42,10 +42,11 @@ export interface SocietyPreparedRequest {
   readonly maxOutputTokens: 2048;
 }
 
-/** The provider requires a bare anyOf, with no sibling object keywords. Keep
- * the authoritative observation schema unchanged; compile its complete closed
- * alternatives into an equivalent provider format. Internal refs are inlined. */
-export function societyOutputSchema(view:SocietyVisibleContext):Record<string,unknown>{
+/** Compact provider grammar, separate from the authoritative permission schema.
+ * All fields remain required and objects closed. Large destination/reference menus
+ * and coupled choices stay in the observation and strict local admission validator.
+ * legacyUnion is only for exact read-only verification of preserved requests. */
+export function societyOutputSchema(view:SocietyVisibleContext,options:{legacyUnion?:boolean}={}):Record<string,unknown>{
   const schema=anthropicSchema(view.decisionSchema) as Record<string,any>;
   if(!view.dual||!schema.anyOf)return schema;
   if(Object.keys(schema).sort().join(',')!=='$defs,additionalProperties,anyOf,properties,required,type')throw new SocietySecurityError('society_provider_schema_equivalence');
@@ -69,7 +70,26 @@ export function societyOutputSchema(view:SocietyVisibleContext):Record<string,un
       !same(branch.required,schema.required)||!same(Object.keys(branch.properties??{}),Object.keys(base))||
       Object.keys(base).some(k=>!subset(branch.properties[k],base[k])))throw new SocietySecurityError('society_provider_schema_equivalence');
   }
-  return {anyOf:alternatives};
+  if(options.legacyUnion)return {anyOf:alternatives};
+  // The API also limits compiled grammar size. Keep the transport a small closed
+  // shape; the complete paired destinations, hearing references and conditional
+  // combinations remain in the observation and the admission validator.
+  const compact=(node:any):any=>{
+    if(Array.isArray(node))return node.map(compact);
+    if(node===null||typeof node!=='object')return node;
+    const opaque=node.type==='string'&&Array.isArray(node.enum)&&node.enum.every((x:unknown)=>typeof x==='string'&&/^(?:[a-f0-9]{16}|[a-f0-9]{64})$/.test(x));
+    return Object.fromEntries(Object.entries(node).filter(([k])=>!opaque||k!=='enum').map(([k,v])=>[k,compact(v)]));
+  };
+  const properties=compact(base),nil={type:'null'};
+  const obj=(p:Record<string,unknown>)=>({type:'object',properties:p,required:Object.keys(p),additionalProperties:false});
+  properties.move=view.legalChoices.moves.length?{anyOf:[nil,obj({x:{type:'integer'},y:{type:'integer'}})]}:nil;
+  const recipes=view.legalChoices.postcards;
+  if(properties.postcards&&properties.postcards.type!=='null'&&recipes){
+    properties.postcards={anyOf:[nil,obj({claim:{type:'boolean',enum:recipes.canClaim?[false,true]:[false]},
+      fusion:recipes.fusion.length?{anyOf:[nil,obj({tier:{type:'string',enum:[...new Set(recipes.fusion.map(q=>q.tier))]},
+        stake:{type:'integer',enum:[...new Set(recipes.fusion.map(q=>q.stake))]}})]}:nil})]};
+  }
+  return obj(properties);
 }
 
 /** Existing reviewed Messages configuration, with the new six-field society schema.
