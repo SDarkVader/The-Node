@@ -15,12 +15,19 @@ validation. Existing v1-v4 tapes without the marker retain their original bytes 
 Preview honours the requested seed. `scripts/verify-node-operational.ts --output <fresh-dir>`
 exercises exact request bytes, local synthetic responses, production parsing/validation, all-role
 execution, resource outcomes, raw exports and replay without any provider or allowance.
-Candidate checks: 41 boundary/request/information tests, 16 accounted/worker/Observatory tests,
-project and affected-CLI strict TypeScript pass. Current-source cold proof/full regression still
-to run. Read-only historical audit verified all 98 requests/responses, 383 decisions, zero
-committed days and zero integrity issues; journal bytes unchanged. Historical authorization has
-98 known booked requests, zero held, no overrun and no closure. Awaiting separate owner choice
-on append-only revocation of its unused capacity; do not infer approval or run paid tests.
+Implementation b829072 passed 1,979 tests across 157 files with actual Godot enabled and one
+platform skip; eight recovery tests and project/CLI strict TypeScript pass. Three offline days
+verified 1,148 all-role transports, 283 controlled packets, 897 moves, 42 diary writes and 42 food
+receipts; maximum conservative packet ceiling 10,973 microUSD, zero integrity issues. The actual
+PowerShell browser preview completed two manually advanced days, 781 decisions and 192 controlled
+packets; Godot, historical selection, exact observations and raw exports verified with no browser
+errors. Offline cold replay passed. A subsequent Observatory correction labels policy previews
+truthfully, distinguishes days from source ticks and displays recorded own turn effects.
+The preserved 98 actual requests/responses replayed through 383 decisions with zero conflicts.
+The owner explicitly approved terminal closure only, with no new paid calls. Production recovery
+verified the interrupted lock owner dead and appended one closure; all earlier events, carried
+history, 304048 microUSD booked and zero held are unchanged. Original journal/lock backed up
+privately. No new paid test is approved. Final standalone preparation/stop checks follow.
 
 Society v4 adds fresh sequential turns per day, physical home/task visits, mandatory daily
 Wall/food attempts/diary and role/customer lexical speech, completion gating and deterministic

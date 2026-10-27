@@ -132,17 +132,20 @@ export class SocietyObservatorySource {
       const transition=r.worldTransition&&r.worldTransition.day<=p.sourceTick?r.worldTransition:null;
       const recordedTransition=r.turn===undefined?transition:{submission:r.decisionTransition??null,turn:r.turnTransition??null,daily:transition};
       return {requestId:r.requestId??`tape-${r.person}-${r.day}-${r.phase}${r.turn===undefined?'':`-${r.turn}`}`,actorId:r.person!,tick:r.day!,phase:r.phase,...(r.turn===undefined?{}:{turn:r.turn}),
-        observation:r.visible??r.authorizedVisible,legalChoices:r.legalChoices,reasoning:r.reasoning,
+        observation:r.visible??r.authorizedVisible,legalChoices:r.legalChoices,
+        reasoning:this.registration.mode==='synthetic'?{...r.reasoning,
+          source:r.response.rawBase64===null?'deterministic_policy':'synthetic_response',
+          ...(r.response.rawBase64===null?{status:'not_a_model'}:{})}:r.reasoning,
         latencyMs:(r.events.find(e=>e.kind==='response')?.data as any)?.elapsedMs??null,
         proposal:r.proposedAction,admitted:r.submittedAction??r.validatedAction,executed:r.admission==='recorded_in_tape',
-        nextTick:transition?.day??null,effects:[],usage:usage?{...usage,bookedMicroUsd:null}:null,heldMicroUsd:0,
+        nextTick:transition?.day??null,effects:(r.turn===undefined?transition?.effects:r.turnTransition?.effects)?.filter(e=>e.person===r.person).map(e=>e.category)??[],usage:usage?{...usage,bookedMicroUsd:null}:null,heldMicroUsd:0,
         transition:recordedTransition,rawRecord:transition===r.worldTransition?r:{...r,worldTransition:null,transitionStatus:'not_recorded'}};
     });
     const autonomous=(tape.routineConfig?prefix:tape.decisions).filter(d=>!d.controlled&&d.day<=p.throughDay).map(d=>({
       requestId:`policy-${d.person}-${d.day}-${d.phase}${(d.visible as any).routine?`-${(d.visible as any).routine.turn}`:''}`,actorId:d.person,tick:d.day,phase:d.phase,...((d.visible as any).routine?{turn:(d.visible as any).routine.turn}:{}),observation:d.visible,
       legalChoices:d.legalChoices,reasoning:{source:input.status==='policy_reconstructed'?'reconstructed_deterministic_policy':'deterministic_policy',status:'not_a_model',summaries:[]},
       latencyMs:null,proposal:d.action,admitted:d.action,executed:input.status!=='policy_reconstructed',nextTick:tape.transitions.some(t=>t.day===d.day&&t.day<=p.sourceTick)?d.day:null,
-      effects:[],usage:null,heldMicroUsd:0,transition:d.turn===undefined?tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null:
+      effects:(d.turn===undefined?tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)?.effects:tape.turnTransitions?.find(t=>t.day===d.day&&t.turn===d.turn)?.effects)?.filter(e=>e.person===d.person).map(e=>e.category)??[],usage:null,heldMicroUsd:0,transition:d.turn===undefined?tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null:
         {submission:d.transition??null,turn:tape.turnTransitions?.find(t=>t.day===d.day&&t.turn===d.turn)??null,daily:tape.transitions.find(t=>t.day===d.day&&t.day<=p.sourceTick)??null},rawRecord:d}));
     const calls=[...modelCalls,...autonomous].sort((a,b)=>a.tick-b.tick||(a.phase==='commit'?0:1)-(b.phase==='commit'?0:1)||((a as any).turn??0)-((b as any).turn??0));
     const control=this.#control;

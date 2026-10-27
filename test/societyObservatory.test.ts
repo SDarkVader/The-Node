@@ -66,7 +66,7 @@ it('authenticates manual control, rejects cross-origin requests and duplicate/st
   f.tick();const next=f.gate.wait(2);app.refresh();
   const history=await(await fetch(base+'/history?agent=society-inhabitant%3A0',{headers:{Authorization:'Bearer '+researcherToken}})).json() as any;
   expect(history.records).toHaveLength(2);expect(history.records.map((r:any)=>r.phase)).toEqual(['commit','act']);
-  expect(history.records.every((r:any)=>r.observation&&r.admitted&&r.thinking.status==='response_unavailable')).toBe(true);
+  expect(history.records.every((r:any)=>r.observation&&r.admitted&&r.thinking.status==='not_a_model'&&r.thinking.source==='deterministic_policy')).toBe(true);
   expect((await invoke('/advance','POST',command)).status).toBe(409);expect(f.gate.state.waitingDay).toBe(2);
   expect((await invoke('/advance','POST',{cursor:'live',day:2,version:f.gate.state.version})).status).toBe(200);await next;f.gate.close();
 });
@@ -93,6 +93,10 @@ it('keeps a v4 partial day and historical turn synchronized across researcher an
   expect(latest.sourceTick).toBe(0);expect(latest.worldHash).toBe(society.hash);
   expect(frames.at(-1).worldHash).toBe(latest.worldHash);
   expect(coordinates(frames.at(-1).people)).toEqual(coordinates(latest.frame.people));
+  const tape=society.exportTape();
+  const expected=tape.turnTransitions!.flatMap(t=>t.effects).filter(e=>e.category==='move').length;
+  expect(expected).toBeGreaterThan(0);
+  expect(latest.calls.flatMap((c:any)=>c.effects).filter((e:string)=>e==='move')).toHaveLength(expected);
   const earlier=source.list().find(p=>p.type==='turn_committed'&&p.sourceTurn===2)!;
   expect(earlier).toBeTruthy();
   expect((await fetch(base+'/selection',{method:'PUT',headers,body:JSON.stringify({cursor:earlier.cursor})})).status).toBe(200);

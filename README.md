@@ -33,11 +33,14 @@ The preview now honours `-Seed`. A standalone zero-provider verification is avai
 node --import tsx scripts/verify-node-operational.ts --output "$env:TEMP/node-proof-$([guid]::NewGuid())" --ticks 3
 ```
 
-The implementation candidate passed 57 focused boundary/request/runner/Observatory tests and
-project/affected-CLI TypeScript checks. The preserved 98 actual requests and responses independently
-replayed through 383 decisions with zero integrity conflicts and no journal changes. Full regression
-and current committed-source PowerShell/browser verification are being recorded next. New paid
-tests still require approval; the interrupted historical authorization currently blocks a fresh run.
+Implementation `b829072` passed 1,979 tests across 157 files with actual Godot enabled and one
+platform skip, plus eight recovery tests and project/CLI TypeScript checks. Three offline days
+verified 1,148 decisions, 897 moves, 42 diary writes and 42 food receipts. The actual standalone
+PowerShell/browser run completed two manual days, with synchronized Godot, historical selection,
+exact observation inspection, raw exports and cold replay. Preserved actual evidence independently
+replayed all 98 requests/responses through 383 decisions with zero conflicts. The owner approved
+append-only closure of the historical authorization; previous entries, USD 0.304048 booked and
+zero held remain intact. No new paid test is approved. Final source-specific launch checks follow.
 
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through
