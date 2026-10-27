@@ -19,6 +19,7 @@ interface Active {
   stop:()=>void;
   /** Trusted controller revision; avoids cloning unchanged live tapes on every poll. */
   version?:()=>string;
+  refreshIntervalMs?:number;
 }
 type State=ReturnType<Society['inspect']>;
 interface Frame {cursor:string;sourceTick:number;worldHash:string;type:string;state:State;throughDay:number;throughDecisions:number;sourceTurn?:number;latest?:boolean}
@@ -27,13 +28,15 @@ export class SocietyObservatorySource {
   #report!:ReturnType<typeof buildSocietyResultsReport>;
   #control:ManualTickGate['state']|null=null;
   #savedBytesFingerprint='';#activeVersion:string|undefined;
+  #nextRefreshAt=0;
   constructor(readonly registration:SocietyRegistration,readonly active?:Active){
     if(!/^[A-Za-z0-9._-]{1,80}$/.test(registration.id))throw Error('society_observatory_registration');
   }
-  refresh(){
+  refresh(force=false){
     try{
       const activeVersion=this.active?.version?.();
       if(activeVersion!==undefined&&activeVersion===this.#activeVersion)return true;
+      if(!force&&this.active&&performance.now()<this.#nextRefreshAt)return true;
       let savedBytesFingerprint='';
       if(!this.active){
         // Re-read and hash actual bytes, including call archives, before skipping any
@@ -133,7 +136,10 @@ export class SocietyObservatorySource {
           }
         }
       this.#input=structuredClone(input);this.#report=report;this.#control=control;
-      this.#frames=frames;this.#fingerprint=fingerprint;this.#savedBytesFingerprint=savedBytesFingerprint;this.#activeVersion=activeVersion;return true;
+      this.#frames=frames;this.#fingerprint=fingerprint;this.#savedBytesFingerprint=savedBytesFingerprint;this.#activeVersion=activeVersion;
+      // Leave actual execution an interval of event-loop time after a full replay.
+      // Readers retain the last verified cursor until the next verified refresh.
+      this.#nextRefreshAt=performance.now()+(this.active?.refreshIntervalMs??0);return true;
     }catch(error){this.active?.stop();throw error;}
   }
   get latestCursor(){return this.#frames.at(-1)?.cursor??null;}

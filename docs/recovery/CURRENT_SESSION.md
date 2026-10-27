@@ -15,7 +15,7 @@ Sight uses existing Godot cameras/raycast/fog; hearing, recognition, grammar and
 keep their own boundaries. Only observation data reaches the agent; bindings and route evidence
 remain operator-side. Old tapes without the marker keep their original contract.
 
-Executed candidate verification: 1,989 tests passed across 158 files, one Windows platform skip,
+Executed candidate verification: 1,990 tests passed across 158 files, one Windows platform skip,
 with native Godot enabled. Eight recovery tests and project TypeScript passed. The production
 controller completed a day with a fake provider and native Godot, one call per controlled decision,
 exact request validation, cold tape replay, submission recovery and Observatory verification.
@@ -32,7 +32,13 @@ The actual PowerShell/browser preview completed one day with 227 decisions and 5
 policy packets, rendered embedded Godot and reported replay verified through day 1. Browser checks
 also fixed pending-request decoding and expensive historical polling; cache checks still hash the
 actual bytes of all named evidence, including call archives, before skipping decode/replay.
-No new provider calls, credentials, allowance or financial journal operations were used.
+Navigation verification before paid supervision used no provider calls, credentials, allowance or
+financial journal operations. The owner has now explicitly approved an 18-call supervised run,
+with a USD 0.40 total ceiling, stopping on system-data leakage or outside-game behaviour.
+This authorization is specific to the new bounded run; the historical six-call run remains closed.
+Pending viewer follow-ups passed 24 focused tests; the full e8369f9 implementation passed
+1,990 tests across 158 files with native Godot and one platform skip. Viewer replay now leaves
+execution an interval between completed audits and forces fresh verification at completion.
 [Navigation contract, commands and evidence](../research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).
 
 The latest owner-authorized check ran from PowerShell at source 70d71bdf0ef0ad28d8c741aa2dc616f8fe4313de.

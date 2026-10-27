@@ -30,7 +30,9 @@ const check=(ok:unknown,message:string)=>{if(!ok)throw Error(message);};
 try{
   for(const p of society.pendingPeople()){const v=await society.prepareView(p,senses.perceive);society.submit(p,autonomousPolicy(v.visible));}
   const actor=society.pendingPeople().find(p=>society.inspect().registry.people.get(p)!.role==='miller')!;
-  const from=await society.prepareView(actor,senses.perceive),work=from.visible.routine!.sites.workplace!,to={x:work.x,y:work.y};
+  const from=await society.prepareView(actor,senses.perceive);
+  const work=from.visible.dual!.overhead.districts.flatMap(d=>d.locations).find(b=>b.buildingId===from.visible.self.workplace)!;
+  const to={x:work.x,y:work.y};
   check(Math.abs(to.x-from.visible.self.x)+Math.abs(to.y-from.visible.self.y)>1,'proof_requires_nonadjacent_trip');
   check(!from.visible.routine!.can.work,'proof_work_before_arrival');
   const startRequest=buildSocietyRequest(from.visible);validateSocietyWire(Buffer.from(startRequest.body),startRequest.sha256);

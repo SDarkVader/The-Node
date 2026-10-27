@@ -37,6 +37,15 @@ it('uses the trusted live revision only until an actual controller change',()=>{
   const person=society.pendingPeople()[0]!;society.submit(person,autonomousPolicy(society.view(person).visible));version='two';
   source.refresh();expect(reads).toBe(2);
 });
+it('spaces expensive live replay while retaining the verified cursor and forces final verification',()=>{
+  const society=new Society({seed:42,sourceRevision:'cache-test'});let version='one',reads=0;
+  const source=new SocietyObservatorySource({kind:'society',id:'paced-viewer-test',directory:'',mode:'synthetic'},
+    {refreshIntervalMs:1000,version:()=>version,read:()=>{reads++;return {tape:society.exportTape(),eventsText:''};},stop:()=>society.halt()});
+  source.refresh();const cursor=source.latestCursor;
+  const person=society.pendingPeople()[0]!;society.submit(person,autonomousPolicy(society.view(person).visible));version='two';
+  source.refresh();expect(reads).toBe(1);expect(source.latestCursor).toBe(cursor);
+  source.refresh(true);expect(reads).toBe(2);
+});
 it('shuts down with an unfinished browser request instead of retaining the launcher lock',async()=>{
   const f=fixture(),app=startObservatory({sources:[f.source],researcherToken:'r'.repeat(64),worldToken:'w'.repeat(64),port:0,pollMs:60000});
   const port=await app.ready;

@@ -29,7 +29,7 @@ Travel occupies that decision; the next normal decision supplies arrival sight a
 interaction options. Hearing, recognition, lexical speech and task permissions stay separate
 from map knowledge. Historical tapes retain their original rules.
 
-The candidate passed 1,989 tests in 158 files with native Godot, one platform skip, eight recovery
+Implementation `e8369f9` passed 1,990 tests in 158 files with native Godot, one platform skip, eight recovery
 tests and TypeScript. An actual six-step trip reached its workplace, exposed the arrival work
 option and recorded work; the production controller also completed a day using a fake provider.
 These checks made zero paid calls. [Implementation and execution evidence](docs/research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).

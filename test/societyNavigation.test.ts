@@ -109,7 +109,8 @@ describe.skipIf(!process.env.NODE_GODOT_BIN)('actual Godot destination → arriv
       const s=create();await commit(s,senses);
       let modelCalls=0;
       const actor=s.pendingPeople().find(p=>{const own=s.inspect().registry.people.get(p)!;return own.role==='miller';})!;
-      const v=await s.prepareView(actor,senses.perceive),to=v.visible.routine!.sites.workplace!;
+      const v=await s.prepareView(actor,senses.perceive);
+      const to=v.visible.dual!.overhead.districts.flatMap(d=>d.locations).find(b=>b.buildingId===v.visible.self.workplace)!;
       expect(Math.abs(to.x-v.visible.self.x)+Math.abs(to.y-v.visible.self.y)).toBeGreaterThan(1);
       expect(v.visible.routine!.can.work).toBe(false);
       const wire=buildSocietyRequest(v.visible);validateSocietyWire(Buffer.from(wire.body),wire.sha256);
