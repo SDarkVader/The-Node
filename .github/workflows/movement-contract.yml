@@ -1,26 +1,8 @@
 name: Offline Society movement contract
 on:
   push:
-    paths:
-      - '.github/workflows/movement-contract.yml'
-      - 'src/society/destinationMovement.ts'
-      - 'src/society/movementVerification.ts'
-      - 'src/society/boundary.ts'
-      - 'src/agent/participantWorld.ts'
-      - 'src/server/observer.ts'
-      - 'test/destinationMovement.test.ts'
-      - 'scripts/verify-movement-contract.ts'
   pull_request:
     branches: [main]
-    paths:
-      - '.github/workflows/movement-contract.yml'
-      - 'src/society/destinationMovement.ts'
-      - 'src/society/movementVerification.ts'
-      - 'src/society/boundary.ts'
-      - 'src/agent/participantWorld.ts'
-      - 'src/server/observer.ts'
-      - 'test/destinationMovement.test.ts'
-      - 'scripts/verify-movement-contract.ts'
   workflow_dispatch:
 permissions:
   contents: read
