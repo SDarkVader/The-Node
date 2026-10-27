@@ -1,0 +1,49 @@
+name: Offline Society movement contract
+on:
+  push:
+    paths:
+      - '.github/workflows/movement-contract.yml'
+      - 'src/society/destinationMovement.ts'
+      - 'src/society/movementVerification.ts'
+      - 'src/society/boundary.ts'
+      - 'src/agent/participantWorld.ts'
+      - 'src/server/observer.ts'
+      - 'test/destinationMovement.test.ts'
+      - 'scripts/verify-movement-contract.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/movement-contract.yml'
+      - 'src/society/destinationMovement.ts'
+      - 'src/society/movementVerification.ts'
+      - 'src/society/boundary.ts'
+      - 'src/agent/participantWorld.ts'
+      - 'src/server/observer.ts'
+      - 'test/destinationMovement.test.ts'
+      - 'scripts/verify-movement-contract.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  movement-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: node node_modules/vitest/vitest.mjs run test/destinationMovement.test.ts
+      - name: Replay and record authorized views and kernel transitions
+        run: node --import tsx scripts/verify-movement-contract.ts evals/results/ci/movement-contract.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: society-movement-contract
+          path: evals/results/ci/movement-contract.json
+          if-no-files-found: warn
+          retention-days: 30
