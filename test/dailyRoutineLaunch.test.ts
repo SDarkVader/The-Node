@@ -21,7 +21,7 @@ const handles:{close():void}[]=[];
 afterEach(()=>{for(const h of handles.splice(0))h.close();cleanup();});
 const source='c'.repeat(40),instruction='TEST ONLY synthetic routine approval; no actual provider or financial authority.';
 const cards={rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000 as const};
-const routine={maxTurnsPerDay:128};
+const routine={maxTurnsPerDay:128,information:'inhabitant-v1' as const};
 const config=()=>({...societyConfig(),pMonthly:0,arrivalPDaily:0,migrationK:0,saboteurCount:0});
 const eventsText=(events:SocietyRunEvent[])=>events.map(e=>JSON.stringify(JSON.parse(stringifySocietyEvidence(e)))).join('\n')+'\n';
 function accountedFixture(ticks=1){
@@ -179,7 +179,7 @@ describe('reviewed sequential routine launch and evidence',()=>{
       const plan=createSocietyPlan(society,{ticks:options.ticks});
       writeFileSync(path,stringifySocietyEvidence({plan,genesis:tape.genesis,postcardConfig:options.postcards,routineConfig:options.routine,planSha256:societyPlanHash(plan)}));}};
     const prepared=prepareSocietyPlaytest({priorJournal:join(priorDirectory,'accounting.journal.json'),credentialFile:credential,
-      outputRoot:join(directory,'TEST-ONLY-new'),postcardRate:'2/1',ticks:1,dailyTurns:128},environment);
+      outputRoot:join(directory,'TEST-ONLY-new'),postcardRate:'2/1',ticks:1,dailyTurns:128,inhabitantInformation:true},environment);
     expect(prepared).toMatchObject({routine,diarySubjectOptional:true,approved:false,providerCalls:0,allowanceCreated:false,maxCalls:387});
     expect(prepared.instruction).toContain('128 sequential action turns');expect(prepared.instruction).toContain('unfinished day');
     const review=JSON.parse(readFileSync(prepared.review,'utf8'));delete review.routine;writeFileSync(prepared.review,JSON.stringify(review));

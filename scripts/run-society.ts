@@ -12,13 +12,14 @@ import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '..
 import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/society/routine.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'}}});
 if(values.verify){
-  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
+  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
-  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns'])};
+  if(values['inhabitant-information']&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
+  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']?{information:'inhabitant-v1'}:{})};
   if(routine)validateSocietyRoutineConfig(routine);
   if(!Number.isSafeInteger(ticks)||ticks<1||ticks>100||!Number.isSafeInteger(seed))throw Error('society_bounded_ticks_and_seed_required');
   const output=resolve(values.output??'.codex/session-recovery/society/latest-synthetic.json');

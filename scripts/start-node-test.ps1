@@ -18,7 +18,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Godot build failed before any spending preparation.' }
   }
   if (-not $Start) {
-    $arguments=@('--import','tsx','scripts/preview-society.ts','--ticks',[string]$Ticks,'--web-world',$config.webWorldDirectory)
+    $arguments=@('--import','tsx','scripts/preview-society.ts','--ticks',[string]$Ticks,'--seed',[string]$Seed,'--web-world',$config.webWorldDirectory)
     if (Test-Path -LiteralPath $config.historyRegistration) { $arguments+=@('--history',$config.historyRegistration) }
     & node @arguments | ForEach-Object {
       $line=$_;Write-Output $line
@@ -28,6 +28,7 @@ try {
         if (-not $NoBrowser) { Start-Process -FilePath $event.url }
       }
     }
+    if ($LASTEXITCODE -ne 0) { throw 'Society preview stopped with an error. Inspect the retained run output.' }
     return
   }
   $raw=& node --import tsx scripts/manage-node-tests.ts --settings $settingsPath --prepare --ticks $Ticks --seed $Seed

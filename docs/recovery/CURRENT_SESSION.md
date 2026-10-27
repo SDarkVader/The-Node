@@ -2,10 +2,25 @@
 
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
-The current repair review branch is codex/society-v4-repair-2026-10-27.
+PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
+The current development branch is codex/operational-agent-contract-2026-10-27.
 PR51 and PR52 merged after checks passed on their exact heads. Earlier PR43 was closed
 as a duplicate; PR47 and PR49 merged in order; the owner merged PR50. Preserve unrelated
 trace.pdf and all private experiment and accounting history.
+
+The current candidate adds opt-in routine information `inhabitant-v1`, selected by fresh PC
+preview and paid preparation. It supplies active public economic parameters, own tenure/food
+receipt/paid Oracle feedback, accurate phase-specific choices and independent strict egress
+validation. Existing v1-v4 tapes without the marker retain their original bytes and replay.
+Preview honours the requested seed. `scripts/verify-node-operational.ts --output <fresh-dir>`
+exercises exact request bytes, local synthetic responses, production parsing/validation, all-role
+execution, resource outcomes, raw exports and replay without any provider or allowance.
+Candidate checks: 41 boundary/request/information tests, 16 accounted/worker/Observatory tests,
+project and affected-CLI strict TypeScript pass. Current-source cold proof/full regression still
+to run. Read-only historical audit verified all 98 requests/responses, 383 decisions, zero
+committed days and zero integrity issues; journal bytes unchanged. Historical authorization has
+98 known booked requests, zero held, no overrun and no closure. Awaiting separate owner choice
+on append-only revocation of its unused capacity; do not infer approval or run paid tests.
 
 Society v4 adds fresh sequential turns per day, physical home/task visits, mandatory daily
 Wall/food attempts/diary and role/customer lexical speech, completion gating and deterministic

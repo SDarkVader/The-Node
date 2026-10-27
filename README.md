@@ -22,6 +22,23 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+Fresh PC runs now select the versioned `inhabitant-v1` information contract within Society v4.
+Every resident receives the active public economic parameters, own role tenure, own last food
+receipt and paid Oracle result, alongside existing personal assets, diary, heard speech, local
+conditions and daily duties. Commit-phase menus now agree with the schema's phase restrictions.
+The last-egress worker checks the complete allowlist; old tapes retain their original contract.
+The preview now honours `-Seed`. A standalone zero-provider verification is available:
+
+```powershell
+node --import tsx scripts/verify-node-operational.ts --output "$env:TEMP/node-proof-$([guid]::NewGuid())" --ticks 3
+```
+
+The implementation candidate passed 57 focused boundary/request/runner/Observatory tests and
+project/affected-CLI TypeScript checks. The preserved 98 actual requests and responses independently
+replayed through 383 decisions with zero integrity conflicts and no journal changes. Full regression
+and current committed-source PowerShell/browser verification are being recorded next. New paid
+tests still require approval; the interrupted historical authorization currently blocks a fresh run.
+
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through
 its last recorded outcome; no day was committed. Future v4 runs record each accepted

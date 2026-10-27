@@ -9,10 +9,15 @@ import type {ParticipantHooks} from '../engine/inhabitants.js';
 import type {SocietyAction,SocietyRoutineObservation} from './boundary.js';
 import type {WallPost} from '../comms/grammar.js';
 
-export interface SocietyRoutineConfig {maxTurnsPerDay:number}
+export interface SocietyRoutineConfig {maxTurnsPerDay:number;information?:'inhabitant-v1'}
 export function validateSocietyRoutineConfig(value:unknown):asserts value is SocietyRoutineConfig {
-  if(!value||typeof value!=='object'||Array.isArray(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value))||Reflect.ownKeys(value).length!==1)
+  if(!value||typeof value!=='object'||Array.isArray(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value))||
+    Reflect.ownKeys(value).some(k=>k!=='maxTurnsPerDay'&&k!=='information'))
     throw Error('society_routine_config');
+  if(Object.hasOwn(value,'information')){
+    const information=Object.getOwnPropertyDescriptor(value,'information');
+    if(!information?.enumerable||!Object.hasOwn(information,'value')||information.value!=='inhabitant-v1')throw Error('society_routine_config');
+  }
   const field=Object.getOwnPropertyDescriptor(value,'maxTurnsPerDay');
   if(!field||!Object.hasOwn(field,'value')||!field.enumerable||!Number.isSafeInteger(field.value)||field.value<1||field.value>128)
     throw Error('society_routine_config');

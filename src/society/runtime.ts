@@ -138,6 +138,10 @@ export class Society {
     }));
     return buildSocietyContext(this.#state,person,{
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
+      ...(this.#routine?.config.information?{information:{contract:this.#routine.config.information,lastLottery:(()=>{
+        const previous=this.#tape.transitions.at(-1),result=previous?.oracle.find(r=>r.person===person)?.result;
+        return result?{day:previous!.day,status:result.status,won:result.won,prize:result.prize,prizeAmount:result.prizeAmount,fundedBy:result.fundedBy}:null;
+      })()}}:{}),
       ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase)}:{}),
       ...(this.#postcards?{postcards:this.#postcards.observation(person)}:{}),
       ...(this.#dailyOracle?{dailyOracle:this.#dailyOracle.observation(person,day,w.economicHealthWithExperience,this.#activePeople())}:{}),

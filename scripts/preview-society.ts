@@ -12,11 +12,12 @@ import {buildSocietyResultsReport,writeSocietyRawResults} from '../src/society/r
 import {stringifySocietyEvidence} from '../src/society/codec.js';
 import {openSocietyPanel} from '../src/observatory/societyPanel.js';
 const {values}=parseArgs({options:{history:{type:'string'},'web-world':{type:'string'},port:{type:'string',default:'8090'},
-  ticks:{type:'string',default:'3'},output:{type:'string'}}});
+  ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},output:{type:'string'}}});
 const days=Number(values.ticks);if(!Number.isSafeInteger(days)||days<1||days>20)throw Error('society_preview_days');
 const sourceRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
-const society=new Society({seed:42,sourceRevision,config:{...societyConfig(),diarySubjectOptional:true},postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
-  routine:{maxTurnsPerDay:128},
+const seed=Number(values.seed);if(!Number.isSafeInteger(seed))throw Error('society_preview_seed');
+const society=new Society({seed,sourceRevision,config:{...societyConfig(),diarySubjectOptional:true},postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
+  routine:{maxTurnsPerDay:128,information:'inhabitant-v1'},
   dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))});
 const output=values.output?resolve(values.output):join(mkdtempSync(join(tmpdir(),'node-society-preview-')),'run');
 mkdirSync(output,{recursive:true});
