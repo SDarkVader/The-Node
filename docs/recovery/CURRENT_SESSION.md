@@ -3,7 +3,32 @@
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
-The current development branch is codex/operational-agent-contract-2026-10-27; PR57 is open.
+The current development branch is codex/dual-perspective-navigation-2026-10-27, based on PR57's head 47b3000. PR57 remains the inherited information-contract change.
+
+Current navigation implementation: fresh PC preview and preparation select routine.navigation
+`dual-v1` alongside `inhabitant-v1`. Every decision receives one public overhead map
+(district plots/buildings, pseudonymous inhabitants, heat, district weather/conditions and economic
+health) and one current Godot first-person view. A selected reachable same-district destination
+resolves through Godot AStar2D and the existing adjacent-move kernel without intermediate policy
+calls. Travel is exclusive; arrival interaction choices arrive on the next regular decision.
+Sight uses existing Godot cameras/raycast/fog; hearing, recognition, grammar and task permissions
+keep their own boundaries. Only observation data reaches the agent; bindings and route evidence
+remain operator-side. Old tapes without the marker keep their original contract.
+
+Executed candidate verification: 1,989 tests passed across 158 files, one Windows platform skip,
+with native Godot enabled. Eight recovery tests and project TypeScript passed. The production
+controller completed a day with a fake provider and native Godot, one call per controlled decision,
+exact request validation, cold tape replay, submission recovery and Observatory verification.
+A standalone proof selected (1,-6) from (2,-1), navigated six legal steps in one scripted decision,
+then received the real first-person arrival view, gained work permission and recorded work.
+Its 31-decision partial tape cold-replays; no completed day is claimed for that short proof.
+A separate model-free run completed one day with 227 decisions, 320 movement steps and 14 diaries.
+The actual PowerShell/browser preview completed one day with 227 decisions and 51 controlled
+policy packets, rendered embedded Godot and reported replay verified through day 1. Browser checks
+also fixed pending-request decoding and expensive historical polling; cache checks still hash the
+actual bytes of all named evidence, including call archives, before skipping decode/replay.
+No new provider calls, credentials, allowance or financial journal operations were used.
+[Navigation contract, commands and evidence](../research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).
 
 The latest owner-authorized check ran from PowerShell at source 70d71bdf0ef0ad28d8c741aa2dc616f8fe4313de.
 It made exactly six actual Haiku calls: commit plus one act decision per controlled inhabitant.
@@ -186,12 +211,12 @@ not a claim that every mechanic is complete.
     "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "PR57 is open. Review/merge separately when appropriate; the checked-out branch already runs locally. Latest six-call evidence is six-call-schema-check-2026-10-27.json.",
+    "Current navigation branch inherits PR57. It runs locally without merging; integrate the parent before merging a stacked navigation PR. Latest paid evidence remains the historical six-call information-only check; no new paid calls authorized.",
     "Launch START-NODE.ps1 without -Start for no-cost society+Observatory+Godot. Enter the printed interface token, keep terminal open and use Advance one tick. Choose saved society-partial-98-2026-10-26 to inspect original returned summaries.",
     "For a separately approved paid test, use START-NODE.ps1 -Start -Ticks1 and human START after reviewing source/bounds; no new paid approval is supplied by this checkpoint.",
     "Keep planned civic/multidistrict/A04 mechanics and separately designed behavioural evaluation distinct from this verified current society."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/operational-agent-contract-2026-10-27"
+  "reviewBranch": "codex/dual-perspective-navigation-2026-10-27"
 }
 NODE_SESSION_CHECKPOINT -->

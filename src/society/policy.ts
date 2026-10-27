@@ -80,6 +80,7 @@ export function autonomousPolicy(v:SocietyVisibleContext):SocietyAction {
 /** Shortest legal route over the resident's public district map. No private positions or
  * researcher state are consulted. Equal routes use stable coordinates, not hidden RNG. */
 function toward(v:SocietyVisibleContext,target:{x:number;y:number}):SocietyAction['move']{
+  if(v.dual)return v.legalChoices.moves.find(q=>q.x===target.x&&q.y===target.y)??null;
   const key=(p:{x:number;y:number})=>`${p.x},${p.y}`;
   const sites=v.routine?[v.routine.sites.wall,v.routine.sites.oracle]:[];
   const points=new Map([...v.local.places,...sites].map(p=>[key(p),{x:p.x,y:p.y}]));
@@ -153,5 +154,6 @@ function routinePolicy(v:SocietyVisibleContext,a:SocietyAction,preference:number
   if(!r.tasks.leftHome&&(!target||at(target))){
     a.move=[...v.legalChoices.moves].sort((x,y)=>x.x-y.x||x.y-y.y)[0]??null;
   }else if(target&&!at(target))a.move=toward(v,target);
+  if(v.dual&&a.move)return Object.fromEntries(Object.keys(a).map(k=>[k,k==='move'?a.move:null])) as unknown as SocietyAction;
   return a;
 }

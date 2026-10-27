@@ -71,6 +71,8 @@ export interface SocietyCallOutcome extends SocietyCallBinding {
 }
 export interface SocietyRunEvent { kind: 'start' | 'request' | 'reserved' | 'dispatched' | 'response' | 'decision' | 'submission' | 'outcome' | 'finish'; data: unknown }
 export interface AccountedSocietyOptions {
+  perceive?:import('../observatory/perceptionBridge.js').PerceptionBridge['perceive'];
+  navigate?:import('../observatory/perceptionBridge.js').PerceptionBridge['navigate'];
   plan: SocietyRunPlan; ownerApproved: boolean; instruction: string; expectedCarriedFingerprint: string;
   sink: (event: SocietyRunEvent) => void; signal?: AbortSignal;
   /** Trusted operator gate only; never appears in the inhabitant context or action. */
@@ -138,11 +140,14 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     // the next decision. The sink owns private storage; this never enters an agent view.
     // If the sink fails or the process dies between execution and persistence, recovery
     // conservatively stops at the last recorded action and never assumes the missing one.
-    const submit=(person:string,action:ReturnType<typeof validateSocietyAction>,afterAdmission?:()=>void)=>{
+    const submit=async (person:string,action:ReturnType<typeof validateSocietyAction>,afterAdmission?:()=>void)=>{
       const beforeHash=society.hash,tick=society.tick,phase=society.phase,turn=society.turn;
+      await society.prepareTravel(person,action,options.navigate);
+      if(options.signal?.aborted)throw new SocietySecurityError('society_cancelled');
+      const senses=society.decisionEvidence(person);
       society.submit(person,action);afterAdmission?.();
       if(plan.routine)emit({kind:'submission',data:{sequence:submissionSequence++,person,tick,phase,turn,
-        action,beforeHash,afterHash:society.hash,afterTick:society.tick}});
+        action,...senses,beforeHash,afterHash:society.hash,afterTick:society.tick}});
     };
     while(society.tick<plan.ticks&&!stoppedReason){
       if(society.halted){halt(society.stoppedReason??'society_halted');break;}
@@ -159,11 +164,12 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
       for(const person of people){
         active=null;
         if(options.signal?.aborted){halt('society_cancelled');break;}
-        const revision=society.revision,view=society.view(person);
+        const revision=society.revision,view=await society.prepareView(person,options.perceive);
+        if(options.signal?.aborted){halt('society_cancelled');break;}
         if(!plan.controlled.includes(person)){
           const action=autonomousPolicy(view.visible);
           if(options.signal?.aborted){halt('society_cancelled');break;}
-          submit(person,action);continue;
+          await submit(person,action);continue;
         }
         if(calls>=plan.maxCalls){halt('society_call_limit');break;}
         const wire=buildSocietyRequest(view.visible,plan.model),current=budget.view();
@@ -175,7 +181,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         const binding:SocietyCallBinding={requestId,index:calls,episodeId,actorId:person,tick,phase,...(turn===undefined?{}:{turn})};
         active={binding,stage:'prepared',beforeHash:society.hash,beforeTick:tick,finished:false};
         const currentLease=()=>!society.halted&&society.revision===revision&&society.tick===tick&&society.phase===phase&&society.pendingPeople().includes(person);
-        const sent={...binding,body:wire.body,sha256:wire.sha256,provider:'anthropic' as const};
+        const sent={...binding,...society.decisionEvidence(person),body:wire.body,sha256:wire.sha256,provider:'anthropic' as const};
         emit({kind:'request',data:{...sent,maxInputTokens:wire.maxInputTokens,maxOutputTokens:wire.maxOutputTokens}});
         const wait=lastDispatch+plan.minIntervalMs-performance.now();
         if(wait>0)await pacedWait(wait,options.signal);
@@ -235,7 +241,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         active.stage='validated';emit({kind:'decision',data:{...binding,person,status:'validated',action}});
         if(options.signal?.aborted){stop('cancelled','society_cancelled');break;}
         if(!currentLease()){stop('stale_response','society_stale_response');break;}
-        submit(person,action,()=>{active!.stage='submitted';});outcome('submitted',null);
+        await submit(person,action,()=>{active!.stage='submitted';});outcome('submitted',null);
       }
     }
   }catch(error){

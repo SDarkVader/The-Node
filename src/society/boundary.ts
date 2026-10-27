@@ -1,4 +1,6 @@
 /** Inhabitant-only information and action boundary. Historical experiment contracts remain unchanged. */
+import {dualObservation,assertDualObservation,assertDualSpatialContext,destinationChoices,DUAL_NAVIGATION_RULES,type DualObservation} from './navigation.js';
+import type {FirstPersonObservation} from '../observatory/perception.js';
 import { observe, observerRef, refHexLength } from '../server/observer.js';
 import { roleArrays } from '../engine/inhabitants.js';
 import { distance } from '../engine/space.js';
@@ -80,9 +82,11 @@ export interface SocietyContextOptions {
   postcards?: SocietyPostcardObservation;
   dailyOracle?: SocietyDailyOracleObservation;
   routine?:SocietyRoutineObservation;
+  firstPerson?:FirstPersonObservation;
   information?:{contract:'inhabitant-v1';lastLottery:OwnLotteryFeedback|null};
 }
 export interface SocietyDecisionContext extends DecisionContext {
+  navigation?:true;
   phase: 'commit' | 'act';
   purchaseDue: boolean;
   offers: SocietyMarketOffer[];
@@ -252,7 +256,7 @@ export const SOCIETY_PUBLIC_ROLES = freeze({
 });
 
 /** Canonical public guide; no caller text may replace any part of it. */
-export function societyPublicRules(v2 = true, subjectOptional = false, routine = false) {
+export function societyPublicRules(v2 = true, subjectOptional = false, routine = false, navigation = false) {
   const duty=' Visit your work site, leave home, post on the Wall, attempt to buy food, visit the Oracle, address another resident and write a diary at home each day. Answer customers who request service using the speech menus. A refusal is a legal response; no particular intent or tone is required.';
   const roles=routine?{
     Baker:{...SOCIETY_PUBLIC_ROLES.Baker,duties:SOCIETY_PUBLIC_ROLES.Baker.duties+duty},
@@ -269,7 +273,7 @@ export function societyPublicRules(v2 = true, subjectOptional = false, routine =
       recognition: 'Recognition is directional and comes from direct address and repeated dealings; it can lapse. Passive presence, room talk, Wall posts and one-off purchases alone do not establish recognition. Visible role shows general capabilities, never a person\'s private choices, stock or intent.',
       communication: (routine?'One closed-grammar Wall self-state or proximity utterance per turn. Post at the Wall once each day. Role holders must answer their listed customers; addressed refusal is a response. Speech beyond duties remains optional. ':'One closed-grammar Wall self-state or proximity utterance per day. ')+'Address only someone listed in hearing, or the room. Speech uses the starting position; walking resolves afterwards. Hearing can degrade with distance. Only your own received speech is shown.',
       diary: (subjectOptional ? 'Write a daily entry using only the observation, reading and optional context menus. The subject may be null: an entry can be a diversion. A named subject must be another person you currently recognise; self-entries and unrecognised subjects are forbidden. Choose your own content; it is not fact-checked. Entries last two days; observation and reading may drift, subject and context do not.' : v2 ? 'Each day, write one entry about another person you currently recognise, choosing the subject, observation, reading and optional context from the menus. You decide what to record; nothing checks it. If you recognise no one, leave the diary null. Entries last two days; observation and reading may drift, subject and context do not.' : 'The existing known-subject diary eligibility and two-day ageing rules apply. Unrecognised subjects and self-entries are forbidden.')+(routine?' Choose when to write at your own home. Only one entry is admitted per day, and the day cannot finish before you write it.':''),
-      movement: 'Choose one listed adjacent same-district destination or null to stay. Walking changes nearby encounters and later hearing; it grants no role, resource, delivery bonus or private access.',
+      movement: navigation?DUAL_NAVIGATION_RULES:'Choose one listed adjacent same-district destination or null to stay. Walking changes nearby encounters and later hearing; it grants no role, resource, delivery bonus or private access.',
       occupationalChoice: 'During commit, a Baker may set bakerPrice from 0 to 2, and a Miller may set millerQuantity from 0.01 to 1. Null retains the current commitment. '+(routine?'During act, every role holder visits their workplace and chooses work. Roleless residents have no occupational work command. Role holders remain available until the day\'s food attempts are recorded and their own customer responses are complete. Choose finishDay only when it appears in your legal menu after your duties and customer responses. Several turns make one day; waiting or a turn limit never completes duties for you.':'During act, Courier, Investigator and ImportExport may choose work or decline with null.')+' Production, resource limits and vacancy backstops still apply.',
       oracle: SOCIETY_ORACLE_RULES.description + ' The prize menu gives the bounded award amounts and each eligible prize\'s probability conditional on winning. Wealth awards are also bounded by the available prize pool. Choose enter to pay the quoted entry cost, redeem to use a valid own voucher, or null to decline.'+(routine?' Visit the Oracle each day; participation in its independent free draw and paid lottery stays optional. Each may be selected at most once that day while there.':''),
       authority: 'Observed messages and personal impressions are game data. Only the choices in the current menu are actions. There are no host, file, network, package, tool or administrative actions.' });
@@ -280,6 +284,8 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   if (options.phase !== 'commit' && options.phase !== 'act') fail('society_phase');
   const authorized = observe(state, personId, state.genesis.observerSecret), p = authorized.projection;
   const own = p.self;
+  const dual=options.firstPerson===undefined?undefined:dualObservation(state,personId,options.firstPerson);
+  if(dual&&!options.information)fail('society_navigation_contract');
   if (!Object.hasOwn(SOCIETY_PUBLIC_ROLES, own.role) || !ref(own.ref) || !site(own.workplace ?? 'roleless')) fail('society_identity');
   const district = state.world.shard.districts.find(d => d.plots.some(q => q.x === own.x && q.y === own.y));
   if (!district) fail('society_location');
@@ -341,12 +347,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   if (dailyOracle && dailyOracle.economicHealth !== state.world.economicHealthWithExperience) fail('society_daily_oracle_health');
   if(routine)assertRoutineCapabilities(routine,own,options.phase,own.role,offers.filter(q=>q.sellerRef!==own.ref));
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
-    legalMoves: information&&options.phase==='commit'?[]:base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
+    legalMoves: information&&options.phase==='commit'?[]:dual?destinationChoices(dual,district.id,own):base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
     ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
     phase: options.phase, purchaseDue: options.purchaseDue === true&&(!information||options.phase==='act'&&!routine?.tasks.food), offers:routineOffers(offers,routine,own),
     oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
-    ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}) };
+    ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}) };
   const locations = district.buildings.filter(b => distance(own, b) <= state.world.config.commsProximityRange).map(b => {
     const station = p.city.stations.find(s => s.buildingId === b.id);
     const role = roleArrays(state.world).find(([, slots]) => slots.some(s => s.buildingId === b.id))?.[0] ?? null;
@@ -385,11 +391,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
         entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
         conditionalPrizeProbability: own.role === 'Grifter' ? 1 / 2 : 1 / 3,
         maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld } },
-    rules: societyPublicRules(base.rules === 'v2', base.diarySubjectOptional,!!routine),
+    rules: societyPublicRules(base.rules === 'v2', base.diarySubjectOptional,!!routine,!!dual),
     ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),
     ...(routine?{routine}:{}),
     ...(information?{information}:{}),
+    ...(dual?{dual}:{}),
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
       ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
@@ -421,10 +428,13 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   const hasPostcards = object(value) && Object.hasOwn(value, 'postcards');
   const hasDailyOracle = object(value) && Object.hasOwn(value, 'dailyOracle');
   const hasRoutine = object(value) && Object.hasOwn(value, 'routine');
+  const hasDual=object(value)&&Object.hasOwn(value,'dual');
   const hasInformation = object(value) && Object.hasOwn(value, 'information');
   const subjectOptional = object(value) && object(value.legalChoices) && Object.hasOwn(value.legalChoices, 'diarySubjectOptional');
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[])])) fail('society_serialized_view');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[]),...(hasDual?['dual']:[])])) fail('society_serialized_view');
   const v = value;
+  const dual: DualObservation|undefined=hasDual?v.dual:undefined;
+  if(dual){if(!hasInformation)fail('society_navigation_contract');assertDualObservation(dual);}
   const routine=hasRoutine?routineProjection(v.routine):undefined;
   if(routine&&!subjectOptional)fail('society_serialized_routine');
   let postcards: SocietyPostcardView | undefined;
@@ -456,6 +466,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
     !list(v.local.locations, q => record(q, ['buildingId', 'x', 'y', 'role', 'state', 'heat']) && site(q.buildingId) && coordinate(q.x) && coordinate(q.y) &&
       nullable(q.role, x => member(x, ['baker', 'miller', 'courier', 'investigator', 'importExport'])) && member(q.state, ['FILLED', 'VACANT', 'BACKSTOPPED', 'housing']) && member(q.heat, ['none', 'low', 'medium', 'high'])) ||
     !list(v.local.people, q => record(q, ['ref', 'x', 'y', 'role']) && ref(q.ref) && q.ref !== v.self.ref && coordinate(q.x) && coordinate(q.y) && member(q.role, Object.keys(SOCIETY_PUBLIC_ROLES)))) fail('society_serialized_local');
+  if(dual)assertDualSpatialContext(dual,{ref:v.self.ref,x:v.self.x,y:v.self.y,role:v.self.role},v.local as any);
   if (!list(v.recognition, q => record(q, ['ref', 'face']) && ref(q.ref) && record(q.face, ['hue', 'skinTone', 'faceShape', 'hairStyle', 'markCount']) &&
     bounded(q.face.hue, 0, 359) && bounded(q.face.skinTone, 0, 1) && day(q.face.faceShape) && day(q.face.hairStyle) && day(q.face.markCount)) ||
     !list(v.hearing, ref) || !list(v.heard, q => record(q, ['speaker', 'intent', 'tone', 'clarity', 'referent', 'context']) && ref(q.speaker) && member(q.intent, INTENTS) && member(q.tone, TONES) && bounded(q.clarity, 0, 1) &&
@@ -473,7 +484,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   const prizes = { wealth: SOCIETY_ORACLE_RULES.wealthPrize, ownRoleStock: v.self.role === 'Grifter' ? null : SOCIETY_ORACLE_RULES.resourceStockPrize,
     ownRoleStockCap: SOCIETY_ORACLE_RULES.personalResourceCap, entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
     conditionalPrizeProbability: v.self.role === 'Grifter' ? 1 / 2 : 1 / 3, maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld };
-  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true, subjectOptional,!!routine))) fail('society_serialized_rules');
+  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true, subjectOptional,!!routine,!!dual))) fail('society_serialized_rules');
   if(routine){
     assertRoutineCapabilities(routine,{x:v.self.x,y:v.self.y},v.phase,v.self.role,v.wall.prices.filter((q:any)=>q.sellerRef!==v.self.ref));
     if(routine.customers.includes(v.self.ref)||routine.awaitingSeller===v.self.ref||v.oracle.canEnter&&(!routine.can.oracle||routine.lotteryUsed)||v.oracle.canRedeem&&(!routine.can.oracle||routine.lotteryUsed))fail('society_serialized_routine');
@@ -491,7 +502,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
     legalMoves: v.legalChoices.moves, presentRefs: v.legalChoices.present, knownSubjects: v.legalChoices.diarySubjects,
     rules: 'v2', hearingRefs: v.hearing, phase: v.phase, offers, purchaseDue: v.legalChoices.purchaseDue,
     ...(subjectOptional ? {diarySubjectOptional:true as const} : {}),
-    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}) };
+    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
   if(hasInformation){
     const i=v.information;
@@ -512,7 +523,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
         nullable(q.prize,p=>member(p,['wealth','resourceStock','entryVoucher']))&&finite(q.prizeAmount)&&q.prizeAmount>=0&&nullable(q.fundedBy,p=>member(p,['wealth','voucher']))&&
         (q.won?q.prize!==null:q.prize===null&&q.prizeAmount===0)))fail('society_serialized_information');
     const same=(a:{x:number;y:number},b:{x:number;y:number})=>a.x===b.x&&a.y===b.y;
-    const moves=v.phase==='commit'?[]:v.local.places.filter((p:any)=>Math.abs(p.x-v.self.x)+Math.abs(p.y-v.self.y)===1).map((p:any)=>({x:p.x,y:p.y}));
+    const moves=v.phase==='commit'?[]:dual?destinationChoices(dual,v.local.district,{x:v.self.x,y:v.self.y}):v.local.places.filter((p:any)=>Math.abs(p.x-v.self.x)+Math.abs(p.y-v.self.y)===1).map((p:any)=>({x:p.x,y:p.y}));
     if(JSON.stringify(v.legalChoices.moves)!==JSON.stringify(moves)||
       v.local.people.some((p:any)=>Math.abs(p.x-v.self.x)+Math.abs(p.y-v.self.y)>i.mechanics.hearingRange)||
       v.hearing.some((r:string)=>!v.local.people.some((p:any)=>p.ref===r))||
@@ -530,6 +541,7 @@ export function assertSerializedSocietyVisibleContext(value:unknown):asserts val
 export function validateSocietyAction(value: unknown, c: SocietyDecisionContext): SocietyAction {
   assertJsonData(value);
   if (!object(value) || !exact(value, ['move', 'communication', 'diary', 'occupation', 'purchase', 'oracle', ...(c.postcards ? ['postcards'] : []), ...(c.dailyOracle ? ['dailyOracle'] : [])])) fail('society_action_shape');
+  if(c.navigation&&value.move!==null&&Object.entries(value).some(([k,v])=>k!=='move'&&v!==null))fail('society_travel_only');
   const old = validateDecision({ move: value.move, communication: value.communication, diary: value.diary, role: null }, c);
   if (!old) fail('society_action_illegal');
   if(c.routine){
@@ -600,10 +612,24 @@ export function societyDecisionSchema(c: SocietyDecisionContext): Record<string,
   let communication:unknown=original.properties.communication;
   if(c.routine&&!c.routine.can.wallPost&&Array.isArray(original.properties.communication?.anyOf))communication={anyOf:(original.properties.communication.anyOf as Record<string,any>[]).filter(q=>q.properties?.kind?.enum?.[0]!=='wallPost')};
   const purchase=[...(sellers.length?[obj({seller:{type:'string',enum:sellers},quantity:{type:'number',enum:[1]}})]:[]),...(c.routine?.can.foodFailure?[obj({kind:kind('seekFood')})]:[])];
-  return obj({ move: c.phase === 'act' ? original.properties.move : nil,
+  // Anthropic accepts only scalar enum values. Group complete legal columns so
+  // the paired coordinates remain exact without object enums or per-tile boilerplate.
+  const columns=new Map<number,number[]>();
+  if(c.navigation)for(const p of c.legalMoves){const ys=columns.get(p.x)??[];ys.push(p.y);columns.set(p.x,ys);}
+  const destinations=[...columns].map(([x,ys])=>obj({x:{type:'integer',enum:[x]},y:{type:'integer',enum:ys}}));
+  const move=c.navigation?(destinations.length?{anyOf:[nil,...destinations]}:nil):original.properties.move;
+  const schema=obj({ move: c.phase === 'act' ? move : nil,
     communication: c.phase === 'act' ? communication : nil, diary: c.phase === 'act'&&(!c.routine||c.routine.can.diary) ? original.properties.diary : nil,
     occupation, purchase: c.phase === 'act' && c.purchaseDue && purchase.length ? {anyOf:[nil,...purchase]} : nil,
     oracle: c.phase === 'act' && oracle.length ? optional({ type: 'string', enum: oracle }) : nil,
     ...(c.postcards ? { postcards: postcardSchema } : {}),
     ...(c.dailyOracle ? { dailyOracle: c.phase === 'act' && c.dailyOracle.canEnter ? optional(kind('enter')) : nil } : {}) });
+  if(c.navigation&&c.phase==='act'&&c.legalMoves.length){
+    const travel=Object.fromEntries(Object.keys(schema.properties).map(k=>[k,k==='move'?{anyOf:destinations}:nil]));
+    const refs=Object.fromEntries(Object.keys(schema.properties).map(k=>[k,{$ref:'#/$defs/'+k}]));
+    // Reuse local grammars rather than duplicating the entire hearing/diary menu
+    // in both the root and stationary branch. All objects remain closed.
+    return {...obj(refs),$defs:schema.properties,anyOf:[obj({...refs,move:nil}),obj(travel)]};
+  }
+  return schema;
 }

@@ -22,6 +22,25 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
+Godot first-person view per decision. Agents select reachable geographical destinations;
+Godot routes the journey through existing legal adjacent plots without extra model calls.
+Travel occupies that decision; the next normal decision supplies arrival sight and local
+interaction options. Hearing, recognition, lexical speech and task permissions stay separate
+from map knowledge. Historical tapes retain their original rules.
+
+The candidate passed 1,989 tests in 158 files with native Godot, one platform skip, eight recovery
+tests and TypeScript. An actual six-step trip reached its workplace, exposed the arrival work
+option and recorded work; the production controller also completed a day using a fake provider.
+These checks made zero paid calls. [Implementation and execution evidence](docs/research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).
+
+To repeat the native proof from PowerShell, using the configured PC Godot path:
+
+```powershell
+$nodeSettings = Get-Content "$env:LOCALAPPDATA/The-Node/test.local.json" -Raw | ConvertFrom-Json
+node --import tsx scripts/verify-dual-navigation.ts --godot $nodeSettings.godot --output "$env:TEMP/node-navigation-$([guid]::NewGuid())"
+```
+
 A separately authorized PowerShell check at `70d71bd` completed six actual Haiku calls: two
 decisions per Miller/Baker, all with nonempty returned thinking summaries. Exact requests,
 action execution, private-state noninterference and cold replay passed with zero integrity

@@ -1,5 +1,5 @@
 /** Researcher adapter for the actual Society tape. Replay never runs a policy or sender. */
-import {readFileSync,lstatSync,existsSync} from 'node:fs';
+import {readFileSync,lstatSync,existsSync,readdirSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {Society,verifySocietyTape,type SocietyTape} from '../society/runtime.js';
@@ -17,6 +17,8 @@ interface Active {
   read:()=>SocietyObservationInput;
   gate?:ManualTickGate;
   stop:()=>void;
+  /** Trusted controller revision; avoids cloning unchanged live tapes on every poll. */
+  version?:()=>string;
 }
 type State=ReturnType<Society['inspect']>;
 interface Frame {cursor:string;sourceTick:number;worldHash:string;type:string;state:State;throughDay:number;throughDecisions:number;sourceTurn?:number;latest?:boolean}
@@ -24,11 +26,38 @@ export class SocietyObservatorySource {
   #frames:Frame[]=[];#input!:SocietyObservationInput;#fingerprint='';
   #report!:ReturnType<typeof buildSocietyResultsReport>;
   #control:ManualTickGate['state']|null=null;
+  #savedBytesFingerprint='';#activeVersion:string|undefined;
   constructor(readonly registration:SocietyRegistration,readonly active?:Active){
     if(!/^[A-Za-z0-9._-]{1,80}$/.test(registration.id))throw Error('society_observatory_registration');
   }
   refresh(){
     try{
+      const activeVersion=this.active?.version?.();
+      if(activeVersion!==undefined&&activeVersion===this.#activeVersion)return true;
+      let savedBytesFingerprint='';
+      if(!this.active){
+        // Re-read and hash actual bytes, including call archives, before skipping any
+        // work. Same-size edits and restored timestamps cannot evade this check.
+        const hash=createHash('sha256'),directory=this.registration.directory;
+        const add=(name:string,max=128*1024*1024)=>{
+          hash.update(name+'\0');const path=join(directory,name);
+          if(!existsSync(path)){hash.update('missing\0');return;}
+          const stat=lstatSync(path);
+          if(!stat.isFile()||stat.isSymbolicLink()||stat.size>max)throw Error('society_observatory_artifact_bounds');
+          const bytes=readFileSync(path);hash.update(String(bytes.length)+'\0');hash.update(bytes);
+        };
+        for(const name of ['society.json','events.jsonl','summary.json','errors.json','run-start.json','finalization.json','recovery.json'])add(name);
+        const calls=join(directory,'calls');
+        if(existsSync(calls)){
+          const stat=lstatSync(calls);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('society_observatory_artifact_bounds');
+          const entries=readdirSync(calls,{withFileTypes:true}).filter(e=>/^\d{1,10}$/.test(e.name)).sort((a,b)=>a.name.localeCompare(b.name));
+          if(entries.length>5000)throw Error('society_observatory_artifact_bounds');
+          for(const entry of entries){if(!entry.isDirectory()||entry.isSymbolicLink())throw Error('society_observatory_artifact_bounds');
+            for(const name of ['request.json','response.json','status.json','transport.json'])add(join('calls',entry.name,name),4*1024*1024);}
+        }
+        savedBytesFingerprint=hash.digest('hex');
+        if(savedBytesFingerprint===this.#savedBytesFingerprint)return true;
+      }
       let input:SocietyObservationInput;
       if(this.active)input=this.active.read();
       else{
@@ -66,7 +95,7 @@ export class SocietyObservatorySource {
           errors:report.recordedErrors,runStart:report.runStart,finalization:report.finalization,status};
       }
       const control=this.active?.gate?.state??null,fingerprint=digest([input,control]);
-      if(fingerprint===this.#fingerprint)return true;
+      if(fingerprint===this.#fingerprint){this.#savedBytesFingerprint=savedBytesFingerprint;this.#activeVersion=activeVersion;return true;}
       verifySocietyTape(input.tape,input.tape.genesis.sourceRevision,{allowPartial:true});
       const tape=input.tape,s=new Society({seed:tape.genesis.seed,sourceRevision:tape.genesis.sourceRevision,
         config:tape.genesis.config,observerSecret:tape.genesis.observerSecret,
@@ -76,7 +105,7 @@ export class SocietyObservatorySource {
       const frame=(type:string,throughDay:number,suffix='',latest=false)=>frames.push({cursor:`day-${s.tick}-${s.hash}${suffix}`,
         sourceTick:s.tick,worldHash:s.hash,type,state:s.inspect(),throughDay,throughDecisions,...(tape.routineConfig?{sourceTurn:s.turn}:{}),...(latest?{latest:true}:{})});
       frame('genesis',0);
-      for(const decision of tape.decisions){const before=s.tick,beforeTurn=s.turn,beforePhase=s.phase;s.submit(decision.person,decision.action);throughDecisions++;
+      for(const decision of tape.decisions){const before=s.tick,beforeTurn=s.turn,beforePhase=s.phase;s.bindEvidence(decision.person,decision,decision.action);s.submit(decision.person,decision.action);throughDecisions++;
         if(s.tick!==before)frame('day_committed',s.tick);
         else if(tape.routineConfig&&(s.turn!==beforeTurn||s.phase!==beforePhase))frame('turn_committed',decision.day,`-turn-${s.turn}`);}
       if(this.active||tape.decisions.at(-1)?.day!==s.tick&&tape.decisions.length)
@@ -93,12 +122,18 @@ export class SocietyObservatorySource {
         if(r.request.body!==null){
           validateSocietyWire(Buffer.from(r.request.body),r.request.recordedSha256??r.request.actualSha256!);
           if(this.active&&r.admission!=='recorded_in_tape'&&r.visible!==null){
+            if(r.person&&s.dualNavigation){
+              const events=input.eventsText?.split('\n').filter(Boolean).map(line=>parseSocietyEvidence<any>(line))??[];
+              const request=events.find(e=>e.kind==='request'&&e.data.requestId===r.requestId);
+              if(!request?.data.perception)throw Error('society_observatory_missing_perception');
+              s.bindEvidence(r.person,{perception:request.data.perception});
+            }
             if(!r.person||!s.pendingPeople().includes(r.person)||digest(s.view(r.person).visible)!==digest(r.visible))
               throw Error('society_observatory_unbound_observation');
           }
         }
       this.#input=structuredClone(input);this.#report=report;this.#control=control;
-      this.#frames=frames;this.#fingerprint=fingerprint;return true;
+      this.#frames=frames;this.#fingerprint=fingerprint;this.#savedBytesFingerprint=savedBytesFingerprint;this.#activeVersion=activeVersion;return true;
     }catch(error){this.active?.stop();throw error;}
   }
   get latestCursor(){return this.#frames.at(-1)?.cursor??null;}

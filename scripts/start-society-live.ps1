@@ -5,6 +5,7 @@ param(
   [Parameter(Mandatory = $true)][string]$Config,
   [switch]$CheckOnly,
   [string]$WebWorld,
+  [string]$Godot,
   [string]$History,
   [switch]$WithoutInterface
 )
@@ -40,6 +41,7 @@ try {
   $runArguments=@('--import','tsx','scripts/run-society-live.ts','--owner-approved',
     '--bundle',$execution.bundle,'--budget',$execution.budget,'--carried-fingerprint',$execution.carriedFingerprint,
     '--approval',$execution.approval,'--credential',$execution.credential,'--output',$execution.output)
+  if (-not [string]::IsNullOrWhiteSpace($Godot)) { $runArguments+=@('--godot',$Godot) }
   if (-not $WithoutInterface) {
     $runArguments+=@('--observatory','--manual-ticks','--web-world',$WebWorld)
     if (-not [string]::IsNullOrWhiteSpace($History)) { $runArguments+=@('--history',$History) }

@@ -9,14 +9,18 @@ import type {ParticipantHooks} from '../engine/inhabitants.js';
 import type {SocietyAction,SocietyRoutineObservation} from './boundary.js';
 import type {WallPost} from '../comms/grammar.js';
 
-export interface SocietyRoutineConfig {maxTurnsPerDay:number;information?:'inhabitant-v1'}
+export interface SocietyRoutineConfig {maxTurnsPerDay:number;information?:'inhabitant-v1';navigation?:'dual-v1'}
 export function validateSocietyRoutineConfig(value:unknown):asserts value is SocietyRoutineConfig {
   if(!value||typeof value!=='object'||Array.isArray(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value))||
-    Reflect.ownKeys(value).some(k=>k!=='maxTurnsPerDay'&&k!=='information'))
+    Reflect.ownKeys(value).some(k=>k!=='maxTurnsPerDay'&&k!=='information'&&k!=='navigation'))
     throw Error('society_routine_config');
   if(Object.hasOwn(value,'information')){
     const information=Object.getOwnPropertyDescriptor(value,'information');
     if(!information?.enumerable||!Object.hasOwn(information,'value')||information.value!=='inhabitant-v1')throw Error('society_routine_config');
+  }
+  if(Object.hasOwn(value,'navigation')){
+    const n=Object.getOwnPropertyDescriptor(value,'navigation'),i=Object.getOwnPropertyDescriptor(value,'information');
+    if(!n?.enumerable||!Object.hasOwn(n,'value')||n.value!=='dual-v1'||i?.value!=='inhabitant-v1')throw Error('society_routine_config');
   }
   const field=Object.getOwnPropertyDescriptor(value,'maxTurnsPerDay');
   if(!field||!Object.hasOwn(field,'value')||!field.enumerable||!Number.isSafeInteger(field.value)||field.value<1||field.value>128)
