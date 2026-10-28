@@ -1,6 +1,7 @@
 # NODE — experiments in an evolving social-economic world
 
 CI follow-up: the routine launch test now asserts the reviewed $0.032 per-request ceiling.
+The dual-navigation suite also checks that a route returned after a competing submission is rejected.
 
 NODE is an independently designed environment for studying how agents interpret circumstances,
 use memory, reconsider earlier thinking and make decisions whose consequences develop over time.

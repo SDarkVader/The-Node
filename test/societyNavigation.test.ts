@@ -70,6 +70,22 @@ describe('destination navigation boundary',()=>{
     expect(()=>assertGridPath(grid,grid[0]!,grid[2]!,[grid[2]!])).toThrow();
     expect(()=>assertGridPath(grid,grid[0]!,grid[2]!,[grid[1]!,grid[1]!])).toThrow();
   });
+  it('rejects route results after another inhabitant changes the pending turn',async()=>{
+    const s=create();await commit(s);
+    const [person,other]=s.pendingPeople();
+    const view=await s.prepareView(person!,perceive);
+    await s.prepareView(other!,perceive);
+    const target=view.visible.legalChoices.moves.find(q=>Math.abs(q.x-view.visible.self.x)+Math.abs(q.y-view.visible.self.y)>1)!;
+    const turn=s.turn;
+    await expect(s.prepareTravel(person!,{...nil(),move:target},async request=>{
+      const route=await navigate(request);
+      s.submit(other!,nil());
+      return route;
+    })).rejects.toThrow('society_stale_navigation');
+    expect(s.turn).toBe(turn);
+    expect(s.decisionEvidence(person!)).not.toHaveProperty('navigation');
+    expect(s.pendingPeople()).toContain(person);
+  });
   it('provides one cached overhead per decision, no private map fields, no remote permissions, and fails stale results',async()=>{
     const s=create(),p=s.pendingPeople()[0]!;let count=0;
     expect(()=>s.view(p)).toThrow('society_perception_required');
