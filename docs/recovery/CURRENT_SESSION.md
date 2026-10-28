@@ -293,6 +293,7 @@ not a claim that every mechanic is complete.
     "No further paid calls authorized. For an owner-run paid launch use START-NODE.ps1 -Start -Ticks1, review actual source/calls/USD bounds and enterSTART; keep terminalopen. Preview omits-Start and requires no provider. Latest closed history is carried automatically.",
     "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
-  "privateCredentialsOrExperimentalInputsIncluded": false
+  "privateCredentialsOrExperimentalInputsIncluded": false,
+  "reviewBranch": "codex/pr58-merge-handover-2026-10-28"
 }
 NODE_SESSION_CHECKPOINT -->
