@@ -1,0 +1,41 @@
+{
+  "format": "node-sanitized-launcher-offline-verification-v1",
+  "date": "2026-10-28",
+  "sourceRevision": "6307a8ed42f8675c8768c857a4804edc6d94671d",
+  "command": "powershell -NoProfile -File .\\START-NODE.ps1 -Ticks 1 -NoBrowser",
+  "privateSettingsRestored": true,
+  "latestJournal": {
+    "requests": 71,
+    "bookedMicroUsd": "339878",
+    "heldMicroUsd": "0",
+    "closed": true,
+    "overrun": false,
+    "pendingRun": null
+  },
+  "observatory": {
+    "ready": true,
+    "savedLiveRunsAvailable": 6,
+    "latestSavedRunAvailable": true,
+    "embeddedGodot": true,
+    "godotIndexHttpStatus": 200,
+    "manualDayAdvanced": 1,
+    "cleanExitCode": 0,
+    "listenerAfterExit": false,
+    "settingsLockReacquiredAfterExit": true
+  },
+  "offlinePreview": {
+    "status": "completed",
+    "completedDays": 1,
+    "decisions": 227,
+    "syntheticControlledRequests": 51,
+    "providerCalls": 0,
+    "providerResponses": 0,
+    "reportIntegrityIssues": 0,
+    "replayVerified": true,
+    "replayFinalHash": "863b22960d62e88aa97ff861e7822ca1b441b9bd3bba0969f66c1882bbfa07e4"
+  },
+  "pullRequest56": {
+    "open": true,
+    "draft": true
+  }
+}

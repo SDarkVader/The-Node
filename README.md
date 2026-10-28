@@ -1,5 +1,14 @@
 # NODE — experiments in an evolving social-economic world
 
+2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
+were restored with a pointer to the verified latest closed journal and a registry of six
+preserved live runs. `START-NODE.ps1 -Ticks 1 -NoBrowser` launched an offline preview,
+served the Observatory and embedded Godot page, and completed one manual day with
+227 decisions, 51 synthetic controlled requests, zero provider calls and zero report
+integrity issues. Its saved tape replayed to the same final hash. The preview exited
+cleanly and released the launcher lock. PR #56 remains draft. This PC-specific repair
+does not grant a paid run. [Scoped offline evidence](docs/research/evidence/launcher-offline-restoration-2026-10-28.json).
+
 CI follow-up: the routine launch test now asserts the reviewed $0.032 per-request ceiling.
 The dual-navigation suite also checks that a route returned after a competing submission is rejected.
 
