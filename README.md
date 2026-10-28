@@ -22,6 +22,34 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+A separately authorized PowerShell check at `70d71bd` completed six actual Haiku calls: two
+decisions per Miller/Baker, all with nonempty returned thinking summaries. Exact requests,
+action execution, private-state noninterference and cold replay passed with zero integrity
+issues. It intentionally stops after one action turn without completing a day. USD 0.020403
+is booked, zero held; its closed history is now carried. Raw traces remain private and the
+run is saved in the Observatory selector. [Sanitized check](docs/research/evidence/six-call-schema-check-2026-10-27.json).
+
+Fresh PC runs now select the versioned `inhabitant-v1` information contract within Society v4.
+Every resident receives the active public economic parameters, own role tenure, own last food
+receipt and paid Oracle result, alongside existing personal assets, diary, heard speech, local
+conditions and daily duties. Commit-phase menus now agree with the schema's phase restrictions.
+The last-egress worker checks the complete allowlist; old tapes retain their original contract.
+The preview now honours `-Seed`. A standalone zero-provider verification is available:
+
+```powershell
+node --import tsx scripts/verify-node-operational.ts --output "$env:TEMP/node-proof-$([guid]::NewGuid())" --ticks 3
+```
+
+Implementation `6665eef` passed 1,979 tests across 157 files with actual Godot enabled and one
+platform skip, plus eight recovery tests and project/CLI TypeScript checks. Three offline days
+verified 1,148 decisions, 897 moves, 42 diary writes and 42 food receipts. The actual standalone
+PowerShell/browser run completed two manual days, with synchronized Godot, historical selection,
+exact observation inspection, raw exports and cold replay. Preserved actual evidence independently
+replayed all 98 requests/responses through 383 decisions with zero conflicts. The owner approved
+append-only closure of the historical authorization; previous entries, USD 0.304048 booked and
+zero held remain intact. Final-source PowerShell preparation with STOP passed with no allowance,
+execution or journal mutation. No new paid test is approved. [Verification and commands](docs/research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
+
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through
 its last recorded outcome; no day was committed. Future v4 runs record each accepted

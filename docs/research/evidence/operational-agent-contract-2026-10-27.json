@@ -1,0 +1,86 @@
+{
+  "format": "node-operational-agent-verification-v1",
+  "verifiedImplementation": "6665eef3cafdf9efcc9187e84270b9cb156b4cba",
+  "date": "2026-10-27",
+  "providerCalls": 0,
+  "informationContract": "inhabitant-v1",
+  "regression": {
+    "passed": 1979,
+    "files": 157,
+    "platformSkips": 1,
+    "realGodotEnabled": true,
+    "recoveryPassed": 8,
+    "projectTypecheck": true,
+    "affectedCliTypecheck": true,
+    "browserJavaScriptSyntax": true
+  },
+  "transportProof": {
+    "ticks": 3,
+    "decisions": 1148,
+    "controlledRequests": 283,
+    "roles": [
+      "Baker",
+      "Courier",
+      "Grifter",
+      "ImportExport",
+      "Investigator",
+      "Miller"
+    ],
+    "movements": 897,
+    "diaryWrites": 42,
+    "foodReceipts": 42,
+    "integrityIssues": 0,
+    "maxConservativeRequestMicroUsd": 10973,
+    "existingRequestCeilingMicroUsd": 20000,
+    "maxAccountingResidual": 1.7763568394002505e-14,
+    "finalHash": "5b386113fb7eb1a4c1a6c895803d00d860fcdc43e7b46c04b23af5eb0bb2666f",
+    "freshProcessReplayVerified": true,
+    "syntheticResponses": true
+  },
+  "pcBrowser": {
+    "windowsPowerShell": true,
+    "embeddedGodot": true,
+    "manualDays": 1,
+    "decisions": 389,
+    "controlledPackets": 94,
+    "finalHash": "add7da2061083a1056d723cd9a811f1b4854d2d1e839dd2ba3bb4bcdcb989cbd",
+    "exactObservationInspected": true,
+    "historicalCursorVerified": true,
+    "ownTurnEffectsDisplayed": true,
+    "actualSavedSummaryInspected": true,
+    "browserErrors": 0,
+    "defaultBrowserAutomaticallyOpened": true
+  },
+  "realHistory": {
+    "actualRequests": 98,
+    "actualResponses": 98,
+    "replayedDecisions": 383,
+    "policyReconstructedDecisions": 285,
+    "committedDays": 0,
+    "integrityIssues": 0,
+    "originalExperimentFilesModified": false
+  },
+  "ownerApprovedClosure": {
+    "newRequests": 0,
+    "oldEventsPreserved": true,
+    "carriedHistoryPreserved": true,
+    "bookedMicroUsd": 304048,
+    "heldMicroUsd": 0,
+    "staleLockRecoveredThroughProductionLivenessCheck": true,
+    "originalJournalBackedUp": true
+  },
+  "paidPreparationOnly": {
+    "actualLatestCarriedHistory": true,
+    "input": "STOP",
+    "approved": false,
+    "newAllowanceCreated": false,
+    "executionCreated": false,
+    "providerCalls": 0,
+    "journalUnchanged": true,
+    "pendingRunReleased": true,
+    "maxCalls": 387,
+    "limitMicroUsd": 1000000,
+    "perRequestMicroUsd": 20000
+  },
+  "evaluation": "execution_integrity_only_no_reasoning_quality_grade"
+}

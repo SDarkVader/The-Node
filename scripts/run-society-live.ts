@@ -26,10 +26,10 @@ import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/soc
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -49,7 +49,8 @@ interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcard
 if(values.prepare){
   if(existsSync(bundlePath))throw Error('society_bundle_exists');
   const seed=Number(values.seed),ticks=Number(values.ticks);
-  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns'])};
+  if(values['inhabitant-information']&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
+  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']?{information:'inhabitant-v1'}:{})};
   if(routine)validateSocietyRoutineConfig(routine);
   if(!Number.isSafeInteger(seed))throw Error('society_seed');
   if(values['postcard-start-ms']!==undefined&&!values['postcard-rate'])throw Error('society_postcard_rate_required');

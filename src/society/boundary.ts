@@ -14,6 +14,9 @@ import { COMPLETION_REWARD, SUPPORT_TASK_FRICTION_BAR } from '../engine/roleComp
 import { oracleWinProbability } from '../engine/oracle.js';
 import { POSTCARD_TIERS, POSTCARD_BUFFER_HOURS, POSTCARD_HOUR_MS, postcardAccrualDenominator,
   type PostcardTier, type PostcardRate } from '../engine/postcards.js';
+import {inhabitantInformation,INHABITANT_ACTION_ORDER,INHABITANT_WEALTH_RULES,type OwnLotteryFeedback} from './information.js';
+import {BAKER_MAX_DAILY_CUSTOMERS,SUPPORT_ROLE_DAILY_WAGE,GRIFTER_DAILY_INCOME} from '../engine/wealth.js';
+import {FLOUR_PER_BREAD} from '../engine/resources.js';
 
 export class SocietySecurityError extends Error {
   constructor(code = 'society_boundary_violation') { super(code); this.name = 'SocietySecurityError'; }
@@ -77,6 +80,7 @@ export interface SocietyContextOptions {
   postcards?: SocietyPostcardObservation;
   dailyOracle?: SocietyDailyOracleObservation;
   routine?:SocietyRoutineObservation;
+  information?:{contract:'inhabitant-v1';lastLottery:OwnLotteryFeedback|null};
 }
 export interface SocietyDecisionContext extends DecisionContext {
   phase: 'commit' | 'act';
@@ -284,6 +288,11 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   const nearbyRefs = nearby.map(q => q.ref);
   const base = policyInput(authorized.context);
   const routine=options.routine===undefined?undefined:routineProjection(options.routine);
+  if(options.information){
+    assertJsonData(options.information);
+    if(!routine||!object(options.information)||!exact(options.information,['contract','lastLottery'])||options.information.contract!=='inhabitant-v1')fail('society_information_contract');
+  }
+  const information=options.information?inhabitantInformation(state,personId,options.information.lastLottery):undefined;
   if(routine){
     if(!base.diarySubjectOptional)fail('society_routine_diary_contract');
     const buildings=state.world.shard.districts.flatMap(d=>d.buildings);
@@ -315,6 +324,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   const offeredOracle = options.oracle ?? { entryCost: 0.3, winProbability: 0.05, canEnter: false, canRedeem: false };
   const oracle = routine ? {...offeredOracle,canEnter:offeredOracle.canEnter&&routine.can.oracle&&!routine.lotteryUsed,
     canRedeem:offeredOracle.canRedeem&&routine.can.oracle&&!routine.lotteryUsed}:offeredOracle;
+  if(information&&options.phase==='commit'){oracle.canEnter=false;oracle.canRedeem=false;}
   if (!finite(oracle.entryCost) || oracle.entryCost < 0 || !finite(oracle.winProbability) || oracle.winProbability < 0 || oracle.winProbability > 1 ||
       typeof oracle.canEnter !== 'boolean' || typeof oracle.canRedeem !== 'boolean' ||
       oracle.voucherExpiresOnDay != null && !day(oracle.voucherExpiresOnDay)) fail('society_public_oracle');
@@ -331,10 +341,10 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   if (dailyOracle && dailyOracle.economicHealth !== state.world.economicHealthWithExperience) fail('society_daily_oracle_health');
   if(routine)assertRoutineCapabilities(routine,own,options.phase,own.role,offers.filter(q=>q.sellerRef!==own.ref));
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
-    legalMoves: base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
+    legalMoves: information&&options.phase==='commit'?[]:base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
     ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
-    phase: options.phase, purchaseDue: options.purchaseDue === true, offers:routineOffers(offers,routine,own),
+    phase: options.phase, purchaseDue: options.purchaseDue === true&&(!information||options.phase==='act'&&!routine?.tasks.food), offers:routineOffers(offers,routine,own),
     oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}) };
   const locations = district.buildings.filter(b => distance(own, b) <= state.world.config.commsProximityRange).map(b => {
@@ -379,16 +389,18 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),
     ...(routine?{routine}:{}),
+    ...(information?{information}:{}),
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
       ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
-      purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef).map(q => q.sellerRef),
+      purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef&&(!information||context.purchaseDue)).map(q => q.sellerRef),
       oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])],
       ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase,routine?.postcardsUsed) } : {}),
       ...(dailyOracle ? { dailyOracle: dailyOracle.canEnter ? ['enter'] : [] } : {}) },
     decisionSchema: societyDecisionSchema(context),
   };
   const safe = freeze(visible);
+  if(information)validateSerializedSocietyVisibleContext(safe);
   authorizedViews.add(safe);
   return { visible: safe, context: freeze(context) };
 }
@@ -397,7 +409,7 @@ export type SocietyVisibleContext = ReturnType<typeof buildSocietyContext>['visi
 /** Independent last-egress validation of serialized views. This checks the complete nested
  * allowlist, closed game vocabularies, static public guide and exact generated action schema.
  * Observation provenance still belongs to the branded builder and controller in the parent. */
-export function assertSerializedSocietyVisibleContext(value: unknown): asserts value is SocietyVisibleContext {
+function validateSerializedSocietyVisibleContext(value: unknown): void {
   assertJsonData(value, 0, 20);
   const record = (v: unknown, keys: readonly string[]): v is Record<string, any> => object(v) && exact(v, keys);
   const list = (v: unknown, check: (item: any) => boolean): boolean => Array.isArray(v) && v.length <= 5000 && v.every(check);
@@ -409,8 +421,9 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
   const hasPostcards = object(value) && Object.hasOwn(value, 'postcards');
   const hasDailyOracle = object(value) && Object.hasOwn(value, 'dailyOracle');
   const hasRoutine = object(value) && Object.hasOwn(value, 'routine');
+  const hasInformation = object(value) && Object.hasOwn(value, 'information');
   const subjectOptional = object(value) && object(value.legalChoices) && Object.hasOwn(value.legalChoices, 'diarySubjectOptional');
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[])])) fail('society_serialized_view');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[])])) fail('society_serialized_view');
   const v = value;
   const routine=hasRoutine?routineProjection(v.routine):undefined;
   if(routine&&!subjectOptional)fail('society_serialized_routine');
@@ -470,7 +483,7 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
     !list(v.legalChoices.present, ref) || !list(v.legalChoices.diarySubjects, ref) || typeof v.legalChoices.purchaseDue !== 'boolean' ||
     JSON.stringify(v.legalChoices.present) !== JSON.stringify(v.local.people.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.diarySubjects) !== JSON.stringify(v.recognition.map((q: any) => q.ref)) ||
-    JSON.stringify(v.legalChoices.purchaseSellers) !== JSON.stringify(offers.filter((q: any) => q.available && q.sellerRef !== v.self.ref).map((q: any) => q.sellerRef)) ||
+    JSON.stringify(v.legalChoices.purchaseSellers) !== JSON.stringify(offers.filter((q: any) => q.available && q.sellerRef !== v.self.ref&&(!hasInformation||v.legalChoices.purchaseDue)).map((q: any) => q.sellerRef)) ||
     JSON.stringify(v.legalChoices.oracle) !== JSON.stringify([...(v.oracle.canEnter ? ['enter'] : []), ...(v.oracle.canRedeem ? ['redeem'] : [])])) fail('society_serialized_choices');
   if (postcards && JSON.stringify(v.legalChoices.postcards) !== JSON.stringify(societyPostcardChoices(postcards, v.phase,routine?.postcardsUsed))) fail('society_serialized_postcard_choices');
   if (dailyOracle && JSON.stringify(v.legalChoices.dailyOracle) !== JSON.stringify(dailyOracle.canEnter ? ['enter'] : [])) fail('society_serialized_daily_oracle_choices');
@@ -480,6 +493,37 @@ export function assertSerializedSocietyVisibleContext(value: unknown): asserts v
     ...(subjectOptional ? {diarySubjectOptional:true as const} : {}),
     oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
+  if(hasInformation){
+    const i=v.information;
+    if(!routine||!record(i,['contract','actionOrder','wealthRules','mechanics','personal','feedback'])||i.contract!=='inhabitant-v1'||
+      i.actionOrder!==INHABITANT_ACTION_ORDER||i.wealthRules!==INHABITANT_WEALTH_RULES||
+      !record(i.mechanics,['hearingRange','breadPerOrder','flourPerBread','bakeryDailyCustomerLimit','purchaseCycleDays','activityMultiplier','supportBaseDailyWage','rolelessBaseDailyIncome','incomeTaxRate','wealthCap','oracleEconomicHealth'])||
+      !bounded(i.mechanics.hearingRange,0,1000)||i.mechanics.breadPerOrder!==DAILY_ACTIVITY_MULTIPLIER||i.mechanics.flourPerBread!==FLOUR_PER_BREAD||
+      i.mechanics.bakeryDailyCustomerLimit!==BAKER_MAX_DAILY_CUSTOMERS||!finite(i.mechanics.purchaseCycleDays)||i.mechanics.purchaseCycleDays<=0||
+      i.mechanics.activityMultiplier!==DAILY_ACTIVITY_MULTIPLIER||i.mechanics.supportBaseDailyWage!==SUPPORT_ROLE_DAILY_WAGE||
+      i.mechanics.rolelessBaseDailyIncome!==GRIFTER_DAILY_INCOME||!bounded(i.mechanics.incomeTaxRate,0,1)||!nullable(i.mechanics.wealthCap,n=>finite(n)&&n>0)||
+      !bounded(i.mechanics.oracleEconomicHealth,0,1)||v.oracle.winProbability!==oracleWinProbability(i.mechanics.oracleEconomicHealth)||
+      !record(i.personal,['daysInRole','daysRoleless'])||!(v.self.role==='Grifter'?i.personal.daysInRole===null&&day(i.personal.daysRoleless):day(i.personal.daysInRole)&&i.personal.daysRoleless===null)||
+      !record(i.feedback,['lastFood','lastLottery'])||
+      !nullable(i.feedback.lastFood,q=>record(q,['day','outcome','quantity','paid','seller'])&&day(q.day)&&q.day>0&&q.day<v.day&&
+        member(q.outcome,['served','deferred','notDue','unaffordable','unavailable','noFlour','capacity'])&&finite(q.quantity)&&q.quantity>=0&&finite(q.paid)&&q.paid>=0&&nullable(q.seller,ref)&&q.seller!==v.self.ref)||
+      !nullable(i.feedback.lastLottery,q=>record(q,['day','status','won','prize','prizeAmount','fundedBy'])&&day(q.day)&&q.day>0&&q.day<v.day&&
+        member(q.status,['entered','alreadyEntered','unaffordable','noVoucher','voucherNotAvailable'])&&typeof q.won==='boolean'&&
+        nullable(q.prize,p=>member(p,['wealth','resourceStock','entryVoucher']))&&finite(q.prizeAmount)&&q.prizeAmount>=0&&nullable(q.fundedBy,p=>member(p,['wealth','voucher']))&&
+        (q.won?q.prize!==null:q.prize===null&&q.prizeAmount===0)))fail('society_serialized_information');
+    const same=(a:{x:number;y:number},b:{x:number;y:number})=>a.x===b.x&&a.y===b.y;
+    const moves=v.phase==='commit'?[]:v.local.places.filter((p:any)=>Math.abs(p.x-v.self.x)+Math.abs(p.y-v.self.y)===1).map((p:any)=>({x:p.x,y:p.y}));
+    if(JSON.stringify(v.legalChoices.moves)!==JSON.stringify(moves)||
+      v.local.people.some((p:any)=>Math.abs(p.x-v.self.x)+Math.abs(p.y-v.self.y)>i.mechanics.hearingRange)||
+      v.hearing.some((r:string)=>!v.local.people.some((p:any)=>p.ref===r))||
+      v.phase==='commit'&&(v.legalChoices.purchaseDue||v.oracle.canEnter||v.oracle.canRedeem)||
+      routine.tasks.food&&v.legalChoices.purchaseDue||
+      !v.local.places.some((p:any)=>same(p,v.self)))fail('society_information_choices');
+  }
+}
+
+export function assertSerializedSocietyVisibleContext(value:unknown):asserts value is SocietyVisibleContext {
+  validateSerializedSocietyVisibleContext(value);
 }
 
 /** A violation aborts the controller; it is never silently converted into a stay/work fallback. */

@@ -89,7 +89,7 @@ function render(s) {
   ].map(([value,label]) => { const el = document.createElement('div'); el.className='metric'; const v = document.createElement('strong'); v.textContent=value; const l=document.createElement('span'); l.textContent=label; el.append(v,l); return el; }));
   const agents=[...new Set([...(s.society?.controlled??[]),...(s.society?.people??[]).map(p=>p.person),...s.calls.map(c=>c.actorId)])],selectedAgent=$('agent').value;
   $('agent').replaceChildren(new Option('All agents',''),...agents.map(id=>{
-    const person=s.society?.people?.find(p=>p.person===id);return new Option(`${id}${person?' · '+(person.role??'roleless'):''}${s.society?.controlled?.includes(id)?' · model':''}`,id);
+    const person=s.society?.people?.find(p=>p.person===id);return new Option(`${id}${person?' · '+(person.role??'roleless'):''}${s.society?.controlled?.includes(id)?s.synthetic?' · policy preview':' · model':''}`,id);
   }));
   if(agents.includes(selectedAgent))$('agent').value=selectedAgent;
   if(!agentChosen&&s.society?.controlled?.length)$('agent').value=s.society.controlled[0];
@@ -125,7 +125,8 @@ function renderEvaluationAndPlan(s){
 }
 function renderCall() {
   const c = snapshot.calls.find(c => c.requestId === selectedCall);
-  $('call-status').textContent = c ? `${c.actorId} · source tick ${c.tick} → ${c.nextTick ?? 'uncommitted'} · ${c.latencyMs === null ? 'latency unknown' : Math.round(c.latencyMs)+' ms'} · effects: ${c.effects.join(', ') || 'none recorded'}` : 'No request recorded at this cursor.';
+  const timing=c&&snapshot.schema==='node-observatory-society-v1'?`day ${c.tick}${Number.isInteger(c.turn)?' · turn '+c.turn:''} · ${c.nextTick===null?'day uncommitted':'settled world tick '+c.nextTick}`:c?`source tick ${c.tick} → ${c.nextTick??'uncommitted'}`:'';
+  $('call-status').textContent = c ? `${c.actorId} · ${timing} · ${c.latencyMs === null ? 'latency unknown' : Math.round(c.latencyMs)+' ms'} · effects: ${c.effects.join(', ') || 'none recorded'}` : 'No request recorded at this cursor.';
   $('reasoning-source').textContent = c ? `${snapshot.providerReasoning} · ${c.reasoning.status} · ${c.reasoning.source ?? 'response not available'} · summaries shown verbatim` : '';
   $('reasoning').textContent = c?.reasoning.status==='not_a_model'?'Deterministic autonomous policy. No model reasoning exists.':c?.reasoning.summaries.join('\n\n') || 'No reasoning summary is available at this cursor.';
   $('decision').textContent = c ? JSON.stringify({ proposed:c.proposal, admitted:c.admitted, executed:c.executed, usage:c.usage },null,2) : '';
