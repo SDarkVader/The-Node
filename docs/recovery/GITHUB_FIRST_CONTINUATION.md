@@ -1,10 +1,10 @@
 # GitHub-first continuation — The Node
 
-Updated 2026-10-26. The shared branch is `main`. PR43 was closed as a duplicate;
-PR47, PR49, PR50, PR51 and PR52 are merged. [PR53](https://github.com/SDarkVader/The-Node/pull/53)
-merged the sequential-day implementation and standalone PC launcher at `bb1b232`.
-The subsequent supervised live run was interrupted during day 1; its private accounting
-history is not count-closed. Preserve it and see the current handover before any later test.
+Updated 2026-10-28. The shared branch is `main`; [PR #58](https://github.com/SDarkVader/The-Node/pull/58)
+merged dual-perspective navigation at `4f53980` after final-head offline checks passed.
+PR #56 remains draft. The latest supervised 71-call run and the earlier 18-call
+run have closed private accounting histories; the PC launcher carries the latest
+verified journal. Preserve those records and see the current handover before any later test.
 Read [CURRENT_SESSION](CURRENT_SESSION.md) and
 [sequential days](../research/SEQUENTIAL_DAYS_2026-10-26.md) for current mechanics,
 source-scoped verification, remaining work and the ordinary PowerShell command.
