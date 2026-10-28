@@ -14,7 +14,10 @@ Godot passed 1,993 tests across 158 files with one platform skip, after fixing a
 worker cleanup race found in the first run. TypeScript passed. The real Godot proof
 selected a non-adjacent destination, traversed six legal steps in one decision,
 then received the arrival first-person view and work option. The updated head is
-awaiting hosted checks before merge. No paid experiment was started.
+awaiting hosted checks before merge. A final dispatch review at `fd97feb` also
+raised the parent worker timeout above the reviewed 120-second call deadline;
+49 focused native-Godot tests and TypeScript passed after this change. No paid
+experiment was started.
 [Scoped review evidence](docs/research/evidence/pr58-review-2026-10-28.json).
 
 NODE is an independently designed environment for studying how agents interpret circumstances,

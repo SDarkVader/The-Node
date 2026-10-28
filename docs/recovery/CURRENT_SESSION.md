@@ -8,7 +8,11 @@ errors. The full rerun passed 1,993 tests across 158 files with one platform
 skip; TypeScript passed. A native proof again travelled six legal steps to a
 non-adjacent workplace, then received arrival sight and work permission.
 The reviewed implementation is awaiting checks on its updated PR head before
-merge. No paid run occurred. [Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
+merge. Final dispatch review at `fd97feb` found the parent worker's old
+21-second timeout below the reviewed 120-second call deadline. It now allows
+the plan deadline plus five seconds; 49 focused native-Godot tests and
+TypeScript passed after this fix. No paid run occurred.
+[Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
 
 2026-10-28 launcher restoration at source `6307a8e`: the PC's missing private
 `test.local.json` and saved-run registry were reconstructed from retained local
