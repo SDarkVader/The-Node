@@ -24,6 +24,7 @@ export interface SocietyRunPlan {
   dailyOracle?:SocietyDailyOracleConfig;
   routine?:SocietyRoutineConfig;
 }
+export const SOCIETY_MAX_ALLOWANCE_MICRO_USD = 25_000_000;
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
@@ -54,7 +55,7 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
     !Array.isArray(p.controlled) || p.controlled.length !== 3 || new Set(p.controlled).size !== 3 ||
     !p.controlled.every(v => typeof v === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(v)) ||
-    p.allowance?.maxRequests !== p.maxCalls || !Number.isSafeInteger(p.allowance.limitMicroUsd) || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > 1_000_000 ||
+    p.allowance?.maxRequests !== p.maxCalls || !Number.isSafeInteger(p.allowance.limitMicroUsd) || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > SOCIETY_MAX_ALLOWANCE_MICRO_USD ||
     !Number.isSafeInteger(p.allowance.perRequestMicroUsd) || p.allowance.perRequestMicroUsd < 1 || p.allowance.perRequestMicroUsd > p.allowance.limitMicroUsd)
     throw new SocietySecurityError('society_paid_plan');
 }

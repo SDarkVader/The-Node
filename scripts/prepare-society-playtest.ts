@@ -33,6 +33,7 @@ export interface PreparePlaytestOptions {
   dailyTurns?:number;
   inhabitantInformation?:boolean;
   dualNavigation?:boolean;godot?:string;
+  limitMicroUsd?:number;
 }
 export interface PlaytestEnvironment {
   repositoryRoot:string;
@@ -154,7 +155,7 @@ export function prepareSocietyPlaytest(options:PreparePlaytestOptions,environmen
   if(environment.prepareBundle)environment.prepareBundle(bundlePath,{ticks,seed,postcards,...(dailyOracle?{dailyOracle}:{} ),...(optionalDiarySubject?{optionalDiarySubject:true}:{}),...(routine?{routine}:{})});
   else execFileSync(process.execPath,['--import','tsx',join(root,'scripts','run-society-live.ts'),'--prepare','--bundle',bundlePath,
     '--ticks',String(ticks),'--seed',String(seed),'--postcard-rate',options.postcardRate,'--postcard-start-ms',String(postcards.startAtMs),
-    ...(options.oracleConfig!==undefined?['--oracle-config',resolve(options.oracleConfig)]:[]),...(optionalDiarySubject?['--optional-diary-subject']:[]),...(routine?['--daily-turns',String(routine.maxTurnsPerDay)]:[]),...(routine?.information?['--inhabitant-information']:[]),...(routine?.navigation?['--dual-navigation']:[]),...(options.godot?['--godot',options.godot]:[])],
+    ...(options.oracleConfig!==undefined?['--oracle-config',resolve(options.oracleConfig)]:[]),...(optionalDiarySubject?['--optional-diary-subject']:[]),...(routine?['--daily-turns',String(routine.maxTurnsPerDay)]:[]),...(routine?.information?['--inhabitant-information']:[]),...(routine?.navigation?['--dual-navigation']:[]),...(options.limitMicroUsd===undefined?[]:['--limit-micro-usd',String(options.limitMicroUsd)]),...(options.godot?['--godot',options.godot]:[])],
     {cwd:root,windowsHide:true,stdio:'pipe',maxBuffer:4*1024*1024});
   const bundle=readBundle(bundlePath);
   if(bundle.plan.sourceRevision!==sourceRevision||bundle.plan.ticks!==ticks||!isDeepStrictEqual(bundle.postcardConfig,postcards)||!isDeepStrictEqual(bundle.plan.postcards,postcards))

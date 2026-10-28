@@ -48,18 +48,18 @@ export function finishLocalTest(settingsPath:string){
   return {status:settings.pendingRun?'latest_history_preserved_not_closed':'latest_history_carried',
     bookedMicroUsd:view.booked.toString(),heldMicroUsd:view.held.toString(),requests:view.requests.length};
 }
-export function prepareLocalTest(settingsPath:string,ticks:number,seed:number):ReturnType<typeof prepareSocietyPlaytest>{
+export function prepareLocalTest(settingsPath:string,ticks:number,seed:number,limitMicroUsd=1_000_000):ReturnType<typeof prepareSocietyPlaytest>{
   const settings=readLocalTestSettings(settingsPath);
   if(settings.pendingRun){finishLocalTest(settingsPath);if(readLocalTestSettings(settingsPath).pendingRun)throw Error('node_test_previous_allowance_not_closed');}
   const current=readLocalTestSettings(settingsPath),output=join(current.outputParent,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomBytes(4).toString('hex'));
   const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
   const result=prepareSocietyPlaytest({priorJournal:current.priorJournal,credentialFile:current.credentialFile,
-    outputRoot:output,postcardRate:current.postcardRate,ticks,seed,oracleConfig:resolve(root,current.oracleConfig),optionalDiarySubject:true,dailyTurns:128,inhabitantInformation:true,dualNavigation:true,godot:current.godot},{repositoryRoot:root});
+    outputRoot:output,postcardRate:current.postcardRate,ticks,seed,limitMicroUsd,oracleConfig:resolve(root,current.oracleConfig),optionalDiarySubject:true,dailyTurns:128,inhabitantInformation:true,dualNavigation:true,godot:current.godot},{repositoryRoot:root});
   current.pendingRun=output;write(settingsPath,current);return result;
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
   const {values}=parseArgs({options:{settings:{type:'string'},prepare:{type:'boolean'},finish:{type:'boolean'},
-    ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'}}});
+    ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},'limit-micro-usd':{type:'string',default:'1000000'}}});
   if(!values.settings||[values.prepare,values.finish].filter(Boolean).length!==1)throw Error('node_test_explicit_mode');
-  console.log(JSON.stringify(values.prepare?prepareLocalTest(values.settings,Number(values.ticks),Number(values.seed)):finishLocalTest(values.settings)));
+  console.log(JSON.stringify(values.prepare?prepareLocalTest(values.settings,Number(values.ticks),Number(values.seed),Number(values['limit-micro-usd'])):finishLocalTest(values.settings)));
 }

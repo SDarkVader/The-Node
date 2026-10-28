@@ -1,6 +1,6 @@
 # One PC entrypoint. Default: model-free manual preview + saved runs. -Start: reviewed real test.
 [CmdletBinding()]
-param([ValidateRange(1,20)][int]$Ticks=3,[int]$Seed=42,[switch]$Start,[switch]$NoBrowser,
+param([ValidateRange(1,20)][int]$Ticks=3,[int]$Seed=42,[ValidateRange(1,25)][decimal]$BudgetUsd=1,[switch]$Start,[switch]$NoBrowser,
   [string]$Settings=(Join-Path $env:LOCALAPPDATA 'The-Node/test.local.json'))
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
@@ -31,7 +31,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Society preview stopped with an error. Inspect the retained run output.' }
     return
   }
-  $raw=& node --import tsx scripts/manage-node-tests.ts --settings $settingsPath --prepare --ticks $Ticks --seed $Seed
+  $limitMicroUsd=[int64]($BudgetUsd*1000000)
+  $raw=& node --import tsx scripts/manage-node-tests.ts --settings $settingsPath --prepare --ticks $Ticks --seed $Seed --limit-micro-usd $limitMicroUsd
   if ($LASTEXITCODE -ne 0) { throw 'Preparation stopped. Existing evidence and financial history are preserved.' }
   $review=($raw -join "`n") | ConvertFrom-Json
   $raw | Write-Output

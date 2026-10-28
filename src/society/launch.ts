@@ -79,7 +79,7 @@ function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment
   const bundle=parseSocietyEvidence<Bundle>(file(config.bundle,128*1024*1024).toString('utf8'));validateSocietyPlan(bundle.plan);
   if(bundle.planSha256!==config.planSha256||societyPlanHash(bundle.plan)!==config.planSha256||
     bundle.genesis.sourceRevision!==config.sourceRevision||bundle.plan.sourceRevision!==config.sourceRevision||
-    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:120)||bundle.plan.allowance.limitMicroUsd>1_000_000)fail('society_launch_bundle');
+    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:120)||bundle.plan.allowance.limitMicroUsd>25_000_000)fail('society_launch_bundle');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))fail('society_launch_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))fail('society_launch_daily_oracle_config');
   if(digest(bundle.routineConfig??null)!==digest(bundle.plan.routine??null))fail('society_launch_routine_config');

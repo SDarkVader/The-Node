@@ -27,7 +27,7 @@ import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/soc
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},godot:{type:'string'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},'limit-micro-usd':{type:'string'},godot:{type:'string'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
 if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
@@ -67,7 +67,9 @@ if(values.prepare){
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
   const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
-  const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
+  const limitMicroUsd=values['limit-micro-usd']===undefined?undefined:Number(values['limit-micro-usd']);
+  if(limitMicroUsd!==undefined&&(!Number.isSafeInteger(limitMicroUsd)||limitMicroUsd<1))throw Error('society_limit_micro_usd');
+  const plan=createSocietyPlan(society,{ticks,limitMicroUsd}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
     ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{}),...(routine?{routineConfig:structuredClone(routine)}:{})};
   const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
   try{
