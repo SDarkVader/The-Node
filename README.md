@@ -9,8 +9,13 @@ integrity issues. Its saved tape replayed to the same final hash. The preview ex
 cleanly and released the launcher lock. PR #56 remains draft. This PC-specific repair
 does not grant a paid run. [Scoped offline evidence](docs/research/evidence/launcher-offline-restoration-2026-10-28.json).
 
-CI follow-up: the routine launch test now asserts the reviewed $0.032 per-request ceiling.
-The dual-navigation suite also checks that a route returned after a competing submission is rejected.
+2026-10-28 PR #58 review at implementation `6146265`: a full Windows run with native
+Godot passed 1,993 tests across 158 files with one platform skip, after fixing a
+worker cleanup race found in the first run. TypeScript passed. The real Godot proof
+selected a non-adjacent destination, traversed six legal steps in one decision,
+then received the arrival first-person view and work option. The updated head is
+awaiting hosted checks before merge. No paid experiment was started.
+[Scoped review evidence](docs/research/evidence/pr58-review-2026-10-28.json).
 
 NODE is an independently designed environment for studying how agents interpret circumstances,
 use memory, reconsider earlier thinking and make decisions whose consequences develop over time.

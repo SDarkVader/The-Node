@@ -1,5 +1,15 @@
 # Current Society daily implementation checkpoint
 
+2026-10-28 PR #58 review at implementation `6146265`: the first full Windows
+native-Godot run passed 1,992 tests and had three `EPERM` failures removing
+worker scratch directories. The three affected files then passed in isolation.
+Worker cleanup now waits for the child close event and retries transient removal
+errors. The full rerun passed 1,993 tests across 158 files with one platform
+skip; TypeScript passed. A native proof again travelled six legal steps to a
+non-adjacent workplace, then received arrival sight and work permission.
+The reviewed implementation is awaiting checks on its updated PR head before
+merge. No paid run occurred. [Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
+
 2026-10-28 launcher restoration at source `6307a8e`: the PC's missing private
 `test.local.json` and saved-run registry were reconstructed from retained local
 paths and evidence. The settings point to the newest verified, closed 71-call
@@ -13,8 +23,8 @@ The server exited cleanly and the settings lock can be reacquired. PR #56 was
 confirmed open and draft; no PR merge or paid run occurred. The settings and
 raw evidence remain private. [Sanitized offline check](../research/evidence/launcher-offline-restoration-2026-10-28.json).
 
-CI follow-up: the routine launch assertion now matches the reviewed $0.032 per-request ceiling;
-the focused six-test file passed locally. Hosted checks are pending on the updated branch.
+Earlier CI follow-up: the routine launch assertion matches the reviewed $0.032
+per-request ceiling; the focused six-test file passed locally.
 PR #58 now targets main after PR #57 merged. The Godot-enabled navigation, request, accounting
 and routine suites passed 43 tests; a further stale-navigation test passed in the eight-test
 navigation suite. PR #56 is an older offline planner and is not wired to dual-v1 execution.

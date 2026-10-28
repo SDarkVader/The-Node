@@ -1,0 +1,43 @@
+{
+  "format": "node-sanitized-pr-review-v1",
+  "date": "2026-10-28",
+  "pullRequest": 58,
+  "base": "main",
+  "implementationRevision": "6146265ad31cad997e8980970a15429e875f279b",
+  "reviewedAreas": [
+    "overhead and first-person observation",
+    "Godot navigation and per-step legal movement",
+    "provider request and action validation",
+    "accounted controller and historical replay",
+    "Observatory privacy and saved evidence",
+    "PowerShell launcher and private accounting separation"
+  ],
+  "initialParallelWindowsSuite": {
+    "passedTests": 1992,
+    "failedSuites": 2,
+    "failedTests": 1,
+    "failure": "EPERM during temporary Godot worker directory removal"
+  },
+  "isolatedAffectedFiles": {
+    "files": 3,
+    "passedTests": 60
+  },
+  "repair": "Wait for worker close event and retry transient scratch directory removal errors",
+  "nativeGodotFullRerun": {
+    "passedFiles": 158,
+    "passedTests": 1993,
+    "skippedTests": 1,
+    "failedTests": 0
+  },
+  "typecheck": "passed",
+  "navigationProof": {
+    "nonAdjacentDestination": true,
+    "legalSteps": 6,
+    "intermediateModelCalls": 0,
+    "arrivalFirstPersonView": true,
+    "arrivalWorkOption": true,
+    "workRecorded": true,
+    "coldReplay": true
+  },
+  "paidProviderCalls": 0
+}
