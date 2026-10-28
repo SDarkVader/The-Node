@@ -22,6 +22,7 @@ import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { PERCEPTION_PROFILE, validatePerception, type PerceptionRecord, type PerceptionRequest, type PerceptionResponse } from './perception.js';
+import {validateNavigation,type NavigationRequest,type NavigationRecord} from './navigation.js';
 
 export const PERCEPTION_PATH = '/observatory/v1/perception';
 const MAX_MESSAGE_BYTES = 8 * 1024 * 1024;
@@ -37,6 +38,7 @@ export interface PerceptionBridge {
   ready(timeoutMs?: number): Promise<WorkerEngine>;
   /** The validated record for `request`, or a rejection with a perception_* code. */
   perceive(request: PerceptionRequest): Promise<PerceptionRecord>;
+  navigate(request: NavigationRequest): Promise<NavigationRecord>;
   stats(): PerceptionBridgeStats;
   close(): Promise<void>;
 }
@@ -49,6 +51,7 @@ export async function startPerceptionBridge(options: { host?: string; port?: num
   const timeoutMs = options.timeoutMs ?? 10000;
   const counts: PerceptionBridgeStats = { requests: 0, delivered: 0, refused: 0, timedOut: 0, unmatched: 0 };
   const pending = new Map<string, Pending>();
+  const routes = new Map<string,{request:NavigationRequest;resolve(r:NavigationRecord):void;reject(e:Error):void;timer:NodeJS.Timeout}>();
   const waiters: { resolve(e: WorkerEngine): void; reject(e: Error): void }[] = [];
   let worker: WebSocket | null = null, engine: WorkerEngine | null = null;
 
@@ -57,6 +60,7 @@ export async function startPerceptionBridge(options: { host?: string; port?: num
     return presented !== undefined && timingSafeEqual(digestOf(presented), expected);
   };
   const failAll = (code: string) => {
+    for(const [id,p] of routes){clearTimeout(p.timer);routes.delete(id);p.reject(Error(code));}
     for (const [id, p] of pending) { clearTimeout(p.timer); pending.delete(id); p.reject(Error(code)); }
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
@@ -86,6 +90,16 @@ export async function startPerceptionBridge(options: { host?: string; port?: num
         }
         engine = { name: e.name, version: e.version };
         for (const w of waiters.splice(0)) w.resolve({ ...engine });
+        return;
+      }
+      const route=typeof message.requestId==='string'?routes.get(message.requestId):undefined;
+      if(route){
+        clearTimeout(route.timer);routes.delete(route.request.requestId);
+        try{
+          const e=message.engine as WorkerEngine|undefined;
+          if(e?.name!==engine.name||e?.version!==engine.version)throw Error('navigation_engine_mismatch');
+          route.resolve(validateNavigation(route.request,message,raw));counts.delivered++;
+        }catch(error){counts.refused++;route.reject(error instanceof Error?error:Error('navigation_invalid'));}
         return;
       }
       const p = typeof message.requestId === 'string' ? pending.get(message.requestId) : undefined;
@@ -143,6 +157,16 @@ export async function startPerceptionBridge(options: { host?: string; port?: num
       });
     },
     stats: () => ({ ...counts }),
+    navigate(request){
+      counts.requests++;
+      if(!worker||!engine||worker.readyState!==worker.OPEN)return Promise.reject(Error('navigation_worker_unavailable'));
+      if(routes.has(request.requestId)||pending.has(request.requestId))return Promise.reject(Error('navigation_request_duplicate'));
+      const socket=worker;
+      return new Promise<NavigationRecord>((resolve,reject)=>{
+        const timer=setTimeout(()=>{routes.delete(request.requestId);counts.timedOut++;reject(Error('navigation_timeout'));},timeoutMs);
+        routes.set(request.requestId,{request:structuredClone(request),resolve,reject,timer});socket.send(JSON.stringify(request));
+      });
+    },
     async close() {
       failAll('perception_bridge_closed');
       for (const w of waiters.splice(0)) w.reject(Error('perception_bridge_closed'));
@@ -172,13 +196,14 @@ export function launchPerceptionWorker(godotBin: string, bridge: Pick<Perception
   const env = { ...system, HOME: home, USERPROFILE: home, APPDATA: home, LOCALAPPDATA: home, TEMP: home, TMP: home,
     XDG_DATA_HOME: home, XDG_CONFIG_HOME: home, XDG_CACHE_HOME: home, NODE_PERCEPTION_TOKEN: bridge.token };
   const child = spawn(godotBin, ['--headless', '--path', project, 'res://scenes/PerceptionWorker.tscn', '--', `--perception-url=${bridge.url}`],
-    { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    { env, windowsHide:true, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   const keep = (b: Buffer) => { log = (log + b.toString()).slice(-20000); };
   child.stdout.on('data', keep);
   child.stderr.on('data', keep);
   const exited = new Promise<number | null>(resolve => {
-    child.once('exit', code => resolve(code));
+    // A child can report exit before its stdio handles close on Windows.
+    child.once('close', code => resolve(code));
     child.once('error', error => { log += `\n[launch] ${error.message}`; resolve(null); });
   });
   return {
@@ -187,7 +212,7 @@ export function launchPerceptionWorker(godotBin: string, bridge: Pick<Perception
     async stop() {
       if (child.exitCode === null && child.pid !== undefined) child.kill('SIGTERM');
       await exited;
-      rmSync(scratch, { recursive: true, force: true });
+      rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     },
   };
 }

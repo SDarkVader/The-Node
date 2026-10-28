@@ -210,6 +210,9 @@ export function startObservatory(options: Options) {
   return { server, ready, refresh: poll, close: async () => {
     clearInterval(timer); clearInterval(heartbeat);
     for (const [res] of streams) res.end(); for (const [ws] of sockets) ws.terminate();
-    wss.close(); server.closeIdleConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
+    wss.close();
+    // Renderer fetches and browser streams must not retain the PowerShell launcher's
+    // settings lock after an explicit stop. Evidence is finalized by the caller first.
+    await new Promise<void>(resolve => {server.close(() => resolve());server.closeAllConnections();});
   } };
 }

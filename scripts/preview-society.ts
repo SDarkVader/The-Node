@@ -1,3 +1,4 @@
+import {openSocietySenses} from '../src/society/senses.js';
 /** Manual deterministic preview or verified saved runs. No provider or budget is opened. */
 import {parseArgs} from 'node:util';
 import {readFileSync,writeFileSync,mkdirSync,mkdtempSync} from 'node:fs';
@@ -12,16 +13,17 @@ import {buildSocietyResultsReport,writeSocietyRawResults} from '../src/society/r
 import {stringifySocietyEvidence} from '../src/society/codec.js';
 import {openSocietyPanel} from '../src/observatory/societyPanel.js';
 const {values}=parseArgs({options:{history:{type:'string'},'web-world':{type:'string'},port:{type:'string',default:'8090'},
-  ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},output:{type:'string'}}});
+  ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},output:{type:'string'},'dual-navigation':{type:'boolean'},godot:{type:'string'}}});
 const days=Number(values.ticks);if(!Number.isSafeInteger(days)||days<1||days>20)throw Error('society_preview_days');
 const sourceRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
 const seed=Number(values.seed);if(!Number.isSafeInteger(seed))throw Error('society_preview_seed');
 const society=new Society({seed,sourceRevision,config:{...societyConfig(),diarySubjectOptional:true},postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000},
-  routine:{maxTurnsPerDay:128,information:'inhabitant-v1'},
+  routine:{maxTurnsPerDay:128,information:'inhabitant-v1',...(values['dual-navigation']?{navigation:'dual-v1' as const}:{})},
   dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))});
 const output=values.output?resolve(values.output):join(mkdtempSync(join(tmpdir(),'node-society-preview-')),'run');
 mkdirSync(output,{recursive:true});
 const controller=new AbortController(),stop=()=>controller.abort();process.once('SIGINT',stop);process.once('SIGTERM',stop);
+const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
 const panel=await openSocietyPanel({society,id:'deterministic-preview',mode:'synthetic',manual:true,stop,port:Number(values.port),
   ...(values.history?{history:values.history}:{}),...(values['web-world']?{webWorldDirectory:values['web-world']}:{})});
 const events:SocietyRunEvent[]=[],emit=(e:SocietyRunEvent)=>{events.push(e);panel.event(e);};
@@ -33,10 +35,10 @@ try{
   while(society.tick<days){await panel.gate!.wait(society.tick+1,controller.signal);
     const day=society.tick+1;
     while(society.tick<day)for(const person of society.pendingPeople()){
-      const view=society.view(person),action=autonomousPolicy(view.visible),controlled=society.controlled.includes(person);
+      const view=await society.prepareView(person,senses?.perceive),action=autonomousPolicy(view.visible),controlled=society.controlled.includes(person);
       const binding={requestId:`preview-${index}`,index,actorId:person,person,tick:society.tick,phase:society.phase,turn:society.turn};
-      if(controlled){const request=buildSocietyRequest(view.visible);emit({kind:'request',data:{...binding,body:request.body,sha256:request.sha256}});}
-      society.submit(person,action);
+      if(controlled){const request=buildSocietyRequest(view.visible);emit({kind:'request',data:{...binding,...society.decisionEvidence(person),body:request.body,sha256:request.sha256}});}
+      await society.prepareTravel(person,action,senses?.navigate);society.submit(person,action);
       if(controlled){emit({kind:'decision',data:{...binding,status:'validated',action}});index++;}
     }
   }
@@ -50,3 +52,6 @@ finally{
 }
 if(!controller.signal.aborted)await new Promise<void>(resolve=>controller.signal.addEventListener('abort',()=>resolve(),{once:true}));
 await panel.close();
+// This foreground CLI owns the preview and has already persisted all evidence and
+// closed both servers. Browser/loader handles must not retain the PC settings lock.
+process.exit(status==='stopped'&&!controller.signal.aborted?1:0);

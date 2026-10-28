@@ -10,6 +10,7 @@
 extends Node3D
 
 const Perception := preload("res://scripts/Perception.gd")
+const GridNavigation := preload("res://scripts/GridNavigation.gd")
 const BUFFER_BYTES := 4 * 1024 * 1024
 ## Physics frames to wait after a scene rebuild before raycasting against the new colliders.
 const SETTLE_FRAMES := 2
@@ -68,12 +69,16 @@ func _physics_process(_delta: float) -> void:
 		return
 	if _current == null and not _inbox.is_empty():
 		var parsed = JSON.parse_string(_inbox.pop_front())
-		if typeof(parsed) != TYPE_DICTIONARY or parsed.get("type") != "perceptionRequest":
+		if typeof(parsed) != TYPE_DICTIONARY or parsed.get("type") not in ["perceptionRequest", "navigationRequest"]:
 			var id = parsed.get("requestId") if typeof(parsed) == TYPE_DICTIONARY else null
 			_ws.send_text(JSON.stringify({"type": "perception", "requestId": id, "error": "perception_request_unreadable"}))
 			return
 		_current = parsed
 	if _current == null:
+		return
+	if _current["type"] == "navigationRequest":
+		_ws.send_text(JSON.stringify(GridNavigation.derive(_current)))
+		_current = null
 		return
 	if _perception.needs_rebuild(_current):
 		_perception.rebuild(_current)

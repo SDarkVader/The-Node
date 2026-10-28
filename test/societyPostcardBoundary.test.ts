@@ -47,7 +47,7 @@ describe('opt-in postcard inhabitant information and request contract',()=>{
     expect(wire.system).toBe(SOCIETY_POSTCARD_INHABITANT_INSTRUCTIONS);expect(wire.system).toContain('seven-field');
     expect(wire.output_config.format.schema.required).toEqual(['move','communication','diary','occupation','purchase','oracle','postcards']);
     expect(JSON.parse(wire.messages[0].content[0].text)).toEqual(visible);
-    expect(wire.output_config.effort).toBe('high');expect(wire.max_tokens).toBe(2048);
+    expect(wire.output_config.effort).toBe('high');expect(wire.max_tokens).toBe(16384);
     expect(wire).not.toHaveProperty('tools');expect(wire).not.toHaveProperty('tool_choice');
     for(const key of ['seed','drawCount','origin','transactions','issuedWhite','burnedWhite','sourceRevision','worldHash','requestId'])
       expect(JSON.stringify(wire.messages)).not.toContain('"'+key+'"');

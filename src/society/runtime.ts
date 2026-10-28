@@ -2,6 +2,10 @@
  * Policies receive only boundary.visible. No provider, credential, shell or tool dispatcher
  * is imported here. Submitted JSON is data, never evaluated JavaScript.
  */
+import {perceptionRequest,assertPerceptionRecord,DEFAULT_PERCEPTION_CONDITION,type PerceptionRecord,type FirstPersonObservation,type PerceptionRequest} from '../observatory/perception.js';
+import {navigationRequest,assertNavigationRecord,type NavigationRequest,type NavigationRecord} from '../observatory/navigation.js';
+import {observe} from '../server/observer.js';
+import {applyParticipantMove} from '../agent/participantWorld.js';
 import { createParticipantState, stepParticipantState, stepParticipantTurn, fixtureGenesis, type Genesis, type ParticipantState } from '../agent/participantWorld.js';
 import { digest, evidenceHash } from '../agent/replay.js';
 import { roleArrays } from '../engine/inhabitants.js';
@@ -30,6 +34,7 @@ export interface SocietyDecisionRecord {
   day: number; phase: Phase; person: string; controlled: boolean;
   visible: SocietyView; legalChoices: unknown; action: SocietyAction;
   turn?:number;
+  perception?:PerceptionRecord;navigation?:NavigationRecord;
   transition?:{beforeHash:string;afterHash:string;beforeTick:number;afterTick:number;effects:{person:string;category:string}[]};
 }
 export interface SocietyTransition {
@@ -68,6 +73,8 @@ export class Society {
   #halted = false;
   // Transport lease counter, deliberately outside historical world hashes and tapes.
   #revision = 0;
+  #perceptions=new Map<string,PerceptionRecord>();
+  #navigation=new Map<string,NavigationRecord>();
   #pending = new Map<string,SocietyAction>();
   #prices = new Map<string,number>();
   #quantities = new Map<string,number>();
@@ -127,8 +134,49 @@ export class Society {
     this.#quantities = new Map(this.#state.world.millers.filter(x=>x.slot.state==='FILLED').map(x=>[x.buildingId,x.value]));
   }
   #ref(observer:string,person:string) { return observerRef(this.#state.genesis.observerSecret,observer,person,refHexLength(this.#state.world)); }
+  get dualNavigation(){return this.#routine?.config.navigation==='dual-v1';}
+  #perceptionRequest(person:string){
+    return perceptionRequest(this.#state,{agentId:this.#ref(person,person),person},'first_person',DEFAULT_PERCEPTION_CONDITION,
+      {episodeId:'society-dual-v1',worldHash:this.hash});
+  }
+  async prepareView(person:string,perceive?:(r:PerceptionRequest)=>Promise<PerceptionRecord>){
+    if(!this.dualNavigation)return this.view(person);
+    if(this.#halted||!this.pendingPeople().includes(person))throw Error('society_no_current_observation');
+    const cached=this.#perceptions.get(person);
+    if(cached?.worldHash===this.hash)return this.view(person);
+    if(!perceive)throw Error('society_perception_required');
+    const hash=this.hash,revision=this.revision,request=this.#perceptionRequest(person),record=await perceive(request);
+    if(this.#halted||hash!==this.hash||revision!==this.revision)throw Error('society_stale_perception');
+    this.bindEvidence(person,{perception:record});return this.view(person);
+  }
+  #navigationRequest(person:string,to:{x:number;y:number}){
+    const own=personBody(this.#state,this.#state.registry.people.get(person)!);
+    const district=this.#state.world.shard.districts.find(d=>d.plots.some(q=>q.x===own.x&&q.y===own.y));
+    if(!district)throw Error('society_navigation_district');
+    return navigationRequest(this.hash,this.#ref(person,person),own,to,district);
+  }
+  async prepareTravel(person:string,value:unknown,navigate?:(r:NavigationRequest)=>Promise<NavigationRecord>){
+    if(!this.dualNavigation)return;
+    const action=typeof value==='string'?parseSocietyResponse(value,this.view(person).context):validateSocietyAction(value,this.view(person).context);
+    if(!action.move)return;
+    if(!navigate)throw Error('society_navigation_required');
+    const hash=this.hash,revision=this.revision,record=await navigate(this.#navigationRequest(person,action.move));
+    if(this.#halted||hash!==this.hash||revision!==this.revision)throw Error('society_stale_navigation');
+    this.bindEvidence(person,{navigation:record},action);
+  }
+  /** Trusted replay/operator evidence only. Never an action available to an inhabitant. */
+  bindEvidence(person:string,evidence:{perception?:PerceptionRecord;navigation?:NavigationRecord},action?:SocietyAction){
+    if(!this.dualNavigation){if(evidence.perception||evidence.navigation)throw Error('society_unexpected_senses');return;}
+    if(evidence.perception)this.#perceptions.set(person,assertPerceptionRecord(this.#perceptionRequest(person),evidence.perception));
+    if(evidence.navigation){if(!action?.move)throw Error('society_navigation_action');
+      this.#navigation.set(person,assertNavigationRecord(this.#navigationRequest(person,action.move),evidence.navigation));}
+  }
+  decisionEvidence(person:string){return structuredClone({...(this.#perceptions.has(person)?{perception:this.#perceptions.get(person)!}:{}),
+    ...(this.#navigation.has(person)?{navigation:this.#navigation.get(person)!}:{})});}
   view(person: string) {
     if (this.#halted || !this.pendingPeople().includes(person)) throw Error('society_no_current_observation');
+    const perception=this.#perceptions.get(person);
+    if(this.dualNavigation&&perception?.worldHash!==this.hash)throw Error('society_perception_required');
     const w = this.#state.world, own = personBody(this.#state,this.#state.registry.people.get(person)!);
     const oracle = this.#oracle.get(person) ?? emptyOracleOpportunityState(), day=w.tick+1;
     const voucher=oracle.voucher, liveVoucher=!!voucher&&day>=voucher.availableDay&&day<=voucher.expiresAfterDay;
@@ -137,6 +185,7 @@ export class Society {
       price:this.#prices.get(b.buildingId)??b.value,available:true,
     }));
     return buildSocietyContext(this.#state,person,{
+      ...(this.dualNavigation?{firstPerson:perception!.observation as FirstPersonObservation}:{}),
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
       ...(this.#routine?.config.information?{information:{contract:this.#routine.config.information,lastLottery:(()=>{
         const previous=this.#tape.transitions.at(-1),result=previous?.oracle.find(r=>r.person===person)?.result;
@@ -163,9 +212,10 @@ export class Society {
     try {
       if (!this.pendingPeople().includes(person)) throw new SocietySecurityError('stale_or_duplicate_submission');
       const view=this.view(person), action=typeof value==='string'?parseSocietyResponse(value,view.context):validateSocietyAction(value,view.context);
+      if(this.dualNavigation&&action.move){const route=this.#navigation.get(person);if(!route)throw Error('society_navigation_required');assertNavigationRecord(this.#navigationRequest(person,action.move),route);}
       const beforeHash=this.#routine?this.hash:'',beforeTick=this.tick,turn=this.turn;
       const record:SocietyDecisionRecord={day:this.tick+1,phase:this.#phase,person,controlled:this.controlled.includes(person),
-        visible:structuredClone(view.visible),legalChoices:structuredClone({menu:view.visible.legalChoices,schema:view.visible.decisionSchema}),action:structuredClone(action),...(turn!==undefined?{turn}:{})};
+        ...(this.dualNavigation?this.decisionEvidence(person):{}),visible:structuredClone(view.visible),legalChoices:structuredClone({menu:view.visible.legalChoices,schema:view.visible.decisionSchema}),action:structuredClone(action),...(turn!==undefined?{turn}:{})};
       if(this.#routine){
         // Stop before admission, leaving enough space for the current round/day book and
         // exact transitions. A storage ceiling never fabricates completion or loses the
@@ -179,6 +229,7 @@ export class Society {
       this.#postcards?.submit(person,this.tick+1,action.postcards);
       this.#revision++;
       this.#pending.set(person,action);
+      this.#perceptions.delete(person);
       this.#tape.decisions.push(record);
       const turnCount=this.#turnTransitions.length;
       if (this.pendingPeople().length===0) this.#finishPhase();
@@ -197,8 +248,21 @@ export class Society {
     if(this.#routine){
       const beforeHash=this.hash,day=this.tick+1,turn=this.#routine.turn,previous=this.#state;
       const actions=[...this.#pending].map(([person,a])=>({person,epoch:previous.registry.people.get(person)!.roleEpoch,tick:this.tick,
-        decision:{move:a.move,communication:a.communication,diary:a.diary,role:null}}));
+        decision:{move:this.dualNavigation?null:a.move,communication:a.communication,diary:a.diary,role:null}}));
       const result=stepParticipantTurn(previous,actions,turn);this.#state=result.state;
+      if(this.dualNavigation){
+        for(const [person,action] of this.#pending){if(!action.move)continue;
+          const route=this.#navigation.get(person);if(!route)throw Error('society_navigation_required');
+          const p=this.#state.registry.people.get(person)!;
+          for(const step of route.path){
+            const legal=observe(this.#state,person,this.#state.genesis.observerSecret).context.legalMoves;
+            if(!legal.some(q=>q.x===step.x&&q.y===step.y))throw Error('society_navigation_illegal_step');
+            this.#state.world=applyParticipantMove(this.#state.world,p.role,p.location!,step);
+            result.effects.push({person,category:'move'});
+          }
+        }
+        this.#navigation.clear();
+      }
       this.#routine.acceptTurn(previous,this.#state,this.#pending,result);this.#pending.clear();
       this.#turnTransitions.push({day,turn,beforeHash,afterHash:this.hash,effects:structuredClone(result.effects)});
       if(!this.#routine.allClosed){if(this.#routine.limitReached)this.halt();return;}
@@ -314,6 +378,7 @@ export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.
     ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{})});
   if(society.hash!==tape.genesisHash||digest(society.controlled)!==digest(tape.controlled))throw Error('society_genesis_mismatch');
   for(const record of tape.decisions){
+    society.bindEvidence(record.person,record,record.action);
     if(society.tick+1!==record.day||society.phase!==record.phase||digest(society.view(record.person).visible)!==digest(record.visible))throw Error('society_visible_context_mismatch');
     society.submit(record.person,record.action);
   }

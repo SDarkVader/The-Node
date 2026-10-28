@@ -1,3 +1,4 @@
+import {openSocietySenses} from '../src/society/senses.js';
 import { writeFileSync, mkdirSync, existsSync, readFileSync, lstatSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -12,14 +13,14 @@ import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '..
 import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/society/routine.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},godot:{type:'string'}}});
 if(values.verify){
-  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
+  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
-  if(values['inhabitant-information']&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
-  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']?{information:'inhabitant-v1'}:{})};
+  if((values['inhabitant-information']||values['dual-navigation'])&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
+  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']||values['dual-navigation']?{information:'inhabitant-v1' as const}:{}),...(values['dual-navigation']?{navigation:'dual-v1' as const}:{})};
   if(routine)validateSocietyRoutineConfig(routine);
   if(!Number.isSafeInteger(ticks)||ticks<1||ticks>100||!Number.isSafeInteger(seed))throw Error('society_bounded_ticks_and_seed_required');
   const output=resolve(values.output??'.codex/session-recovery/society/latest-synthetic.json');
@@ -41,6 +42,7 @@ if(values.verify){
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
   const society=new Society({seed,sourceRevision,...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
+  const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
   const terminal=values.interactive?createInterface({input:stdin,output:stdout}):null;
   let failure:unknown;
   try{
@@ -48,17 +50,18 @@ if(values.verify){
       const people=society.pendingPeople();
       if(!people.length)throw Error('society_no_active_people');
       for(const person of people){
-        const view=society.view(person),suggested=autonomousPolicy(view.visible);
+        const view=await society.prepareView(person,senses?.perceive),suggested=autonomousPolicy(view.visible);
         if(terminal&&society.controlled.includes(person)){
           stdout.write(JSON.stringify({inhabitant:person,visible:view.visible,suggested},null,2)+'\n');
           const answer=await terminal.question('Submit decision JSON (Enter accepts the shown deterministic suggestion; q stops): ');
           if(answer.trim()==='q')throw Error('supervised_stop');
-          society.submit(person,answer.trim()||JSON.stringify(suggested));
-        }else society.submit(person,JSON.stringify(suggested));
+          const action=answer.trim()||JSON.stringify(suggested);
+          await society.prepareTravel(person,action,senses?.navigate);society.submit(person,action);
+        }else{await society.prepareTravel(person,suggested,senses?.navigate);society.submit(person,suggested);}
       }
     }
   }catch(error){failure=error;}finally{
-    terminal?.close();
+    terminal?.close();await senses?.close();
     writeFileSync(output,stringifySocietyEvidence(society.exportTape()),{flag:'wx',mode:0o600});
   }
   if(failure)throw failure;

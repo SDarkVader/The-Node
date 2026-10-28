@@ -1,3 +1,4 @@
+import {openSocietySenses} from '../src/society/senses.js';
 /** Explicit prepare -> review/fund separately -> approve -> one bounded accounted run.
  * No command here creates an allowance, reuses a historical world, or resets accounting. */
 import { parseArgs } from 'node:util';
@@ -26,10 +27,10 @@ import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/soc
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},godot:{type:'string'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -49,8 +50,8 @@ interface Bundle {plan:SocietyRunPlan;genesis:Genesis;planSha256:string;postcard
 if(values.prepare){
   if(existsSync(bundlePath))throw Error('society_bundle_exists');
   const seed=Number(values.seed),ticks=Number(values.ticks);
-  if(values['inhabitant-information']&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
-  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']?{information:'inhabitant-v1'}:{})};
+  if((values['inhabitant-information']||values['dual-navigation'])&&values['daily-turns']===undefined)throw Error('society_information_requires_routine');
+  const routine:SocietyRoutineConfig|undefined=values['daily-turns']===undefined?undefined:{maxTurnsPerDay:Number(values['daily-turns']),...(values['inhabitant-information']||values['dual-navigation']?{information:'inhabitant-v1' as const}:{}),...(values['dual-navigation']?{navigation:'dual-v1' as const}:{})};
   if(routine)validateSocietyRoutineConfig(routine);
   if(!Number.isSafeInteger(seed))throw Error('society_seed');
   if(values['postcard-start-ms']!==undefined&&!values['postcard-rate'])throw Error('society_postcard_rate_required');
@@ -68,10 +69,13 @@ if(values.prepare){
   const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
     ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{}),...(routine?{routineConfig:structuredClone(routine)}:{})};
-  const packets=society.pendingPeople().map(person=>{const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};});
+  const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
+  try{
+  const packets=await Promise.all(society.pendingPeople().map(async person=>{await society.prepareView(person,senses?.perceive);const request=buildSocietyRequest(society.view(person).visible);return {person,requestBytes:Buffer.byteLength(request.body),maxInputTokens:request.maxInputTokens,maxOutputTokens:request.maxOutputTokens};}));
   mkdirSync(dirname(bundlePath),{recursive:true});writeFileSync(bundlePath,stringifySocietyEvidence(bundle),{flag:'wx',mode:0o600});
   console.log(JSON.stringify({bundle:bundlePath,planSha256:bundle.planSha256,plan,initialPackets:packets,
     dispatchApproved:false,allowanceCreated:false,providerCalls:0,next:'Review the plan. A later owner approval and a separately authorised allowance carrying the latest actual journal are required.'},null,2));
+  }finally{await senses?.close();}
 }else{
   const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
@@ -81,7 +85,9 @@ if(values.prepare){
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
     ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
-  const packets=society.pendingPeople().map(person=>{const q=buildSocietyRequest(society.view(person).visible);return {person,sha256:q.sha256,bytes:Buffer.byteLength(q.body),maxInputTokens:q.maxInputTokens};});
+  const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
+  try{
+  const packets=await Promise.all(society.pendingPeople().map(async person=>{await society.prepareView(person,senses?.perceive);const q=buildSocietyRequest(society.view(person).visible);return {person,sha256:q.sha256,bytes:Buffer.byteLength(q.body),maxInputTokens:q.maxInputTokens};}));
   if(values.preflight){
     let funding='not_provided';
     if(values.budget){const view=inspectSocietyFunding(readFileSync(join(privatePath(values.budget),'accounting.journal.json')));
@@ -123,14 +129,16 @@ if(values.prepare){
         for(const key of ['HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy','NODE_EXTRA_CA_CERTS','NODE_USE_SYSTEM_CA','SSL_CERT_FILE'])if(process.env[key])env[key]=process.env[key];
         let transportError:string|null=null;
         try{await promisify(execFile)(process.execPath,['--use-env-proxy','--import','tsx',join(root,'scripts','society-request-worker.ts'),credential,call,input.sha256],
-          {cwd:root,env,signal,timeout:21_000,maxBuffer:4096,windowsHide:true});}
+          // The parent must outlive the reviewed per-call deadline so it cannot
+          // kill a valid slow response before the controller records its outcome.
+          {cwd:root,env,signal,timeout:Math.max(21_000,bundle.plan.deadlineMs+5_000),maxBuffer:4096,windowsHide:true});}
         catch{transportError='society_worker_exit_or_abort';}
         const fdOutcome=openSync(join(call,'transport.json'),'wx',0o600);
         try{writeFileSync(fdOutcome,JSON.stringify({requestId:input.requestId,index:input.index,
           responsePresent:existsSync(join(call,'response.json')),transportError,aborted:signal.aborted})+'\n');fsyncSync(fdOutcome);}finally{closeSync(fdOutcome);}
         if(!existsSync(join(call,'response.json')))throw Error('society_transport_failed_preserve_hold');
         return readFileSync(join(call,'response.json'));
-      },{plan:bundle.plan,ownerApproved:true,instruction:approval.instruction,expectedCarriedFingerprint:values['carried-fingerprint'],signal:controller.signal,
+      },{perceive:senses?.perceive,navigate:senses?.navigate,plan:bundle.plan,ownerApproved:true,instruction:approval.instruction,expectedCarriedFingerprint:values['carried-fingerprint'],signal:controller.signal,
         ...(panel?.gate?{awaitDayPermit:(day:number,signal?:AbortSignal)=>panel!.gate!.wait(day,signal)}:{}),
         sink:event=>{
           writeFileSync(events,JSON.stringify(JSON.parse(stringifySocietyEvidence(event)))+'\n');fsyncSync(events);
@@ -183,4 +191,5 @@ if(values.prepare){
       await panel.close();
     }
   }
+  }finally{await senses?.close();}
 }

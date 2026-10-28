@@ -16,6 +16,8 @@ param(
   [Parameter(ParameterSetName = 'Review')][switch]$ApprovePaidRun,
   [Parameter(ParameterSetName = 'Review')][string]$WebWorld,
   [Parameter(ParameterSetName = 'Review')][string]$History,
+  [string]$Godot,
+  [Parameter(ParameterSetName = 'Prepare')][switch]$DualNavigation,
   [Parameter(ParameterSetName = 'Review')][switch]$WithoutInterface
 )
 Set-StrictMode -Version Latest
@@ -35,6 +37,8 @@ try {
     if (-not [string]::IsNullOrEmpty($OracleConfig)) { $prepareArguments += @('--oracle-config', $OracleConfig) }
     if ($OptionalDiarySubject) { $prepareArguments += '--optional-diary-subject' }
     if ($PSBoundParameters.ContainsKey('DailyTurns')) { $prepareArguments += @('--daily-turns', [string]$DailyTurns) }
+    if ($DualNavigation) { $prepareArguments += '--dual-navigation' }
+    if (-not [string]::IsNullOrEmpty($Godot)) { $prepareArguments += @('--godot', $Godot) }
     $raw = & $nodeExecutable @prepareArguments
     if ($LASTEXITCODE -ne 0) { throw 'Playtest preparation failed. Preserve any new files and inspect the error; no live call was made.' }
     $result = ($raw -join "`n") | ConvertFrom-Json
@@ -55,7 +59,7 @@ try {
   $raw | Write-Output
   # The reviewed existing launcher carries accounting, parses a private credential copy,
   # starts the fixed worker, retains raw/partial evidence and removes only its key copy.
-  & (Join-Path $PSScriptRoot 'start-society-live.ps1') -Config $approved.launch -WebWorld $WebWorld -History $History -WithoutInterface:$WithoutInterface
+  & (Join-Path $PSScriptRoot 'start-society-live.ps1') -Config $approved.launch -Godot $Godot -WebWorld $WebWorld -History $History -WithoutInterface:$WithoutInterface
   exit $LASTEXITCODE
 } finally {
   Pop-Location

@@ -15,7 +15,7 @@ export async function openSocietyPanel(options:{society:Society;id:string;stop:(
   let summary:{status:string}|null=null,finished=false;
   const stop=()=>{gate?.close();options.society.halt();options.stop();};
   const source=new SocietyObservatorySource({kind:'society',id:options.id,directory:'',mode:options.mode},{
-    ...(gate?{gate}:{}),stop,read:()=>({tape:options.society.exportTape(),
+    ...(gate?{gate}:{}),stop,refreshIntervalMs:1000,version:()=>JSON.stringify([options.society.revision,events.length,gate?.state,summary,finished]),read:()=>({tape:options.society.exportTape(),
       eventsText:events.map(e=>JSON.stringify(JSON.parse(stringifySocietyEvidence(e)))).join('\n'),summary,
       accounting:options.accounting?.()??null,status:finished?summary?.status??'stopped':options.society.halted?'stopped':gate?.state.waitingDay?'paused':'running'})});
   let previous:SocietyObservatorySource[]=[];
@@ -30,6 +30,6 @@ export async function openSocietyPanel(options:{society:Society;id:string;stop:(
   const port=await app.ready;
   return {app,gate,source,url:`http://127.0.0.1:${port}/`,researcherToken,
     event(event:SocietyRunEvent){events.push(structuredClone(event));},
-    finish(value:{status:string}|null){summary=value;finished=true;gate?.close();app.refresh();},
+    finish(value:{status:string}|null){summary=value;finished=true;gate?.close();source.refresh(true);app.refresh();},
     close:()=>app.close()};
 }

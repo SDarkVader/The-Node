@@ -8,7 +8,7 @@ import type { ExperimentBudget } from '../agent/experimentBudget.js';
 import type { Sender } from '../eval/accountedRunner.js';
 import { digest } from '../agent/replay.js';
 import { SocietySecurityError, validateSocietyAction } from './boundary.js';
-import { buildSocietyRequest } from './request.js';
+import { buildSocietyRequest,SOCIETY_REQUEST_TIMEOUT_MS,SOCIETY_PER_REQUEST_MICRO_USD } from './request.js';
 import { autonomousPolicy } from './policy.js';
 import type { Society } from './runtime.js';
 import {validateSocietyPostcardConfig,type SocietyPostcardConfig} from './postcards.js';
@@ -31,11 +31,11 @@ export function createSocietyPlan(society: Society, options: { id?: string; tick
   const tape=society.exportTape(),routine=tape.routineConfig;
   const maxCalls=routine?Math.min(5000,ticks*3*(1+routine.maxTurnsPerDay)):ticks*6;
   const plan: SocietyRunPlan = { schema: routine?'node-accounted-society-routine-v4':tape.dailyOracleConfig?'node-accounted-society-daily-oracle-v3':tape.postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
-    model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? 20_000,
+    model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? SOCIETY_REQUEST_TIMEOUT_MS,
     minIntervalMs: options.minIntervalMs ?? 1000, initialHash: society.hash,
     sourceRevision: society.inspect().genesis.sourceRevision, controlled: society.controlled,
     allowance: { maxRequests: maxCalls, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
-      perRequestMicroUsd: options.perRequestMicroUsd ?? 20_000 },
+      perRequestMicroUsd: options.perRequestMicroUsd ?? SOCIETY_PER_REQUEST_MICRO_USD },
     ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}),
     ...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(routine?{routine}:{}) };
   validateSocietyPlan(plan); return structuredClone(plan);
@@ -49,7 +49,7 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
     (p?.schema==='node-accounted-society-daily-oracle-v3')!==(!p?.routine&&!!p?.dailyOracle) ||
     (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.routine&&!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
     p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== (p.routine?Math.min(5000,p.ticks*3*(1+p.routine.maxTurnsPerDay)):6*p.ticks) ||
-    !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > 20_000 ||
+    !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > SOCIETY_REQUEST_TIMEOUT_MS ||
     !Number.isSafeInteger(p.minIntervalMs) || p.minIntervalMs < 0 || p.minIntervalMs > 60_000 ||
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
     !Array.isArray(p.controlled) || p.controlled.length !== 3 || new Set(p.controlled).size !== 3 ||
@@ -71,6 +71,8 @@ export interface SocietyCallOutcome extends SocietyCallBinding {
 }
 export interface SocietyRunEvent { kind: 'start' | 'request' | 'reserved' | 'dispatched' | 'response' | 'decision' | 'submission' | 'outcome' | 'finish'; data: unknown }
 export interface AccountedSocietyOptions {
+  perceive?:import('../observatory/perceptionBridge.js').PerceptionBridge['perceive'];
+  navigate?:import('../observatory/perceptionBridge.js').PerceptionBridge['navigate'];
   plan: SocietyRunPlan; ownerApproved: boolean; instruction: string; expectedCarriedFingerprint: string;
   sink: (event: SocietyRunEvent) => void; signal?: AbortSignal;
   /** Trusted operator gate only; never appears in the inhabitant context or action. */
@@ -138,11 +140,14 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
     // the next decision. The sink owns private storage; this never enters an agent view.
     // If the sink fails or the process dies between execution and persistence, recovery
     // conservatively stops at the last recorded action and never assumes the missing one.
-    const submit=(person:string,action:ReturnType<typeof validateSocietyAction>,afterAdmission?:()=>void)=>{
+    const submit=async (person:string,action:ReturnType<typeof validateSocietyAction>,afterAdmission?:()=>void)=>{
       const beforeHash=society.hash,tick=society.tick,phase=society.phase,turn=society.turn;
+      await society.prepareTravel(person,action,options.navigate);
+      if(options.signal?.aborted)throw new SocietySecurityError('society_cancelled');
+      const senses=society.decisionEvidence(person);
       society.submit(person,action);afterAdmission?.();
       if(plan.routine)emit({kind:'submission',data:{sequence:submissionSequence++,person,tick,phase,turn,
-        action,beforeHash,afterHash:society.hash,afterTick:society.tick}});
+        action,...senses,beforeHash,afterHash:society.hash,afterTick:society.tick}});
     };
     while(society.tick<plan.ticks&&!stoppedReason){
       if(society.halted){halt(society.stoppedReason??'society_halted');break;}
@@ -159,11 +164,12 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
       for(const person of people){
         active=null;
         if(options.signal?.aborted){halt('society_cancelled');break;}
-        const revision=society.revision,view=society.view(person);
+        const revision=society.revision,view=await society.prepareView(person,options.perceive);
+        if(options.signal?.aborted){halt('society_cancelled');break;}
         if(!plan.controlled.includes(person)){
           const action=autonomousPolicy(view.visible);
           if(options.signal?.aborted){halt('society_cancelled');break;}
-          submit(person,action);continue;
+          await submit(person,action);continue;
         }
         if(calls>=plan.maxCalls){halt('society_call_limit');break;}
         const wire=buildSocietyRequest(view.visible,plan.model),current=budget.view();
@@ -175,7 +181,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         const binding:SocietyCallBinding={requestId,index:calls,episodeId,actorId:person,tick,phase,...(turn===undefined?{}:{turn})};
         active={binding,stage:'prepared',beforeHash:society.hash,beforeTick:tick,finished:false};
         const currentLease=()=>!society.halted&&society.revision===revision&&society.tick===tick&&society.phase===phase&&society.pendingPeople().includes(person);
-        const sent={...binding,body:wire.body,sha256:wire.sha256,provider:'anthropic' as const};
+        const sent={...binding,...society.decisionEvidence(person),body:wire.body,sha256:wire.sha256,provider:'anthropic' as const};
         emit({kind:'request',data:{...sent,maxInputTokens:wire.maxInputTokens,maxOutputTokens:wire.maxOutputTokens}});
         const wait=lastDispatch+plan.minIntervalMs-performance.now();
         if(wait>0)await pacedWait(wait,options.signal);
@@ -235,7 +241,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
         active.stage='validated';emit({kind:'decision',data:{...binding,person,status:'validated',action}});
         if(options.signal?.aborted){stop('cancelled','society_cancelled');break;}
         if(!currentLease()){stop('stale_response','society_stale_response');break;}
-        submit(person,action,()=>{active!.stage='submitted';});outcome('submitted',null);
+        await submit(person,action,()=>{active!.stage='submitted';});outcome('submitted',null);
       }
     }
   }catch(error){

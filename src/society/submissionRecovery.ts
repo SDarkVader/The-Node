@@ -31,9 +31,10 @@ export function recoverSocietySubmissions(events: readonly SocietyRunEvent[], ex
   let sequence=0;
   for(const event of events){
     if(event.kind!=='submission')continue;
-    const entry=event.data as {sequence:number;person:string;tick:number;phase:string;turn:number;action:unknown;beforeHash:string;afterHash:string;afterTick:number};
+    const entry=event.data as {sequence:number;person:string;tick:number;phase:string;turn:number;action:unknown;beforeHash:string;afterHash:string;afterTick:number;perception?:import('../observatory/perception.js').PerceptionRecord;navigation?:import('../observatory/navigation.js').NavigationRecord};
     if(!entry||entry.sequence!==sequence++||typeof entry.person!=='string'||entry.tick!==society.tick||entry.phase!==society.phase||
       entry.turn!==society.turn||entry.beforeHash!==society.hash)throw Error('society_submission_order');
+    society.bindEvidence(entry.person,entry,entry.action as import('./boundary.js').SocietyAction);
     society.submit(entry.person,entry.action);
     if(entry.afterHash!==society.hash||entry.afterTick!==society.tick)throw Error('society_submission_transition');
   }

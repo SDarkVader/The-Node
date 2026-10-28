@@ -18,7 +18,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Godot build failed before any spending preparation.' }
   }
   if (-not $Start) {
-    $arguments=@('--import','tsx','scripts/preview-society.ts','--ticks',[string]$Ticks,'--seed',[string]$Seed,'--web-world',$config.webWorldDirectory)
+    $arguments=@('--import','tsx','scripts/preview-society.ts','--dual-navigation','--godot',$config.godot,'--ticks',[string]$Ticks,'--seed',[string]$Seed,'--web-world',$config.webWorldDirectory)
     if (Test-Path -LiteralPath $config.historyRegistration) { $arguments+=@('--history',$config.historyRegistration) }
     & node @arguments | ForEach-Object {
       $line=$_;Write-Output $line
@@ -39,7 +39,7 @@ try {
   $answer=Read-Host 'Type START to approve this exact prepared run'
   if ($answer -cne 'START') { & node --import tsx scripts/manage-node-tests.ts --settings $settingsPath --finish; return }
   try {
-    $liveArguments=@{Review=$review.review;ApprovePaidRun=$true;WebWorld=$config.webWorldDirectory}
+    $liveArguments=@{Review=$review.review;ApprovePaidRun=$true;WebWorld=$config.webWorldDirectory;Godot=$config.godot}
     if (Test-Path -LiteralPath $config.historyRegistration) { $liveArguments.History=$config.historyRegistration }
     & (Join-Path $PSScriptRoot 'start-society-playtest.ps1') @liveArguments
   } finally {

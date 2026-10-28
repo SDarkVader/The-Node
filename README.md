@@ -1,5 +1,25 @@
 # NODE — experiments in an evolving social-economic world
 
+2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
+were restored with a pointer to the verified latest closed journal and a registry of six
+preserved live runs. `START-NODE.ps1 -Ticks 1 -NoBrowser` launched an offline preview,
+served the Observatory and embedded Godot page, and completed one manual day with
+227 decisions, 51 synthetic controlled requests, zero provider calls and zero report
+integrity issues. Its saved tape replayed to the same final hash. The preview exited
+cleanly and released the launcher lock. PR #56 remains draft. This PC-specific repair
+does not grant a paid run. [Scoped offline evidence](docs/research/evidence/launcher-offline-restoration-2026-10-28.json).
+
+2026-10-28 PR #58 review at implementation `6146265`: a full Windows run with native
+Godot passed 1,993 tests across 158 files with one platform skip, after fixing a
+worker cleanup race found in the first run. TypeScript passed. The real Godot proof
+selected a non-adjacent destination, traversed six legal steps in one decision,
+then received the arrival first-person view and work option. The updated head is
+awaiting hosted checks before merge. A final dispatch review at `fd97feb` also
+raised the parent worker timeout above the reviewed 120-second call deadline;
+49 focused native-Godot tests and TypeScript passed after this change. No paid
+experiment was started.
+[Scoped review evidence](docs/research/evidence/pr58-review-2026-10-28.json).
+
 NODE is an independently designed environment for studying how agents interpret circumstances,
 use memory, reconsider earlier thinking and make decisions whose consequences develop over time.
 Authority, cooperation, information asymmetry and economic behaviour are part of the wider
@@ -21,6 +41,41 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 [Workflow, setup and raw output](docs/research/SEQUENTIAL_DAYS_2026-10-26.md).
 
 ## Current development — 2026-10-27
+
+The supervised run at source30d9527 completed all18actual Anthropic calls:6decisions per
+inhabitant,18returned summaries and73total society decisions. Six agent-selected trips traversed
+33legal Godot steps. An agent reached a non-adjacent workplace in one decision, received its
+correct first-person work option and recorded work. All18exactrequest/privacy checks, response
+agreement and partial replay pass; no system leakage/outside-game action was observed.
+The approved five-turn bound left the day unfinished; no full paid day or settlement is claimed.
+[Sanitized execution evidence](docs/research/evidence/eighteen-call-navigation-verified-2026-10-27.json).
+
+Current Society requests have16384outputtokens,120s timeout and a USD0.032 per-request ceiling,
+fully reserved before dispatch. The successful run booked USD0.085607 with zero held; combined
+conservative exposure across all four preserved attempts is USD0.158947, within the original
+USD0.40 cap. Prior journals, failed attempts and raw evidence are preserved; latest history is
+closed/carried and the launcher is ready for the owner's next reviewed run. No further paid
+calls are authorized by that completed test. Source30d9527 passed136scoped tests/10files,
+final3request checks, strict types and8recovery tests, including nativeGodot integration.
+
+Fresh PC runs now use dual-perspective navigation: one overhead world map plus the current
+Godot first-person view per decision. Agents select reachable geographical destinations;
+Godot routes the journey through existing legal adjacent plots without extra model calls.
+Travel occupies that decision; the next normal decision supplies arrival sight and local
+interaction options. Hearing, recognition, lexical speech and task permissions stay separate
+from map knowledge. Historical tapes retain their original rules.
+
+Implementation `e8369f9` passed 1,990 tests in 158 files with native Godot, one platform skip, eight recovery
+tests and TypeScript. An actual six-step trip reached its workplace, exposed the arrival work
+option and recorded work; the production controller also completed a day using a fake provider.
+These checks made zero paid calls. [Implementation and execution evidence](docs/research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).
+
+To repeat the native proof from PowerShell, using the configured PC Godot path:
+
+```powershell
+$nodeSettings = Get-Content "$env:LOCALAPPDATA/The-Node/test.local.json" -Raw | ConvertFrom-Json
+node --import tsx scripts/verify-dual-navigation.ts --godot $nodeSettings.godot --output "$env:TEMP/node-navigation-$([guid]::NewGuid())"
+```
 
 A separately authorized PowerShell check at `70d71bd` completed six actual Haiku calls: two
 decisions per Miller/Baker, all with nonempty returned thinking summaries. Exact requests,
@@ -48,7 +103,7 @@ exact observation inspection, raw exports and cold replay. Preserved actual evid
 replayed all 98 requests/responses through 383 decisions with zero conflicts. The owner approved
 append-only closure of the historical authorization; previous entries, USD 0.304048 booked and
 zero held remain intact. Final-source PowerShell preparation with STOP passed with no allowance,
-execution or journal mutation. No new paid test is approved. [Verification and commands](docs/research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
+execution or journal mutation. That historical verification granted no new paid approval. [Verification and commands](docs/research/OPERATIONAL_AGENT_CONTRACT_2026-10-27.md).
 
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through

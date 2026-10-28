@@ -4,25 +4,27 @@ import { readFileSync, writeFileSync, lstatSync, realpathSync, openSync, fsyncSy
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { societyInhabitantInstructions } from '../src/society/request.js';
+import { societyInhabitantInstructions,societyOutputSchema,SOCIETY_MAX_OUTPUT_TOKENS,SOCIETY_REQUEST_TIMEOUT_MS } from '../src/society/request.js';
 import { assertSerializedSocietyVisibleContext } from '../src/society/boundary.js';
-import { anthropicSchema } from '../src/agent/anthropicRequest.js';
+import {anthropicSchema} from '../src/agent/anthropicRequest.js';
 
 const hash=(bytes:Buffer|string)=>createHash('sha256').update(bytes).digest('hex');
 const exact=(v:Record<string,unknown>,keys:string[])=>Object.keys(v).sort().join(',')===[...keys].sort().join(',');
-export function validateSocietyWire(bytes:Buffer,expectedSha256:string): void {
+export function validateSocietyWire(bytes:Buffer,expectedSha256:string,options:{historical?:boolean}={}): void {
   if(bytes.length<1||bytes.length>65_536||!/^[a-f0-9]{64}$/.test(expectedSha256)||hash(bytes)!==expectedSha256)throw Error('society_worker_request_binding');
   let q:any;try{q=JSON.parse(bytes.toString('utf8'));}catch{throw Error('society_worker_request_json');}
-  if(!q||!exact(q,['model','max_tokens','system','messages','thinking','output_config'])||q.model!=='claude-haiku-5-5'||q.max_tokens!==2048||
+  if(!q||!exact(q,['model','max_tokens','system','messages','thinking','output_config'])||q.model!=='claude-haiku-5-5'||
+    !(q.max_tokens===SOCIETY_MAX_OUTPUT_TOKENS||options.historical&&q.max_tokens===2048)||
     !Array.isArray(q.messages)||q.messages.length!==1||q.messages[0].role!=='user'||
     !exact(q.messages[0],['role','content'])||q.messages[0].content?.length!==1||q.messages[0].content[0].type!=='text'||
     !exact(q.messages[0].content[0],['type','text'])||!q.thinking||!exact(q.thinking,['type','display'])||q.thinking.type!=='adaptive'||q.thinking.display!=='summarized'||
     !q.output_config||!exact(q.output_config,['effort','format'])||q.output_config.effort!=='high'||q.output_config.format?.type!=='json_schema'||
-    !exact(q.output_config.format,['type','schema'])||q.output_config.format?.schema?.additionalProperties!==false)throw Error('society_worker_wire');
+    !exact(q.output_config.format,['type','schema']))throw Error('society_worker_wire');
   const observation=JSON.parse(q.messages[0].content[0].text);
   assertSerializedSocietyVisibleContext(observation);
   if(q.system!==societyInhabitantInstructions(observation))throw Error('society_worker_instructions');
-  if(JSON.stringify(q.output_config.format.schema)!==JSON.stringify(anthropicSchema(observation.decisionSchema)))throw Error('society_worker_schema');
+  if(JSON.stringify(q.output_config.format.schema)!==JSON.stringify(societyOutputSchema(observation))&&
+    !(options.historical&&[anthropicSchema(observation.decisionSchema),societyOutputSchema(observation,{legacyUnion:true})].some(s=>JSON.stringify(q.output_config.format.schema)===JSON.stringify(s))))throw Error('society_worker_schema');
   // These keys have no inhabitant meaning and were the original leak. Reject at the last
   // egress boundary as well as using a branded view in the parent request builder.
   const forbidden=new Set(['sourceRevision','observerSecret','worldHash','requestId','agentId','developmentUpdate','packageInformation','sources','profile','engine','genesis','credential','tools','tool_calls',
@@ -45,7 +47,7 @@ async function main(){
   // and budget reservation. A malformed request cannot even trigger a credential read.
   const key=privateFile(resolve(keyArg),4096).toString('utf8').trim();
   if(!/^sk-ant-[A-Za-z0-9_-]{16,}$/.test(key))throw Error('society_worker_credential_format');
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20_000);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),SOCIETY_REQUEST_TIMEOUT_MS);
   try{
     const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',redirect:'error',
       headers:{'content-type':'application/json','anthropic-version':'2023-06-01','x-api-key':key},body:request.toString('utf8'),signal:controller.signal});

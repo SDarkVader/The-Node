@@ -123,7 +123,8 @@ function replay(d: Document) {
       const q = event.value, a = authorization;
       if (!exact(event, ['kind', 'value', 'at']) || !object(q) || !exact(q, ['id', 'episodeId', 'actorId', 'inputSha256', 'participant', 'model', 'maxInputTokens', 'maxOutputTokens']) || !a || !iso(event.at) ||
         event.at < a.authorizedAt || event.at >= a.expiresAt || !id(q.id) || requests.has(q.id) || !id(q.episodeId) || !id(q.actorId) || !hash(q.inputSha256) || q.model !== a.model ||
-        !integer(q.maxInputTokens) || q.maxInputTokens < 1 || q.maxInputTokens > (q.model === 'claude-haiku-5-5' ? 100000 : 36864) || !integer(q.maxOutputTokens) || q.maxOutputTokens < 1 || q.maxOutputTokens > 2048 ||
+        !integer(q.maxInputTokens) || q.maxInputTokens < 1 || q.maxInputTokens > (q.model === 'claude-haiku-5-5' ? 100000 : 36864) ||
+        !integer(q.maxOutputTokens) || q.maxOutputTokens < 1 || q.maxOutputTokens > (q.model === 'claude-haiku-5-5' ? 16384 : 2048) ||
         !participant(q.participant) || overrun || requests.size >= a.maxRequests || [...requests.values()].some(x => x.bookedMicroUsd === null)) return fail('experiment_budget_admission');
       const key = JSON.stringify([q.episodeId, q.actorId]), stream = streams.get(key);
       if (stream && (stream.selfRef !== q.participant.selfRef || stream.tick >= q.participant.tick)) return fail('experiment_budget_stream');

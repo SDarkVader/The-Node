@@ -1,3 +1,10 @@
+import {validatePerception,PERCEPTION_PROFILE,PERCEPTION_SCHEMA,effectiveRange} from '../src/observatory/perception.js';
+import {validateNavigation,NAVIGATION_PROFILE} from '../src/observatory/navigation.js';
+import {shortestGridPath} from '../src/engine/navigation.js';
+import {readFileSync} from 'node:fs';
+import {openSocietySenses} from '../src/society/senses.js';
+import {recoverSocietySubmissions} from '../src/society/submissionRecovery.js';
+import {SocietyObservatorySource} from '../src/observatory/societySource.js';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { root, setup, cleanup } from './fixtures/accountingFixture.js';
@@ -14,9 +21,12 @@ import { emptySocietyAction } from '../src/society/policy.js';
 const handles: { close(): void }[] = [];
 afterEach(() => { for (const h of handles.splice(0)) h.close(); cleanup(); });
 const instruction = 'TEST ONLY SYNTHETIC APPROVAL. No actual provider, financial authority, prior account or credential.';
-function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = false) {
+function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = false, dual=false) {
   const config = { ...societyConfig(), pMonthly: 0, arrivalPDaily: 0, migrationK: 0, saboteurCount: 0 };
-  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config: natural ? societyConfig() : config });
+  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config: natural ? societyConfig() : config,...(dual?{
+    routine:{maxTurnsPerDay:64,information:'inhabitant-v1' as const,navigation:'dual-v1' as const},
+    postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000 as const},
+    dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))}:{} ) });
   const plan = createSocietyPlan(society, { id: 'TEST-ONLY-safe-society', ticks, minIntervalMs, deadlineMs });
   const { ledger } = setup(), priorDirectory = join(root(), 'TEST-ONLY-initial-allowance');
   const prior = InitialTestBudget.create(priorDirectory, ledger.exportDocument()), now = Date.now(), day = 86_400_000;
@@ -44,7 +54,7 @@ function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = fals
     content.push({ type: 'text', text: JSON.stringify(fault === 'action' ? { ...action, hostOperation: 'exec' } : action) });
     return Buffer.from(JSON.stringify({ type: 'message', role: 'assistant', id: 'msg_TEST_ONLY_society_' + input.index,
       model: fault === 'model' ? 'wrong-model' : plan.model, stop_reason: 'end_turn', content,
-      usage: fault === 'unknown' ? null : { input_tokens: 1200, output_tokens: fault === 'overrun' ? 3000 : 80 } }));
+      usage: fault === 'unknown' ? null : { input_tokens: 1200, output_tokens: fault === 'overrun' ? JSON.parse(input.body).max_tokens+1 : 80 } }));
   };
   return { society, plan, budget, events, options, sent, sender };
 }
@@ -70,7 +80,11 @@ describe('accounted society, fake provider and disposable money fixtures only', 
       expect(visible).not.toHaveProperty('requestId'); expect(visible).not.toHaveProperty('worldHash');
       expect(JSON.stringify(wire.messages)).not.toContain(instruction);
       expect(JSON.stringify(wire.messages)).not.toContain('TEST_ONLY_signature');
+      expect(wire.max_tokens).toBe(16384);
     }
+    expect(f.budget.view().requests.every(q=>q.request.maxOutputTokens===16384)).toBe(true);
+    expect(createSocietyPlan(f.society).deadlineMs).toBe(120000);
+    expect(f.plan.allowance.perRequestMicroUsd).toBe(32000);
     const duplicate = fixture();
     const replayed = await runAccountedSociety(duplicate.society, duplicate.budget, duplicate.sender(), duplicate.options);
     expect(replayed.finalHash).toBe(result.finalHash);
@@ -286,4 +300,42 @@ describe('accounted society, fake provider and disposable money fixtures only', 
     inspection.genesis.observerSecret='not the real observer secret';tape.controlled.length=0;tape.genesis.config.rBaker=999;
     expect(f.society.view(person).visible).toEqual(before);expect(f.society.hash).toBe(hash);expect(f.society.revision).toBe(revision);
   });
+});
+
+
+describe.skipIf(!process.env.NODE_GODOT_BIN)('production controller with real Godot and fake provider only',()=>{
+  it('completes two days with postcards and daily Oracle, one request per decision, exact traces and recovered navigation',async()=>{
+    const f=fixture(2,2000,0,false,true),senses=await openSocietySenses();
+    let stopped=false;
+    try{
+      const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,...senses});
+      expect(result.status).toBe('completed');expect(result.ticks).toBe(2);expect(f.sent.length).toBe(result.calls);
+      const tape=f.society.exportTape(),trips=tape.decisions.filter(d=>d.navigation&&d.navigation.path.length>1);
+      expect(trips.length).toBeGreaterThan(0);
+      expect(tape.decisions.filter(d=>d.controlled)).toHaveLength(result.calls);
+      for(const d of tape.decisions){expect(d.perception).toBeDefined();if(d.action.move)expect(d.navigation).toBeDefined();}
+      expect(verifySocietyTape(tape).verified).toBe(true);
+      expect(recoverSocietySubmissions(f.events,tape.genesis.sourceRevision)).toEqual(tape);
+      const source=new SocietyObservatorySource({id:'dual-controller-test',directory:'unused',kind:'society',mode:'synthetic'},
+        {read:()=>({tape,eventsText:f.events.map(e=>JSON.stringify(JSON.parse(stringifySocietyEvidence(e)))).join('\n')}),stop:()=>{stopped=true;}});
+      expect(source.refresh()).toBe(true);expect(stopped).toBe(false);
+      expect(senses.stats()).toMatchObject({refused:0,timedOut:0,unmatched:0});
+    }finally{await senses.close();}
+  },120000);
+});
+
+
+it('cancels during route computation before executing the already returned model destination',async()=>{
+  const f=fixture(1,2000,0,false,true),controller=new AbortController();
+  const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:controller.signal,
+    perceive:async r=>{
+      const response={type:'perception' as const,schema:PERCEPTION_SCHEMA,profile:PERCEPTION_PROFILE,requestId:r.requestId,agentId:r.agentId,tick:r.tick,worldHash:r.worldHash,perspective:r.perspective,
+        engine:{name:'fixture',version:'synthetic'},observation:{effectiveRange:effectiveRange(r.condition),bodies:[],locations:[],environment:{localTensionBand:r.scene.districts.find(d=>d.id===r.scene.observer.districtId)?.tensionBand??null,weather:r.condition.weather.kind}}};
+      return validatePerception(r,response,JSON.stringify(response));
+    },
+    navigate:async r=>{controller.abort();const response={type:'navigation',schema:'node-navigation-response-v1',profile:NAVIGATION_PROFILE,requestId:r.requestId,worldHash:r.worldHash,actorRef:r.actorRef,engine:{name:'fixture',version:'synthetic'},path:shortestGridPath(r.district.plots,r.from,r.to)};return validateNavigation(r,response,JSON.stringify(response));},
+  });
+  expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',ticks:0,heldMicroUsd:'0'});
+  expect(f.society.exportTape().decisions.every(d=>d.phase==='commit')).toBe(true);
+  expect(f.sent.length).toBe(4);
 });

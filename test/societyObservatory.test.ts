@@ -10,8 +10,51 @@ import {sha256} from '../src/agent/accountingStore.js';
 import {stringifySocietyEvidence} from '../src/society/codec.js';
 import WebSocket from 'ws';
 import {once} from 'node:events';
+import {mkdtempSync,writeFileSync,readFileSync,statSync,utimesSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {request as httpRequest} from 'node:http';
 const apps:{close:()=>Promise<void>}[]=[];
 afterEach(async()=>{for(const app of apps.splice(0))await app.close();});
+it('checks actual saved bytes before reusing verification, including same-size timestamp-restored edits',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'node-observatory-byte-cache-'));
+  try{
+    const society=new Society({seed:42,sourceRevision:'cache-test'}),path=join(directory,'society.json');
+    writeFileSync(path,stringifySocietyEvidence(society.exportTape()));writeFileSync(join(directory,'events.jsonl'),'');
+    const source=new SocietyObservatorySource({kind:'society',id:'cache-test',directory,mode:'synthetic'});
+    expect(source.refresh()).toBe(true);expect(source.refresh()).toBe(true);
+    const before=readFileSync(path,'utf8'),stat=statSync(path),changed=before.replace('"seed": 42','"seed": 43');
+    expect(changed).not.toBe(before);expect(changed.length).toBe(before.length);
+    writeFileSync(path,changed);utimesSync(path,stat.atime,stat.mtime);
+    expect(()=>source.refresh()).toThrow();
+  }finally{rmSync(directory,{recursive:true,force:true});}
+});
+it('uses the trusted live revision only until an actual controller change',()=>{
+  const society=new Society({seed:42,sourceRevision:'cache-test'});let version='one',reads=0;
+  const source=new SocietyObservatorySource({kind:'society',id:'live-cache-test',directory:'',mode:'synthetic'},
+    {version:()=>version,read:()=>{reads++;return {tape:society.exportTape(),eventsText:''};},stop:()=>society.halt()});
+  source.refresh();source.refresh();expect(reads).toBe(1);
+  const person=society.pendingPeople()[0]!;society.submit(person,autonomousPolicy(society.view(person).visible));version='two';
+  source.refresh();expect(reads).toBe(2);
+});
+it('spaces expensive live replay while retaining the verified cursor and forces final verification',()=>{
+  const society=new Society({seed:42,sourceRevision:'cache-test'});let version='one',reads=0;
+  const source=new SocietyObservatorySource({kind:'society',id:'paced-viewer-test',directory:'',mode:'synthetic'},
+    {refreshIntervalMs:1000,version:()=>version,read:()=>{reads++;return {tape:society.exportTape(),eventsText:''};},stop:()=>society.halt()});
+  source.refresh();const cursor=source.latestCursor;
+  const person=society.pendingPeople()[0]!;society.submit(person,autonomousPolicy(society.view(person).visible));version='two';
+  source.refresh();expect(reads).toBe(1);expect(source.latestCursor).toBe(cursor);
+  source.refresh(true);expect(reads).toBe(2);
+});
+it('shuts down with an unfinished browser request instead of retaining the launcher lock',async()=>{
+  const f=fixture(),app=startObservatory({sources:[f.source],researcherToken:'r'.repeat(64),worldToken:'w'.repeat(64),port:0,pollMs:60000});
+  const port=await app.ready;
+  const request=httpRequest({host:'127.0.0.1',port,path:'/session',method:'POST',headers:{'Content-Type':'application/json','Content-Length':'4096'}});
+  request.on('error',()=>{});request.write('{"token":"');await once(request,'socket');
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{await Promise.race([app.close(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('shutdown_retained_connection')),2000);})]);}
+  finally{if(timer)clearTimeout(timer);request.destroy();}
+});
 function fixture(){
   const society=new Society({seed:42,sourceRevision:'a'.repeat(40)}),gate=new ManualTickGate();let stopped=0;
   let eventsText='',tapeOverride:unknown=null;

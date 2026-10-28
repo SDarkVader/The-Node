@@ -1,11 +1,109 @@
 # Current Society daily implementation checkpoint
 
+2026-10-28 PR #58 review at implementation `6146265`: the first full Windows
+native-Godot run passed 1,992 tests and had three `EPERM` failures removing
+worker scratch directories. The three affected files then passed in isolation.
+Worker cleanup now waits for the child close event and retries transient removal
+errors. The full rerun passed 1,993 tests across 158 files with one platform
+skip; TypeScript passed. A native proof again travelled six legal steps to a
+non-adjacent workplace, then received arrival sight and work permission.
+The reviewed implementation is awaiting checks on its updated PR head before
+merge. Final dispatch review at `fd97feb` found the parent worker's old
+21-second timeout below the reviewed 120-second call deadline. It now allows
+the plan deadline plus five seconds; 49 focused native-Godot tests and
+TypeScript passed after this fix. No paid run occurred.
+[Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
+
+2026-10-28 launcher restoration at source `6307a8e`: the PC's missing private
+`test.local.json` and saved-run registry were reconstructed from retained local
+paths and evidence. The settings point to the newest verified, closed 71-call
+journal (339878 microUSD booked, zero held), with no pending run. The registry
+lists six preserved live runs; the newest was available in the Observatory.
+The normal `START-NODE.ps1 -Ticks 1 -NoBrowser` preview rebuilt Godot for this
+head, served its web page, and completed one manually advanced day with 227
+decisions and 51 synthetic controlled requests. It made zero provider calls;
+its result report has zero integrity issues and cold tape replay passes.
+The server exited cleanly and the settings lock can be reacquired. PR #56 was
+confirmed open and draft; no PR merge or paid run occurred. The settings and
+raw evidence remain private. [Sanitized offline check](../research/evidence/launcher-offline-restoration-2026-10-28.json).
+
+Earlier CI follow-up: the routine launch assertion matches the reviewed $0.032
+per-request ceiling; the focused six-test file passed locally.
+PR #58 now targets main after PR #57 merged. The Godot-enabled navigation, request, accounting
+and routine suites passed 43 tests; a further stale-navigation test passed in the eight-test
+navigation suite. PR #56 is an older offline planner and is not wired to dual-v1 execution.
+A separately approved 71-call run completed one day and replayed 275 decisions; its closed
+journal has 339878 microUSD booked and zero held. The PC's private settings directory was
+absent before the 2026-10-28 restoration; its latest-journal pointer is now verified.
+
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
-The current development branch is codex/operational-agent-contract-2026-10-27; PR57 is open.
+The current development branch is codex/dual-perspective-navigation-2026-10-27, based on PR57's head 47b3000. PR57 remains the inherited information-contract change.
 
-The latest owner-authorized check ran from PowerShell at source 70d71bdf0ef0ad28d8c741aa2dc616f8fe4313de.
+Latest verified execution — source30d952722af3778ae164e1e7a52d7489b2b4b3ea:
+all18actual Anthropic requests returned HTTP200/end_turn and were admitted, with18nonempty
+provider summaries and6decisions per controlled inhabitant. The society executed73total decisions,
+including6model-selected trips spanning33legal steps. A real agent selected a non-adjacent
+workplace, traversed6nativeGodot steps in one decision, received the correct arrival first-person
+view/work option, chose work and subsequently observed its work task recorded.
+
+All18exact source-authorized request comparisons, other-private-state noninterference checks,
+response/action agreement and separate-process73decision replay pass. World WebSocket packets
+exclude private thinking/observations/diaries/credentials. Historical world/turn/decision inspection
+rendered Godot correctly with0browser errors. Report integrity issues:0. The approved five-action-turn
+bound stopped the unfinished day;0completed days and no day-end settlement are claimed.
+
+The owner-requested output headroom is16384tokens, with120s worker/controller timeout and USD0.032
+per-request reservation. All18requests used it; every response completed. Booked85607microUSD,
+held0, append-only closed and newesthistory carried. Combined conservative exposure across all
+four preserved attempts is158947microUSD<400000. This is conservative accounting, not a provider
+invoice. Previous journals and original evidence remain intact, temporary credential copy removed,
+pendingRun cleared, finalized read-only viewer closed and launcher settings lock released. No
+further paid run is authorized. The branch runs locally without merging. PR58 remains stacked onPR57.
+
+Headroom implementation checks:136tests/10files, final3request assertions, strict types and8recovery
+tests pass, including nativeGodot two-day fake-provider controller execution. Historical fullsuite
+1990tests at e8369f9 remains separately scoped. The earlier failed attempts are preserved in their
+original sanitized records; they were not edited to claim success.
+[Final sanitized execution](../research/evidence/eighteen-call-navigation-verified-2026-10-27.json).
+
+Current navigation implementation: fresh PC preview and preparation select routine.navigation
+`dual-v1` alongside `inhabitant-v1`. Every decision receives one public overhead map
+(district plots/buildings, pseudonymous inhabitants, heat, district weather/conditions and economic
+health) and one current Godot first-person view. A selected reachable same-district destination
+resolves through Godot AStar2D and the existing adjacent-move kernel without intermediate policy
+calls. Travel is exclusive; arrival interaction choices arrive on the next regular decision.
+Sight uses existing Godot cameras/raycast/fog; hearing, recognition, grammar and task permissions
+keep their own boundaries. Only observation data reaches the agent; bindings and route evidence
+remain operator-side. Old tapes without the marker keep their original contract.
+
+Executed candidate verification: 1,990 tests passed across 158 files, one Windows platform skip,
+with native Godot enabled. Eight recovery tests and project TypeScript passed. The production
+controller completed a day with a fake provider and native Godot, one call per controlled decision,
+exact request validation, cold tape replay, submission recovery and Observatory verification.
+A standalone proof selected (1,-6) from (2,-1), navigated six legal steps in one scripted decision,
+then received the real first-person arrival view, gained work permission and recorded work.
+Its 31-decision partial tape cold-replays; no completed day is claimed for that short proof.
+A separate model-free run completed one day with 227 decisions, 320 movement steps and 14 diaries.
+Implementation 7b6b211 contains the native proof and compatible scalar-coordinate schema.
+PR58 is the navigation follow-up, stacked on PR57. Follow-ups verify explicit foreground CLI
+exit after authenticated stop and retained evidence, and the full PC postcard/daily-Oracle contract.
+The complete geometry appears only in overhead; local geometry contains the occupied plot and
+Godot-visible locations. This removes redundant public map data without raising request bounds.
+The actual PowerShell/browser preview completed one day with 227 decisions and 51 controlled
+policy packets, rendered embedded Godot and reported replay verified through day 1. Browser checks
+also fixed pending-request decoding and expensive historical polling; cache checks still hash the
+actual bytes of all named evidence, including call archives, before skipping decode/replay.
+Navigation verification before paid supervision used no provider calls, credentials, allowance or
+financial journal operations. The later 18-call / USD0.40 supervised authorization stopped after four requests as recorded above.
+It must not be reused to bypass the unresolved usage hold; the historical six-call run remains closed.
+Pending viewer follow-ups passed 24 focused tests; the full e8369f9 implementation passed
+1,990 tests across 158 files with native Godot and one platform skip. Viewer replay now leaves
+execution an interval between completed audits and forces fresh verification at completion.
+[Navigation contract, commands and evidence](../research/DUAL_PERSPECTIVE_NAVIGATION_2026-10-27.md).
+
+The earlier six-call check ran from PowerShell at source 70d71bdf0ef0ad28d8c741aa2dc616f8fe4313de.
 It made exactly six actual Haiku calls: commit plus one act decision per controlled inhabitant.
 All six nonempty returned summaries, exact authorized request bytes, response/action agreement,
 private-state noninterference checks and fresh-process partial replay pass with zero conflicts.
@@ -102,6 +200,9 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
+    "Compact transport accepted by actual provider atde26b05:5HTTP200/5summaries/4admissions; fifth max_tokens2048thinkingonly correctly rejected. All5exactwire/private-state noninterference and4decision partial replay pass,0report issues/no observed leakage/outside-game action. Booked22917microUSD/held0/closed/carried; combined3attempt exposure73340. Original journals/raw traces/screenshots preserved.",
+    "Two source-pinned paid attempts at323794f and8de00b0 each stopped after4requests/3commit admissions, respectively anyOf siblings and grammar complexity HTTP400. Exact source-authorized observations/actions and partial replay verified; no observed leakage/outside-game admission. Both histories preserved, unknown requests conservatively booked at full reserved ceilings and append-only closed on owner-authorized reruns; combined exposure50423microUSD. Compact closed output shape retains complete game menus and strict local validation; both historical transports supported read-only only.",
     "Owner-authorized real six-call check at70d71bd launched throughPowerShell canonical preparer/accounting/worker with inhabitant-v1 and maxTurns1, giving eachMiller/Baker commit+act. All6returnednonemptythinking andexecuted;17totaldecisions,0completeddays byexpectedbound. Exactauthoritativewire/private-statenoninterference/response-actionagreement/coldreplay/Godotprivacy passed0issues. Booked20403microUSD/held0/terminalclosure/latesthistorycarried/pendingnull/keycopyremoved. Private individualMarkdown+JSONLtraces supplied. No furtherpaidcalls authorized.",
     "Operational agent contract verified at 6665eef: 1979tests/157files/1platformskip with realGodot; eight recovery tests; strict types. Exact all-role requests/local synthetic responses/kernel/replay 3days1148decisions283controlled packets897moves42diaries42foodreceipts0issues; maxpacketceiling10973microUSD. RealPowerShell/browser manualday389decisions94packets with Godot/history/observation/effects; actual paid preparation STOP made0calls/noallowance/noexecution and preserved latest closed history. Owner approved only append-only stopped-run closure: all98requests304048microUSD/0held/earlier events preserved. Actual98response historical prefix replay passes; viewing bundle registered. No new paid approval.",
     "Society v4 repair based on merged PR54: exact historical-source offline reconstruction matched all 98 recorded requests and before/after hashes, 285 deterministic-policy actions reconstructed, 383 decisions replayed, zero committed days. New append-only submissions and source-pinned recovery preserve future interrupted prefixes. 2D/3D display retains co-located people without inferring work. No paid call, accounting mutation, or experimental-rule change.",
@@ -152,6 +253,9 @@ not a claim that every mechanic is complete.
     "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
   ],
   "testResults": [
+    "Headroom implementation30d9527:136scoped tests/10files passed including nativeGodot full-feature2daycontroller, accounting/cancellation/overrun, launch and historicalcompatibility. Final3request ceiling checks/types/8recovery tests pass. Actual18call execution and separateprocess73decision exactreplay audited; no fullsuite rerun claimed beyond historical1990at e8369f9.",
+    "Owner-requested headroom candidate:136tests across10files pass, including full accounting/old-study compatibility, cancellation/overrun paths, actual PowerShell preparation, strict egress, nativeGodot navigation and full-feature2day fake-provider controller. Project TypeScript and three focused reservation-bound assertions pass. Full1990suite remains historicale8369f9.",
+    "Compact transport candidate:24focused tests and project TypeScript pass; full-feature nativeGodot/fake-provider two-day accounted controller passes with exact requests, navigation, replay and recovery. Captured rejected act compacts to2675schema bytes/8unions/0optional/0tools, within documented Anthropic explicit limits. Provider acceptance still pending. Earlier fullsuite1990passed158files1platformskip is scoped to e8369f9.",
     "Partial-run read-only export: 98 recorded calls, 98 available responses, 32/33/33 controlled records, 98 nonempty returned reasoning summaries, 98 null world-transition fields, zero tape admissions, zero daily transitions and zero reported integrity issues; zero provider calls during export. No behavioural interpretation performed.",
     "Exact Oracle source8eaf51db48bfc3c1ecdb0c7e3d4ea281d1025abe:1901passed/148files/0failed/7environment skips; project/CLI TypeScript and8recoverytests pass. Actual production WindowsPowerShell prepare/check with approvedOracleprofile andTESTONLYinputs pins3day18callreview, approved:false, noexecution/allowance/provider, originalsunchanged. Ten-daycoldreplay170decisions/140dailyentries/51wins/2.95gamewealthpaid/97.05remaining/maxcurrencyresidual4.263256414560601e-14. Real8fieldworker/accounted path18syntheticcalls andrawexports pass. No actualmodelorprivatefinancialaccess. Parentnative-byte proof test repair0c0e089 merged; focused3CLItests pass with unchanged20seconddeadline and exactassertions.",
     "PR47 follow-up Windows CI reached npm test after branch repair:1865passed/7skipped/1failed solely because the cold proof byte-comparison test exceeded its unchanged20second timer at21.507seconds. Replaced Vitest's per-element Buffer deep comparisons with exact native Buffer.equals assertions; all CLI creations, independent cold replay, repeat bytes, overwrite refusal and tamper checks remain. Focused3tests passed in3.06seconds locally; no timeout increase, production/proof change or assertion removal. Hosted rerun pending.",
@@ -180,18 +284,17 @@ not a claim that every mechanic is complete.
     "At committed first-person source be8a3b4652a58e4740a8fb310143223e176e72dc: all 1458 Vitest tests / 116 files passed with real Godot enabled; eight recovery tests passed. Runtime build, native 40-call/20-tick synthetic rehearsal, fresh-process compiled verification and bundled preflight passed; both Godot workers delivered/agreed on 40/40 packets. Inspect AI 0.3.282 separately reported execution share 40/40 with zero model calls. Actual credential readiness passes format/permissions and native initial-condition checks; real funding remains actual_journal_not_provided. Follow-up browser proof passes on desktop/mobile, with both native views matching the selected cursor, exact template hash/download, stale validation ignored, no browser errors/overflow, and ledger/journal bytes unchanged. Eleven targeted fresh/transport tests pass after proxy/producer fixes. See first-person-offline-2026-10-25.json."
   ],
   "unresolvedIssues": [
-    "The owner-authorized six-call check is complete and stopped. Its six-request authority is consumed; no further paid calls without a fresh instruction/human START and latest carried history.",
+    "The paid18call check intentionally stopped at five action turns: no day-end income/food/Oracle settlement claimed. Full-day execution is established by nativeGodot fake-provider controller tests; a future longer actual-provider run needs fresh review/approval.",
     "The preserved interrupted run has zero committed days. Its last recorded prefix contains285historicalpolicy-reconstructed non-model actions; no later action or completed day is inferred.",
     "Full A04 trespass, multi-district daily routing, further civic reputation/monuments/opportunity calibration and detailed same-day supplier dialogue remain development work; their actions are not fabricated.",
     "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "PR57 is open. Review/merge separately when appropriate; the checked-out branch already runs locally. Latest six-call evidence is six-call-schema-check-2026-10-27.json.",
-    "Launch START-NODE.ps1 without -Start for no-cost society+Observatory+Godot. Enter the printed interface token, keep terminal open and use Advance one tick. Choose saved society-partial-98-2026-10-26 to inspect original returned summaries.",
-    "For a separately approved paid test, use START-NODE.ps1 -Start -Ticks1 and human START after reviewing source/bounds; no new paid approval is supplied by this checkpoint.",
-    "Keep planned civic/multidistrict/A04 mechanics and separately designed behavioural evaluation distinct from this verified current society."
+    "Deliver individual rawMiller/Baker1/Baker2 traces, exactnavigation/privacy/replay proof and ordinary PowerShell START-NODE command. Current checkout runs without merging; PR58 is stacked onPR57 and neither is merged by this task.",
+    "No further paid calls authorized. For an owner-run paid launch use START-NODE.ps1 -Start -Ticks1, review actual source/calls/USD bounds and enterSTART; keep terminalopen. Preview omits-Start and requires no provider. Latest closed history is carried automatically.",
+    "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/operational-agent-contract-2026-10-27"
+  "reviewBranch": "codex/dual-perspective-navigation-2026-10-27"
 }
 NODE_SESSION_CHECKPOINT -->

@@ -4,6 +4,8 @@ import { createParticipantState, fixtureGenesis } from '../src/agent/participant
 import { DEFAULT_WORLD_CONFIG } from '../src/world/world.js';
 import { buildSocietyContext, SocietySecurityError } from '../src/society/boundary.js';
 import { buildSocietyPolicyPacket, buildSocietyRequest } from '../src/society/request.js';
+import {usageCost} from '../src/agent/accountingLedger.js';
+import {PRICED_MODELS} from '../src/agent/modelPricing.js';
 
 function view() {
   const state = createParticipantState(fixtureGenesis(72, { ...DEFAULT_WORLD_CONFIG, recognition: 'v2' }));
@@ -21,7 +23,11 @@ describe('safe society request preparation without dispatch', () => {
     expect(wire.output_config.format.schema.additionalProperties).toBe(false);
     expect(wire.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
     expect(wire.output_config.effort).toBe('high');
-    expect(wire.max_tokens).toBe(2048);
+    expect(wire.max_tokens).toBe(16384);
+    expect(request.maxOutputTokens).toBe(16384);
+    // Even the largest admitted body reserves the full output headroom within
+    // the new per-request ceiling; reservations never assume a short response.
+    expect(usageCost(65536+4096,16384,PRICED_MODELS['claude-haiku-5-5']!)).toBeLessThanOrEqual(32000);
     expect(wire).not.toHaveProperty('tools');
     expect(wire).not.toHaveProperty('tool_choice');
     expect(request.sha256).toBe(createHash('sha256').update(request.body).digest('hex'));
