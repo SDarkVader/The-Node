@@ -1,0 +1,28 @@
+{
+  "format": "node-society-stopped-run-evidence-v1",
+  "date": "2026-10-28",
+  "sourceRevision": "f80d8ba7713996b157e76f212cc942e71710769a",
+  "planSha256": "b7666bb434391e662f65b94cffa8b58127beb83ab0ae42c439d763ba4b4d7f3a",
+  "requestedTicks": 1,
+  "maxCalls": 387,
+  "limitMicroUsd": 14000000,
+  "perRequestMicroUsd": 32000,
+  "routine": {
+    "maxTurnsPerDay": 128,
+    "information": "inhabitant-v1",
+    "navigation": "dual-v1"
+  },
+  "providerCalls": 1,
+  "responsesAvailable": 0,
+  "admittedActions": 0,
+  "completedDays": 0,
+  "bookedMicroUsd": "0",
+  "heldMicroUsd": "24960",
+  "stoppedReason": "society_cancelled",
+  "stopCause": "The operator stopped while the first dispatched request was still unresolved; no retry was made.",
+  "replayVerified": true,
+  "integrityIssues": 0,
+  "privateEvidence": "Raw request, transport, journal and trace files remain in the existing private test directory.",
+  "paidRunStarted": true,
+  "additionalCallsAfterStop": 0
+}

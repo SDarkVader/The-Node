@@ -11,6 +11,13 @@ worker scratch cleanup and raised the parent worker timeout above the reviewed
 after the timeout fix. No paid run occurred for this review or merge.
 [Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
 
+2026-10-28 one-day budget-overhead check on source `f80d8ba`: the approved
+387-call, $14.00 plan dispatched one request and was stopped while that request
+was unresolved. It admitted no action, completed no day, booked $0 and retained
+a 24960 micro-USD held reservation. Replay verified and integrity issues were
+zero; no retry was made. The private journal remains carried but blocked by
+the unresolved hold. [Sanitized stop](../research/evidence/one-day-budget-stop-2026-10-28.json).
+
 2026-10-28 launcher restoration at source `6307a8e`: the PC's missing private
 `test.local.json` and saved-run registry were reconstructed from retained local
 paths and evidence. The settings point to the newest verified, closed 71-call
@@ -198,6 +205,7 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "Approved one-day budget-overhead run on sourcef80d8ba with387-call maximum and14000000micro-USD ceiling dispatched one request then stopped while unresolved.0 responses/0 admissions/0 completed days/0 booked and24960 held; replay verified and0 integrity issues. No retry; private journal preserved but blocked by unresolved hold. Sanitized evidence docs/research/evidence/one-day-budget-stop-2026-10-28.json.",
     "PR58 merged into main at4f539801a56c20ce412ff83f292a2a499340bb82 after finalhead d8fbc2494527e902468660bbf3d2f901550f58a2 passed two offline-conformance checks and the Windows offline-verification rerun. Local source6146265 full nativeGodot suite1993passed/158files/1platformskip, TypeScript and8recoverytests; native six-step nonadjacent arrival/work proof. Review fixed Windows worker cleanup and aligned parent dispatch timeout to plan deadline plus5seconds;49focused nativeGodot tests and TypeScript passed after timeout fix. No paid experiment started for review or merge. PR56 remains draft.",
     "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
     "Compact transport accepted by actual provider atde26b05:5HTTP200/5summaries/4admissions; fifth max_tokens2048thinkingonly correctly rejected. All5exactwire/private-state noninterference and4decision partial replay pass,0report issues/no observed leakage/outside-game action. Booked22917microUSD/held0/closed/carried; combined3attempt exposure73340. Original journals/raw traces/screenshots preserved.",

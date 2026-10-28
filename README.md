@@ -20,6 +20,12 @@ offline-conformance checks and the Windows offline-verification rerun passed on
 final PR head `d8fbc24`. No paid experiment was started for this merge.
 [Scoped review evidence](docs/research/evidence/pr58-review-2026-10-28.json).
 
+2026-10-28 one-day budget-overhead check on source `f80d8ba`: the approved
+387-call, $14.00 plan dispatched one request and was stopped while that request
+was unresolved. It admitted no action, completed no day, booked $0 and retained
+a $0.024960 held reservation. Replay verified and integrity issues were zero;
+the request was not retried. [Sanitized stop evidence](docs/research/evidence/one-day-budget-stop-2026-10-28.json).
+
 NODE is an independently designed environment for studying how agents interpret circumstances,
 use memory, reconsider earlier thinking and make decisions whose consequences develop over time.
 Authority, cooperation, information asymmetry and economic behaviour are part of the wider
