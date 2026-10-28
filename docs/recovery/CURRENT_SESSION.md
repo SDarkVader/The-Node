@@ -2,7 +2,8 @@
 
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
-The current repair review branch is codex/society-v4-repair-2026-10-27.
+The current review branch is experiment/offline-movement-verification-2026-10-27 (PR #56).
+Its offline movement contract is a separate draft; recovery metadata identifies this branch.
 PR51 and PR52 merged after checks passed on their exact heads. Earlier PR43 was closed
 as a duplicate; PR47 and PR49 merged in order; the owner merged PR50. Preserve unrelated
 trace.pdf and all private experiment and accounting history.
@@ -163,6 +164,6 @@ not a claim that every mechanic is complete.
     "Keep both original registration contracts compatible while developing further presentation integration. Preserve private evidence/new latest accounting journal outside Git; no additional paid calls are authorized. Study1 stays paused."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/society-v4-repair-2026-10-27"
+  "reviewBranch": "experiment/offline-movement-verification-2026-10-27"
 }
 NODE_SESSION_CHECKPOINT -->

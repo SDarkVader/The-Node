@@ -22,6 +22,9 @@ reuses the PC's configured paths and latest accounting history. No live call sta
 
 ## Current development — 2026-10-27
 
+PR #56 is a separate draft for an offline destination movement contract. Its dedicated
+movement checks passed at 8e099c6; its recovery checkpoint is being reconciled for CI.
+
 The 2026-10-27 Society v4 repair pass addresses shared-cell rendering and interrupted-run
 evidence recovery. The private interrupted run was independently reconstructed only through
 its last recorded outcome; no day was committed. Future v4 runs record each accepted
