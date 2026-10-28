@@ -202,7 +202,8 @@ export function launchPerceptionWorker(godotBin: string, bridge: Pick<Perception
   child.stdout.on('data', keep);
   child.stderr.on('data', keep);
   const exited = new Promise<number | null>(resolve => {
-    child.once('exit', code => resolve(code));
+    // A child can report exit before its stdio handles close on Windows.
+    child.once('close', code => resolve(code));
     child.once('error', error => { log += `\n[launch] ${error.message}`; resolve(null); });
   });
   return {
@@ -211,7 +212,7 @@ export function launchPerceptionWorker(godotBin: string, bridge: Pick<Perception
     async stop() {
       if (child.exitCode === null && child.pid !== undefined) child.kill('SIGTERM');
       await exited;
-      rmSync(scratch, { recursive: true, force: true });
+      rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     },
   };
 }
