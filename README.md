@@ -9,15 +9,15 @@ integrity issues. Its saved tape replayed to the same final hash. The preview ex
 cleanly and released the launcher lock. PR #56 remains draft. This PC-specific repair
 does not grant a paid run. [Scoped offline evidence](docs/research/evidence/launcher-offline-restoration-2026-10-28.json).
 
-2026-10-28 PR #58 review at implementation `6146265`: a full Windows run with native
-Godot passed 1,993 tests across 158 files with one platform skip, after fixing a
-worker cleanup race found in the first run. TypeScript passed. The real Godot proof
-selected a non-adjacent destination, traversed six legal steps in one decision,
-then received the arrival first-person view and work option. The updated head is
-awaiting hosted checks before merge. A final dispatch review at `fd97feb` also
-raised the parent worker timeout above the reviewed 120-second call deadline;
-49 focused native-Godot tests and TypeScript passed after this change. No paid
-experiment was started.
+2026-10-28 PR #58 merged into `main` at `4f53980`. Its reviewed implementation
+passed 1,993 local Windows tests across 158 files with native Godot (one platform
+skip), project TypeScript, and eight recovery tests. A real Godot proof traversed
+six legal steps to a non-adjacent destination in one decision, then received the
+arrival first-person view and work option. Review fixed a Windows worker cleanup
+race and aligned the parent dispatch timeout with the 120-second call deadline;
+49 focused native-Godot tests and TypeScript passed after the timeout fix. Both
+offline-conformance checks and the Windows offline-verification rerun passed on
+final PR head `d8fbc24`. No paid experiment was started for this merge.
 [Scoped review evidence](docs/research/evidence/pr58-review-2026-10-28.json).
 
 NODE is an independently designed environment for studying how agents interpret circumstances,

@@ -1,17 +1,14 @@
 # Current Society daily implementation checkpoint
 
-2026-10-28 PR #58 review at implementation `6146265`: the first full Windows
-native-Godot run passed 1,992 tests and had three `EPERM` failures removing
-worker scratch directories. The three affected files then passed in isolation.
-Worker cleanup now waits for the child close event and retries transient removal
-errors. The full rerun passed 1,993 tests across 158 files with one platform
-skip; TypeScript passed. A native proof again travelled six legal steps to a
-non-adjacent workplace, then received arrival sight and work permission.
-The reviewed implementation is awaiting checks on its updated PR head before
-merge. Final dispatch review at `fd97feb` found the parent worker's old
-21-second timeout below the reviewed 120-second call deadline. It now allows
-the plan deadline plus five seconds; 49 focused native-Godot tests and
-TypeScript passed after this fix. No paid run occurred.
+2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
+checks and the Windows offline-verification rerun passed on final head `d8fbc24`.
+The reviewed implementation passed 1,993 local Windows tests across 158 files
+with native Godot (one platform skip), project TypeScript and eight recovery
+tests. The native proof travelled six legal steps to a non-adjacent workplace,
+then received arrival sight and work permission. Review fixed transient Windows
+worker scratch cleanup and raised the parent worker timeout above the reviewed
+120-second call deadline; 49 focused native-Godot tests and TypeScript passed
+after the timeout fix. No paid run occurred for this review or merge.
 [Sanitized review](../research/evidence/pr58-review-2026-10-28.json).
 
 2026-10-28 launcher restoration at source `6307a8e`: the PC's missing private
@@ -29,19 +26,20 @@ raw evidence remain private. [Sanitized offline check](../research/evidence/laun
 
 Earlier CI follow-up: the routine launch assertion matches the reviewed $0.032
 per-request ceiling; the focused six-test file passed locally.
-PR #58 now targets main after PR #57 merged. The Godot-enabled navigation, request, accounting
+Before merging, PR #58 targeted main after PR #57 merged. The Godot-enabled navigation, request, accounting
 and routine suites passed 43 tests; a further stale-navigation test passed in the eight-test
 navigation suite. PR #56 is an older offline planner and is not wired to dual-v1 execution.
 A separately approved 71-call run completed one day and replayed 275 decisions; its closed
 journal has 339878 microUSD booked and zero held. The PC's private settings directory was
 absent before the 2026-10-28 restoration; its latest-journal pointer is now verified.
 
-Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
+Shared branch: main. PR #57 and PR #58 are merged; PR #56 remains draft.
+The following 2026-10-27 development record is historical. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
-The current development branch is codex/dual-perspective-navigation-2026-10-27, based on PR57's head 47b3000. PR57 remains the inherited information-contract change.
+The former development branch was codex/dual-perspective-navigation-2026-10-27, based on PR57's head 47b3000. PR57 supplied the inherited information-contract change.
 
-Latest verified execution — source30d952722af3778ae164e1e7a52d7489b2b4b3ea:
+Earlier 18-call verified execution — source30d952722af3778ae164e1e7a52d7489b2b4b3ea:
 all18actual Anthropic requests returned HTTP200/end_turn and were admitted, with18nonempty
 provider summaries and6decisions per controlled inhabitant. The society executed73total decisions,
 including6model-selected trips spanning33legal steps. A real agent selected a non-adjacent
@@ -60,7 +58,7 @@ held0, append-only closed and newesthistory carried. Combined conservative expos
 four preserved attempts is158947microUSD<400000. This is conservative accounting, not a provider
 invoice. Previous journals and original evidence remain intact, temporary credential copy removed,
 pendingRun cleared, finalized read-only viewer closed and launcher settings lock released. No
-further paid run is authorized. The branch runs locally without merging. PR58 remains stacked onPR57.
+further paid run is authorized. This describes the pre-merge 2026-10-27 state; PR #58 has since merged into main.
 
 Headroom implementation checks:136tests/10files, final3request assertions, strict types and8recovery
 tests pass, including nativeGodot two-day fake-provider controller execution. Historical fullsuite
@@ -87,7 +85,7 @@ then received the real first-person arrival view, gained work permission and rec
 Its 31-decision partial tape cold-replays; no completed day is claimed for that short proof.
 A separate model-free run completed one day with 227 decisions, 320 movement steps and 14 diaries.
 Implementation 7b6b211 contains the native proof and compatible scalar-coordinate schema.
-PR58 is the navigation follow-up, stacked on PR57. Follow-ups verify explicit foreground CLI
+PR58 was the navigation follow-up and is now merged. Follow-ups verify explicit foreground CLI
 exit after authenticated stop and retained evidence, and the full PC postcard/daily-Oracle contract.
 The complete geometry appears only in overhead; local geometry contains the occupied plot and
 Godot-visible locations. This removes redundant public map data without raising request bounds.
@@ -200,6 +198,7 @@ not a claim that every mechanic is complete.
   "branch": "main",
   "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
   "completedWork": [
+    "PR58 merged into main at4f539801a56c20ce412ff83f292a2a499340bb82 after finalhead d8fbc2494527e902468660bbf3d2f901550f58a2 passed two offline-conformance checks and the Windows offline-verification rerun. Local source6146265 full nativeGodot suite1993passed/158files/1platformskip, TypeScript and8recoverytests; native six-step nonadjacent arrival/work proof. Review fixed Windows worker cleanup and aligned parent dispatch timeout to plan deadline plus5seconds;49focused nativeGodot tests and TypeScript passed after timeout fix. No paid experiment started for review or merge. PR56 remains draft.",
     "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
     "Compact transport accepted by actual provider atde26b05:5HTTP200/5summaries/4admissions; fifth max_tokens2048thinkingonly correctly rejected. All5exactwire/private-state noninterference and4decision partial replay pass,0report issues/no observed leakage/outside-game action. Booked22917microUSD/held0/closed/carried; combined3attempt exposure73340. Original journals/raw traces/screenshots preserved.",
     "Two source-pinned paid attempts at323794f and8de00b0 each stopped after4requests/3commit admissions, respectively anyOf siblings and grammar complexity HTTP400. Exact source-authorized observations/actions and partial replay verified; no observed leakage/outside-game admission. Both histories preserved, unknown requests conservatively booked at full reserved ceilings and append-only closed on owner-authorized reruns; combined exposure50423microUSD. Compact closed output shape retains complete game menus and strict local validation; both historical transports supported read-only only.",
@@ -290,11 +289,11 @@ not a claim that every mechanic is complete.
     "Execution integrity and replay do not grade reasoning or establish a causal memory benefit. Behavioural evaluation remains a separately defined step."
   ],
   "nextSteps": [
-    "Deliver individual rawMiller/Baker1/Baker2 traces, exactnavigation/privacy/replay proof and ordinary PowerShell START-NODE command. Current checkout runs without merging; PR58 is stacked onPR57 and neither is merged by this task.",
+    "For the next supervised live experiment, prepare a new source-pinned plan from merged main, check actual carried private accounting and exact call/USD bounds, and obtain fresh owner approval before dispatch. Do not reuse old PR58 source-pinned bundles or prior paid authorization. PR56 remains draft.",
     "No further paid calls authorized. For an owner-run paid launch use START-NODE.ps1 -Start -Ticks1, review actual source/calls/USD bounds and enterSTART; keep terminalopen. Preview omits-Start and requires no provider. Latest closed history is carried automatically.",
     "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/dual-perspective-navigation-2026-10-27"
+  "reviewBranch": "codex/pr58-merge-handover-2026-10-28"
 }
 NODE_SESSION_CHECKPOINT -->
