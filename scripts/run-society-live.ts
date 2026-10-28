@@ -129,7 +129,9 @@ if(values.prepare){
         for(const key of ['HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy','NODE_EXTRA_CA_CERTS','NODE_USE_SYSTEM_CA','SSL_CERT_FILE'])if(process.env[key])env[key]=process.env[key];
         let transportError:string|null=null;
         try{await promisify(execFile)(process.execPath,['--use-env-proxy','--import','tsx',join(root,'scripts','society-request-worker.ts'),credential,call,input.sha256],
-          {cwd:root,env,signal,timeout:21_000,maxBuffer:4096,windowsHide:true});}
+          // The parent must outlive the reviewed per-call deadline so it cannot
+          // kill a valid slow response before the controller records its outcome.
+          {cwd:root,env,signal,timeout:Math.max(21_000,bundle.plan.deadlineMs+5_000),maxBuffer:4096,windowsHide:true});}
         catch{transportError='society_worker_exit_or_abort';}
         const fdOutcome=openSync(join(call,'transport.json'),'wx',0o600);
         try{writeFileSync(fdOutcome,JSON.stringify({requestId:input.requestId,index:input.index,
