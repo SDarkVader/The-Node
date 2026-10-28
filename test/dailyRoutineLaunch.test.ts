@@ -51,10 +51,10 @@ function accountedFixture(ticks=1){
 }
 
 describe('reviewed sequential routine launch and evidence',()=>{
-  it('binds v4 routine and bounded call count without changing the existing spending ceilings',()=>{
+  it('binds v4 routine and bounded call count with the reviewed spending ceilings',()=>{
     const f=accountedFixture(20);
     expect(f.plan).toMatchObject({schema:'node-accounted-society-routine-v4',routine,maxCalls:5000,
-      allowance:{maxRequests:5000,limitMicroUsd:1000000,perRequestMicroUsd:20000}});
+      allowance:{maxRequests:5000,limitMicroUsd:1000000,perRequestMicroUsd:32000}});
     validateSocietyPlan(f.plan);
     expect(()=>validateSocietyPlan({...f.plan,routine:{maxTurnsPerDay:2}})).toThrow('society_paid_plan');
     expect(()=>validateSocietyPlan({...f.plan,schema:'node-accounted-society-daily-oracle-v3'})).toThrow('society_paid_plan');

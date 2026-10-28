@@ -1,5 +1,8 @@
 # Current Society daily implementation checkpoint
 
+CI follow-up: the routine launch assertion now matches the reviewed $0.032 per-request ceiling;
+the focused six-test file passed locally. Hosted checks are pending on the updated branch.
+
 Updated 2026-10-27. Shared branch: main. PR53 merged the sequential-day implementation at
 bb1b23282421553c3e996ac487b0f43e786f4445. PR54 merged the partial-run handover at 0be1ba8.
 PR55 merged the repair at c48846f21cb3558aa1b27a07b0448add04bd8896.
