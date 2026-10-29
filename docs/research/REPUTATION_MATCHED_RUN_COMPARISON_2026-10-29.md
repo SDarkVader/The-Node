@@ -31,7 +31,7 @@ One point earns the first monument milestone. **Messages and claims earn no poin
 
 Baker service speech is in part obligatory and denominators differ; do not infer voluntary sociability or strategic sophistication from these counts. More nulls in a longer run are not automatically failure.
 
-**Actual settled baseline day 1:** zero paid bread sales and positive flour consumed; own purchase outcomes were unaffordable. Retrospective rule scoring: [Miller 0, Baker1 0, Baker2 0].
+**Actual settled baseline day 1:** zero paid bread sales and zero flour consumed; own purchase outcomes were unaffordable. Retrospective rule scoring: [Miller 0, Baker1 0, Baker2 0].
 
 **Actual settled baseline day 2:** `breadSold[core-0-b1] = 1.4`, `breadSold[core-0-b2] = 0`, `flourConsumed = 0.28`, own food purchases unaffordable. Score retrospectively [Miller 1 (*inferred sole Miller supplied flour, not independently transaction-attributed from excerpt*), Baker1 1, Baker2 0].
 
