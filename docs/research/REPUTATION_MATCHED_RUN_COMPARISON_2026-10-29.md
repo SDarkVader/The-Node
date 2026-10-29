@@ -43,6 +43,14 @@ We observe different action counts and fewer null submissions, but **no differen
 
 The previous PR #60 synthetic 20-day trajectory and 66.83% break-even detection threshold use invented event payoffs and **are not evidence of the behavior of these real agents**. The real experiment already contained a working, positive-only reputation objective; avoid silently substituting the unrelated experimental logarithmic reducer.
 
+## Structural ceiling: unequal reputational opportunity
+
+The recorded objective defines three **positive**, daily capped achievements, but only two are occupational: `bread_sold` (Bakers) and `flour_sold` (Millers). `bread_bought` requires an actually delivered **paid** purchase and is available to everyone.
+
+This implies **eligibility ceilings** of **2 points/day** for a Baker or Miller, versus **1 point/day** for a Courier, Investigator, Import/Export inhabitant or Grifter while remaining in those roles. Those are arithmetic maximums, **not projected actual outcomes**. If a resident cannot afford bread, the only listed achievement available to the non-Baker/non-Miller roles might be unreachable that day. There is no verified credit for completing investigative, courier or import/export duties in this local score, and little scope to earn standing via independent social behavior.
+
+This is an important *mechanism-design asymmetry*, not proof agents change their strategy. It should be tested as a controlled variable (add legitimate, independently verified achievement categories for other roles, or deliberately retain unequal opportunities as an experimental condition). Do not prescribe an optimal path to reputation.
+
 ## Correct next comparison
 
 For a causal claim, hold model/version, frozen genesis/seed, exact executable world, observer constraints, action menus, economic rules, max turns and context fixed. Change only the agent objective in paired runs. A third condition can vary legitimately visible *relative standings*, but must not be conflated with changing the objective. Pre-register achievement-per-agent-day, role tasks, discretionary versus mandatory interactions, nulls under open obligations, rank changes, and observed adversarial attempts. Do not prescribe a preferred path to reputation.
