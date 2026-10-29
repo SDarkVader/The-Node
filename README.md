@@ -1,5 +1,7 @@
 # NODE — experiments in an evolving social-economic world
 
+2026-10-29 **unmerged offline research (draft [PR #60](https://github.com/SDarkVader/The-Node/pull/60))**: a separate signed civic-reputation reducer, independent Wolfram calculations, 20 local model-free checks (including 10,000 monotonicity pairs), and scripted twenty-day event trajectories. No live actor, scoring contract or backstop changed; do not treat synthetic events as observed agent behaviour. [Reproduce and review](docs/research/CIVIC_REPUTATION_OFFLINE_2026-10-29.md).
+
 2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
 were restored with a pointer to the verified latest closed journal and a registry of six
 preserved live runs. `START-NODE.ps1 -Ticks 1 -NoBrowser` launched an offline preview,
