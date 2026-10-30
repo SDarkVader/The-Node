@@ -4,7 +4,7 @@
 
 The supervised one-day trial completed at source `6c28677`: 75 model calls, 229 decisions, exact replay and USD 0.383170 booked against a USD 20 ceiling. The allowance is closed with zero held. Day one had 14 unaffordable bread orders and zero civic events. [Execution evidence](docs/research/evidence/competitive-grifter-live-day-2026-10-30.json).
 
-The requested three-day follow-up is prepared for PowerShell with manual Observatory ticks. It has 1,545 maximum requests and a USD 25 hard allowance ceiling. The full theoretical reserved exposure is USD 49.44, so an unusually high-usage run could stop early; the previous day booked USD 0.383170 (a simple three-day projection is USD 1.15). Preparation creates no allowance or calls; the prior one-day authorization is not reused.
+The three-day PowerShell/Observatory follow-up was manually stopped after two completed days. It recorded 294 model calls, 800 decisions, exact replay through day 2 with zero integrity issues, and USD 1.553744 booked against the existing USD 25 hard cap; zero was held. The final tape is an incomplete three-day run, not a completed three-day result. [Sanitized run evidence](docs/research/evidence/competitive-grifter-three-day-stopped-2026-10-30.json).
 
 2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
 were restored with a pointer to the verified latest closed journal and a registry of six
