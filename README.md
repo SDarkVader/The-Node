@@ -1,6 +1,6 @@
 # NODE — experiments in an evolving social-economic world
 
-2026-10-30 work in progress: an opt-in fourth controlled inhabitant shares reputation-primary guidance with all inhabitants. Verified achievements and completed workless days affect trial civic standing; a three-day business intervention and ordered claims are being tested. Backstop production remains incomplete for several roles, and paid launch remains disabled. [Scope and further work](docs/research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
+2026-10-30 competitive-society trial: an opt-in fourth controlled inhabitant shares reputation-primary guidance with all inhabitants. Verified achievements and completed workless days affect civic standing; the business intervention supplies anonymous role-specific output at 60% during backstop. [Scope and preparation](docs/research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
 
 2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
 were restored with a pointer to the verified latest closed journal and a registry of six

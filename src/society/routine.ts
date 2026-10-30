@@ -8,6 +8,7 @@ import {HOUSING_RESIDENTS_PER_FLOOR} from '../engine/space.js';
 import type {ParticipantHooks} from '../engine/inhabitants.js';
 import type {SocietyAction,SocietyRoutineObservation} from './boundary.js';
 import type {WallPost} from '../comms/grammar.js';
+import {mechanicalShopRef} from './mechanicalShop.js';
 
 export interface SocietyRoutineConfig {maxTurnsPerDay:number;information?:'inhabitant-v1';navigation?:'dual-v1'}
 export function validateSocietyRoutineConfig(value:unknown):asserts value is SocietyRoutineConfig {
@@ -108,15 +109,17 @@ export class SocietyRoutineBook {
         closed:false,postcardsUsed:false,dailyOracleUsed:false,lotteryUsed:false,action:emptyAction(),foodResult:'pending'});
     }
   }
-  observation(state:ParticipantState,person:string,phase:'commit'|'act',allowFinishWithoutWork=false):SocietyRoutineObservation {
+  observation(state:ParticipantState,person:string,phase:'commit'|'act',allowFinishWithoutWork=false,assistedBakeries:readonly string[]=[]):SocietyRoutineObservation {
     const row=this.#people.get(person);if(!row)throw Error('society_routine_person');
     const p=state.registry.people.get(person)!,own=personBody(state,p),home=this.#homes.get(person)!;
     const buildings=state.world.shard.districts.flatMap(d=>d.buildings),workplace=buildings.find(b=>b.id===own.workplace);
     const hub=state.world.shard.hubPlot;
-    const bakeries=state.world.bakers.map(b=>{
+    const bakeries=state.world.bakers.flatMap(b=>{
       const place=buildings.find(q=>q.id===b.buildingId)!;
       const inhabitant=b.slot.state==='FILLED'?state.registry.locations.get(b.buildingId):undefined;
-      return {buildingId:b.buildingId,x:place.x,y:place.y,sellerRef:inhabitant?this.#ref(state,person,inhabitant):null};
+      const mechanical=allowFinishWithoutWork&&b.buildingId!==own.workplace&&(b.slot.state==='BACKSTOPPED'||assistedBakeries.includes(b.buildingId))&&Number.isFinite(b.value)&&b.value>=0&&b.value<=2;
+      const personal={buildingId:b.buildingId,x:place.x,y:place.y,sellerRef:inhabitant?this.#ref(state,person,inhabitant):null};
+      return mechanical?[...(inhabitant?[personal]:[]),{...personal,sellerRef:mechanicalShopRef(state,person,b.buildingId)}]:[personal];
     });
     const customers=[...(this.#customers.get(person)??[])].filter(customer=>!this.#contacts.has(`${person}>${customer}`)).map(id=>this.#ref(state,person,id));
     const order=row.action.purchase,sellerRef=order&&'seller' in order?order.seller:null;
@@ -153,8 +156,9 @@ export class SocietyRoutineBook {
           row.foodResult='ordered';
           const sellerRef=a.purchase.seller;
           const seller=[...previous.registry.people.values()].find(p=>p.location!==null&&this.#ref(previous,person,p.id)===sellerRef);
-          if(!seller)throw Error('society_routine_seller');
-          const customers=this.#customers.get(seller.id)??new Set<string>();customers.add(person);this.#customers.set(seller.id,customers);
+          const mechanical=retainAllWork&&previous.world.bakers.some(b=>mechanicalShopRef(previous,person,b.buildingId)===sellerRef);
+          if(!seller&&!mechanical)throw Error('society_routine_seller');
+          if(seller){const customers=this.#customers.get(seller.id)??new Set<string>();customers.add(person);this.#customers.set(seller.id,customers);}
         }else row.foodResult='noBakery';
       }
       if(a.postcards){row.postcardsUsed=true;row.action.postcards=structuredClone(a.postcards);}

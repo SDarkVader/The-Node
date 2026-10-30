@@ -23,6 +23,8 @@ export interface SocietyEconomyPlan {
   attendanceRequired?: boolean;
   /** Backstop-assisted workplaces selected by the opt-in reputation overlay. */
   assisted?: ReadonlySet<string>;
+  /** Customers explicitly choosing an anonymous mechanical bakery offer. */
+  mechanicalChoices?: ReadonlySet<string>;
 }
 
 export interface SocietyPurchaseReceipt {
@@ -37,6 +39,10 @@ export interface SocietyPurchaseReceipt {
 export interface SocietyEconomyDay {
   day: number;
   prices: Record<string, number>;
+  /** Quotes of anonymous mechanical bakeries, separate from an occupant's quote. */
+  mechanicalPrices?: Record<string, number>;
+  /** Actual flour allocation to anonymous bakeries; never a synthetic person. */
+  mechanicalFlourSupplies?: SocietyMechanicalFlourSupply[];
   quantities: Record<string, number>;
   receipts: SocietyPurchaseReceipt[];
   flourSold: Record<string, number>;
@@ -59,7 +65,8 @@ export function validateSocietyEconomyPlan(plan: SocietyEconomyPlan): void {
   if (!(plan.bakerPrices instanceof Map) || !(plan.millerQuantities instanceof Map) || !(plan.breadChoices instanceof Map) ||
     (plan.working !== undefined && !(plan.working instanceof Set)) ||
     (plan.attendanceRequired !== undefined && typeof plan.attendanceRequired !== 'boolean') ||
-    (plan.assisted !== undefined && !(plan.assisted instanceof Set))) throw Error('invalid_society_economy_plan');
+    (plan.assisted !== undefined && !(plan.assisted instanceof Set)) ||
+    (plan.mechanicalChoices !== undefined && !(plan.mechanicalChoices instanceof Set))) throw Error('invalid_society_economy_plan');
   for (const [site, price] of plan.bakerPrices) {
     if (typeof site !== 'string' || !Number.isFinite(price) || price < 0 || price > 2) throw Error('invalid_society_price');
   }
@@ -71,11 +78,13 @@ export function validateSocietyEconomyPlan(plan: SocietyEconomyPlan): void {
   }
   for (const site of plan.working ?? []) if (typeof site !== 'string') throw Error('invalid_society_work');
   for (const site of plan.assisted ?? []) if (typeof site !== 'string') throw Error('invalid_society_assisted');
+  for (const person of plan.mechanicalChoices ?? []) if (typeof person !== 'string' || !plan.breadChoices.get(person)) throw Error('invalid_society_mechanical_choice');
 }
 
 interface Customer { identity: string; site: string; wealth: number }
-interface Bakery { identity: string; site: string; price: number; available?: boolean }
+interface Bakery { identity: string | null; site: string; price: number; available?: boolean; capacityMultiplier?: number }
 interface FlourProvider { identity: string | null; site: string; quantity: number }
+export interface SocietyMechanicalFlourSupply { provider:string|null; providerSite:string; recipientSite:string; quantity:number }
 
 /** Exact capacity-bounded physical attribution, including mechanical providers with no person.
  * The aggregate gate has already limited recipients. No one supplier can be attributed more
@@ -122,6 +131,7 @@ export interface SocietyMarketInput {
   /** Grain-limited, activity-adjusted real flour, including mechanical backstops. */
   flour: readonly FlourProvider[];
   choices: ReadonlyMap<string, string | null>;
+  mechanicalChoices?: ReadonlySet<string>;
 }
 
 export interface SocietyMarketResult {
@@ -130,6 +140,7 @@ export interface SocietyMarketResult {
   customerDebits: Map<string, number>;
   millerSold: Map<string, number>;
   flourEvents: DealingEvent[];
+  mechanicalFlourSupplies: SocietyMechanicalFlourSupply[];
   purchaseEvents: DealingEvent[];
   flourConsumed: number;
   totalPayments: number;
@@ -146,6 +157,7 @@ export function clearSocietyMarket(input: SocietyMarketInput): SocietyMarketResu
   const millerSold = new Map<string, number>();
   const purchaseEvents: DealingEvent[] = [];
   const flourEvents: DealingEvent[] = [];
+  const mechanicalFlourSupplies:SocietyMechanicalFlourSupply[]=[];
   const receipts: SocietyPurchaseReceipt[] = [];
   const supply = input.flour.map((p) => ({ ...p, remaining: Math.max(0, p.quantity) }));
   let flourRemaining = supply.reduce((sum, p) => sum + p.remaining, 0);
@@ -161,14 +173,15 @@ export function clearSocietyMarket(input: SocietyMarketInput): SocietyMarketResu
     receipts.push(receipt);
     if (!societyPurchaseDue(input.seed, input.day, customer.identity, input.cycleDays)) { receipt.outcome = 'notDue'; continue; }
     if (choice === null) continue;
-    const bakerIndex = input.bakers.findIndex((b) => b.site === choice && b.identity !== customer.identity && b.available !== false);
+    const mechanical=input.mechanicalChoices?.has(customer.identity)===true;
+    const bakerIndex = input.bakers.findIndex((b) => b.site === choice && (b.identity===null)===mechanical && b.identity !== customer.identity && b.available !== false);
     const baker = input.bakers[bakerIndex];
     if (!baker) { receipt.outcome = 'unavailable'; continue; }
     const quantity = DAILY_ACTIVITY_MULTIPLIER;
     const payment = baker.price * quantity;
     const flourNeed = quantity * FLOUR_PER_BREAD;
     if (customer.wealth < payment) { receipt.outcome = 'unaffordable'; }
-    else if (served[bakerIndex]! >= BAKER_MAX_DAILY_CUSTOMERS) { receipt.outcome = 'capacity'; }
+    else if (served[bakerIndex]! >= Math.floor(BAKER_MAX_DAILY_CUSTOMERS * (baker.capacityMultiplier ?? 1))) { receipt.outcome = 'capacity'; }
     else if (flourRemaining + 1e-12 < flourNeed) { receipt.outcome = 'noFlour'; }
     else {
       receipt.outcome = 'served'; receipt.quantity = quantity; receipt.paid = payment;
@@ -186,7 +199,10 @@ export function clearSocietyMarket(input: SocietyMarketInput): SocietyMarketResu
         if (amount <= 0) continue;
         provider.remaining -= amount; outstanding -= amount;
         millerSold.set(provider.site, (millerSold.get(provider.site) ?? 0) + amount);
-        flourEvents.push({ tick: input.eventTick ?? input.day, kind: 'flourSupply', provider: provider.identity, providerSite: provider.site,
+        // A mechanical bakery is not a person. Record the actual supplier
+        // separately so legitimate human flour supply retains its credit.
+        if(baker.identity===null)mechanicalFlourSupplies.push({provider:provider.identity,providerSite:provider.site,recipientSite:baker.site,quantity:amount});
+        else flourEvents.push({ tick: input.eventTick ?? input.day, kind: 'flourSupply', provider: provider.identity, providerSite: provider.site,
           recipient: baker.identity, recipientSite: baker.site, quantity: amount, outcome: 'supplied' });
       }
       flourRemaining = Math.max(0, flourRemaining - flourNeed);
@@ -194,5 +210,5 @@ export function clearSocietyMarket(input: SocietyMarketInput): SocietyMarketResu
     purchaseEvents.push({ tick: input.eventTick ?? input.day, kind: 'purchase', provider: baker.identity, providerSite: baker.site,
       recipient: customer.identity, recipientSite: customer.site, quantity: receipt.quantity, outcome: receipt.outcome === 'served' ? 'served' : 'turnedAway' });
   }
-  return { served, receipts, customerDebits, millerSold, flourEvents, purchaseEvents, flourConsumed, totalPayments };
+  return { served, receipts, customerDebits, millerSold, flourEvents, mechanicalFlourSupplies, purchaseEvents, flourConsumed, totalPayments };
 }

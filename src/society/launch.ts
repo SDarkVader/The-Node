@@ -77,7 +77,7 @@ function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment
   const execution=derived(config);
   for(const path of [execution.budget,execution.credential,execution.output,execution.approval,join(config.outputRoot,'execution.json')])if(existsSync(path))fail('society_launch_output_exists');
   const bundle=parseSocietyEvidence<Bundle>(file(config.bundle,128*1024*1024).toString('utf8'));validateSocietyPlan(bundle.plan);
-  if(bundle.plan.competitiveGrifter)fail('society_competitive_reputation_not_ready_for_live_preparation');
+  if(bundle.plan.competitiveGrifter&&!bundle.plan.routine)fail('society_competitive_requires_daily_routine');
   if(bundle.planSha256!==config.planSha256||societyPlanHash(bundle.plan)!==config.planSha256||
     bundle.genesis.sourceRevision!==config.sourceRevision||bundle.plan.sourceRevision!==config.sourceRevision||
     bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:bundle.plan.competitiveGrifter?140:120)||bundle.plan.allowance.limitMicroUsd>1_000_000)fail('society_launch_bundle');

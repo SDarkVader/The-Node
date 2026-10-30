@@ -17,6 +17,13 @@ it('credits only authenticated paid service once per subject and type; never mec
   expect(societyCivicEvents(1,[...rows.map(()=>base),flour],receipts,people)).toEqual(rows);
 });
 
+it('credits a real flour supplier to an anonymous bakery without inventing a recipient',()=>{
+  const rows=societyCivicEvents(2,[],[],new Set(['miller']),[],[
+    {provider:'miller',quantity:0.5},{provider:'miller',quantity:0.5},{provider:null,quantity:1}]);
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({subjectId:'miller',domain:'service',valence:'positive',weight:1});
+});
+
 it('gives each person a single positive starting score and applies explicit missed work immediately',()=>{
   const initialScore=societyCivicScores([],['citizen']).get('citizen')!;
   const initial=initialScore.standing;

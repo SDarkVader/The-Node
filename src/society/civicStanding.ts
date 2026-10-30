@@ -13,7 +13,7 @@ export const CIVIC_STANDING_BASELINE=civicReputationScore(1,0).standing;
 
 /** One unit per verified achievement type per inhabitant/day, independently of quantity,
  * buyer count or event order. Mechanical providers have no person to receive credit. */
-export function societyCivicEvents(day:number, dealings:readonly DealingEvent[], receipts:readonly SocietyPurchaseReceipt[], people:ReadonlySet<string>, missedWork:readonly string[]=[]): CivicReputationEvent[] {
+export function societyCivicEvents(day:number, dealings:readonly DealingEvent[], receipts:readonly SocietyPurchaseReceipt[], people:ReadonlySet<string>, missedWork:readonly string[]=[], mechanicalFlourSupplies:readonly {provider:string|null;quantity:number}[]=[]): CivicReputationEvent[] {
   const events=new Map<string,CivicReputationEvent>();
   const add=(person:string,kind:string,domain:CivicReputationEvent['domain'],valence:CivicReputationEvent['valence'])=>{
     if(!people.has(person))return;
@@ -28,6 +28,7 @@ export function societyCivicEvents(day:number, dealings:readonly DealingEvent[],
       add(e.provider,e.kind,'service','positive');
     if(paid)add(e.recipient,'bread_bought','cooperation','positive');
   }
+  for(const supply of mechanicalFlourSupplies)if(supply.provider&&supply.quantity>0)add(supply.provider,'flourSupply','service','positive');
   for(const person of missedWork)add(person,'missed_work','service','negative');
   return [...events.values()].sort((a,b)=>a.id.localeCompare(b.id,'en'));
 }

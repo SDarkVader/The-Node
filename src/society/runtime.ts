@@ -27,6 +27,7 @@ import {SocietyDailyOracleBook,type SocietyDailyOracleConfig,type SocietyDailyOr
 import {SocietyRoutineBook,validateSocietyRoutineConfig,type SocietyRoutineConfig} from './routine.js';
 import {societyCivicEvents,societyCivicScores} from './civicStanding.js';
 import type {CivicReputationEvent} from '../engine/civicReputation.js';
+import {mechanicalShopRef} from './mechanicalShop.js';
 import {resolveRoleClaims,type RoleClaim,type RoleClaimOutcome} from './roleClaims.js';
 import {stepReputationBackstops,evictBackstoppedOccupant,type ReputationIntervention,type BackstopIncumbent,type BackstopOutcome} from './reputationBackstop.js';
 
@@ -201,10 +202,21 @@ export class Society {
     const w = this.#state.world, own = personBody(this.#state,this.#state.registry.people.get(person)!);
     const oracle = this.#oracle.get(person) ?? emptyOracleOpportunityState(), day=w.tick+1;
     const voucher=oracle.voucher, liveVoucher=!!voucher&&day>=voucher.availableDay&&day<=voucher.expiresAfterDay;
+    const assistedBakeries=(this.#reputationBackstops??[]).filter(item=>item.role==='baker'&&
+      this.#state.registry.people.get(item.person)?.location===item.businessId&&
+      this.#state.registry.people.get(item.person)?.roleEpoch===item.roleEpoch).map(item=>item.businessId);
     const market=w.bakers.filter(b=>b.slot.state==='FILLED').map(b=>({
       sellerRef:this.#ref(person,this.#state.registry.locations.get(b.buildingId)!),buildingId:b.buildingId,
       price:this.#prices.get(b.buildingId)??b.value,available:true,
     }));
+    if(this.#tape.competitiveGrifter&&this.#routine){
+      for(const bakery of w.bakers.filter(b=>(b.slot.state==='BACKSTOPPED'||assistedBakeries.includes(b.buildingId))&&b.buildingId!==own.workplace)){
+        const price=this.#prices.get(bakery.buildingId)??bakery.value;
+        if(!Number.isFinite(price)||price<0||price>2)continue;
+        market.push({sellerRef:mechanicalShopRef(this.#state,person,bakery.buildingId),buildingId:bakery.buildingId,
+          price,available:true,mechanical:true} as typeof market[number]);
+      }
+    }
     return buildSocietyContext(this.#state,person,{
       ...(this.#tape.competitiveGrifter?{objective:'competitive-society-v1' as const}:{}),
       ...(this.#civicEvents?{civicStanding:(()=>{const people=[...this.#state.registry.people.values()].filter(p=>p.location!==null);
@@ -219,7 +231,7 @@ export class Society {
         const previous=this.#tape.transitions.at(-1),result=previous?.oracle.find(r=>r.person===person)?.result;
         return result?{day:previous!.day,status:result.status,won:result.won,prize:result.prize,prizeAmount:result.prizeAmount,fundedBy:result.fundedBy}:null;
       })()}}:{}),
-      ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase,this.#tape.competitiveGrifter===true)}:{}),
+      ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase,this.#tape.competitiveGrifter===true,assistedBakeries)}:{}),
       ...(this.#postcards?{postcards:this.#postcards.observation(person)}:{}),
       ...(this.#dailyOracle?{dailyOracle:this.#dailyOracle.observation(person,day,w.economicHealthWithExperience,this.#activePeople())}:{}),
       ownCommitment:this.#phase!=='act'?null:own.role==='Baker'
@@ -313,15 +325,20 @@ export class Society {
         dailyReceived+=received;dailyOverflow+=overflow;
       }
     }
-    const choices=new Map<string,string|null>(),working=new Set<string>();
+    const choices=new Map<string,string|null>(),working=new Set<string>(),mechanicalChoices=new Set<string>();
     const actions=[...this.#pending].map(([person,a])=>{
       const p=this.#state.registry.people.get(person)!;
       let seller:string|null=null;
       if (a.purchase&&'seller' in a.purchase) {
         const sellerRef=a.purchase.seller;
         const match=[...this.#state.registry.people.values()].find(x=>x.location!==null&&this.#ref(person,x.id)===sellerRef);
-        if (!match||match.role!=='baker') throw Error('society_seller_binding');
-        seller=match.location;
+        if(match&&match.role==='baker')seller=match.location;
+        else if(this.#tape.competitiveGrifter&&this.#routine){
+          const mechanical=this.#state.world.bakers.find(b=>(b.slot.state==='BACKSTOPPED'||(this.#reputationBackstops??[]).some(q=>q.businessId===b.buildingId))&&mechanicalShopRef(this.#state,person,b.buildingId)===sellerRef);
+          if(!mechanical)throw Error('society_seller_binding');
+          seller=mechanical.buildingId;
+          mechanicalChoices.add(person);
+        }else throw Error('society_seller_binding');
       }
       choices.set(person,seller);
       if (a.occupation?.kind==='work'&&p.role!==null&&(this.#tape.competitiveGrifter&&this.#routine||['courier','investigator','importExport'].includes(p.role))) working.add(p.location!);
@@ -330,7 +347,7 @@ export class Society {
     const activeAssistance=this.#reputationBackstops?.filter(item=>{const p=this.#state.registry.people.get(item.person);
       return p?.location===item.businessId&&p.role===item.role&&p.roleEpoch===item.roleEpoch;}).map(item=>item.businessId)??[];
     const plan:SocietyEconomyPlan={bakerPrices:this.#prices,millerQuantities:this.#quantities,breadChoices:choices,working,
-      ...(this.#tape.competitiveGrifter&&this.#routine?{attendanceRequired:true,assisted:new Set(activeAssistance)}:{})};
+      ...(this.#tape.competitiveGrifter&&this.#routine?{attendanceRequired:true,assisted:new Set(activeAssistance),mechanicalChoices}:{})};
     if(this.#routine)this.#state.world={...this.#state.world,pendingWallPosts:this.#routine.posts()};
     const routineSummary=this.#routine?{turns:this.#routine.turn-1,residents:this.#routine.summary()}:undefined;
     const routineEffects=this.#routine?.effects()??[];
@@ -349,6 +366,8 @@ export class Society {
       // former workplace, never for its replacement. Orders against a departed
       // seller are recorded as unavailable instead of being silently reassigned.
       const bakers=new Set(this.#state.world.bakers.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId));
+      const mechanicalBakers=new Set(this.#tape.competitiveGrifter&&this.#routine?
+        this.#state.world.bakers.filter(s=>s.slot.state==='BACKSTOPPED').map(s=>s.buildingId):[]);
       const millers=new Set(this.#state.world.millers.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId));
       const occupied=new Set(roleArrays(this.#state.world).flatMap(([,slots])=>slots.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId)));
       const sameOccupant=(site:string)=>occupantsBeforeClaims.get(site)===this.#state.registry.locations.get(site);
@@ -357,8 +376,8 @@ export class Society {
       plan.working=new Set([...working].filter(site=>occupied.has(site)&&sameOccupant(site)));
       plan.assisted=new Set([...activeAssistance].filter(site=>occupied.has(site)&&sameOccupant(site)));
       for(const [person,site] of choices){
-        if(site!==null&&(!bakers.has(site)||!sameOccupant(site)||this.#state.registry.locations.get(site)===person)){
-          choices.set(person,null);invalidatedOrders.add(person);
+        if(site!==null&&(!(bakers.has(site)||mechanicalBakers.has(site))||!sameOccupant(site)||this.#state.registry.locations.get(site)===person)){
+          choices.set(person,null);mechanicalChoices.delete(person);invalidatedOrders.add(person);
         }
       }
     }
@@ -414,7 +433,7 @@ export class Society {
       const newlyClaimed=claimResult?.outcomes.some(q=>q.person===r.person&&q.status==='claimed');
       return !newlyClaimed&&r.closed&&!r.tasks.work&&!!prior&&!!now&&now.role===prior.role&&now.location===prior.location&&now.roleEpoch===prior.roleEpoch;
     }).map(r=>r.person)??[];
-    const civicEvents=this.#civicEvents?societyCivicEvents(day,this.#state.world.lastDealings??[],this.#state.world.societyEconomy?.receipts??[],new Set(this.#state.registry.people.keys()),missedWork):undefined;
+    const civicEvents=this.#civicEvents?societyCivicEvents(day,this.#state.world.lastDealings??[],this.#state.world.societyEconomy?.receipts??[],new Set(this.#state.registry.people.keys()),missedWork,this.#state.world.societyEconomy?.mechanicalFlourSupplies??[]):undefined;
     if(civicEvents)this.#civicEvents!.push(...civicEvents);
     let reputationBackstops:BackstopOutcome|undefined;
     if(this.#reputationBackstops&&this.#routine&&this.#civicEvents&&beforeCivic){

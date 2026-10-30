@@ -139,22 +139,25 @@ export function attributeSupply(
  */
 export function attributeDeliveries(
   seed: number, day: number, supplies: readonly DealingEvent[],
-  couriers: readonly (Party & { parcels: number; weight: number })[], regularsIn: ReadonlyMap<string, string>,
+  couriers: readonly { identity: string | null; site: string; parcels: number; weight: number }[], regularsIn: ReadonlyMap<string, string>,
 ): { events: DealingEvent[]; regulars: Map<string, string> } {
   const regulars = new Map(regularsIn);
-  const assigned: { courier: Party & { parcels: number }; supply: DealingEvent }[] = [];
+  const key = (courier: typeof couriers[number]) => courier.identity ?? `\u0000backstop:${courier.site}`;
+  const assigned: { courier: typeof couriers[number]; supply: DealingEvent }[] = [];
   for (const s of supplies) {
-    const pick = chooseRegular(regulars.get(s.recipient), couriers.map((c) => ({ key: c.identity, weight: c.weight })),
+    const pick = chooseRegular(regulars.get(s.recipient), couriers.map((c) => ({ key: key(c), weight: c.weight })),
       hashUnit(seed, day, 'courier-switch', s.recipient), hashUnit(seed, day, 'courier-draw', s.recipient));
     if (pick === null) continue;
-    regulars.set(s.recipient, pick);
-    assigned.push({ courier: couriers.find((c) => c.identity === pick)!, supply: s });
+    const courier = couriers.find((c) => key(c) === pick)!;
+    if (courier.identity === null) regulars.delete(s.recipient);
+    else regulars.set(s.recipient, courier.identity);
+    assigned.push({ courier, supply: s });
   }
   const count = new Map<string, number>();
-  for (const a of assigned) count.set(a.courier.identity, (count.get(a.courier.identity) ?? 0) + 1);
+  for (const a of assigned) count.set(key(a.courier), (count.get(key(a.courier)) ?? 0) + 1);
   const events = assigned.map(({ courier, supply }) => ({
     tick: day, kind: 'delivery' as const, provider: courier.identity, providerSite: courier.site, recipient: supply.recipient,
-    recipientSite: supply.recipientSite, sender: supply.provider, quantity: courier.parcels / count.get(courier.identity)!, outcome: 'delivered' as const,
+    recipientSite: supply.recipientSite, sender: supply.provider, quantity: courier.parcels / count.get(key(courier))!, outcome: 'delivered' as const,
   }));
   for (const k of [...regulars.keys()]) if (!supplies.some((s) => s.recipient === k)) regulars.delete(k);
   return { events, regulars: new Map([...regulars].sort(([a], [b]) => (a < b ? -1 : 1))) };

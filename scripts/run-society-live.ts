@@ -30,7 +30,7 @@ const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boo
   'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},'competitive-grifter':{type:'boolean'},godot:{type:'string'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(values['competitive-grifter'])throw Error('society_competitive_reputation_not_ready_for_live_preparation');
+if(values.prepare&&values['competitive-grifter']&&values['daily-turns']===undefined)throw Error('society_competitive_requires_daily_routine');
 if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation'],values['competitive-grifter']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
@@ -79,7 +79,7 @@ if(values.prepare){
   }finally{await senses?.close();}
 }else{
   const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
-  if(bundle.plan.competitiveGrifter)throw Error('society_competitive_reputation_not_ready_for_live_preparation');
+  if(bundle.plan.competitiveGrifter&&!bundle.plan.routine)throw Error('society_competitive_requires_daily_routine');
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))throw Error('society_bundle_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))throw Error('society_bundle_daily_oracle_config');

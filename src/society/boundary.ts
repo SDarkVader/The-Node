@@ -16,14 +16,15 @@ import { COMPLETION_REWARD, SUPPORT_TASK_FRICTION_BAR } from '../engine/roleComp
 import { oracleWinProbability } from '../engine/oracle.js';
 import { POSTCARD_TIERS, POSTCARD_BUFFER_HOURS, POSTCARD_HOUR_MS, postcardAccrualDenominator,
   type PostcardTier, type PostcardRate } from '../engine/postcards.js';
-import {inhabitantInformation,INHABITANT_ACTION_ORDER,INHABITANT_WEALTH_RULES,type OwnLotteryFeedback} from './information.js';
+import {inhabitantInformation,INHABITANT_ACTION_ORDER,INHABITANT_WEALTH_RULES,COMPETITIVE_INHABITANT_WEALTH_RULES,type OwnLotteryFeedback} from './information.js';
 import {BAKER_MAX_DAILY_CUSTOMERS,SUPPORT_ROLE_DAILY_WAGE,GRIFTER_DAILY_INCOME} from '../engine/wealth.js';
 import {FLOUR_PER_BREAD} from '../engine/resources.js';
+import {mechanicalShopRef} from './mechanicalShop.js';
 
 export class SocietySecurityError extends Error {
   constructor(code = 'society_boundary_violation') { super(code); this.name = 'SocietySecurityError'; }
 }
-export interface SocietyMarketOffer { sellerRef: string; buildingId: string; price: number; available: boolean }
+export interface SocietyMarketOffer { sellerRef: string; buildingId: string; price: number; available: boolean; mechanical?:true }
 /** An explicitly projected own account. Never pass the reducer account itself here. */
 export interface SocietyPostcardObservation {
   held: Readonly<Record<PostcardTier, number>>;
@@ -303,7 +304,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     assertJsonData(options.information);
     if(!routine||!object(options.information)||!exact(options.information,['contract','lastLottery'])||options.information.contract!=='inhabitant-v1')fail('society_information_contract');
   }
-  const information=options.information?inhabitantInformation(state,personId,options.information.lastLottery):undefined;
+  const information=options.information?inhabitantInformation(state,personId,options.information.lastLottery,!!options.objective):undefined;
   if(routine){
     if(!base.diarySubjectOptional)fail('society_routine_diary_contract');
     const buildings=state.world.shard.districts.flatMap(d=>d.buildings);
@@ -327,9 +328,13 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     // A public quote cannot invent a seller, site, or private stock. Availability is an offer, not a stock report.
     const seller = p.city.people.find(x => x.ref === q.sellerRef && x.role === 'Baker');
     const holder = [...state.registry.people.values()].find(x => x.location === q.buildingId && x.role === 'baker');
-    if (!seller || !holder || observerRef(state.genesis.observerSecret, personId, holder.id, refHexLength(state.world)) !== q.sellerRef)
+    const mechanical=options.objective&&q.mechanical===true&&state.world.bakers.some(b=>b.buildingId===q.buildingId&&
+      (b.slot.state==='BACKSTOPPED'||b.slot.state==='FILLED'&&options.civicStanding?.assistance.some(a=>a.businessId===b.buildingId)))&&
+      mechanicalShopRef(state,personId,q.buildingId)===q.sellerRef;
+    if (!mechanical&&(!seller || !holder || observerRef(state.genesis.observerSecret, personId, holder.id, refHexLength(state.world)) !== q.sellerRef))
       fail('society_public_market');
-    return { sellerRef: q.sellerRef, buildingId: q.buildingId, price: q.price, available: q.available };
+    if(q.mechanical!==undefined&&!mechanical)fail('society_public_market');
+    return { sellerRef: q.sellerRef, buildingId: q.buildingId, price: q.price, available: q.available,...(mechanical?{mechanical:true as const}:{}) };
   });
   if (new Set(offers.map(q => q.sellerRef)).size !== offers.length) fail('society_public_market');
   const offeredOracle = options.oracle ?? { entryCost: 0.3, winProbability: 0.05, canEnter: false, canRedeem: false };
@@ -370,7 +375,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     const heat: 'none' | 'low' | 'medium' | 'high' = !station || station.state !== 'FILLED' ? 'none' : measure < 1 / 3 ? 'low' : measure < 2 / 3 ? 'medium' : 'high';
     return { buildingId: b.id, x: b.x, y: b.y, role, state: station?.state ?? 'housing', heat };
   });
-  const civicRules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. The current mechanical support covers Miller and ImportExport output only. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
+  const civicRules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. Mechanical backstops provide 60% output with no personal credit. A price marked mechanical is a business offer without a personal seller. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
   const visible = {
     day: base.tick + 1, phase: options.phase,
     ...(options.objective?{objective:options.objective}:{}),
@@ -398,7 +403,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     rumours: p.rumours.map(q => ({ source: q.source, state: q.state, clarity: q.clarity })),
     diary: p.diary.map(q => ({ subject: q.subject, observation: q.observation, reading: q.reading, context: q.context })),
     dealings: ('dealings' in p ? p.dealings ?? [] : []).map(q => ({ kind: q.kind, as: q.as, counterparty: q.counterparty, quantity: q.quantity, outcome: q.outcome })),
-    wall: { prices: offers.map(q => ({ sellerRef: q.sellerRef, buildingId: q.buildingId, price: q.price, available: q.available })), posts: wall },
+    wall: { prices: offers.map(q => ({ sellerRef: q.sellerRef, buildingId: q.buildingId, price: q.price, available: q.available,...(q.mechanical?{mechanical:true as const}:{}) })), posts: wall },
     opportunities,
     oracle: { entryCost: oracle.entryCost, winProbability: oracle.winProbability, canEnter: oracle.canEnter,
       canRedeem: oracle.canRedeem, voucherExpiresOnDay: oracle.voucherExpiresOnDay ?? null,
@@ -456,7 +461,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   if(hasObjective&&v.objective!=='competitive-society-v1')fail('society_objective');
   if(hasCivicStanding){
     const c=v.civicStanding, score=(q:any)=>record(q,['standing','notoriety'])&&finite(q.standing)&&finite(q.notoriety)&&q.notoriety>=0;
-    const rules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. The current mechanical support covers Miller and ImportExport output only. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
+    const rules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. Mechanical backstops provide 60% output with no personal credit. A price marked mechanical is a business offer without a personal seller. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
     if(!hasObjective||!record(c,['rules','own','others','assistance'])||c.rules!==rules||!score(c.own)||
       !list(c.assistance,q=>record(q,['businessId','startedDay','daysRemaining'])&&site(q.businessId)&&day(q.startedDay)&&Number.isSafeInteger(q.daysRemaining)&&q.daysRemaining>=1&&q.daysRemaining<=3)||
       new Set(c.assistance.map((q:any)=>q.businessId)).size!==c.assistance.length||
@@ -509,7 +514,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
     !list(v.diary, q => record(q, ['subject', 'observation', 'reading', 'context']) && (ref(q.subject) || subjectOptional && q.subject === null) && q.subject !== v.self.ref && member(q.observation, OBSERVATIONS) && member(q.reading, READINGS) && nullable(q.context, x => member(x, DIARY_CONTEXTS))) ||
     !list(v.dealings, q => record(q, ['kind', 'as', 'counterparty', 'quantity', 'outcome']) && member(q.kind, ['purchase', 'flourSupply', 'grainSupply', 'delivery', 'evidence', 'inquiry']) && member(q.as, ['provider', 'recipient', 'sender']) && nullable(q.counterparty, ref) && nullable(q.quantity, x => finite(x) && x >= 0) && member(q.outcome, ['served', 'turnedAway', 'supplied', 'delivered', 'questioned']))) fail('society_serialized_memory');
   if (!record(v.wall, ['prices', 'posts']) ||
-    !list(v.wall.prices, q => record(q, ['sellerRef', 'buildingId', 'price', 'available']) && ref(q.sellerRef) && site(q.buildingId) && bounded(q.price, 0, 2) && typeof q.available === 'boolean') ||
+    !list(v.wall.prices, q => record(q, ['sellerRef', 'buildingId', 'price', 'available',...(q.mechanical===true&&hasObjective?['mechanical']:[])]) && ref(q.sellerRef) && site(q.buildingId) && bounded(q.price, 0, 2) && typeof q.available === 'boolean'&&(q.mechanical===undefined||q.mechanical===true&&hasObjective)) ||
     !list(v.wall.posts, q => record(q, ['author', 'state', 'day']) && ref(q.author) && member(q.state, SELF_STATES) && day(q.day) && (routine?q.day<=v.day:q.day<v.day)) ||
     !list(v.opportunities, q => record(q, ['kind', 'expiresOnDay']) && q.kind === 'oracleEntryVoucher' && day(q.expiresOnDay)) ||
     !record(v.oracle, ['entryCost', 'winProbability', 'canEnter', 'canRedeem', 'voucherExpiresOnDay', 'prizes']) ||
@@ -546,7 +551,7 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   if(hasInformation){
     const i=v.information;
     if(!routine||!record(i,['contract','actionOrder','wealthRules','mechanics','personal','feedback'])||i.contract!=='inhabitant-v1'||
-      i.actionOrder!==INHABITANT_ACTION_ORDER||i.wealthRules!==INHABITANT_WEALTH_RULES||
+      i.actionOrder!==INHABITANT_ACTION_ORDER||i.wealthRules!==(hasObjective?COMPETITIVE_INHABITANT_WEALTH_RULES:INHABITANT_WEALTH_RULES)||
       !record(i.mechanics,['hearingRange','breadPerOrder','flourPerBread','bakeryDailyCustomerLimit','purchaseCycleDays','activityMultiplier','supportBaseDailyWage','rolelessBaseDailyIncome','incomeTaxRate','wealthCap','oracleEconomicHealth'])||
       !bounded(i.mechanics.hearingRange,0,1000)||i.mechanics.breadPerOrder!==DAILY_ACTIVITY_MULTIPLIER||i.mechanics.flourPerBread!==FLOUR_PER_BREAD||
       i.mechanics.bakeryDailyCustomerLimit!==BAKER_MAX_DAILY_CUSTOMERS||!finite(i.mechanics.purchaseCycleDays)||i.mechanics.purchaseCycleDays<=0||
