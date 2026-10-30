@@ -367,8 +367,8 @@ export class Society {
     const beforeCivic=this.#civicEvents?societyCivicScores(this.#civicEvents,[...beforeOccupants.keys()]):undefined;
     const result=stepParticipantState(this.#state,actions,[...this.#state.registry.locations.values()],plan,this.#routine?.social());
     this.#state=result.state;
-    if(this.#routine&&this.#state.world.societyEconomy){
-      const failed=new Set([...this.#routine.noBakery(),...invalidatedOrders]);
+    if((this.#routine||invalidatedOrders.size>0)&&this.#state.world.societyEconomy){
+      const failed=new Set([...(this.#routine?.noBakery()??[]),...invalidatedOrders]);
       for(const receipt of this.#state.world.societyEconomy.receipts)if(failed.has(receipt.customer)&&receipt.bakerSite===null&&receipt.paid===0)receipt.outcome='unavailable';
     }
     const kernelResidual=this.#state.world.lastSettlement.residual;
