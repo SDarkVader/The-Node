@@ -73,7 +73,8 @@ export interface SocietyRoutineObservation {
 export interface SocietyContextOptions {
   phase: 'commit' | 'act';
   objective?: 'competitive-society-v1';
-  civicStanding?:{own:{standing:number;notoriety:number};others:{ref:string;standing:number;notoriety:number}[]};
+  civicStanding?:{own:{standing:number;notoriety:number};others:{ref:string;standing:number;notoriety:number}[];
+    assistance:{businessId:string;startedDay:number;daysRemaining:number}[]};
   ownCommitment?: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | null;
   market?: readonly SocietyMarketOffer[];
   purchaseDue?: boolean;
@@ -89,6 +90,7 @@ export interface SocietyContextOptions {
 }
 export interface SocietyDecisionContext extends DecisionContext {
   navigation?:true;
+  roleOpportunities?:string[];
   phase: 'commit' | 'act';
   purchaseDue: boolean;
   offers: SocietyMarketOffer[];
@@ -99,7 +101,7 @@ export interface SocietyDecisionContext extends DecisionContext {
 }
 export interface SocietyAction {
   move: Decision['move']; communication: Decision['communication']; diary: Decision['diary'];
-  occupation: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | { kind: 'work' } | {kind:'finishDay'} | null;
+  occupation: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | { kind: 'work' } | {kind:'finishDay'} | {kind:'claimRole';buildingId:string} | null;
   purchase: { seller: string; quantity: 1 } | {kind:'seekFood'} | null;
   oracle: 'enter' | 'redeem' | null;
   postcards?: { claim: boolean; fusion: { tier: PostcardTier; stake: number } | null } | null;
@@ -152,7 +154,7 @@ function routineOffers(offers:readonly SocietyMarketOffer[],routine:SocietyRouti
   return offers.map(q=>({...q,available:q.available&&(!routine||!routine.tasks.food&&routine.sites.bakeries.some(b=>
     b.buildingId===q.buildingId&&b.sellerRef===q.sellerRef&&b.x===position.x&&b.y===position.y))}));
 }
-function assertRoutineCapabilities(r:SocietyRoutineObservation,position:{x:number;y:number},phase:'commit'|'act',role:string,offers:readonly SocietyMarketOffer[]):void{
+function assertRoutineCapabilities(r:SocietyRoutineObservation,position:{x:number;y:number},phase:'commit'|'act',role:string,offers:readonly SocietyMarketOffer[],allowFinishWithoutWork=false):void{
   const at=(q:{x:number;y:number})=>q.x===position.x&&q.y===position.y;
   if((phase==='commit')!==(r.turn===0)||r.customers.some(x=>!ref(x))||
     r.can.wallPost&&(phase!=='act'||r.tasks.wall||!at(r.sites.wall))||
@@ -160,7 +162,7 @@ function assertRoutineCapabilities(r:SocietyRoutineObservation,position:{x:numbe
     r.can.work&&(phase!=='act'||r.tasks.work||role==='Grifter'||r.sites.workplace===null||!at(r.sites.workplace))||
     r.can.oracle&&(phase!=='act'||!at(r.sites.oracle))||
     r.can.foodFailure&&(phase!=='act'||r.tasks.food||!r.sites.bakeries.some(at)||offers.some(q=>q.available))||
-    r.can.finishDay&&(phase!=='act'||Object.values(r.tasks).some(x=>!x)||r.customers.length>0||r.awaitingSeller!==null))fail('society_routine_capabilities');
+    r.can.finishDay&&(phase!=='act'||Object.entries(r.tasks).some(([task,done])=>!done&&!(allowFinishWithoutWork&&task==='work'))||r.customers.length>0||r.awaitingSeller!==null))fail('society_routine_capabilities');
 }
 export const SOCIETY_POSTCARD_RULES = 'Postcards belong to you across role changes. White credit accrues at the listed hourly rate into a buffer capped at 16 hours; excess unclaimed credit is lost, while held cards never expire. '
   + 'The clock is game time: each day spans 24 hours. During act, optionally claim whole White cards, retaining any fraction, then optionally perform one listed fusion. Null declines both. '
@@ -258,16 +260,16 @@ export const SOCIETY_PUBLIC_ROLES = freeze({
 });
 
 /** Canonical public guide; no caller text may replace any part of it. */
-export function societyPublicRules(v2 = true, subjectOptional = false, routine = false, navigation = false) {
-  const duty=' Visit your work site, leave home, post on the Wall, attempt to buy food, visit the Oracle, address another resident and write a diary at home each day. Answer customers who request service using the speech menus. A refusal is a legal response; no particular intent or tone is required.';
+export function societyPublicRules(v2 = true, subjectOptional = false, routine = false, navigation = false, competitive = false) {
+  const duty=(competitive?' You may visit your work site and work. Leave home':' Visit your work site, leave home')+', post on the Wall, attempt to buy food, visit the Oracle, address another resident and write a diary at home each day. Answer customers who request service using the speech menus. A refusal is a legal response; no particular intent or tone is required.';
   const roles=routine?{
     Baker:{...SOCIETY_PUBLIC_ROLES.Baker,duties:SOCIETY_PUBLIC_ROLES.Baker.duties+duty},
     Miller:{...SOCIETY_PUBLIC_ROLES.Miller,duties:SOCIETY_PUBLIC_ROLES.Miller.duties+duty},
     Courier:{...SOCIETY_PUBLIC_ROLES.Courier,duties:SOCIETY_PUBLIC_ROLES.Courier.duties+duty},
     Investigator:{...SOCIETY_PUBLIC_ROLES.Investigator,duties:SOCIETY_PUBLIC_ROLES.Investigator.duties+duty},
     ImportExport:{...SOCIETY_PUBLIC_ROLES.ImportExport,duties:SOCIETY_PUBLIC_ROLES.ImportExport.duties+duty},
-    Grifter:{...SOCIETY_PUBLIC_ROLES.Grifter,duties:SOCIETY_PUBLIC_ROLES.Grifter.duties+' Leave home, post on the Wall, attempt to buy food, visit the Oracle and write a diary at home each day. You have no occupational work command; speech outside your dealings remains optional.'},
-  }:SOCIETY_PUBLIC_ROLES;
+    Grifter:{...SOCIETY_PUBLIC_ROLES.Grifter,...(competitive?{incentives:'May move, choose bread and Oracle participation, communicate, keep an eligible diary and claim a known open role. Cannot create resources.'}:{}),duties:SOCIETY_PUBLIC_ROLES.Grifter.duties+' Leave home, post on the Wall, attempt to buy food, visit the Oracle and write a diary at home each day. You have no occupational work command; speech outside your dealings remains optional.'},
+  }:competitive?{...SOCIETY_PUBLIC_ROLES,Grifter:{...SOCIETY_PUBLIC_ROLES.Grifter,incentives:'May move, choose bread and Oracle participation, communicate, keep an eligible diary and claim a known open role. Cannot create resources.'}}:SOCIETY_PUBLIC_ROLES;
   return freeze({ roles,
       purpose: 'Choose freely among legal actions. Sustainable work, social dealings and opportunities matter; wealth alone is not winning.',
       economy: `Nodules become grain, grain becomes flour, and Bakers make bread. One bread order is ${DAILY_ACTIVITY_MULTIPLIER} bread, costs posted price times ${DAILY_ACTIVITY_MULTIPLIER}, and consumes flour in proportion. Purchases fund the district pool; Baker income uses the existing margin-over-flour-cost, activity and district-friction formula rather than a second seller credit. Real customer choices affect sales, income, dealings and occupational completion. Prices commit before daily choices, lock for the whole day and remain public on the central Wall. `+(routine?'Visit another Bakery and choose its listed seller to place your daily order. The existing grain, flour, capacity and wealth constraints settle orders at day end; an order is not guaranteed food. A failed attempt is recorded and allows the day to finish after the other duties. If no seller is available, visit a mapped bakery and choose seekFood.':'Purchase only on a due day, from a listed offer; defer with null. A quote never guarantees stock or service.'),
@@ -276,7 +278,7 @@ export function societyPublicRules(v2 = true, subjectOptional = false, routine =
       communication: (routine?'One closed-grammar Wall self-state or proximity utterance per turn. Post at the Wall once each day. Role holders must answer their listed customers; addressed refusal is a response. Speech beyond duties remains optional. ':'One closed-grammar Wall self-state or proximity utterance per day. ')+'Address only someone listed in hearing, or the room. Speech uses the starting position; walking resolves afterwards. Hearing can degrade with distance. Only your own received speech is shown.',
       diary: (subjectOptional ? 'Write a daily entry using only the observation, reading and optional context menus. The subject may be null: an entry can be a diversion. A named subject must be another person you currently recognise; self-entries and unrecognised subjects are forbidden. Choose your own content; it is not fact-checked. Entries last two days; observation and reading may drift, subject and context do not.' : v2 ? 'Each day, write one entry about another person you currently recognise, choosing the subject, observation, reading and optional context from the menus. You decide what to record; nothing checks it. If you recognise no one, leave the diary null. Entries last two days; observation and reading may drift, subject and context do not.' : 'The existing known-subject diary eligibility and two-day ageing rules apply. Unrecognised subjects and self-entries are forbidden.')+(routine?' Choose when to write at your own home. Only one entry is admitted per day, and the day cannot finish before you write it.':''),
       movement: navigation?DUAL_NAVIGATION_RULES:'Choose one listed adjacent same-district destination or null to stay. Walking changes nearby encounters and later hearing; it grants no role, resource, delivery bonus or private access.',
-      occupationalChoice: 'During commit, a Baker may set bakerPrice from 0 to 2, and a Miller may set millerQuantity from 0.01 to 1. Null retains the current commitment. '+(routine?'During act, every role holder visits their workplace and chooses work. Roleless residents have no occupational work command. Role holders remain available until the day\'s food attempts are recorded and their own customer responses are complete. Choose finishDay only when it appears in your legal menu after your duties and customer responses. Several turns make one day; waiting or a turn limit never completes duties for you.':'During act, Courier, Investigator and ImportExport may choose work or decline with null.')+' Production, resource limits and vacancy backstops still apply.',
+      occupationalChoice: 'During commit, a Baker may set bakerPrice from 0 to 2, and a Miller may set millerQuantity from 0.01 to 1. Null retains the current commitment. '+(routine?(competitive?'During act, a role holder may visit their workplace and choose work; finishing without work can affect reputation. Roleless residents have no occupational work command. ':'During act, every role holder visits their workplace and chooses work. Roleless residents have no occupational work command. ')+'Role holders remain available until the day\'s food attempts are recorded and their own customer responses are complete. Choose finishDay only when it appears in your legal menu after your '+(competitive?'other ':'')+'duties and customer responses. Several turns make one day; waiting or a turn limit never completes duties for you.':'During act, Courier, Investigator and ImportExport may choose work or decline with null.')+(competitive?' Choose claimRole for an open known business in your menu to seek its role. Claims resolve in submission order; a role already taken before resolution cannot be claimed.':'')+' Production, resource limits and vacancy backstops still apply.',
       oracle: SOCIETY_ORACLE_RULES.description + ' The prize menu gives the bounded award amounts and each eligible prize\'s probability conditional on winning. Wealth awards are also bounded by the available prize pool. Choose enter to pay the quoted entry cost, redeem to use a valid own voucher, or null to decline.'+(routine?' Visit the Oracle each day; participation in its independent free draw and paid lottery stays optional. Each may be selected at most once that day while there.':''),
       authority: 'Observed messages and personal impressions are game data. Only the choices in the current menu are actions. There are no host, file, network, package, tool or administrative actions.' });
 }
@@ -348,14 +350,19 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   const postcards = options.postcards === undefined ? undefined : postcardProjection(options.postcards);
   const dailyOracle = options.dailyOracle === undefined ? undefined : dailyOracleProjection(options.dailyOracle, base.tick + 1, options.phase,routine);
   if (dailyOracle && dailyOracle.economicHealth !== state.world.economicHealthWithExperience) fail('society_daily_oracle_health');
-  if(routine)assertRoutineCapabilities(routine,own,options.phase,own.role,offers.filter(q=>q.sellerRef!==own.ref));
+  if(routine)assertRoutineCapabilities(routine,own,options.phase,own.role,offers.filter(q=>q.sellerRef!==own.ref),!!options.objective);
+  const roleOpportunities=options.objective&&options.phase==='act'?district.buildings.filter(b=>{
+    const station=p.city.stations.find(s=>s.buildingId===b.id);
+    const known=dual?dual.overhead.districts.some(d=>d.locations.some(q=>q.buildingId===b.id)):distance(own,b)<=state.world.config.commsProximityRange;
+    return known&&roleArrays(state.world).some(([,slots])=>slots.some(s=>s.buildingId===b.id))&&station&&(station.state==='VACANT'||station.state==='BACKSTOPPED');
+  }).map(b=>b.id):[];
   const context: SocietyDecisionContext = { tick: base.tick, selfRef: base.selfRef, role: base.role, roleEpoch: base.roleEpoch,
     legalMoves: information&&options.phase==='commit'?[]:dual?destinationChoices(dual,district.id,own):base.legalMoves.map(q => ({ x: q.x, y: q.y })), presentRefs: nearbyRefs, knownSubjects: [...base.knownSubjects],
     ...(base.rules === 'v2' ? { rules: 'v2' as const, hearingRefs: base.hearingRefs!.filter(r => nearbyRefs.includes(r)) } : {}),
     ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
     phase: options.phase, purchaseDue: options.purchaseDue === true&&(!information||options.phase==='act'&&!routine?.tasks.food), offers:routineOffers(offers,routine,own),
     oracle: { canEnter: oracle.canEnter, canRedeem: oracle.canRedeem }, ...(postcards ? { postcards } : {}),
-    ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}) };
+    ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}),...(options.objective?{roleOpportunities}:{}) };
   const locations = district.buildings.filter(b => dual?dual.firstPerson.locations.some(q=>q.buildingId===b.id):distance(own, b) <= state.world.config.commsProximityRange).map(b => {
     const station = p.city.stations.find(s => s.buildingId === b.id);
     const role = roleArrays(state.world).find(([, slots]) => slots.some(s => s.buildingId === b.id))?.[0] ?? null;
@@ -363,11 +370,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     const heat: 'none' | 'low' | 'medium' | 'high' = !station || station.state !== 'FILLED' ? 'none' : measure < 1 / 3 ? 'low' : measure < 2 / 3 ? 'medium' : 'high';
     return { buildingId: b.id, x: b.x, y: b.y, role, state: station?.state ?? 'housing', heat };
   });
-  const civicRules='Experimental signed standing from verified paid bread sold, paid bread bought and flour supplied: one positive unit per person and achievement type per day. More units can raise standing; empty days do not lower it. The score can represent negative evidence, but no negative deed is currently recorded. Speech, rumours and diaries are not certified evidence. Notoriety measures total evidence, not approval.';
+  const civicRules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. The current mechanical support covers Miller and ImportExport output only. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
   const visible = {
     day: base.tick + 1, phase: options.phase,
     ...(options.objective?{objective:options.objective}:{}),
     ...(options.civicStanding?{civicStanding:{rules:civicRules,own:options.civicStanding.own,
+      assistance:options.civicStanding.assistance.filter(q=>q.businessId===own.workplace||district.buildings.some(b=>b.id===q.businessId)),
       others:options.civicStanding.others.filter(q=>nearbyRefs.includes(q.ref)||base.knownSubjects.includes(q.ref))}}:{}),
     self: { ref: own.ref, role: own.role, x: own.x, y: own.y, workplace: own.workplace,
       wealth: own.wealth, stock: own.stock, price: commitment?.kind === 'bakerPrice' ? commitment.price : own.price,
@@ -400,7 +408,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
         entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
         conditionalPrizeProbability: own.role === 'Grifter' ? 1 / 2 : 1 / 3,
         maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld } },
-    rules: societyPublicRules(base.rules === 'v2', base.diarySubjectOptional,!!routine,!!dual),
+    rules: societyPublicRules(base.rules === 'v2', base.diarySubjectOptional,!!routine,!!dual,!!options.objective),
     ...(postcards ? { postcards } : {}),
     ...(dailyOracle ? { dailyOracle } : {}),
     ...(routine?{routine}:{}),
@@ -409,6 +417,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     legalChoices: { moves: context.legalMoves.map(q => ({ x: q.x, y: q.y })), present: [...context.presentRefs],
       diarySubjects: [...context.knownSubjects], purchaseDue: context.purchaseDue,
       ...(base.diarySubjectOptional ? {diarySubjectOptional:true as const} : {}),
+      ...(options.objective?{roleOpportunities:[...roleOpportunities]}:{}),
       purchaseSellers: context.offers.filter(q => q.available && q.sellerRef !== context.selfRef&&(!information||context.purchaseDue)).map(q => q.sellerRef),
       oracle: [...(context.oracle.canEnter ? ['enter'] : []), ...(context.oracle.canRedeem ? ['redeem'] : [])],
       ...(postcards ? { postcards: societyPostcardChoices(postcards, options.phase,routine?.postcardsUsed) } : {}),
@@ -447,12 +456,15 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   if(hasObjective&&v.objective!=='competitive-society-v1')fail('society_objective');
   if(hasCivicStanding){
     const c=v.civicStanding, score=(q:any)=>record(q,['standing','notoriety'])&&finite(q.standing)&&finite(q.notoriety)&&q.notoriety>=0;
-    const rules='Experimental signed standing from verified paid bread sold, paid bread bought and flour supplied: one positive unit per person and achievement type per day. More units can raise standing; empty days do not lower it. The score can represent negative evidence, but no negative deed is currently recorded. Speech, rumours and diaries are not certified evidence. Notoriety measures total evidence, not approval.';
-    if(!hasObjective||!record(c,['rules','own','others'])||c.rules!==rules||!score(c.own)||
+    const rules='Experimental civic standing starts above zero as a baseline offset, not a deed. Verified paid bread sold, paid bread bought and flour supplied each add one positive unit per person and achievement type per day. A role holder who explicitly finishes a settled day without doing their work receives one negative unit. An interrupted day does not count. When standing falls to zero or below, a three-completed-day business intervention starts; recovering above zero stops it, otherwise the incumbent is removed after the third day. The current mechanical support covers Miller and ImportExport output only. Positive and negative evidence change standing; speech, rumours and diaries are not certified evidence. Notoriety measures actual evidence, not approval.';
+    if(!hasObjective||!record(c,['rules','own','others','assistance'])||c.rules!==rules||!score(c.own)||
+      !list(c.assistance,q=>record(q,['businessId','startedDay','daysRemaining'])&&site(q.businessId)&&day(q.startedDay)&&Number.isSafeInteger(q.daysRemaining)&&q.daysRemaining>=1&&q.daysRemaining<=3)||
+      new Set(c.assistance.map((q:any)=>q.businessId)).size!==c.assistance.length||
       !list(c.others,q=>record(q,['ref','standing','notoriety'])&&ref(q.ref)&&q.ref!==v.self?.ref&&finite(q.standing)&&finite(q.notoriety)&&q.notoriety>=0)||
       new Set(c.others.map((q:any)=>q.ref)).size!==c.others.length)fail('society_civic_standing');
     const allowed=new Set([...(v.local?.people??[]).map((q:any)=>q.ref),...(v.legalChoices?.diarySubjects??[])]);
     if(c.others.some((q:any)=>!allowed.has(q.ref)))fail('society_civic_visibility');
+    if(c.assistance.some((q:any)=>q.businessId!==v.self?.workplace&&!(v.local?.locations??[]).some((loc:any)=>loc.buildingId===q.businessId)))fail('society_civic_visibility');
   }
   if(hasObjective!==hasCivicStanding)fail('society_civic_standing');
   const dual: DualObservation|undefined=hasDual?v.dual:undefined;
@@ -506,25 +518,30 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   const prizes = { wealth: SOCIETY_ORACLE_RULES.wealthPrize, ownRoleStock: v.self.role === 'Grifter' ? null : SOCIETY_ORACLE_RULES.resourceStockPrize,
     ownRoleStockCap: SOCIETY_ORACLE_RULES.personalResourceCap, entryVoucherDays: SOCIETY_ORACLE_RULES.voucherValidDays,
     conditionalPrizeProbability: v.self.role === 'Grifter' ? 1 / 2 : 1 / 3, maxHeldVouchers: SOCIETY_ORACLE_RULES.maxVouchersHeld };
-  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true, subjectOptional,!!routine,!!dual))) fail('society_serialized_rules');
+  if (JSON.stringify(v.oracle.prizes) !== JSON.stringify(prizes) || JSON.stringify(v.rules) !== JSON.stringify(societyPublicRules(true, subjectOptional,!!routine,!!dual,hasObjective))) fail('society_serialized_rules');
   if(routine){
-    assertRoutineCapabilities(routine,{x:v.self.x,y:v.self.y},v.phase,v.self.role,v.wall.prices.filter((q:any)=>q.sellerRef!==v.self.ref));
+    assertRoutineCapabilities(routine,{x:v.self.x,y:v.self.y},v.phase,v.self.role,v.wall.prices.filter((q:any)=>q.sellerRef!==v.self.ref),hasObjective);
     if(routine.customers.includes(v.self.ref)||routine.awaitingSeller===v.self.ref||v.oracle.canEnter&&(!routine.can.oracle||routine.lotteryUsed)||v.oracle.canRedeem&&(!routine.can.oracle||routine.lotteryUsed))fail('society_serialized_routine');
   }
   const offers=routineOffers(v.wall.prices,routine,{x:v.self.x,y:v.self.y});
-  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(subjectOptional ? ['diarySubjectOptional'] : []), ...(postcards ? ['postcards'] : []), ...(dailyOracle ? ['dailyOracle'] : [])]) || subjectOptional && v.legalChoices.diarySubjectOptional !== true || !list(v.legalChoices.moves, point) ||
+  if (!record(v.legalChoices, ['moves', 'present', 'diarySubjects', 'purchaseDue', 'purchaseSellers', 'oracle', ...(hasObjective?['roleOpportunities']:[]), ...(subjectOptional ? ['diarySubjectOptional'] : []), ...(postcards ? ['postcards'] : []), ...(dailyOracle ? ['dailyOracle'] : [])]) || subjectOptional && v.legalChoices.diarySubjectOptional !== true || !list(v.legalChoices.moves, point) ||
     !list(v.legalChoices.present, ref) || !list(v.legalChoices.diarySubjects, ref) || typeof v.legalChoices.purchaseDue !== 'boolean' ||
     JSON.stringify(v.legalChoices.present) !== JSON.stringify(v.local.people.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.diarySubjects) !== JSON.stringify(v.recognition.map((q: any) => q.ref)) ||
     JSON.stringify(v.legalChoices.purchaseSellers) !== JSON.stringify(offers.filter((q: any) => q.available && q.sellerRef !== v.self.ref&&(!hasInformation||v.legalChoices.purchaseDue)).map((q: any) => q.sellerRef)) ||
     JSON.stringify(v.legalChoices.oracle) !== JSON.stringify([...(v.oracle.canEnter ? ['enter'] : []), ...(v.oracle.canRedeem ? ['redeem'] : [])])) fail('society_serialized_choices');
+  if(hasObjective){
+    const available=dual?dual.overhead.districts.find(q=>q.id===v.local.district)?.locations??[]:v.local.locations;
+    const expected=v.phase==='act'?available.filter((q:any)=>q.role!==null&&(q.state==='VACANT'||q.state==='BACKSTOPPED')).map((q:any)=>q.buildingId):[];
+    if(JSON.stringify(v.legalChoices.roleOpportunities)!==JSON.stringify(expected))fail('society_role_opportunities');
+  }
   if (postcards && JSON.stringify(v.legalChoices.postcards) !== JSON.stringify(societyPostcardChoices(postcards, v.phase,routine?.postcardsUsed))) fail('society_serialized_postcard_choices');
   if (dailyOracle && JSON.stringify(v.legalChoices.dailyOracle) !== JSON.stringify(dailyOracle.canEnter ? ['enter'] : [])) fail('society_serialized_daily_oracle_choices');
   const context: SocietyDecisionContext = { tick: v.day - 1, selfRef: v.self.ref, role: v.self.role, roleEpoch: 0,
     legalMoves: v.legalChoices.moves, presentRefs: v.legalChoices.present, knownSubjects: v.legalChoices.diarySubjects,
     rules: 'v2', hearingRefs: v.hearing, phase: v.phase, offers, purchaseDue: v.legalChoices.purchaseDue,
     ...(subjectOptional ? {diarySubjectOptional:true as const} : {}),
-    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}) };
+    oracle: { canEnter: v.oracle.canEnter, canRedeem: v.oracle.canRedeem }, ...(postcards ? { postcards } : {}), ...(dailyOracle ? { dailyOracle } : {}),...(routine?{routine}:{}),...(dual?{navigation:true as const}:{}),...(hasObjective?{roleOpportunities:v.legalChoices.roleOpportunities}:{}) };
   if (JSON.stringify(v.decisionSchema) !== JSON.stringify(societyDecisionSchema(context))) fail('society_serialized_schema');
   if(hasInformation){
     const i=v.information;
@@ -573,7 +590,9 @@ export function validateSocietyAction(value: unknown, c: SocietyDecisionContext)
   const occupation = value.occupation;
   if (occupation !== null) {
     if (!object(occupation)) fail('society_occupation');
-    if (c.phase === 'commit' && c.role === 'Baker') {
+    if(c.phase==='act'&&occupation.kind==='claimRole'){
+      if(!exact(occupation,['kind','buildingId'])||typeof occupation.buildingId!=='string'||!c.roleOpportunities?.includes(occupation.buildingId))fail('society_occupation');
+    } else if (c.phase === 'commit' && c.role === 'Baker') {
       if (!exact(occupation, ['kind', 'price']) || occupation.kind !== 'bakerPrice' || !finite(occupation.price) || occupation.price < 0 || occupation.price > 2) fail('society_occupation');
     } else if (c.phase === 'commit' && c.role === 'Miller') {
       if (!exact(occupation, ['kind', 'quantity']) || occupation.kind !== 'millerQuantity' || !finite(occupation.quantity) || occupation.quantity < 0.01 || occupation.quantity > 1) fail('society_occupation');
@@ -620,6 +639,10 @@ export function societyDecisionSchema(c: SocietyDecisionContext): Record<string,
   if(c.routine&&c.phase==='act'){
     const choices=[...(c.routine.can.work&&c.role!=='Grifter'?[obj({kind:kind('work')})]:[]),...(c.routine.can.finishDay?[obj({kind:kind('finishDay')})]:[])];
     occupation=choices.length?{anyOf:[nil,...choices]}:nil;
+  }
+  if(c.phase==='act'&&c.roleOpportunities?.length){
+    const claim=obj({kind:kind('claimRole'),buildingId:{type:'string',enum:c.roleOpportunities}});
+    occupation={anyOf:[...(Array.isArray((occupation as any).anyOf)?(occupation as any).anyOf:[occupation]),claim]};
   }
   const oracle = [...(c.oracle.canEnter ? ['enter'] : []), ...(c.oracle.canRedeem ? ['redeem'] : [])];
   let postcardSchema: unknown = nil;

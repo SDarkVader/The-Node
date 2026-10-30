@@ -8,9 +8,12 @@ import { computeCivicReputation, civicReputationScore, type CivicReputationEvent
 const id = (day:number, kind:string, person:string) =>
   'civic:' + createHash('sha256').update(JSON.stringify([day,kind,person])).digest('hex');
 
+/** A trial endowment is an offset, not an event and not part of notoriety. */
+export const CIVIC_STANDING_BASELINE=civicReputationScore(1,0).standing;
+
 /** One unit per verified achievement type per inhabitant/day, independently of quantity,
  * buyer count or event order. Mechanical providers have no person to receive credit. */
-export function societyCivicEvents(day:number, dealings:readonly DealingEvent[], receipts:readonly SocietyPurchaseReceipt[], people:ReadonlySet<string>): CivicReputationEvent[] {
+export function societyCivicEvents(day:number, dealings:readonly DealingEvent[], receipts:readonly SocietyPurchaseReceipt[], people:ReadonlySet<string>, missedWork:readonly string[]=[]): CivicReputationEvent[] {
   const events=new Map<string,CivicReputationEvent>();
   const add=(person:string,kind:string,domain:CivicReputationEvent['domain'],valence:CivicReputationEvent['valence'])=>{
     if(!people.has(person))return;
@@ -25,12 +28,13 @@ export function societyCivicEvents(day:number, dealings:readonly DealingEvent[],
       add(e.provider,e.kind,'service','positive');
     if(paid)add(e.recipient,'bread_bought','cooperation','positive');
   }
+  for(const person of missedWork)add(person,'missed_work','service','negative');
   return [...events.values()].sort((a,b)=>a.id.localeCompare(b.id,'en'));
 }
 export function societyCivicScores(events:readonly CivicReputationEvent[], people:readonly string[]) {
   const profiles=computeCivicReputation(events);
   return new Map(people.map(person=>{
     const score=profiles.get(person)??civicReputationScore(0,0);
-    return [person,{standing:score.standing,notoriety:score.notoriety}] as const;
+    return [person,{standing:CIVIC_STANDING_BASELINE+score.standing,notoriety:score.notoriety}] as const;
   }));
 }

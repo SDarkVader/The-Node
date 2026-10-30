@@ -108,7 +108,7 @@ export class SocietyRoutineBook {
         closed:false,postcardsUsed:false,dailyOracleUsed:false,lotteryUsed:false,action:emptyAction(),foodResult:'pending'});
     }
   }
-  observation(state:ParticipantState,person:string,phase:'commit'|'act'):SocietyRoutineObservation {
+  observation(state:ParticipantState,person:string,phase:'commit'|'act',allowFinishWithoutWork=false):SocietyRoutineObservation {
     const row=this.#people.get(person);if(!row)throw Error('society_routine_person');
     const p=state.registry.people.get(person)!,own=personBody(state,p),home=this.#homes.get(person)!;
     const buildings=state.world.shard.districts.flatMap(d=>d.buildings),workplace=buildings.find(b=>b.id===own.workplace);
@@ -123,7 +123,7 @@ export class SocietyRoutineBook {
     const seller=sellerRef?[...state.registry.people.values()].find(p=>p.location!==null&&this.#ref(state,person,p.id)===sellerRef):undefined;
     const awaitingSeller=seller&&!this.#contacts.has(`${seller.id}>${person}`)?sellerRef:null;
     const allFood=[...this.#people.values()].every(p=>p.tasks.food);
-    const finish=Object.values(row.tasks).every(Boolean)&&customers.length===0&&awaitingSeller===null&&(p.role===null||allFood);
+    const finish=Object.entries(row.tasks).every(([task,done])=>done||allowFinishWithoutWork&&task==='work')&&customers.length===0&&awaitingSeller===null&&(p.role===null||allFood);
     const active=phase==='act'&&!row.closed;
     return {turn:phase==='commit'?0:this.#turn,maxTurnsPerDay:this.config.maxTurnsPerDay,
       home:{buildingId:home.buildingId,x:home.x,y:home.y,floor:home.floor},
@@ -136,7 +136,7 @@ export class SocietyRoutineBook {
       postcardsUsed:row.postcardsUsed,dailyOracleUsed:row.dailyOracleUsed,lotteryUsed:row.lotteryUsed};
   }
   /** Update only proven effects and admitted attempts; no substitute action or content. */
-  acceptTurn(previous:ParticipantState,next:ParticipantState,actions:ReadonlyMap<string,SocietyAction>,result:ParticipantTurnResult):void {
+  acceptTurn(previous:ParticipantState,next:ParticipantState,actions:ReadonlyMap<string,SocietyAction>,result:ParticipantTurnResult,retainAllWork=false):void {
     const dutyEffects:ParticipantTurnResult['effects']=[];
     for(const address of result.addresses){
       this.#contacts.add(`${address.speaker}>${address.listener}`);
@@ -146,7 +146,7 @@ export class SocietyRoutineBook {
       const row=this.#people.get(person)!;
       if(a.communication?.kind==='wallPost')row.tasks.wall=true;
       if(result.social.diaryWrites.includes(person))row.tasks.diary=true;
-      if(a.occupation?.kind==='work'){row.tasks.work=true;dutyEffects.push({person,category:'workScheduled'});if(previous.registry.people.get(person)!.role!==null&&['courier','investigator','importExport'].includes(previous.registry.people.get(person)!.role!))row.action.occupation={kind:'work'};}
+      if(a.occupation?.kind==='work'){row.tasks.work=true;dutyEffects.push({person,category:'workScheduled'});if(previous.registry.people.get(person)!.role!==null&&(retainAllWork||['courier','investigator','importExport'].includes(previous.registry.people.get(person)!.role!)))row.action.occupation={kind:'work'};}
       if(a.purchase){
         row.tasks.food=true;row.action.purchase=structuredClone(a.purchase);dutyEffects.push({person,category:'seller' in a.purchase?'foodOrder':'failedFoodAttempt'});
         if('seller' in a.purchase){

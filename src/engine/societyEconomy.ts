@@ -17,8 +17,12 @@ export interface SocietyEconomyPlan {
   millerQuantities: ReadonlyMap<string, number>;
   /** Stable inhabitant ID -> Baker workplace ID; null means voluntarily defer. */
   breadChoices: ReadonlyMap<string, string | null>;
-  /** Support workplaces that actually perform their duty today. Empty means no work. */
+  /** Workplaces that actually perform their duty today. Empty means no work. */
   working?: ReadonlySet<string>;
+  /** Opt-in routine: competitive role production requires a recorded work choice. */
+  attendanceRequired?: boolean;
+  /** Backstop-assisted workplaces selected by the opt-in reputation overlay. */
+  assisted?: ReadonlySet<string>;
 }
 
 export interface SocietyPurchaseReceipt {
@@ -53,7 +57,9 @@ export function societyPurchaseDue(seed: number, day: number, person: string, cy
 /** Reject malformed plans before the world's RNG, diaries, registry, or wealth can change. */
 export function validateSocietyEconomyPlan(plan: SocietyEconomyPlan): void {
   if (!(plan.bakerPrices instanceof Map) || !(plan.millerQuantities instanceof Map) || !(plan.breadChoices instanceof Map) ||
-    (plan.working !== undefined && !(plan.working instanceof Set))) throw Error('invalid_society_economy_plan');
+    (plan.working !== undefined && !(plan.working instanceof Set)) ||
+    (plan.attendanceRequired !== undefined && typeof plan.attendanceRequired !== 'boolean') ||
+    (plan.assisted !== undefined && !(plan.assisted instanceof Set))) throw Error('invalid_society_economy_plan');
   for (const [site, price] of plan.bakerPrices) {
     if (typeof site !== 'string' || !Number.isFinite(price) || price < 0 || price > 2) throw Error('invalid_society_price');
   }
@@ -64,6 +70,7 @@ export function validateSocietyEconomyPlan(plan: SocietyEconomyPlan): void {
     if (typeof person !== 'string' || (choice !== null && typeof choice !== 'string')) throw Error('invalid_society_purchase');
   }
   for (const site of plan.working ?? []) if (typeof site !== 'string') throw Error('invalid_society_work');
+  for (const site of plan.assisted ?? []) if (typeof site !== 'string') throw Error('invalid_society_assisted');
 }
 
 interface Customer { identity: string; site: string; wealth: number }

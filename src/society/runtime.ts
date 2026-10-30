@@ -27,6 +27,8 @@ import {SocietyDailyOracleBook,type SocietyDailyOracleConfig,type SocietyDailyOr
 import {SocietyRoutineBook,validateSocietyRoutineConfig,type SocietyRoutineConfig} from './routine.js';
 import {societyCivicEvents,societyCivicScores} from './civicStanding.js';
 import type {CivicReputationEvent} from '../engine/civicReputation.js';
+import {resolveRoleClaims,type RoleClaim,type RoleClaimOutcome} from './roleClaims.js';
+import {stepReputationBackstops,evictBackstoppedOccupant,type ReputationIntervention,type BackstopIncumbent,type BackstopOutcome} from './reputationBackstop.js';
 
 export type Phase = 'commit' | 'act';
 export type SocietyView = ReturnType<typeof buildSocietyContext>['visible'];
@@ -49,6 +51,8 @@ export interface SocietyTransition {
   dailyOracle?:SocietyDailyOracleTransition & {paidLotteryCapOverflow:number};
   routine?:{turns:number;residents:ReturnType<SocietyRoutineBook['summary']>};
   civicEvents?:CivicReputationEvent[];
+  roleClaims?:RoleClaimOutcome[];
+  reputationBackstops?:BackstopOutcome;
 }
 export interface SocietyTurnTransition {day:number;turn:number;beforeHash:string;afterHash:string;effects:{person:string;category:string}[]}
 export interface SocietyTape {
@@ -93,6 +97,8 @@ export class Society {
   #routineEvidenceBytes=0;
   #routineEvidenceNodes=0;
   #civicEvents?:CivicReputationEvent[];
+  #roleClaims?:RoleClaim[];
+  #reputationBackstops?:ReputationIntervention[];
   constructor(options: SocietyOptions) {
     const genesis = fixtureGenesis(options.seed, options.config ?? societyConfig());
     if(options.routine!==undefined){validateSocietyRoutineConfig(options.routine);genesis.config={...genesis.config,diarySubjectOptional:true,purchaseCycleDays:1};}
@@ -104,6 +110,8 @@ export class Society {
     if (controlled.length !== 3 || genesis.config.rBaker !== 2 || genesis.config.rMiller !== 1) throw Error('society_initial_two_bakers_one_miller_required');
     if(options.competitiveGrifter===true){
       this.#civicEvents=[];
+      this.#roleClaims=[];
+      this.#reputationBackstops=[];
       const candidate=[...this.#state.registry.people.values()].find(p=>p.role===null&&p.location!==null);
       if(!candidate)throw Error('society_competitive_grifter_required');
       controlled.push(candidate.id);
@@ -128,7 +136,7 @@ export class Society {
     const cards=this.#postcards?[...original,this.#postcards.config,this.#postcards.exportAccounts()]:original;
     const daily=this.#dailyOracle?[...cards,this.#dailyOracle.config,this.#dailyOracle.snapshot()]:cards;
     const sequence=this.#routine?[...daily,this.#routine.snapshot(),[...this.#pending]]:daily;
-    return digest(this.#civicEvents?[...sequence,this.#civicEvents]:sequence); }
+    return digest(this.#civicEvents?[...sequence,this.#civicEvents,this.#roleClaims,this.#reputationBackstops]:sequence); }
   get controlled() { return [...this.#tape.controlled]; }
   /** Researcher-only read. This must never be passed to a policy or provider. */
   inspect(): ParticipantState { return {...this.#state,world:structuredClone({...this.#state.world,rng:undefined}),registry:structuredClone(this.#state.registry),genesis:structuredClone(this.#state.genesis)} as unknown as ParticipantState; }
@@ -201,14 +209,17 @@ export class Society {
       ...(this.#tape.competitiveGrifter?{objective:'competitive-society-v1' as const}:{}),
       ...(this.#civicEvents?{civicStanding:(()=>{const people=[...this.#state.registry.people.values()].filter(p=>p.location!==null);
         const scores=societyCivicScores(this.#civicEvents!,people.map(p=>p.id));
-        return {own:scores.get(person)!,others:people.filter(p=>p.id!==person).map(p=>({ref:this.#ref(person,p.id),...scores.get(p.id)!}))};})()}:{}),
+        return {own:scores.get(person)!,others:people.filter(p=>p.id!==person).map(p=>({ref:this.#ref(person,p.id),...scores.get(p.id)!})),
+          assistance:(this.#reputationBackstops??[]).filter(item=>{const p=this.#state.registry.people.get(item.person);
+            return p?.location===item.businessId&&p.role===item.role&&p.roleEpoch===item.roleEpoch;})
+            .map(item=>({businessId:item.businessId,startedDay:item.startedDay,daysRemaining:item.startedDay+3-this.tick}))};})()}:{}),
       ...(this.dualNavigation?{firstPerson:perception!.observation as FirstPersonObservation}:{}),
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
       ...(this.#routine?.config.information?{information:{contract:this.#routine.config.information,lastLottery:(()=>{
         const previous=this.#tape.transitions.at(-1),result=previous?.oracle.find(r=>r.person===person)?.result;
         return result?{day:previous!.day,status:result.status,won:result.won,prize:result.prize,prizeAmount:result.prizeAmount,fundedBy:result.fundedBy}:null;
       })()}}:{}),
-      ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase)}:{}),
+      ...(this.#routine?{routine:this.#routine.observation(this.#state,person,this.#phase,this.#tape.competitiveGrifter===true)}:{}),
       ...(this.#postcards?{postcards:this.#postcards.observation(person)}:{}),
       ...(this.#dailyOracle?{dailyOracle:this.#dailyOracle.observation(person,day,w.economicHealthWithExperience,this.#activePeople())}:{}),
       ownCommitment:this.#phase!=='act'?null:own.role==='Baker'
@@ -246,6 +257,10 @@ export class Society {
       this.#postcards?.submit(person,this.tick+1,action.postcards);
       this.#revision++;
       this.#pending.set(person,action);
+      if(action.occupation?.kind==='claimRole'){
+        if(!this.#roleClaims)throw Error('society_claim_mode');
+        this.#roleClaims.push({person,roleEpoch:view.context.roleEpoch,buildingId:action.occupation.buildingId});
+      }
       this.#perceptions.delete(person);
       this.#tape.decisions.push(record);
       const turnCount=this.#turnTransitions.length;
@@ -280,7 +295,7 @@ export class Society {
         }
         this.#navigation.clear();
       }
-      this.#routine.acceptTurn(previous,this.#state,this.#pending,result);this.#pending.clear();
+      this.#routine.acceptTurn(previous,this.#state,this.#pending,result,this.#tape.competitiveGrifter===true);this.#pending.clear();
       this.#turnTransitions.push({day,turn,beforeHash,afterHash:this.hash,effects:structuredClone(result.effects)});
       if(!this.#routine.allClosed){if(this.#routine.limitReached)this.halt();return;}
       this.#pending=this.#routine.dailyActions();
@@ -309,17 +324,51 @@ export class Society {
         seller=match.location;
       }
       choices.set(person,seller);
-      if (a.occupation?.kind==='work'&&p.role!==null&&['courier','investigator','importExport'].includes(p.role)) working.add(p.location!);
+      if (a.occupation?.kind==='work'&&p.role!==null&&(this.#tape.competitiveGrifter&&this.#routine||['courier','investigator','importExport'].includes(p.role))) working.add(p.location!);
       return {person,epoch:p.roleEpoch,tick:this.tick,decision:{move:a.move,communication:a.communication,diary:a.diary,role:null}};
     });
-    const plan:SocietyEconomyPlan={bakerPrices:this.#prices,millerQuantities:this.#quantities,breadChoices:choices,working};
+    const activeAssistance=this.#reputationBackstops?.filter(item=>{const p=this.#state.registry.people.get(item.person);
+      return p?.location===item.businessId&&p.role===item.role&&p.roleEpoch===item.roleEpoch;}).map(item=>item.businessId)??[];
+    const plan:SocietyEconomyPlan={bakerPrices:this.#prices,millerQuantities:this.#quantities,breadChoices:choices,working,
+      ...(this.#tape.competitiveGrifter&&this.#routine?{attendanceRequired:true,assisted:new Set(activeAssistance)}:{})};
     if(this.#routine)this.#state.world={...this.#state.world,pendingWallPosts:this.#routine.posts()};
     const routineSummary=this.#routine?{turns:this.#routine.turn-1,residents:this.#routine.summary()}:undefined;
     const routineEffects=this.#routine?.effects()??[];
+    // Claims were admitted before this day's mechanical vacancy processing.
+    // Apply them in submission order so an automatic fill cannot overtake them.
+    const occupantsBeforeClaims=new Map(this.#state.registry.locations);
+    const claimResult=this.#roleClaims?resolveRoleClaims(this.#state,this.#roleClaims,day):undefined;
+    const invalidatedOrders=new Set<string>();
+    if(claimResult){
+      this.#state=claimResult.state;this.#roleClaims=[];
+      // The role epoch changes, but other admitted daily actions belong to the
+      // same persistent person and were authorized in the previous view.
+      for(const action of actions)if(claimResult.outcomes.some(q=>q.person===action.person&&q.status==='claimed'))
+        action.epoch=this.#state.registry.people.get(action.person)!.roleEpoch;
+      // A departing roleholder's old commitment and work were made for their
+      // former workplace, never for its replacement. Orders against a departed
+      // seller are recorded as unavailable instead of being silently reassigned.
+      const bakers=new Set(this.#state.world.bakers.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId));
+      const millers=new Set(this.#state.world.millers.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId));
+      const occupied=new Set(roleArrays(this.#state.world).flatMap(([,slots])=>slots.filter(s=>s.slot.state==='FILLED').map(s=>s.buildingId)));
+      const sameOccupant=(site:string)=>occupantsBeforeClaims.get(site)===this.#state.registry.locations.get(site);
+      plan.bakerPrices=new Map([...plan.bakerPrices].filter(([site])=>bakers.has(site)&&sameOccupant(site)));
+      plan.millerQuantities=new Map([...plan.millerQuantities].filter(([site])=>millers.has(site)&&sameOccupant(site)));
+      plan.working=new Set([...working].filter(site=>occupied.has(site)&&sameOccupant(site)));
+      plan.assisted=new Set([...activeAssistance].filter(site=>occupied.has(site)&&sameOccupant(site)));
+      for(const [person,site] of choices){
+        if(site!==null&&(!bakers.has(site)||!sameOccupant(site)||this.#state.registry.locations.get(site)===person)){
+          choices.set(person,null);invalidatedOrders.add(person);
+        }
+      }
+    }
+    const beforeOccupants=new Map([...this.#state.registry.people.values()].filter(p=>p.role!==null&&p.location!==null)
+      .map(p=>[p.id,{role:p.role,location:p.location,roleEpoch:p.roleEpoch}]));
+    const beforeCivic=this.#civicEvents?societyCivicScores(this.#civicEvents,[...beforeOccupants.keys()]):undefined;
     const result=stepParticipantState(this.#state,actions,[...this.#state.registry.locations.values()],plan,this.#routine?.social());
     this.#state=result.state;
     if(this.#routine&&this.#state.world.societyEconomy){
-      const failed=new Set(this.#routine.noBakery());
+      const failed=new Set([...this.#routine.noBakery(),...invalidatedOrders]);
       for(const receipt of this.#state.world.societyEconomy.receipts)if(failed.has(receipt.customer)&&receipt.bakerSite===null&&receipt.paid===0)receipt.outcome='unavailable';
     }
     const kernelResidual=this.#state.world.lastSettlement.residual;
@@ -360,8 +409,27 @@ export class Society {
     this.#state.world.lastSettlement={...ledger,holdingsBefore:beforeHoldings,holdingsAfter:afterHoldings,accountsBefore:beforeAccounts,accountsAfter:afterAccounts,residual};
     const holdings=[...roleArrays(this.#state.world).flatMap(([,slots])=>slots.filter(s=>s.slot.state==='FILLED').map(s=>s.wealth)),...this.#state.world.grifters.map(g=>g.wealth)];
     this.#state.world.wealthGini=giniCoefficient(holdings);this.#state.world.wealthTop10Share=topShare(holdings,0.1);
-    const civicEvents=this.#civicEvents?societyCivicEvents(day,this.#state.world.lastDealings??[],this.#state.world.societyEconomy?.receipts??[],new Set(this.#state.registry.people.keys())):undefined;
+    const missedWork=routineSummary?.residents.filter(r=>{
+      const prior=beforeOccupants.get(r.person), now=this.#state.registry.people.get(r.person);
+      const newlyClaimed=claimResult?.outcomes.some(q=>q.person===r.person&&q.status==='claimed');
+      return !newlyClaimed&&r.closed&&!r.tasks.work&&!!prior&&!!now&&now.role===prior.role&&now.location===prior.location&&now.roleEpoch===prior.roleEpoch;
+    }).map(r=>r.person)??[];
+    const civicEvents=this.#civicEvents?societyCivicEvents(day,this.#state.world.lastDealings??[],this.#state.world.societyEconomy?.receipts??[],new Set(this.#state.registry.people.keys()),missedWork):undefined;
     if(civicEvents)this.#civicEvents!.push(...civicEvents);
+    let reputationBackstops:BackstopOutcome|undefined;
+    if(this.#reputationBackstops&&this.#routine&&this.#civicEvents&&beforeCivic){
+      const afterCivic=societyCivicScores(this.#civicEvents,[...beforeOccupants.keys()]);
+      const incumbents:BackstopIncumbent[]=[];
+      for(const [person,prior] of beforeOccupants){
+        const current=this.#state.registry.people.get(person);
+        if(!prior.role||!prior.location||!current||current.role!==prior.role||current.location!==prior.location||current.roleEpoch!==prior.roleEpoch)continue;
+        incumbents.push({person,role:prior.role,roleEpoch:prior.roleEpoch,businessId:prior.location,
+          standingBefore:beforeCivic.get(person)!.standing,standingAfter:afterCivic.get(person)!.standing});
+      }
+      reputationBackstops=stepReputationBackstops(this.#reputationBackstops,incumbents,day);
+      this.#reputationBackstops=reputationBackstops.active;
+      for(const expired of reputationBackstops.expired)this.#state=evictBackstoppedOccupant(this.#state,expired,day);
+    }
     this.#wall=this.#routine?this.#routine.posts().map(p=>({author:p.authorId,state:p.state,day})):[...this.#pending].flatMap(([author,a])=>a.communication?.kind==='wallPost'?[{author,state:a.communication.state as SelfState,day}]:[]);
     this.#postcards?.register(this.#activePeople(),this.tick);
     this.#pending.clear();this.#phase='commit';this.#resetCommitments();
@@ -372,7 +440,7 @@ export class Society {
       economy:structuredClone(this.#state.world.societyEconomy),oracle:oracleResults,
       accounting:{kernelResidual,oracleResidual,residual,escrow:escrowAfter},
       conditions:this.#state.world.shard.districts.map(d=>({district:d.id,tension:d.weatherHistory.at(-1)?.tension??0,state:this.#state.world.districtHealth[d.id]!.state})),
-      ...(this.#postcards?{postcards:this.#postcards.drain()}:{}),...(routineSummary?{routine:routineSummary}:{}),...(civicEvents?{civicEvents}:{})});
+      ...(this.#postcards?{postcards:this.#postcards.drain()}:{}),...(routineSummary?{routine:routineSummary}:{}),...(civicEvents?{civicEvents}:{}),...(claimResult?{roleClaims:claimResult.outcomes}:{}),...(reputationBackstops?{reputationBackstops}:{})});
     if(daily)this.#tape.transitions.at(-1)!.dailyOracle={...daily,paidLotteryCapOverflow};
   }
   #setHoldings(location:string,role:keyof typeof publicRole|null,wealth:number,stock?:number) {
