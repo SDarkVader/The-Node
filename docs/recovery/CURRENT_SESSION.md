@@ -1,5 +1,7 @@
 # Current Society daily implementation checkpoint
 
+2026-10-30 owner authorized one supervised competitive-grifter day with accounting headroom. The one-day competitive-routine plan can now explicitly request up to USD 20; other plan caps and defaults are unchanged. The intended one-day plan has 128 action turns, at most 515 calls, USD 0.032 per-request reservation and USD 16.48 maximum reserved exposure. No provider call has occurred for this authorization at this checkpoint; the latest actual journal must be carried before launch.
+
 2026-10-30 competitive-society trial on `codex/grifter-competition`, based on main `ea5bbc389a3c02c35b2026148daf771c5a0c3e63`: opt-in fourth controlled inhabitant and shared reputation-primary instructions. PR #60 scoring receives verified achievements and completed workless-day events, with a positive trial baseline. A zero crossing starts three completed days of intervention, then eviction if standing has not recovered; known open roles can be claimed in action order. Competitive mechanical backstops supply 60% role-specific output with anonymous attribution; the Bakery uses its own last valid posted price, subject to actual flour and whole-order capacity. Preparation requires a daily routine. No live provider calls. [Scope](../research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
 
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance

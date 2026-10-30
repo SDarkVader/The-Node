@@ -6,7 +6,7 @@ import { ExperimentBudget } from '../agent/experimentBudget.js';
 import { PRICED_MODELS } from '../agent/modelPricing.js';
 import { sha256 } from '../agent/accountingStore.js';
 import { Society } from './runtime.js';
-import { societyPlanHash, validateSocietyPlan, type SocietyRunPlan } from './accounted.js';
+import { societyPlanHash, societyPlanLimitMicroUsd, validateSocietyPlan, type SocietyRunPlan } from './accounted.js';
 import { parseSocietyEvidence } from './codec.js';
 import { digest } from '../agent/replay.js';
 import type { Genesis } from '../agent/participantWorld.js';
@@ -80,7 +80,7 @@ function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment
   if(bundle.plan.competitiveGrifter&&!bundle.plan.routine)fail('society_competitive_requires_daily_routine');
   if(bundle.planSha256!==config.planSha256||societyPlanHash(bundle.plan)!==config.planSha256||
     bundle.genesis.sourceRevision!==config.sourceRevision||bundle.plan.sourceRevision!==config.sourceRevision||
-    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:bundle.plan.competitiveGrifter?140:120)||bundle.plan.allowance.limitMicroUsd>1_000_000)fail('society_launch_bundle');
+    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:bundle.plan.competitiveGrifter?140:120)||bundle.plan.allowance.limitMicroUsd>societyPlanLimitMicroUsd(bundle.plan))fail('society_launch_bundle');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))fail('society_launch_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))fail('society_launch_daily_oracle_config');
   if(digest(bundle.routineConfig??null)!==digest(bundle.plan.routine??null))fail('society_launch_routine_config');

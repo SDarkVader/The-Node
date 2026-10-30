@@ -17,6 +17,17 @@ it('binds the fourth controlled person and its extra calls into a reviewed plan'
   expect(() => validateSocietyPlan({ ...plan, controlled: plan.controlled.slice(0, 3) })).toThrow();
 });
 
+it('permits a fully covered one-day competitive allowance without widening other plan caps',()=>{
+  const society=new Society({seed:42,sourceRevision:'a'.repeat(40),competitiveGrifter:true,routine:{maxTurnsPerDay:128}});
+  const plan=createSocietyPlan(society,{ticks:1,limitMicroUsd:20_000_000});
+  expect(plan.maxCalls).toBe(515);
+  expect(plan.allowance.limitMicroUsd).toBeGreaterThan(plan.maxCalls*plan.allowance.perRequestMicroUsd);
+  expect(()=>validateSocietyPlan({...plan,allowance:{...plan.allowance,limitMicroUsd:20_000_001}})).toThrow();
+  expect(()=>createSocietyPlan(society,{ticks:2,limitMicroUsd:20_000_000})).toThrow();
+  expect(()=>createSocietyPlan(new Society({seed:42,sourceRevision:'a'.repeat(40),routine:{maxTurnsPerDay:128}}),
+    {ticks:1,limitMicroUsd:20_000_000})).toThrow();
+});
+
 it('preserves the selected person through an existing role transition and replay', () => {
   const society = new Society({ seed: 20261025, sourceRevision: 'offline-observation',
     config: {...societyConfig(), pMonthly: 0.9, conscriptionDelay: 3}, competitiveGrifter: true });

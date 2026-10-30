@@ -26,6 +26,9 @@ export interface SocietyRunPlan {
   competitiveGrifter?:true;
 }
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
+/** Explicitly funded one-day competitive trial; all other plans retain the $1 cap. */
+export const societyPlanLimitMicroUsd = (p: Pick<SocietyRunPlan,'competitiveGrifter'|'routine'|'ticks'>) =>
+  p.competitiveGrifter && p.routine && p.ticks === 1 ? 20_000_000 : 1_000_000;
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
   const ticks = options.ticks ?? 3;
@@ -58,7 +61,7 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
     !Array.isArray(p.controlled) || p.controlled.length !== actors || new Set(p.controlled).size !== actors ||
     !p.controlled.every(v => typeof v === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(v)) ||
-    p.allowance?.maxRequests !== p.maxCalls || !Number.isSafeInteger(p.allowance.limitMicroUsd) || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > 1_000_000 ||
+    p.allowance?.maxRequests !== p.maxCalls || !Number.isSafeInteger(p.allowance.limitMicroUsd) || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > societyPlanLimitMicroUsd(p) ||
     !Number.isSafeInteger(p.allowance.perRequestMicroUsd) || p.allowance.perRequestMicroUsd < 1 || p.allowance.perRequestMicroUsd > p.allowance.limitMicroUsd)
     throw new SocietySecurityError('society_paid_plan');
 }
