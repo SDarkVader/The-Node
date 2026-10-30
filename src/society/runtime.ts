@@ -99,6 +99,8 @@ export class Society {
   #routineEvidenceNodes=0;
   #civicEvents?:CivicReputationEvent[];
   #roleClaims?:RoleClaim[];
+  #roleClaimOutcomes?:RoleClaimOutcome[];
+  #claimOccupantsBefore?:Map<string,string>;
   #reputationBackstops?:ReputationIntervention[];
   constructor(options: SocietyOptions) {
     const genesis = fixtureGenesis(options.seed, options.config ?? societyConfig());
@@ -112,6 +114,7 @@ export class Society {
     if(options.competitiveGrifter===true){
       this.#civicEvents=[];
       this.#roleClaims=[];
+      this.#roleClaimOutcomes=[];
       this.#reputationBackstops=[];
       const candidate=[...this.#state.registry.people.values()].find(p=>p.role===null&&p.location!==null);
       if(!candidate)throw Error('society_competitive_grifter_required');
@@ -137,7 +140,7 @@ export class Society {
     const cards=this.#postcards?[...original,this.#postcards.config,this.#postcards.exportAccounts()]:original;
     const daily=this.#dailyOracle?[...cards,this.#dailyOracle.config,this.#dailyOracle.snapshot()]:cards;
     const sequence=this.#routine?[...daily,this.#routine.snapshot(),[...this.#pending]]:daily;
-    return digest(this.#civicEvents?[...sequence,this.#civicEvents,this.#roleClaims,this.#reputationBackstops]:sequence); }
+    return digest(this.#civicEvents?[...sequence,this.#civicEvents,this.#roleClaims,this.#roleClaimOutcomes,this.#claimOccupantsBefore,this.#reputationBackstops]:sequence); }
   get controlled() { return [...this.#tape.controlled]; }
   /** Researcher-only read. This must never be passed to a policy or provider. */
   inspect(): ParticipantState { return {...this.#state,world:structuredClone({...this.#state.world,rng:undefined}),registry:structuredClone(this.#state.registry),genesis:structuredClone(this.#state.genesis)} as unknown as ParticipantState; }
@@ -154,6 +157,15 @@ export class Society {
   #resetCommitments() {
     this.#prices = new Map(this.#state.world.bakers.filter(x=>x.slot.state==='FILLED').map(x=>[x.buildingId,x.value]));
     this.#quantities = new Map(this.#state.world.millers.filter(x=>x.slot.state==='FILLED').map(x=>[x.buildingId,x.value]));
+  }
+  #resolveRoleClaimsAtTurnBoundary(day:number):void {
+    if(!this.#roleClaims||this.#roleClaims.length===0)return;
+    this.#claimOccupantsBefore??=new Map(this.#state.registry.locations);
+    const result=resolveRoleClaims(this.#state,this.#roleClaims,day);
+    this.#state=result.state;
+    this.#roleClaimOutcomes??=[];
+    this.#roleClaimOutcomes.push(...result.outcomes);
+    this.#roleClaims=[];
   }
   #ref(observer:string,person:string) { return observerRef(this.#state.genesis.observerSecret,observer,person,refHexLength(this.#state.world)); }
   get dualNavigation(){return this.#routine?.config.navigation==='dual-v1';}
@@ -308,6 +320,7 @@ export class Society {
         this.#navigation.clear();
       }
       this.#routine.acceptTurn(previous,this.#state,this.#pending,result,this.#tape.competitiveGrifter===true);this.#pending.clear();
+      this.#resolveRoleClaimsAtTurnBoundary(day);
       this.#turnTransitions.push({day,turn,beforeHash,afterHash:this.hash,effects:structuredClone(result.effects)});
       if(!this.#routine.allClosed){if(this.#routine.limitReached)this.halt();return;}
       this.#pending=this.#routine.dailyActions();
@@ -351,13 +364,16 @@ export class Society {
     if(this.#routine)this.#state.world={...this.#state.world,pendingWallPosts:this.#routine.posts()};
     const routineSummary=this.#routine?{turns:this.#routine.turn-1,residents:this.#routine.summary()}:undefined;
     const routineEffects=this.#routine?.effects()??[];
-    // Claims were admitted before this day's mechanical vacancy processing.
-    // Apply them in submission order so an automatic fill cannot overtake them.
-    const occupantsBeforeClaims=new Map(this.#state.registry.locations);
-    const claimResult=this.#roleClaims?resolveRoleClaims(this.#state,this.#roleClaims,day):undefined;
+    // Routine claims already resolved at their completed turn boundaries. The
+    // non-routine path has one all-agent turn per day, so resolve those claims
+    // here, still before mechanical vacancy processing can fill a site.
+    const occupantsBeforeClaims=this.#claimOccupantsBefore??new Map(this.#state.registry.locations);
+    const claimResult=this.#roleClaims?this.#routine
+      ?{state:this.#state,outcomes:this.#roleClaimOutcomes??[]}
+      :resolveRoleClaims(this.#state,this.#roleClaims,day):undefined;
     const invalidatedOrders=new Set<string>();
     if(claimResult){
-      this.#state=claimResult.state;this.#roleClaims=[];
+      this.#state=claimResult.state;this.#roleClaims=[];this.#roleClaimOutcomes=[];this.#claimOccupantsBefore=undefined;
       // The role epoch changes, but other admitted daily actions belong to the
       // same persistent person and were authorized in the previous view.
       for(const action of actions)if(claimResult.outcomes.some(q=>q.person===action.person&&q.status==='claimed'))

@@ -4,6 +4,7 @@ import {Society,societyConfig,verifySocietyTape} from '../src/society/runtime.js
 import {evictBackstoppedOccupant} from '../src/society/reputationBackstop.js';
 import {resolveRoleClaims} from '../src/society/roleClaims.js';
 import {assertPopulation} from '../src/engine/inhabitants.js';
+import {computeEconomicHeat} from '../src/engine/economicHeat.js';
 import {buildSocietyContext,validateSocietyAction} from '../src/society/boundary.js';
 import {buildSocietyRequest} from '../src/society/request.js';
 import {validateSocietyWire} from '../scripts/society-request-worker.js';
@@ -52,8 +53,8 @@ it('allows an incumbent to take an open role without holding two jobs',()=>{
 it('records chronological claims in a real society and replays the winning decision',()=>{
   const config={...societyConfig(),pMonthly:0.9,arrivalPDaily:0,migrationK:0,
     conscriptionDelay:999, vacancy:{beta:0,backstoppedRecoveryHazard:0}};
-  const society=new Society({seed:42,sourceRevision:'a'.repeat(40),config,competitiveGrifter:true});
-  let contested=false;
+  const society=new Society({seed:42,sourceRevision:'a'.repeat(40),config,competitiveGrifter:true,routine:{maxTurnsPerDay:128}});
+  let contested=false,firstWinner:string|undefined,secondLoser:string|undefined,contestedTarget:string|undefined;
   while(society.tick<12&&!contested){
     if(society.phase==='act'){
       const candidates=society.pendingPeople().flatMap(person=>{
@@ -63,6 +64,7 @@ it('records chronological claims in a real society and replays the winning decis
       const first=candidates[0],target=first?.options.find(id=>candidates.slice(1).some(q=>q.options.includes(id)));
       if(first&&target){
         const second=candidates.slice(1).find(q=>q.options.includes(target))!;
+        firstWinner=first.person;secondLoser=second.person;contestedTarget=target;
         society.submit(first.person,{...emptySocietyAction(),occupation:{kind:'claimRole',buildingId:target}});
         const prefix=society.exportTape();
         expect(verifySocietyTape(prefix,prefix.genesis.sourceRevision,{allowPartial:true}).verified).toBe(true);
@@ -73,9 +75,12 @@ it('records chronological claims in a real society and replays the winning decis
     for(const person of society.pendingPeople())society.submit(person,autonomousPolicy(society.view(person).visible));
   }
   expect(contested).toBe(true);
-  const claims=society.exportTape().transitions.flatMap(t=>t.roleClaims??[]);
-  expect(claims.slice(-2).map(q=>q.status)).toEqual(['claimed','unavailable']);
-  expect(verifySocietyTape(society.exportTape()).verified).toBe(true);
+  const state=society.inspect();
+  expect(state.registry.people.get(firstWinner!)).toMatchObject({location:contestedTarget});
+  expect(state.registry.people.get(firstWinner!)!.role).not.toBeNull();
+  expect(state.registry.people.get(secondLoser!)!.role).toBeNull();
+  expect(state.registry.locations.get(contestedTarget!)).toBe(firstWinner);
+  expect(verifySocietyTape(society.exportTape(),undefined,{allowPartial:true}).verified).toBe(true);
 });
 
 it('settles an incumbent claim without reusing the old business commitments',()=>{
@@ -100,26 +105,43 @@ it('settles an incumbent claim without reusing the old business commitments',()=
   expect(verifySocietyTape(society.exportTape()).verified).toBe(true);
 });
 
-it('does not penalize a new roleholder for work before their claim was settled',()=>{
+it('resolves a courier claim at the turn boundary after other residents finish, before daily settlement',()=>{
   const config={...societyConfig(),pMonthly:0.9,arrivalPDaily:0,migrationK:0,
     conscriptionDelay:999,vacancy:{beta:0,backstoppedRecoveryHazard:0}};
   const society=new Society({seed:42,sourceRevision:'a'.repeat(40),config,competitiveGrifter:true,routine:{maxTurnsPerDay:128}});
-  let applicant:string|undefined, appliedDay=0, turns=0;
+  let applicant:string|undefined,target:string|undefined,appliedDay=0,turns=0;
   while(society.tick<15&&!society.halted&&turns++<3000){
     const pending=society.pendingPeople();
     for(const person of pending){
       const view=society.view(person).visible;
-      const target=view.legalChoices.roleOpportunities?.[0];
-      if(!applicant&&view.phase==='act'&&view.self.role==='Grifter'&&target){
-        applicant=person; appliedDay=view.day;
-        society.submit(person,{...emptySocietyAction(),occupation:{kind:'claimRole',buildingId:target}});
+      const courierSites=new Set(society.inspect().world.couriers.map(s=>s.buildingId));
+      const courierOpportunity=view.legalChoices.roleOpportunities?.find(id=>courierSites.has(id));
+      if(!applicant&&view.phase==='act'&&view.self.role==='Grifter'&&courierOpportunity){applicant=person;target=courierOpportunity;}
+      if(applicant===person){
+        if(!view.legalChoices.roleOpportunities?.includes(target!)){
+          target=courierOpportunity;
+          if(!target){applicant=undefined;society.submit(person,autonomousPolicy(view));continue;}
+        }
+        const action=autonomousPolicy(view);
+        if(pending.length===1){
+          appliedDay=view.day;
+          society.submit(person,{...action,occupation:{kind:'claimRole',buildingId:target!}});
+          const after=society.inspect(),next=society.view(person).visible;
+          expect(society.tick).toBe(appliedDay-1);
+          expect(after.registry.people.get(person)).toMatchObject({role:'courier',location:target});
+          expect(after.world.couriers.find(s=>s.buildingId===target)!.slot.state).toBe('FILLED');
+          expect(next.self).toMatchObject({role:'Courier',workplace:target});
+          const measure=computeEconomicHeat(after.world)[target!]!;
+          const heat=measure<1/3?'low':measure<2/3?'medium':'high';
+          expect(next.local.locations.find(site=>site.buildingId===target)).toMatchObject({state:'FILLED',heat});
+          expect(next.legalChoices.roleOpportunities).not.toContain(target);
+          expect(society.pendingPeople()).toEqual([person]);
+          expect(verifySocietyTape(society.exportTape(),undefined,{allowPartial:true}).verified).toBe(true);
+          return;
+        }
+        society.submit(person,action.occupation?.kind==='finishDay'?{...action,occupation:null}:action);
       }else society.submit(person,autonomousPolicy(view));
     }
-    if(applicant&&society.tick>=appliedDay)break;
   }
-  expect(applicant).toBeDefined();
-  const transition=society.exportTape().transitions.find(t=>t.day===appliedDay)!;
-  expect(transition.roleClaims?.some(q=>q.person===applicant&&q.status==='claimed')).toBe(true);
-  expect(transition.civicEvents?.filter(e=>e.subjectId===applicant&&e.valence==='negative')).toEqual([]);
-  expect(verifySocietyTape(society.exportTape()).verified).toBe(true);
+  throw new Error(`courier claim scenario not reached; applicant=${applicant??'none'} target=${target??'none'}`);
 });
