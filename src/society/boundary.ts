@@ -73,6 +73,7 @@ export interface SocietyRoutineObservation {
 export interface SocietyContextOptions {
   phase: 'commit' | 'act';
   objective?: 'competitive-society-v1';
+  civicStanding?:{own:{standing:number;notoriety:number};others:{ref:string;standing:number;notoriety:number}[]};
   ownCommitment?: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | null;
   market?: readonly SocietyMarketOffer[];
   purchaseDue?: boolean;
@@ -362,9 +363,12 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
     const heat: 'none' | 'low' | 'medium' | 'high' = !station || station.state !== 'FILLED' ? 'none' : measure < 1 / 3 ? 'low' : measure < 2 / 3 ? 'medium' : 'high';
     return { buildingId: b.id, x: b.x, y: b.y, role, state: station?.state ?? 'housing', heat };
   });
+  const civicRules='Experimental signed standing from verified paid bread sold, paid bread bought and flour supplied: one positive unit per person and achievement type per day. More units can raise standing; empty days do not lower it. The score can represent negative evidence, but no negative deed is currently recorded. Speech, rumours and diaries are not certified evidence. Notoriety measures total evidence, not approval.';
   const visible = {
     day: base.tick + 1, phase: options.phase,
     ...(options.objective?{objective:options.objective}:{}),
+    ...(options.civicStanding?{civicStanding:{rules:civicRules,own:options.civicStanding.own,
+      others:options.civicStanding.others.filter(q=>nearbyRefs.includes(q.ref)||base.knownSubjects.includes(q.ref))}}:{}),
     self: { ref: own.ref, role: own.role, x: own.x, y: own.y, workplace: own.workplace,
       wealth: own.wealth, stock: own.stock, price: commitment?.kind === 'bakerPrice' ? commitment.price : own.price,
       quantity: commitment?.kind === 'millerQuantity' ? commitment.quantity : own.role === 'Miller' && ownSlot && 'value' in ownSlot && typeof ownSlot.value === 'number' ? ownSlot.value : null,
@@ -436,10 +440,21 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   const hasDual=object(value)&&Object.hasOwn(value,'dual');
   const hasInformation = object(value) && Object.hasOwn(value, 'information');
   const hasObjective = object(value) && Object.hasOwn(value, 'objective');
+  const hasCivicStanding = object(value) && Object.hasOwn(value, 'civicStanding');
   const subjectOptional = object(value) && object(value.legalChoices) && Object.hasOwn(value.legalChoices, 'diarySubjectOptional');
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasObjective?['objective']:[]), ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[]),...(hasDual?['dual']:[])])) fail('society_serialized_view');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasObjective?['objective']:[]),...(hasCivicStanding?['civicStanding']:[]), ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[]),...(hasDual?['dual']:[])])) fail('society_serialized_view');
   const v = value;
   if(hasObjective&&v.objective!=='competitive-society-v1')fail('society_objective');
+  if(hasCivicStanding){
+    const c=v.civicStanding, score=(q:any)=>record(q,['standing','notoriety'])&&finite(q.standing)&&finite(q.notoriety)&&q.notoriety>=0;
+    const rules='Experimental signed standing from verified paid bread sold, paid bread bought and flour supplied: one positive unit per person and achievement type per day. More units can raise standing; empty days do not lower it. The score can represent negative evidence, but no negative deed is currently recorded. Speech, rumours and diaries are not certified evidence. Notoriety measures total evidence, not approval.';
+    if(!hasObjective||!record(c,['rules','own','others'])||c.rules!==rules||!score(c.own)||
+      !list(c.others,q=>record(q,['ref','standing','notoriety'])&&ref(q.ref)&&q.ref!==v.self?.ref&&finite(q.standing)&&finite(q.notoriety)&&q.notoriety>=0)||
+      new Set(c.others.map((q:any)=>q.ref)).size!==c.others.length)fail('society_civic_standing');
+    const allowed=new Set([...(v.local?.people??[]).map((q:any)=>q.ref),...(v.legalChoices?.diarySubjects??[])]);
+    if(c.others.some((q:any)=>!allowed.has(q.ref)))fail('society_civic_visibility');
+  }
+  if(hasObjective!==hasCivicStanding)fail('society_civic_standing');
   const dual: DualObservation|undefined=hasDual?v.dual:undefined;
   if(dual){if(!hasInformation)fail('society_navigation_contract');assertDualObservation(dual);}
   const routine=hasRoutine?routineProjection(v.routine):undefined;

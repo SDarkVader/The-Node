@@ -21,9 +21,9 @@ import { emptySocietyAction } from '../src/society/policy.js';
 const handles: { close(): void }[] = [];
 afterEach(() => { for (const h of handles.splice(0)) h.close(); cleanup(); });
 const instruction = 'TEST ONLY SYNTHETIC APPROVAL. No actual provider, financial authority, prior account or credential.';
-function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = false, dual=false, competitive=false) {
+function fixture(ticks = 3, deadlineMs = 2000, minIntervalMs = 0, natural = false, dual=false, competitive=false, routineOnly=false) {
   const config = { ...societyConfig(), pMonthly: 0, arrivalPDaily: 0, migrationK: 0, saboteurCount: 0 };
-  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config: natural ? societyConfig() : config,...(competitive?{competitiveGrifter:true as const}:{}),...(dual?{
+  const society = new Society({ seed: 42, sourceRevision: 'a'.repeat(40), config: natural ? societyConfig() : config,...(competitive?{competitiveGrifter:true as const}:{}),...(routineOnly?{routine:{maxTurnsPerDay:64}}:{}),...(dual?{
     routine:{maxTurnsPerDay:64,information:'inhabitant-v1' as const,navigation:'dual-v1' as const},
     postcards:{rate:{numerator:2,denominator:1},startAtMs:0,dayDurationMs:86400000 as const},
     dailyOracle:JSON.parse(readFileSync('experiments/oracle/daily-oracle-trial-2026-10-26.json','utf8'))}:{} ) });
@@ -70,6 +70,18 @@ describe('accounted society, fake provider and disposable money fixtures only', 
     expect(systems[0]).toContain('influence anyone');
     expect(f.society.exportTape().decisions.some(d=>d.person===f.plan.controlled[3]&&d.controlled)).toBe(true);
     expect(verifySocietyTape(f.society.exportTape()).verified).toBe(true);
+  });
+  it('recovers a partial competitive routine without fabricating a day or reputation', async () => {
+    const f=fixture(1,2000,0,false,false,true,true), controller=new AbortController();
+    const result=await runAccountedSociety(f.society,f.budget,f.sender(),{...f.options,signal:controller.signal,sink:event=>{
+      f.options.sink(event);
+      if(event.kind==='submission')controller.abort();
+    }});
+    expect(result).toMatchObject({status:'stopped',stoppedReason:'society_cancelled',ticks:0});
+    const tape=f.society.exportTape();
+    expect(tape.transitions).toHaveLength(0);
+    expect(recoverSocietySubmissions(f.events,tape.genesis.sourceRevision)).toEqual(tape);
+    expect(verifySocietyTape(tape,tape.genesis.sourceRevision,{allowPartial:true}).verified).toBe(true);
   });
   it('completes three deterministic ticks with two model-fixture Bakers, one Miller and autonomous others', async () => {
     const f = fixture();

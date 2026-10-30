@@ -25,6 +25,8 @@ import {SocietyPostcardBook,type SocietyPostcardConfig,type SocietyPostcardTrans
 import type {PostcardAccount} from '../engine/postcardAccount.js';
 import {SocietyDailyOracleBook,type SocietyDailyOracleConfig,type SocietyDailyOracleTransition} from './dailyOracle.js';
 import {SocietyRoutineBook,validateSocietyRoutineConfig,type SocietyRoutineConfig} from './routine.js';
+import {societyCivicEvents,societyCivicScores} from './civicStanding.js';
+import type {CivicReputationEvent} from '../engine/civicReputation.js';
 
 export type Phase = 'commit' | 'act';
 export type SocietyView = ReturnType<typeof buildSocietyContext>['visible'];
@@ -46,6 +48,7 @@ export interface SocietyTransition {
   postcards?:SocietyPostcardTransition[];
   dailyOracle?:SocietyDailyOracleTransition & {paidLotteryCapOverflow:number};
   routine?:{turns:number;residents:ReturnType<SocietyRoutineBook['summary']>};
+  civicEvents?:CivicReputationEvent[];
 }
 export interface SocietyTurnTransition {day:number;turn:number;beforeHash:string;afterHash:string;effects:{person:string;category:string}[]}
 export interface SocietyTape {
@@ -89,6 +92,7 @@ export class Society {
   #turnTransitions:SocietyTurnTransition[]=[];
   #routineEvidenceBytes=0;
   #routineEvidenceNodes=0;
+  #civicEvents?:CivicReputationEvent[];
   constructor(options: SocietyOptions) {
     const genesis = fixtureGenesis(options.seed, options.config ?? societyConfig());
     if(options.routine!==undefined){validateSocietyRoutineConfig(options.routine);genesis.config={...genesis.config,diarySubjectOptional:true,purchaseCycleDays:1};}
@@ -99,6 +103,7 @@ export class Society {
     const controlled = [...this.#state.registry.people.values()].filter(p=>p.role==='baker'||p.role==='miller').map(p=>p.id);
     if (controlled.length !== 3 || genesis.config.rBaker !== 2 || genesis.config.rMiller !== 1) throw Error('society_initial_two_bakers_one_miller_required');
     if(options.competitiveGrifter===true){
+      this.#civicEvents=[];
       const candidate=[...this.#state.registry.people.values()].find(p=>p.role===null&&p.location!==null);
       if(!candidate)throw Error('society_competitive_grifter_required');
       controlled.push(candidate.id);
@@ -122,7 +127,8 @@ export class Society {
   get hash() { const original=[evidenceHash(this.#state),[...this.#oracle],this.#phase,[...this.#prices],[...this.#quantities],this.#wall];
     const cards=this.#postcards?[...original,this.#postcards.config,this.#postcards.exportAccounts()]:original;
     const daily=this.#dailyOracle?[...cards,this.#dailyOracle.config,this.#dailyOracle.snapshot()]:cards;
-    return digest(this.#routine?[...daily,this.#routine.snapshot(),[...this.#pending]]:daily); }
+    const sequence=this.#routine?[...daily,this.#routine.snapshot(),[...this.#pending]]:daily;
+    return digest(this.#civicEvents?[...sequence,this.#civicEvents]:sequence); }
   get controlled() { return [...this.#tape.controlled]; }
   /** Researcher-only read. This must never be passed to a policy or provider. */
   inspect(): ParticipantState { return {...this.#state,world:structuredClone({...this.#state.world,rng:undefined}),registry:structuredClone(this.#state.registry),genesis:structuredClone(this.#state.genesis)} as unknown as ParticipantState; }
@@ -193,6 +199,9 @@ export class Society {
     }));
     return buildSocietyContext(this.#state,person,{
       ...(this.#tape.competitiveGrifter?{objective:'competitive-society-v1' as const}:{}),
+      ...(this.#civicEvents?{civicStanding:(()=>{const people=[...this.#state.registry.people.values()].filter(p=>p.location!==null);
+        const scores=societyCivicScores(this.#civicEvents!,people.map(p=>p.id));
+        return {own:scores.get(person)!,others:people.filter(p=>p.id!==person).map(p=>({ref:this.#ref(person,p.id),...scores.get(p.id)!}))};})()}:{}),
       ...(this.dualNavigation?{firstPerson:perception!.observation as FirstPersonObservation}:{}),
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
       ...(this.#routine?.config.information?{information:{contract:this.#routine.config.information,lastLottery:(()=>{
@@ -351,6 +360,8 @@ export class Society {
     this.#state.world.lastSettlement={...ledger,holdingsBefore:beforeHoldings,holdingsAfter:afterHoldings,accountsBefore:beforeAccounts,accountsAfter:afterAccounts,residual};
     const holdings=[...roleArrays(this.#state.world).flatMap(([,slots])=>slots.filter(s=>s.slot.state==='FILLED').map(s=>s.wealth)),...this.#state.world.grifters.map(g=>g.wealth)];
     this.#state.world.wealthGini=giniCoefficient(holdings);this.#state.world.wealthTop10Share=topShare(holdings,0.1);
+    const civicEvents=this.#civicEvents?societyCivicEvents(day,this.#state.world.lastDealings??[],this.#state.world.societyEconomy?.receipts??[],new Set(this.#state.registry.people.keys())):undefined;
+    if(civicEvents)this.#civicEvents!.push(...civicEvents);
     this.#wall=this.#routine?this.#routine.posts().map(p=>({author:p.authorId,state:p.state,day})):[...this.#pending].flatMap(([author,a])=>a.communication?.kind==='wallPost'?[{author,state:a.communication.state as SelfState,day}]:[]);
     this.#postcards?.register(this.#activePeople(),this.tick);
     this.#pending.clear();this.#phase='commit';this.#resetCommitments();
@@ -361,7 +372,7 @@ export class Society {
       economy:structuredClone(this.#state.world.societyEconomy),oracle:oracleResults,
       accounting:{kernelResidual,oracleResidual,residual,escrow:escrowAfter},
       conditions:this.#state.world.shard.districts.map(d=>({district:d.id,tension:d.weatherHistory.at(-1)?.tension??0,state:this.#state.world.districtHealth[d.id]!.state})),
-      ...(this.#postcards?{postcards:this.#postcards.drain()}:{}),...(routineSummary?{routine:routineSummary}:{})});
+      ...(this.#postcards?{postcards:this.#postcards.drain()}:{}),...(routineSummary?{routine:routineSummary}:{}),...(civicEvents?{civicEvents}:{})});
     if(daily)this.#tape.transitions.at(-1)!.dailyOracle={...daily,paidLotteryCapOverflow};
   }
   #setHoldings(location:string,role:keyof typeof publicRole|null,wealth:number,stock?:number) {

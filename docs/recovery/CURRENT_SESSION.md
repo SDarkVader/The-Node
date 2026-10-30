@@ -1,6 +1,6 @@
 # Current Society daily implementation checkpoint
 
-2026-10-30 competitive-society work in progress on `codex/grifter-competition`, based on main `ea5bbc389a3c02c35b2026148daf771c5a0c3e63`: opt-in fourth controlled roleless inhabitant, shared reputation-primary instructions and replay/plan plumbing. Focused fake-provider tests and TypeScript pass on the working tree. This is not the requested complete mechanic: reputation gain/loss from daily activity and a sustained-failure-to-vacancy path remain to implement and test. No live provider calls. [Scope](../research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
+2026-10-30 competitive-society work in progress on `codex/grifter-competition`, based on main `ea5bbc389a3c02c35b2026148daf771c5a0c3e63`: opt-in fourth controlled roleless inhabitant, shared reputation-primary instructions and PR #60 scoring from verified paid bread and flour achievements, with replay-bound events and authorized visible scores. Focused tests and TypeScript pass on the working tree. Negative events are proposed for owner review; no automatic inactivity-to-vacancy rule was invented. Live preparation remains blocked pending completion. No live provider calls. [Scope](../research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
 
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
 checks and the Windows offline-verification rerun passed on final head `d8fbc24`.
