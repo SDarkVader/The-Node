@@ -2,7 +2,7 @@
 
 2026-10-30 competitive-society trial: an opt-in fourth controlled inhabitant shares reputation-primary guidance with all inhabitants. Verified achievements and completed workless days affect civic standing; the business intervention supplies anonymous role-specific output at 60% during backstop. [Scope and preparation](docs/research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
 
-The owner has authorized a supervised one-day trial with an explicitly recorded USD 20 ceiling; the one-day competitive preparation path supports this headroom. [Current execution checkpoint](docs/recovery/CURRENT_SESSION.md).
+The supervised one-day trial completed at source `6c28677`: 75 model calls, 229 decisions, exact replay and USD 0.383170 booked against a USD 20 ceiling. The allowance is closed with zero held. Day one had 14 unaffordable bread orders and zero civic events. [Execution evidence](docs/research/evidence/competitive-grifter-live-day-2026-10-30.json).
 
 2026-10-28 PC launcher check at source `6307a8e`: the missing private launcher settings
 were restored with a pointer to the verified latest closed journal and a registry of six
