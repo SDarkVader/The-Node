@@ -1,6 +1,6 @@
 # Current Society daily implementation checkpoint
 
-2026-10-29 isolated reputation study (draft PR #60): pure signed civic standing/notoriety reducer and deterministic synthetic event trajectories. Model-free compiled-kernel harness: 20 checks passed, including 10,000 monotonicity pairs; Wolfram reference agrees. These are not observed autonomous agent behaviours. No live world, prompts, backstop, paid provider calls or private evidence were changed. [Research note](../research/CIVIC_REPUTATION_OFFLINE_2026-10-29.md).
+2026-10-30 isolated reputation study (PR #60): pure signed civic standing/notoriety reducer and deterministic synthetic event trajectories. Review fixes relative-share overflow for extreme finite inputs and makes fractional-cap aggregation deterministic by day. On the revised working tree based on `58ab93f`, all 15 focused Vitest cases and TypeScript passed; the model-free harness passed 20 checks including 10,000 monotonicity pairs and reproduced both recorded evidence hashes. Earlier Wolfram reference agrees with selected examples. These are not observed autonomous agent behaviours. No live world, prompts, backstop, paid provider calls or private evidence were changed. Final-head hosted CI and review remain to be checked. [Research note](../research/CIVIC_REPUTATION_OFFLINE_2026-10-29.md).
 
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
 checks and the Windows offline-verification rerun passed on final head `d8fbc24`.

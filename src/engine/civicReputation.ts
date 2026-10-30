@@ -104,7 +104,9 @@ export function computeCivicReputation(
       cooperation: { positive: 0, negative: 0 },
       conduct: { positive: 0, negative: 0 },
     };
-    for (const day of raw.get(subjectId)!.values()) {
+    const days = raw.get(subjectId)!;
+    for (const dayNumber of [...days.keys()].sort((a, b) => a - b)) {
+      const day = days.get(dayNumber)!;
       for (const [domain, cell] of day) {
         totals[domain].positive += Math.min(params.dailyCap, cell.positive);
         totals[domain].negative += Math.min(params.dailyCap, cell.negative);
@@ -135,8 +137,20 @@ export function civicRelativeShares(
     ids.add(subjectId);
   }
   let top = -Infinity;
-  for (const score of scores) top = Math.max(top, score.standing / temperature);
-  const weights = scores.map(s => Math.exp(s.standing / temperature - top));
+  for (const score of scores) top = Math.max(top, score.standing);
+  const scaledTop = top / temperature;
+  const weights = scores.map(s => {
+    const scaled = s.standing / temperature;
+    // Preserve the original arithmetic when both scaled values are finite.
+    if (Number.isFinite(scaled) && Number.isFinite(scaledTop)) return Math.exp(scaled - scaledTop);
+    const difference = s.standing - top;
+    // Opposite extreme finite standings can overflow on subtraction. In that
+    // case the separately scaled values preserve the finite ratio if possible.
+    const exponent = Number.isFinite(difference)
+      ? difference / temperature
+      : scaled - scaledTop;
+    return Math.exp(exponent);
+  });
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   const results = new Map<string, number>();
   for (let i = 0; i < scores.length; i += 1) {

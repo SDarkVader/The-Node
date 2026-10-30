@@ -33,6 +33,12 @@ describe('experimental civic reputation, no live-world wiring', () => {
     expect(score(entries).positive).toBe(4);
     expect(score(entries).negative).toBe(1);
   });
+  it('reduces fractional caps in a deterministic day order', () => {
+    const entries = [e('a','miller',1,'service','positive'), e('b','miller',2,'service','positive'), e('c','miller',3,'service','positive', 2)];
+    const params = {...DEFAULT_CIVIC_REPUTATION_PARAMS, dailyCap: 1.1};
+    expect(computeCivicReputation(entries, params).get('miller'))
+      .toEqual(computeCivicReputation([...entries].reverse(), params).get('miller'));
+  });
   it('caps same-day positive farming but does not erase other days', () => {
     const entries = Array.from({length: 10}, (_, i) => e(`a${i}`,'miller',2,'service','positive'));
     expect(score(entries).positive).toBe(3);
@@ -63,6 +69,16 @@ describe('experimental civic reputation, no live-world wiring', () => {
   it('rejects repeated subjects and non-finite standings in shares', () => {
     expect(() => civicRelativeShares([{subjectId:'x',standing:0},{subjectId:'x',standing:3}])).toThrow();
     expect(() => civicRelativeShares([{subjectId:'x',standing:NaN}])).toThrow();
+  });
+  it('normalizes shares for extreme finite standings and temperatures', () => {
+    const tied = civicRelativeShares([{subjectId:'a',standing:1e308},{subjectId:'b',standing:1e308}], 0.1);
+    expect(tied.get('a')).toBe(0.5);
+    expect(tied.get('b')).toBe(0.5);
+    const opposite = civicRelativeShares([{subjectId:'a',standing:Number.MAX_VALUE},{subjectId:'b',standing:-Number.MAX_VALUE}], Number.MAX_VALUE);
+    expect(opposite.get('a')).toBeCloseTo(1 / (1 + Math.exp(-2)), 12);
+    expect(opposite.get('b')).toBeCloseTo(1 / (1 + Math.exp(2)), 12);
+    const tiny = civicRelativeShares([{subjectId:'a',standing:1e308},{subjectId:'b',standing:-1e308}], Number.MIN_VALUE);
+    expect([...tiny.values()]).toEqual([1, 0]);
   });
   it('positive evidence cannot lower standing, negative evidence cannot raise it across 1000 samples', () => {
     for (let p=0;p<100;p++) for(let n=0;n<10;n++) {
