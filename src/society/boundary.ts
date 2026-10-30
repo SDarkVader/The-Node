@@ -72,6 +72,7 @@ export interface SocietyRoutineObservation {
 }
 export interface SocietyContextOptions {
   phase: 'commit' | 'act';
+  objective?: 'competitive-society-v1';
   ownCommitment?: { kind: 'bakerPrice'; price: number } | { kind: 'millerQuantity'; quantity: number } | null;
   market?: readonly SocietyMarketOffer[];
   purchaseDue?: boolean;
@@ -281,6 +282,7 @@ export function societyPublicRules(v2 = true, subjectOptional = false, routine =
 
 /** Explicit nested projection: never spread World, Genesis, observer packet, caller options or a prior transcript. */
 export function buildSocietyContext(state: ParticipantState, personId: string, options: SocietyContextOptions) {
+  if(options.objective!==undefined&&options.objective!=='competitive-society-v1')fail('society_objective');
   if (options.phase !== 'commit' && options.phase !== 'act') fail('society_phase');
   const authorized = observe(state, personId, state.genesis.observerSecret), p = authorized.projection;
   const own = p.self;
@@ -362,6 +364,7 @@ export function buildSocietyContext(state: ParticipantState, personId: string, o
   });
   const visible = {
     day: base.tick + 1, phase: options.phase,
+    ...(options.objective?{objective:options.objective}:{}),
     self: { ref: own.ref, role: own.role, x: own.x, y: own.y, workplace: own.workplace,
       wealth: own.wealth, stock: own.stock, price: commitment?.kind === 'bakerPrice' ? commitment.price : own.price,
       quantity: commitment?.kind === 'millerQuantity' ? commitment.quantity : own.role === 'Miller' && ownSlot && 'value' in ownSlot && typeof ownSlot.value === 'number' ? ownSlot.value : null,
@@ -432,9 +435,11 @@ function validateSerializedSocietyVisibleContext(value: unknown): void {
   const hasRoutine = object(value) && Object.hasOwn(value, 'routine');
   const hasDual=object(value)&&Object.hasOwn(value,'dual');
   const hasInformation = object(value) && Object.hasOwn(value, 'information');
+  const hasObjective = object(value) && Object.hasOwn(value, 'objective');
   const subjectOptional = object(value) && object(value.legalChoices) && Object.hasOwn(value.legalChoices, 'diarySubjectOptional');
-  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[]),...(hasDual?['dual']:[])])) fail('society_serialized_view');
+  if (!record(value, ['day', 'phase', 'self', 'local', 'recognition', 'hearing', 'heard', 'rumours', 'diary', 'dealings', 'wall', 'opportunities', 'oracle', 'rules', 'legalChoices', 'decisionSchema', ...(hasObjective?['objective']:[]), ...(hasPostcards ? ['postcards'] : []), ...(hasDailyOracle ? ['dailyOracle'] : []),...(hasRoutine?['routine']:[]),...(hasInformation?['information']:[]),...(hasDual?['dual']:[])])) fail('society_serialized_view');
   const v = value;
+  if(hasObjective&&v.objective!=='competitive-society-v1')fail('society_objective');
   const dual: DualObservation|undefined=hasDual?v.dual:undefined;
   if(dual){if(!hasInformation)fail('society_navigation_contract');assertDualObservation(dual);}
   const routine=hasRoutine?routineProjection(v.routine):undefined;

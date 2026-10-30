@@ -1,5 +1,7 @@
 # Current Society daily implementation checkpoint
 
+2026-10-30 competitive-society work in progress on `codex/grifter-competition`, based on main `ea5bbc389a3c02c35b2026148daf771c5a0c3e63`: opt-in fourth controlled roleless inhabitant, shared reputation-primary instructions and replay/plan plumbing. Focused fake-provider tests and TypeScript pass on the working tree. This is not the requested complete mechanic: reputation gain/loss from daily activity and a sustained-failure-to-vacancy path remain to implement and test. No live provider calls. [Scope](../research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
+
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
 checks and the Windows offline-verification rerun passed on final head `d8fbc24`.
 The reviewed implementation passed 1,993 local Windows tests across 158 files
@@ -196,7 +198,7 @@ not a claim that every mechanic is complete.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
+  "verifiedBaseCommit": "ea5bbc389a3c02c35b2026148daf771c5a0c3e63",
   "completedWork": [
     "PR58 merged into main at4f539801a56c20ce412ff83f292a2a499340bb82 after finalhead d8fbc2494527e902468660bbf3d2f901550f58a2 passed two offline-conformance checks and the Windows offline-verification rerun. Local source6146265 full nativeGodot suite1993passed/158files/1platformskip, TypeScript and8recoverytests; native six-step nonadjacent arrival/work proof. Review fixed Windows worker cleanup and aligned parent dispatch timeout to plan deadline plus5seconds;49focused nativeGodot tests and TypeScript passed after timeout fix. No paid experiment started for review or merge. PR56 remains draft.",
     "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
@@ -294,6 +296,6 @@ not a claim that every mechanic is complete.
     "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/pr58-merge-handover-2026-10-28"
+  "reviewBranch": "codex/grifter-competition"
 }
 NODE_SESSION_CHECKPOINT -->

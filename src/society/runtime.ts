@@ -29,7 +29,8 @@ import {SocietyRoutineBook,validateSocietyRoutineConfig,type SocietyRoutineConfi
 export type Phase = 'commit' | 'act';
 export type SocietyView = ReturnType<typeof buildSocietyContext>['visible'];
 export interface SocietyOptions { seed: number; sourceRevision: string; config?: WorldConfig; observerSecret?: string;
-  postcards?:SocietyPostcardConfig;dailyOracle?:SocietyDailyOracleConfig;routine?:SocietyRoutineConfig }
+  postcards?:SocietyPostcardConfig;dailyOracle?:SocietyDailyOracleConfig;routine?:SocietyRoutineConfig;
+  competitiveGrifter?:true }
 export interface SocietyDecisionRecord {
   day: number; phase: Phase; person: string; controlled: boolean;
   visible: SocietyView; legalChoices: unknown; action: SocietyAction;
@@ -53,6 +54,7 @@ export interface SocietyTape {
   postcardConfig?:SocietyPostcardConfig; postcardAccounts?:[string,PostcardAccount][];
   dailyOracleConfig?:SocietyDailyOracleConfig;dailyOracleState?:ReturnType<SocietyDailyOracleBook['snapshot']>;
   routineConfig?:SocietyRoutineConfig;routineState?:ReturnType<SocietyRoutineBook['snapshot']>;turnTransitions?:SocietyTurnTransition[];
+  competitiveGrifter?:true;
 }
 const publicRole = {baker:'Baker',miller:'Miller',courier:'Courier',investigator:'Investigator',importExport:'ImportExport'} as const;
 
@@ -96,12 +98,17 @@ export class Society {
     this.#state = createParticipantState(genesis);
     const controlled = [...this.#state.registry.people.values()].filter(p=>p.role==='baker'||p.role==='miller').map(p=>p.id);
     if (controlled.length !== 3 || genesis.config.rBaker !== 2 || genesis.config.rMiller !== 1) throw Error('society_initial_two_bakers_one_miller_required');
+    if(options.competitiveGrifter===true){
+      const candidate=[...this.#state.registry.people.values()].find(p=>p.role===null&&p.location!==null);
+      if(!candidate)throw Error('society_competitive_grifter_required');
+      controlled.push(candidate.id);
+    } else if(options.competitiveGrifter!==undefined) throw Error('society_competitive_grifter_config');
     if(options.postcards)this.#postcards=new SocietyPostcardBook(options.postcards,genesis.seed,this.#activePeople());
     if(options.dailyOracle)this.#dailyOracle=new SocietyDailyOracleBook(options.dailyOracle,genesis.seed);
     if(options.routine!==undefined)this.#routine=new SocietyRoutineBook(options.routine,this.#state);
     this.#resetCommitments();
     this.#tape = {format:this.#routine?'node-society-routine-v4':this.#dailyOracle?'node-society-daily-oracle-v3':this.#postcards?'node-society-postcards-v2':'node-society-offline-v1',genesis:structuredClone(genesis),controlled,
-      genesisHash:this.hash,decisions:[],transitions:[],...(this.#postcards?{postcardConfig:structuredClone(this.#postcards.config)}:{}),
+      genesisHash:this.hash,decisions:[],transitions:[],...(options.competitiveGrifter?{competitiveGrifter:true as const}:{}),...(this.#postcards?{postcardConfig:structuredClone(this.#postcards.config)}:{}),
       ...(this.#dailyOracle?{dailyOracleConfig:structuredClone(this.#dailyOracle.config)}:{}),...(this.#routine?{routineConfig:structuredClone(this.#routine.config)}:{})};
   }
   get tick() { return this.#state.world.tick; }
@@ -185,6 +192,7 @@ export class Society {
       price:this.#prices.get(b.buildingId)??b.value,available:true,
     }));
     return buildSocietyContext(this.#state,person,{
+      ...(this.#tape.competitiveGrifter?{objective:'competitive-society-v1' as const}:{}),
       ...(this.dualNavigation?{firstPerson:perception!.observation as FirstPersonObservation}:{}),
       phase:this.#phase,market,purchaseDue:societyPurchaseDue(w.seed,day,person,w.config.purchaseCycleDays),
       ...(this.#routine?.config.information?{information:{contract:this.#routine.config.information,lastLottery:(()=>{
@@ -370,12 +378,13 @@ export class Society {
 /** Independent reconstruction uses recorded JSON decisions, never reruns a policy. It also
  * verifies each exact visible context, so hidden observation drift cannot pass as replay. */
 export function verifySocietyTape(tape:SocietyTape, expectedSourceRevision=tape.genesis.sourceRevision, options:{allowPartial?:boolean}={}) {
+  if(tape.competitiveGrifter!==undefined&&tape.competitiveGrifter!==true)throw Error('society_tape_source');
   if(!['node-society-offline-v1','node-society-postcards-v2','node-society-daily-oracle-v3','node-society-routine-v4'].includes(tape.format)||tape.genesis.sourceRevision!==expectedSourceRevision||
     (tape.format==='node-society-routine-v4')!==!!tape.routineConfig||
     (!tape.routineConfig&&((tape.format==='node-society-daily-oracle-v3')!==!!tape.dailyOracleConfig||
     (tape.format==='node-society-postcards-v2')!==(!tape.dailyOracleConfig&&!!tape.postcardConfig))))throw Error('society_tape_source');
   const society=new Society({seed:tape.genesis.seed,sourceRevision:expectedSourceRevision,config:tape.genesis.config,observerSecret:tape.genesis.observerSecret,
-    ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{})});
+    ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{}),...(tape.competitiveGrifter?{competitiveGrifter:true as const}:{})});
   if(society.hash!==tape.genesisHash||digest(society.controlled)!==digest(tape.controlled))throw Error('society_genesis_mismatch');
   for(const record of tape.decisions){
     society.bindEvidence(record.person,record,record.action);

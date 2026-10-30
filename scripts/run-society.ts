@@ -8,14 +8,15 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { Society, societyConfig, verifySocietyTape, type SocietyTape } from '../src/society/runtime.js';
 import { autonomousPolicy } from '../src/society/policy.js';
+import { societyInhabitantInstructions } from '../src/society/request.js';
 import { parseSocietyEvidence, stringifySocietyEvidence } from '../src/society/codec.js';
 import {validateSocietyDailyOracleConfig,type SocietyDailyOracleConfig} from '../src/society/dailyOracle.js';
 import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/society/routine.js';
 
 const {values}=parseArgs({options:{ticks:{type:'string',default:'14'},seed:{type:'string',default:'42'},output:{type:'string'},interactive:{type:'boolean',default:false},verify:{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},godot:{type:'string'}}});
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},'competitive-grifter':{type:'boolean'},godot:{type:'string'}}});
 if(values.verify){
-  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
+  if([values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation'],values['competitive-grifter']].some(v=>v!==undefined))throw Error('society_verify_feature_flags');
   console.log(JSON.stringify(verifySocietyTape(parseSocietyEvidence<SocietyTape>(readFileSync(resolve(values.verify),'utf8'))),null,2));
 }else{
   const ticks=Number(values.ticks),seed=Number(values.seed);
@@ -41,7 +42,7 @@ if(values.verify){
     const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
-  const society=new Society({seed,sourceRevision,...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
+  const society=new Society({seed,sourceRevision,...(values['competitive-grifter']?{competitiveGrifter:true as const}:{}),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
   const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
   const terminal=values.interactive?createInterface({input:stdin,output:stdout}):null;
   let failure:unknown;
@@ -52,7 +53,7 @@ if(values.verify){
       for(const person of people){
         const view=await society.prepareView(person,senses?.perceive),suggested=autonomousPolicy(view.visible);
         if(terminal&&society.controlled.includes(person)){
-          stdout.write(JSON.stringify({inhabitant:person,visible:view.visible,suggested},null,2)+'\n');
+          stdout.write(JSON.stringify({inhabitant:person,instructions:societyInhabitantInstructions(view.visible),visible:view.visible,suggested},null,2)+'\n');
           const answer=await terminal.question('Submit decision JSON (Enter accepts the shown deterministic suggestion; q stops): ');
           if(answer.trim()==='q')throw Error('supervised_stop');
           const action=answer.trim()||JSON.stringify(suggested);

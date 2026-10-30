@@ -27,10 +27,11 @@ import {validateSocietyRoutineConfig,type SocietyRoutineConfig} from '../src/soc
 const {values}=parseArgs({options:{prepare:{type:'boolean'},preflight:{type:'boolean'},'owner-approved':{type:'boolean'},
   bundle:{type:'string'},ticks:{type:'string',default:'3'},seed:{type:'string',default:'42'},budget:{type:'string'},
   credential:{type:'string'},approval:{type:'string'},output:{type:'string'},'carried-fingerprint':{type:'string'},
-  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},godot:{type:'string'},
+  'postcard-rate':{type:'string'},'postcard-start-ms':{type:'string'},'oracle-config':{type:'string'},'optional-diary-subject':{type:'boolean'},'daily-turns':{type:'string'},'inhabitant-information':{type:'boolean'},'dual-navigation':{type:'boolean'},'competitive-grifter':{type:'boolean'},godot:{type:'string'},
   observatory:{type:'boolean'},'manual-ticks':{type:'boolean'},'web-world':{type:'string'},history:{type:'string'},port:{type:'string'}}});
 if([values.prepare,values.preflight,values['owner-approved']].filter(Boolean).length!==1||!values.bundle)throw Error('society_explicit_mode_and_bundle_required');
-if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
+if(values['competitive-grifter'])throw Error('society_competitive_reputation_not_ready_for_live_preparation');
+if(!values.prepare&&[values['postcard-rate'],values['postcard-start-ms'],values['oracle-config'],values['optional-diary-subject'],values['daily-turns'],values['inhabitant-information'],values['dual-navigation'],values['competitive-grifter']].some(v=>v!==undefined))throw Error('society_feature_flags_prepare_only');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).trim();
 // Pin actual committed source before preparing a reviewable paid plan. Untracked unrelated
@@ -66,7 +67,7 @@ if(values.prepare){
     const bytes=readFileSync(path);if(bytes.length>65_536)throw Error('society_oracle_config_bounds');
     const value:unknown=JSON.parse(bytes.toString('utf8'));validateSocietyDailyOracleConfig(value);dailyOracle=value;
   }
-  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
+  const society=new Society({seed,sourceRevision:revision,observerSecret:randomBytes(32).toString('hex'),...(values['competitive-grifter']?{competitiveGrifter:true as const}:{}),...(values['optional-diary-subject']?{config:{...societyConfig(),diarySubjectOptional:true as const}}:{}),...(postcards?{postcards}:{}),...(dailyOracle?{dailyOracle}:{}),...(routine?{routine}:{})});
   const plan=createSocietyPlan(society,{ticks}),bundle:Bundle={plan,genesis:society.exportTape().genesis,planSha256:societyPlanHash(plan),
     ...(postcards?{postcardConfig:structuredClone(postcards)}:{}),...(dailyOracle?{dailyOracleConfig:structuredClone(dailyOracle)}:{}),...(routine?{routineConfig:structuredClone(routine)}:{})};
   const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
@@ -78,12 +79,13 @@ if(values.prepare){
   }finally{await senses?.close();}
 }else{
   const bundle=parseSocietyEvidence<Bundle>(readFileSync(bundlePath,'utf8'));validateSocietyPlan(bundle.plan);
+  if(bundle.plan.competitiveGrifter)throw Error('society_competitive_reputation_not_ready_for_live_preparation');
   if(bundle.genesis.sourceRevision!==revision||bundle.plan.sourceRevision!==revision||societyPlanHash(bundle.plan)!==bundle.planSha256)throw Error('society_bundle_source_or_hash');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))throw Error('society_bundle_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))throw Error('society_bundle_daily_oracle_config');
   if(digest(bundle.routineConfig??null)!==digest(bundle.plan.routine??null))throw Error('society_bundle_routine_config');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:revision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
-    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{})});
+    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{}),...(bundle.plan.competitiveGrifter?{competitiveGrifter:true as const}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis))throw Error('society_bundle_genesis');
   const senses=society.dualNavigation?await openSocietySenses(values.godot):undefined;
   try{

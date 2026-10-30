@@ -23,13 +23,15 @@ export interface SocietyRunPlan {
   postcards?:SocietyPostcardConfig;
   dailyOracle?:SocietyDailyOracleConfig;
   routine?:SocietyRoutineConfig;
+  competitiveGrifter?:true;
 }
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
   const ticks = options.ticks ?? 3;
   const tape=society.exportTape(),routine=tape.routineConfig;
-  const maxCalls=routine?Math.min(5000,ticks*3*(1+routine.maxTurnsPerDay)):ticks*6;
+  const actors=tape.competitiveGrifter?4:3;
+  const maxCalls=routine?Math.min(5000,ticks*(3+actors*routine.maxTurnsPerDay)):ticks*(3+actors);
   const plan: SocietyRunPlan = { schema: routine?'node-accounted-society-routine-v4':tape.dailyOracleConfig?'node-accounted-society-daily-oracle-v3':tape.postcardConfig?'node-accounted-society-postcards-v2':'node-accounted-society-v1', id: options.id ?? 'supervised-three-inhabitant-society',
     model: 'claude-haiku-5-5', ticks, maxCalls, deadlineMs: options.deadlineMs ?? SOCIETY_REQUEST_TIMEOUT_MS,
     minIntervalMs: options.minIntervalMs ?? 1000, initialHash: society.hash,
@@ -37,10 +39,12 @@ export function createSocietyPlan(society: Society, options: { id?: string; tick
     allowance: { maxRequests: maxCalls, limitMicroUsd: options.limitMicroUsd ?? 1_000_000,
       perRequestMicroUsd: options.perRequestMicroUsd ?? SOCIETY_PER_REQUEST_MICRO_USD },
     ...(society.exportTape().postcardConfig?{postcards:society.exportTape().postcardConfig}:{}),
-    ...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(routine?{routine}:{}) };
+    ...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(routine?{routine}:{}),...(tape.competitiveGrifter?{competitiveGrifter:true as const}:{}) };
   validateSocietyPlan(plan); return structuredClone(plan);
 }
 export function validateSocietyPlan(p: SocietyRunPlan): void {
+  if(p?.competitiveGrifter!==undefined&&p.competitiveGrifter!==true)throw new SocietySecurityError('society_paid_plan');
+  const actors=p?.competitiveGrifter?4:3;
   if(p?.postcards!==undefined)validateSocietyPostcardConfig(p.postcards);
   if(p?.dailyOracle!==undefined)validateSocietyDailyOracleConfig(p.dailyOracle);
   if(p?.routine!==undefined)validateSocietyRoutineConfig(p.routine);
@@ -48,11 +52,11 @@ export function validateSocietyPlan(p: SocietyRunPlan): void {
     (p?.schema==='node-accounted-society-routine-v4')!==!!p?.routine ||
     (p?.schema==='node-accounted-society-daily-oracle-v3')!==(!p?.routine&&!!p?.dailyOracle) ||
     (p?.schema==='node-accounted-society-postcards-v2')!==(!p?.routine&&!p?.dailyOracle&&!!p?.postcards) || typeof p.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(p.id) ||
-    p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== (p.routine?Math.min(5000,p.ticks*3*(1+p.routine.maxTurnsPerDay)):6*p.ticks) ||
+    p.model !== 'claude-haiku-5-5' || !Number.isSafeInteger(p.ticks) || p.ticks < 1 || p.ticks > 20 || p.maxCalls !== (p.routine?Math.min(5000,p.ticks*(3+actors*p.routine.maxTurnsPerDay)):p.ticks*(3+actors)) ||
     !Number.isSafeInteger(p.deadlineMs) || p.deadlineMs < 1 || p.deadlineMs > SOCIETY_REQUEST_TIMEOUT_MS ||
     !Number.isSafeInteger(p.minIntervalMs) || p.minIntervalMs < 0 || p.minIntervalMs > 60_000 ||
     !/^[a-f0-9]{64}$/.test(p.initialHash) || typeof p.sourceRevision !== 'string' || !p.sourceRevision ||
-    !Array.isArray(p.controlled) || p.controlled.length !== 3 || new Set(p.controlled).size !== 3 ||
+    !Array.isArray(p.controlled) || p.controlled.length !== actors || new Set(p.controlled).size !== actors ||
     !p.controlled.every(v => typeof v === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(v)) ||
     p.allowance?.maxRequests !== p.maxCalls || !Number.isSafeInteger(p.allowance.limitMicroUsd) || p.allowance.limitMicroUsd < 1 || p.allowance.limitMicroUsd > 1_000_000 ||
     !Number.isSafeInteger(p.allowance.perRequestMicroUsd) || p.allowance.perRequestMicroUsd < 1 || p.allowance.perRequestMicroUsd > p.allowance.limitMicroUsd)
@@ -109,6 +113,7 @@ export async function runAccountedSociety(society: Society, budget: ExperimentBu
   if(digest(plan.postcards??null)!==digest(society.exportTape().postcardConfig??null))throw new SocietySecurityError('society_paid_postcard_config');
   if(digest(plan.dailyOracle??null)!==digest(society.exportTape().dailyOracleConfig??null))throw new SocietySecurityError('society_paid_daily_oracle_config');
   if(digest(plan.routine??null)!==digest(society.exportTape().routineConfig??null))throw new SocietySecurityError('society_paid_routine_config');
+  if((plan.competitiveGrifter??null)!==(society.exportTape().competitiveGrifter??null))throw new SocietySecurityError('society_paid_grifter_config');
   if (!auth || !start.canReserve || start.requests.length || !/^[a-f0-9]{64}$/.test(options.expectedCarriedFingerprint) ||
     budget.carriedFingerprint() !== options.expectedCarriedFingerprint || auth.expectedCarriedFingerprint !== options.expectedCarriedFingerprint ||
     auth.instruction !== options.instruction || auth.manifestSha256 !== societyPlanHash(plan) || auth.model !== plan.model ||

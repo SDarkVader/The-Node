@@ -102,7 +102,7 @@ export class SocietyObservatorySource {
       verifySocietyTape(input.tape,input.tape.genesis.sourceRevision,{allowPartial:true});
       const tape=input.tape,s=new Society({seed:tape.genesis.seed,sourceRevision:tape.genesis.sourceRevision,
         config:tape.genesis.config,observerSecret:tape.genesis.observerSecret,
-        ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{})});
+        ...(tape.postcardConfig?{postcards:tape.postcardConfig}:{}),...(tape.dailyOracleConfig?{dailyOracle:tape.dailyOracleConfig}:{}),...(tape.routineConfig?{routine:tape.routineConfig}:{}),...(tape.competitiveGrifter?{competitiveGrifter:true as const}:{})});
       const frames:Frame[]=[];
       let throughDecisions=0;
       const frame=(type:string,throughDay:number,suffix='',latest=false)=>frames.push({cursor:`day-${s.tick}-${s.hash}${suffix}`,
