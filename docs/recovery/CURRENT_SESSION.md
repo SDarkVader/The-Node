@@ -1,5 +1,7 @@
 # Current Society daily implementation checkpoint
 
+2026-10-30 isolated reputation study (PR #60): pure signed civic standing/notoriety reducer and deterministic synthetic event trajectories. Review fixes relative-share overflow for extreme finite inputs and makes fractional-cap aggregation deterministic by day. On the revised working tree based on `58ab93f`, all 15 focused Vitest cases and TypeScript passed; the model-free harness passed 20 checks including 10,000 monotonicity pairs and reproduced both recorded evidence hashes. Earlier Wolfram reference agrees with selected examples. These are not observed autonomous agent behaviours. No live world, prompts, backstop, paid provider calls or private evidence were changed. Final-head hosted CI and review remain to be checked. [Research note](../research/CIVIC_REPUTATION_OFFLINE_2026-10-29.md).
+
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
 checks and the Windows offline-verification rerun passed on final head `d8fbc24`.
 The reviewed implementation passed 1,993 local Windows tests across 158 files
@@ -196,7 +198,7 @@ not a claim that every mechanic is complete.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
+  "verifiedBaseCommit": "ea5bbc389a3c02c35b2026148daf771c5a0c3e63",
   "completedWork": [
     "PR58 merged into main at4f539801a56c20ce412ff83f292a2a499340bb82 after finalhead d8fbc2494527e902468660bbf3d2f901550f58a2 passed two offline-conformance checks and the Windows offline-verification rerun. Local source6146265 full nativeGodot suite1993passed/158files/1platformskip, TypeScript and8recoverytests; native six-step nonadjacent arrival/work proof. Review fixed Windows worker cleanup and aligned parent dispatch timeout to plan deadline plus5seconds;49focused nativeGodot tests and TypeScript passed after timeout fix. No paid experiment started for review or merge. PR56 remains draft.",
     "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
@@ -249,7 +251,8 @@ not a claim that every mechanic is complete.
     "Owner supplied a private continuation ledger for the reasoning-emission audit. It independently verifies through tick 18, with 13 returned summaries for baker-0 and 6 for baker-1. Every actual request has the same system hash, adaptive summarized thinking, medium effort and 2048 output cap. No raw transcript/signature/observation was added to Git.",
     "Implemented and unit-tested encrypted Termux credential transfer using ephemeral X25519, HKDF-SHA256 and AES-256-GCM. The cloud private key remains outside the checkout; the utility performs no network/API calls and logs no plaintext.",
     "Implemented opt-in per_turn_deliberation_v1: uniform high effort, unchanged 2048 total-output cap, common explicit system guidance and a reminder on every turn. Legacy default/Study 1 request bytes remain unchanged. Profile changes across signed parents are refused. Prepared a fresh two-Baker 20-tick/40-call plan, read-only readiness report and separate explicit owner approval gate accepting no resume option.",
-    "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made."
+    "Termux support: Node now starts after the libc++ update. The credential-free crypto/recipient check passed. The owner created a separate cloud API key and uploaded its authenticated encrypted envelope; it was imported outside Git with mode 0600. No plaintext was printed and no provider authentication call was made.",
+    "2026-10-29 offline-only draft PR60 adds a signed civic reputation reducer, synthetic twenty-day scenarios, local 20 checks/10000 monotonicity pairs and Wolfram validation. No provider calls or live-world integration."
   ],
   "testResults": [
     "Headroom implementation30d9527:136scoped tests/10files passed including nativeGodot full-feature2daycontroller, accounting/cancellation/overrun, launch and historicalcompatibility. Final3request ceiling checks/types/8recovery tests pass. Actual18call execution and separateprocess73decision exactreplay audited; no fullsuite rerun claimed beyond historical1990at e8369f9.",
@@ -294,6 +297,6 @@ not a claim that every mechanic is complete.
     "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/pr58-merge-handover-2026-10-28"
+  "reviewBranch": "research/civic-reputation-offline-2026-10-29"
 }
 NODE_SESSION_CHECKPOINT -->
