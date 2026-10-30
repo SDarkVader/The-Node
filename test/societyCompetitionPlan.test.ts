@@ -28,6 +28,16 @@ it('permits a fully covered one-day competitive allowance without widening other
     {ticks:1,limitMicroUsd:20_000_000})).toThrow();
 });
 
+it('permits a three-day competitive run within the existing accounting ceiling',()=>{
+  const society=new Society({seed:42,sourceRevision:'a'.repeat(40),competitiveGrifter:true,routine:{maxTurnsPerDay:128}});
+  const plan=createSocietyPlan(society,{ticks:3,limitMicroUsd:25_000_000});
+  expect(plan.maxCalls).toBe(1545);
+  expect(plan.maxCalls*plan.allowance.perRequestMicroUsd).toBe(49_440_000);
+  expect(plan.allowance.limitMicroUsd).toBe(25_000_000);
+  expect(()=>validateSocietyPlan({...plan,allowance:{...plan.allowance,limitMicroUsd:25_000_001}})).toThrow();
+  expect(()=>createSocietyPlan(society,{ticks:2,limitMicroUsd:25_000_000})).toThrow();
+});
+
 it('preserves the selected person through an existing role transition and replay', () => {
   const society = new Society({ seed: 20261025, sourceRevision: 'offline-observation',
     config: {...societyConfig(), pMonthly: 0.9, conscriptionDelay: 3}, competitiveGrifter: true });

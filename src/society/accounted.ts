@@ -26,9 +26,10 @@ export interface SocietyRunPlan {
   competitiveGrifter?:true;
 }
 export const societyPlanHash = (p: SocietyRunPlan) => sha256(JSON.stringify(p));
-/** Explicitly funded one-day competitive trial; all other plans retain the $1 cap. */
+/** Explicit budget headroom for the supervised competitive trial durations. */
 export const societyPlanLimitMicroUsd = (p: Pick<SocietyRunPlan,'competitiveGrifter'|'routine'|'ticks'>) =>
-  p.competitiveGrifter && p.routine && p.ticks === 1 ? 20_000_000 : 1_000_000;
+  p.competitiveGrifter && p.routine && p.ticks === 1 ? 20_000_000 :
+    p.competitiveGrifter && p.routine && p.ticks === 3 ? 25_000_000 : 1_000_000;
 export function createSocietyPlan(society: Society, options: { id?: string; ticks?: number; deadlineMs?: number;
   minIntervalMs?: number; limitMicroUsd?: number; perRequestMicroUsd?: number } = {}): SocietyRunPlan {
   const ticks = options.ticks ?? 3;
