@@ -25,7 +25,7 @@ export function recoverSocietySubmissions(events: readonly SocietyRunEvent[], ex
     societyPlanHash(start.plan)!==start.planSha256)throw Error('society_submission_source');
   const genesis=start.genesis,plan=start.plan;
   const society=new Society({seed:genesis.seed,sourceRevision:expectedSourceRevision,config:genesis.config,observerSecret:genesis.observerSecret,
-    ...(plan.postcards?{postcards:plan.postcards}:{}),...(plan.dailyOracle?{dailyOracle:plan.dailyOracle}:{}),routine:plan.routine});
+    ...(plan.postcards?{postcards:plan.postcards}:{}),...(plan.dailyOracle?{dailyOracle:plan.dailyOracle}:{}),routine:plan.routine,...(plan.competitiveGrifter?{competitiveGrifter:true as const}:{})});
   if(society.hash!==plan.initialHash||digest(society.controlled)!==digest(plan.controlled)||digest(society.exportTape().genesis)!==digest(genesis))
     throw Error('society_submission_genesis');
   let sequence=0;

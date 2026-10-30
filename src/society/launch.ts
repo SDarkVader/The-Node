@@ -6,7 +6,7 @@ import { ExperimentBudget } from '../agent/experimentBudget.js';
 import { PRICED_MODELS } from '../agent/modelPricing.js';
 import { sha256 } from '../agent/accountingStore.js';
 import { Society } from './runtime.js';
-import { societyPlanHash, validateSocietyPlan, type SocietyRunPlan } from './accounted.js';
+import { societyPlanHash, societyPlanLimitMicroUsd, validateSocietyPlan, type SocietyRunPlan } from './accounted.js';
 import { parseSocietyEvidence } from './codec.js';
 import { digest } from '../agent/replay.js';
 import type { Genesis } from '../agent/participantWorld.js';
@@ -77,14 +77,15 @@ function inspect(config:SocietyLaunchConfig,environment:SocietyLaunchEnvironment
   const execution=derived(config);
   for(const path of [execution.budget,execution.credential,execution.output,execution.approval,join(config.outputRoot,'execution.json')])if(existsSync(path))fail('society_launch_output_exists');
   const bundle=parseSocietyEvidence<Bundle>(file(config.bundle,128*1024*1024).toString('utf8'));validateSocietyPlan(bundle.plan);
+  if(bundle.plan.competitiveGrifter&&!bundle.plan.routine)fail('society_competitive_requires_daily_routine');
   if(bundle.planSha256!==config.planSha256||societyPlanHash(bundle.plan)!==config.planSha256||
     bundle.genesis.sourceRevision!==config.sourceRevision||bundle.plan.sourceRevision!==config.sourceRevision||
-    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:120)||bundle.plan.allowance.limitMicroUsd>1_000_000)fail('society_launch_bundle');
+    bundle.plan.ticks>20||bundle.plan.maxCalls>(bundle.plan.routine?5000:bundle.plan.competitiveGrifter?140:120)||bundle.plan.allowance.limitMicroUsd>societyPlanLimitMicroUsd(bundle.plan))fail('society_launch_bundle');
   if(digest(bundle.postcardConfig??null)!==digest(bundle.plan.postcards??null))fail('society_launch_postcard_config');
   if(digest(bundle.dailyOracleConfig??null)!==digest(bundle.plan.dailyOracle??null))fail('society_launch_daily_oracle_config');
   if(digest(bundle.routineConfig??null)!==digest(bundle.plan.routine??null))fail('society_launch_routine_config');
   const society=new Society({seed:bundle.genesis.seed,sourceRevision:config.sourceRevision,config:bundle.genesis.config,observerSecret:bundle.genesis.observerSecret,
-    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{})});
+    ...(bundle.postcardConfig?{postcards:bundle.postcardConfig}:{}),...(bundle.dailyOracleConfig?{dailyOracle:bundle.dailyOracleConfig}:{}),...(bundle.routineConfig?{routine:bundle.routineConfig}:{}),...(bundle.plan.competitiveGrifter?{competitiveGrifter:true as const}:{})});
   if(society.hash!==bundle.plan.initialHash||digest(society.exportTape().genesis)!==digest(bundle.genesis)||digest(society.controlled)!==digest(bundle.plan.controlled))fail('society_launch_genesis');
   const priorPath=join(config.priorDirectory,'accounting.journal.json'),priorBytes=file(priorPath,8*1024*1024);
   if(sha256(priorBytes)!==config.priorJournalSha256)fail('society_launch_prior_bytes');

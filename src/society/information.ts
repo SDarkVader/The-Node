@@ -8,8 +8,11 @@ import type {SocietyOracleEntryResult} from '../engine/oracleOpportunities.js';
 
 export const INHABITANT_ACTION_ORDER='All inhabitants choose from the same starting-turn world. Choices remain private until the turn resolves. Speech, Wall posts and diary use the starting position and current eligibility; movement follows. Work, food orders and optional draws are recorded for day-end settlement. Several turns make one day. Income, supply, food outcomes, Oracle outcomes, role changes, recognition credit and diary ageing settle once at the day boundary. Null declines a field for this turn; it does not complete an unfinished duty. An order and a work visit do not guarantee service, profit or occupational completion.';
 export const INHABITANT_WEALTH_RULES='Wealth is a scoreboard and pays for bread orders and the optional paid lottery. Personal role stock is capped, role-locked and non-fungible; it is not money or shop inventory. Base wages and completion rewards are settlement claims, subject to the activity multiplier, actual work, district conditions and available funding. Ordinary income tax and wealth caps, when configured, apply to Miller and Baker settlement only. A configured cap also bounds their free Oracle wealth awards; their paid lottery awards share this cap when the free daily Oracle is enabled. Other roles currently have no wealth cap. Legacy opportunity progress belongs to roleless eligibility; it is not signed civic reputation. Vacancies, churn, backstops and conscription can change roles at day end; none is an action you can grant yourself. No ticket, migration, trespass or private diary access is available in this action menu.';
+export const COMPETITIVE_INHABITANT_WEALTH_RULES=INHABITANT_WEALTH_RULES.replace(
+  'Vacancies, churn, backstops and conscription can change roles at day end; none is an action you can grant yourself.',
+  'Vacancies, churn, backstops and conscription can change roles at day end. You may claim a known open role from the legal menu; a claim is resolved in order and is not guaranteed.');
 export type OwnLotteryFeedback={day:number;status:SocietyOracleEntryResult['status'];won:boolean;prize:SocietyOracleEntryResult['prize'];prizeAmount:number;fundedBy:SocietyOracleEntryResult['fundedBy']};
-export function inhabitantInformation(state:ParticipantState,person:string,lastLottery:OwnLotteryFeedback|null){
+export function inhabitantInformation(state:ParticipantState,person:string,lastLottery:OwnLotteryFeedback|null,competitive=false){
   const resident=state.registry.people.get(person)!;
   const slot=roleArrays(state.world).flatMap(([,slots])=>slots).find(s=>s.buildingId===resident.location&&s.slot.state==='FILLED');
   const grifter=state.world.grifters.find(g=>g.id===resident.location);
@@ -19,7 +22,7 @@ export function inhabitantInformation(state:ParticipantState,person:string,lastL
   const seller=receipt?.bakerSite?state.world.lastDealings?.find(e=>e.kind==='purchase'&&e.recipient===person&&e.providerSite===receipt.bakerSite)?.provider:undefined;
   return {
     contract:'inhabitant-v1' as const,
-    actionOrder:INHABITANT_ACTION_ORDER,wealthRules:INHABITANT_WEALTH_RULES,
+    actionOrder:INHABITANT_ACTION_ORDER,wealthRules:competitive?COMPETITIVE_INHABITANT_WEALTH_RULES:INHABITANT_WEALTH_RULES,
     mechanics:{hearingRange:state.world.config.commsProximityRange,breadPerOrder:DAILY_ACTIVITY_MULTIPLIER,
       flourPerBread:FLOUR_PER_BREAD,bakeryDailyCustomerLimit:BAKER_MAX_DAILY_CUSTOMERS,
       purchaseCycleDays:state.world.config.purchaseCycleDays,activityMultiplier:DAILY_ACTIVITY_MULTIPLIER,

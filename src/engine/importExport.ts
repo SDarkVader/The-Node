@@ -154,8 +154,9 @@ export function nodulesReceivedToday(
   backstoppedCount: number,
   activityMultiplier: number,
   nodulesPerDay: number = NODULES_PER_DAY,
+  backstopFraction: number = BACKSTOPPED_NODULE_FRACTION,
 ): number {
-  const effectiveSlots = filledCount + backstoppedCount * BACKSTOPPED_NODULE_FRACTION;
+  const effectiveSlots = filledCount + backstoppedCount * backstopFraction;
   return effectiveSlots * nodulesPerDay * activityMultiplier;
 }
 
@@ -207,8 +208,9 @@ export function grainDeliveredToday(
   activityMultiplier: number,
   nodulesPerDay: number = NODULES_PER_DAY,
   grainPerNodule: number = GRAIN_PER_NODULE,
+  backstopFraction: number = BACKSTOPPED_NODULE_FRACTION,
 ): number {
-  return nodulesReceivedToday(filledCount, backstoppedCount, activityMultiplier, nodulesPerDay) * grainPerNodule;
+  return nodulesReceivedToday(filledCount, backstoppedCount, activityMultiplier, nodulesPerDay, backstopFraction) * grainPerNodule;
 }
 
 /**

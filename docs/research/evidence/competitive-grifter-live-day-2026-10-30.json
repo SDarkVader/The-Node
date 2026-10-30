@@ -1,0 +1,65 @@
+{
+  "format": "node-competitive-grifter-live-day-v1",
+  "runId": "competitive-grifter-2026-10-30T13-44-15-270Z",
+  "sourceRevision": "6c286779d9aff90212dc77d44def6cf5d38a5700",
+  "planSha256": "04d5eed533e4814791fec6613679efb3676aab1f6d04f5bc2fc364a4e2624e4b",
+  "authorization": {
+    "scope": "one supervised competitive-grifter game day",
+    "requestedDays": 1,
+    "maxCalls": 515,
+    "maxActionTurns": 128,
+    "limitMicroUsd": 20000000,
+    "perRequestMicroUsd": 32000,
+    "maxReservedExposureMicroUsd": 16480000
+  },
+  "execution": {
+    "status": "completed",
+    "completedDays": 1,
+    "actionTurns": 22,
+    "paidCalls": 75,
+    "totalDecisions": 229,
+    "controlledCalls": [22, 23, 23, 7],
+    "model": "claude-haiku-5-5",
+    "sharedSystemHashes": 1,
+    "effort": "high",
+    "thinking": {"type": "adaptive", "display": "summarized"},
+    "outputTokenCap": 16384,
+    "perceptions": 229,
+    "navigationRecords": 48,
+    "reportIntegrityIssues": 0,
+    "finalizationErrors": 0
+  },
+  "accounting": {
+    "bookedMicroUsd": "383170",
+    "heldMicroUsd": "0",
+    "overrun": false,
+    "closureReason": "completed",
+    "closedAt": "2026-10-30T13:55:14.776Z",
+    "historyHash": "69a68cada5449bae85a42cf1d76aa259f96d2b67b6f4b80d7006fc29add24e85",
+    "priorRequests": 177,
+    "priorBookedMicroUsd": "869257",
+    "priorOriginalUnchanged": true,
+    "priorSnapshotClosureReason": "stopped",
+    "rawCredentialCopyRemoved": true,
+    "billingReconciled": false
+  },
+  "verification": {
+    "freshProcessReplay": true,
+    "complete": true,
+    "finalHash": "bb77dcd72204dcf49ec5537c12612a0e4bb609eb0900cb4939513ad620fd6135",
+    "accountingResidual": 7.105427357601002e-15,
+    "societySha256": "2eacba50a5fd2db380ee98d060c40c755989162b46b7258f74f0ad9b91ea872a",
+    "eventsSha256": "0bcf2154d32acacf767f19b278dcd7fcbbdf71b485a0f93bcd15e23907b8ff62"
+  },
+  "observedDayOne": {
+    "closedResidents": 14,
+    "breadOrders": 14,
+    "breadOrderOutcomes": {"unaffordable": 14},
+    "breadSold": 0,
+    "customerPayments": 0,
+    "flourProduced": 0.42,
+    "flourConsumed": 0,
+    "civicEvents": 0
+  },
+  "interpretation": "Execution and replay evidence only; no freeform reasoning-quality evaluation or claim of adversarial emergence. No further paid day is authorized by this record."
+}

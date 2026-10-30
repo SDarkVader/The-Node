@@ -189,6 +189,7 @@ import {
 import type { PrivateStore } from '../engine/privateStore.js';
 import { emptyPersonalStock, stepPersonalStock, PERSONAL_RESOURCE_CAP } from '../engine/personalResourceStock.js';
 import { openCampaign, stepCampaign, type SabotageCampaign } from '../engine/sabotageCampaign.js';
+import { COMPETITIVE_BACKSTOP_FRACTION } from '../engine/competitiveBackstop.js';
 import {
   oracleWinProbability,
   pickPrizeType,
@@ -1176,10 +1177,10 @@ function stepCompetitiveLayer(
  * the Observatory spec names — exported standalone so it's directly testable without
  * needing to reverse-engineer it from a full `stepWorld` tick.
  */
-export function computeMillerSupply(millers: RoleEconomicSlot[]): number {
+export function computeMillerSupply(millers: RoleEconomicSlot[], backstopProductivity = BACKSTOP_PRODUCTIVITY): number {
   return millers.reduce((total, m) => {
     if (m.slot.state === 'FILLED') return total + m.value;
-    if (m.slot.state === 'BACKSTOPPED') return total + BACKSTOP_PRODUCTIVITY;
+    if (m.slot.state === 'BACKSTOPPED') return total + backstopProductivity;
     return total;
   }, 0);
 }
@@ -1235,16 +1236,20 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
     validateSocietyEconomyPlan(society);
     const filled = (slots: readonly { buildingId: string; slot: RoleSlot }[]) => new Set(slots.filter((s) => s.slot.state === 'FILLED').map((s) => s.buildingId));
     const bakerSites = filled(world.bakers);
+    const mechanicalBakerSites = new Set(society.attendanceRequired
+      ? world.bakers.filter(s=>s.slot.state==='BACKSTOPPED').map(s=>s.buildingId) : []);
     const millerSites = filled(world.millers);
     const supportSites = new Set([...filled(world.couriers), ...filled(world.investigators), ...filled(world.importExporters)]);
     const liveLocations = [...bakerSites, ...millerSites, ...supportSites, ...world.grifters.map((g) => g.id)];
     const livePeople = new Set(liveLocations.map((site) => participant ? participant.identityFor(site) : site));
     for (const site of society.bakerPrices.keys()) if (!bakerSites.has(site)) throw Error('invalid_society_baker');
     for (const site of society.millerQuantities.keys()) if (!millerSites.has(site)) throw Error('invalid_society_miller');
-    for (const site of society.working ?? []) if (!supportSites.has(site)) throw Error('invalid_society_worker');
+    for (const site of society.working ?? []) if (!supportSites.has(site) && !(society.attendanceRequired && (bakerSites.has(site)||millerSites.has(site)))) throw Error('invalid_society_worker');
+    for (const site of society.assisted ?? []) if (!supportSites.has(site) && !bakerSites.has(site) && !millerSites.has(site)) throw Error('invalid_society_assistance');
     for (const [person, seller] of society.breadChoices) {
-      if (!livePeople.has(person) || (seller !== null && !bakerSites.has(seller))) throw Error('invalid_society_customer_choice');
-      if (seller !== null && (participant ? participant.identityFor(seller) : seller) === person) throw Error('invalid_society_self_purchase');
+      if (!livePeople.has(person) || (seller !== null && !bakerSites.has(seller) && !mechanicalBakerSites.has(seller))) throw Error('invalid_society_customer_choice');
+      if (society.mechanicalChoices?.has(person) && (!society.attendanceRequired || seller===null || !(mechanicalBakerSites.has(seller)||society.assisted?.has(seller)))) throw Error('invalid_society_mechanical_choice');
+      if (seller !== null && !mechanicalBakerSites.has(seller) && (participant ? participant.identityFor(seller) : seller) === person) throw Error('invalid_society_self_purchase');
     }
   }
   const { rng, config } = world;
@@ -1254,6 +1259,14 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   const v2 = config.recognition === 'v2' ? (world.recognitionV2 ?? emptyRecognitionV2()) : undefined;
   const identityOf = (location: string): string => (participant ? participant.identityFor(location) : location);
   const sameSocietyActor = (site: string): boolean => !societyActors || societyActors.get(site) === identityOf(site);
+  // Assistance follows the occupant present when the day's plan was issued.
+  // A replacement occupant cannot inherit the prior incumbent's assistance.
+  const mechanicallyAssisted = (site:string):boolean => !!society?.attendanceRequired &&
+    society.assisted?.has(site) === true && (!societyActors || (societyActors.has(site) &&
+      participant?.locationFor(societyActors.get(site)!) === site)) && !society.working?.has(site);
+  const backstopFraction = society?.attendanceRequired ? COMPETITIVE_BACKSTOP_FRACTION : BACKSTOP_PRODUCTIVITY;
+  const occupationalAttendance = (site:string):boolean => !society?.attendanceRequired ||
+    society.working?.has(site) === true && sameSocietyActor(site);
   const dealings: DealingEvent[] = [];
   const regularsNext = v2 ? { ...v2.regulars } : undefined;
 
@@ -1698,7 +1711,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // Keep the established reaction/RNG path, then apply the inhabitant's admitted quantity.
   // Omission opts out for this day; it does not manufacture an autonomous production choice.
   if (society) millers = millers.map((m) => m.slot.state === 'FILLED'
-    ? { ...m, value: sameSocietyActor(m.buildingId) ? society.millerQuantities.get(m.buildingId) ?? 0 : 0 } : m);
+    ? { ...m, value: sameSocietyActor(m.buildingId) && occupationalAttendance(m.buildingId) ? society.millerQuantities.get(m.buildingId) ?? 0 : 0 } : m);
 
   // BACKSTOPPED millers participate mechanically, not competitively — this is the
   // specific unwired gap the spec named. See computeMillerSupply()'s doc comment.
@@ -1711,13 +1724,14 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // BACKSTOPPED Import/Export still supplies a reduced-but-real share (constraint 2 — an
   // unstaffed Import/Export squeezes the shard, it can never mill it to a dead stop).
   const ieFilled = importExporters.filter((x) => x.slot.state === 'FILLED' && (!society || society.working?.has(x.buildingId) && sameSocietyActor(x.buildingId))).length;
-  const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED').length;
-  const nodulesReceived = nodulesReceivedToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
-  const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER);
+  const ieBackstopped = importExporters.filter((x) => x.slot.state === 'BACKSTOPPED' || (x.slot.state === 'FILLED' && mechanicallyAssisted(x.buildingId))).length;
+  const nodulesReceived = nodulesReceivedToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER, undefined, society?.attendanceRequired ? COMPETITIVE_BACKSTOP_FRACTION : BACKSTOPPED_NODULE_FRACTION);
+  const grainAvailable = grainDeliveredToday(ieFilled, ieBackstopped, DAILY_ACTIVITY_MULTIPLIER, undefined, undefined, society?.attendanceRequired ? COMPETITIVE_BACKSTOP_FRACTION : BACKSTOPPED_NODULE_FRACTION);
   // The basic day (2026-08-24) — same total nodules/grain as above, now reported as two real
   // UTC-anchored window events instead of one blended daily number. See dayCycle.ts's header.
   const importExportWindows = importExportWindowEvents(nodulesReceived, grainAvailable);
-  const intendedMillerSupply = computeMillerSupply(millers);
+  const intendedMillerSupply = computeMillerSupply(millers.map(m=>mechanicallyAssisted(m.buildingId)
+    ? {...m,slot:{state:'BACKSTOPPED' as const,vacantSince:day}} : m), backstopFraction);
   const grainDemanded = intendedMillerSupply * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR;
   const grainFactor = millingCapacityFactor(grainAvailable, grainDemanded);
 
@@ -1803,18 +1817,35 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
 
   const isWorking = (buildingId: string): boolean => !society || society.working?.has(buildingId) === true && sameSocietyActor(buildingId);
   let societyMarket: SocietyMarketResult | undefined;
+  let societyMarketBakeryRows:{site:string;mechanical:boolean;price:number;available:boolean}[]=[];
+  let societyMarketBakeryPrices=new Map<string,number>();
   if (society) {
     const parties = (slots: readonly { slot: RoleSlot; buildingId: string; wealth: number }[]) => slots
       .filter((s) => s.slot.state === 'FILLED').map((s) => ({ identity: identityOf(s.buildingId), site: s.buildingId, wealth: s.wealth }));
+    const marketBakers=bakers.flatMap(b=>{
+      // A backstop honours this bakery's own last valid posted quote, including
+      // after its occupant has departed; no rival's quote is substituted.
+      const lastPrice=b.value;
+      const mechanicalPrice=Number.isFinite(lastPrice)&&lastPrice>=0&&lastPrice<=2?lastPrice:null;
+      const assisted=!!society.attendanceRequired&&b.slot.state==='FILLED'&&society.assisted?.has(b.buildingId)===true&&sameSocietyActor(b.buildingId);
+      const backstopped=!!society.attendanceRequired&&b.slot.state==='BACKSTOPPED';
+      const personal=b.slot.state==='FILLED'?[{identity:identityOf(b.buildingId),site:b.buildingId,price:b.value,
+        available:sameSocietyActor(b.buildingId)&&occupationalAttendance(b.buildingId)}]:[];
+      const mechanical=assisted||backstopped?[{identity:null,site:b.buildingId,price:mechanicalPrice??0,
+        available:mechanicalPrice!==null&&(backstopped||mechanicallyAssisted(b.buildingId)),capacityMultiplier:COMPETITIVE_BACKSTOP_FRACTION}]:[];
+      return [...personal,...mechanical];
+    });
+    societyMarketBakeryRows=marketBakers.map(b=>({site:b.site,mechanical:b.identity===null,price:b.price,available:b.available}));
+    societyMarketBakeryPrices=new Map(marketBakers.filter(b=>b.identity!==null).map(b=>[b.site,b.price]));
+    for(const b of marketBakers)if(b.identity===null&&b.available&&!societyMarketBakeryPrices.has(b.site))societyMarketBakeryPrices.set(b.site,b.price);
     societyMarket = clearSocietyMarket({ seed: world.seed, day: day + 1, eventTick: day, cycleDays: config.purchaseCycleDays,
       customers: [...parties(millers), ...parties(bakers), ...parties(couriers), ...parties(investigators), ...parties(importExporters),
         ...grifters.map((g) => ({ identity: identityOf(g.id), site: g.id, wealth: g.wealth }))],
-      bakers: bakers.filter((b) => b.slot.state === 'FILLED').map((b) => ({ identity: identityOf(b.buildingId), site: b.buildingId, price: b.value,
-        available: sameSocietyActor(b.buildingId) })),
+      bakers: marketBakers,
       flour: millers.filter((m) => m.slot.state === 'FILLED' || m.slot.state === 'BACKSTOPPED').map((m) => ({
-        identity: m.slot.state === 'FILLED' ? identityOf(m.buildingId) : null, site: m.buildingId,
-        quantity: (m.slot.state === 'FILLED' ? m.value : BACKSTOP_PRODUCTIVITY) * grainFactor * DAILY_ACTIVITY_MULTIPLIER })),
-      choices: society.breadChoices });
+        identity: m.slot.state === 'FILLED' && !mechanicallyAssisted(m.buildingId) ? identityOf(m.buildingId) : null, site: m.buildingId,
+        quantity: (m.slot.state === 'FILLED' && !mechanicallyAssisted(m.buildingId) ? m.value : backstopFraction) * grainFactor * DAILY_ACTIVITY_MULTIPLIER })),
+      choices: society.breadChoices, ...(society.mechanicalChoices?{mechanicalChoices:society.mechanicalChoices}:{}) });
     dealings.push(...societyMarket.purchaseEvents);
     const debit = <T extends { wealth: number }>(s: T, site: string): T => ({ ...s,
       wealth: s.wealth - (societyMarket!.customerDebits.get(identityOf(site)) ?? 0) });
@@ -1831,7 +1862,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   }
 
   const millerIncomes = millers.map((m) =>
-    m.slot.state === 'FILLED'
+    m.slot.state === 'FILLED' && !mechanicallyAssisted(m.buildingId)
       ? (societyMarket
         ? millerDailyIncome(societyMarket.millerSold.get(m.buildingId) ?? 0, flourPriceValue)
         : millerDailyIncome(m.value * grainFactor, flourPriceValue) * DAILY_ACTIVITY_MULTIPLIER) * frictionFor(m.buildingId)
@@ -1851,11 +1882,11 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // purchase cycle and buys from a regular Baker (kept, or redrawn by the same inverse-price
   // weights). Served counts replace the fractional split; income and bread use them unchanged.
   if (societyMarket) {
-    servedCustomers = societyMarket.served;
+    servedCustomers = bakerFilledForDemand.map(i=>societyMarket!.served[societyMarketBakeryRows.findIndex(row=>row.site===bakers[i]!.buildingId&&!row.mechanical)]??0);
     if (regularsNext) {
       const regularBakers = new Map(regularsNext.baker);
       for (const receipt of societyMarket.receipts) {
-        if (receipt.outcome === 'served' && receipt.bakerSite !== null) regularBakers.set(receipt.customer, identityOf(receipt.bakerSite));
+        if (receipt.outcome === 'served' && receipt.bakerSite !== null && !society?.mechanicalChoices?.has(receipt.customer)) regularBakers.set(receipt.customer, identityOf(receipt.bakerSite));
       }
       regularsNext.baker = regularBakers;
     }
@@ -1875,7 +1906,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   }
   const bakerIncomes = bakers.map((b, i) => {
     const pos = bakerFilledForDemand.indexOf(i);
-    if (pos < 0) return 0;
+    if (pos < 0 || !occupationalAttendance(b.buildingId)) return 0;
     return bakerDailyIncome(b.value, flourPriceValue, servedCustomers[pos]!) * DAILY_ACTIVITY_MULTIPLIER * frictionFor(b.buildingId);
   });
 
@@ -1896,10 +1927,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   const millerCompleted = millers.map((m, i) => {
     if (m.slot.state !== 'FILLED') return false;
     resetCompletionIfJustFilled(m.buildingId, millerJustFilled);
-    const completed = societyMarket
+    const completed = societyMarket && !mechanicallyAssisted(m.buildingId)
       ? (societyMarket.millerSold.get(m.buildingId) ?? 0) > 0 && (millerValuesForCompletion.length < 2
         ? m.value > 0 : millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i)))
-      : millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i));
+      : societyMarket ? false : millerTaskCompleted(m.value, averageRivalValue(millerValuesForCompletion, i));
     completionStatsWorking[m.buildingId] = recordAttempt(completionStatsWorking[m.buildingId] ?? emptyCompletionStats(), completed);
     return completed;
   });
@@ -1907,7 +1938,7 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   const bakerCompleted = bakers.map((b, i) => {
     if (b.slot.state !== 'FILLED') return false;
     resetCompletionIfJustFilled(b.buildingId, bakerJustFilled);
-    const completed = bakerTaskCompleted(b.value, averageRivalValue(bakerValuesForCompletion, i)) &&
+    const completed = occupationalAttendance(b.buildingId) && bakerTaskCompleted(b.value, averageRivalValue(bakerValuesForCompletion, i)) &&
       (!societyMarket || servedCustomers[bakerFilledForDemand.indexOf(i)]! > 0);
     completionStatsWorking[b.buildingId] = recordAttempt(completionStatsWorking[b.buildingId] ?? emptyCompletionStats(), completed);
     return completed;
@@ -2161,7 +2192,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
   // trade-route friction, so a Courier in a declining district really does move fewer
   // parcels, the same consequence their income already takes. See engine/resources.ts.
   const supportFriction = (arr: SupportRoleSlot[]) =>
-    arr.filter((s2) => s2.slot.state === 'FILLED' && isWorking(s2.buildingId)).map((s2) => frictionFor(s2.buildingId));
+    arr.flatMap((s2) => s2.slot.state === 'FILLED' && isWorking(s2.buildingId)
+      ? [frictionFor(s2.buildingId)]
+      : society?.attendanceRequired && (s2.slot.state === 'BACKSTOPPED' || mechanicallyAssisted(s2.buildingId))
+        ? [COMPETITIVE_BACKSTOP_FRACTION * frictionFor(s2.buildingId)] : []);
   // v2: attribute the flows recorded just below to real counterparties (see engine/dealings.ts).
   if (v2 && regularsNext) {
     const flour = societyMarket ? { events: societyMarket.flourEvents, regulars: new Map(v2.regulars.miller) } : attributeSupply(world.seed, day, 'flourSupply',
@@ -2173,10 +2207,10 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
       v2.regulars.miller);
     const grainRecipients = millers.filter((m) => m.slot.state === 'FILLED').map((m) => ({ identity: identityOf(m.buildingId), site: m.buildingId,
       quantity: m.value * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR }));
-    const grainProviders = importExporters.filter((x) => (x.slot.state === 'FILLED' && isWorking(x.buildingId)) || x.slot.state === 'BACKSTOPPED');
+    const grainProviders = importExporters.filter((x) => (x.slot.state === 'FILLED' && (isWorking(x.buildingId)||mechanicallyAssisted(x.buildingId))) || x.slot.state === 'BACKSTOPPED');
     const grain = society ? { events: allocateSocietySupply(day, 'grainSupply', grainRecipients,
-      grainProviders.map((x) => ({ identity: x.slot.state === 'FILLED' ? identityOf(x.buildingId) : null, site: x.buildingId,
-        quantity: grainDeliveredToday(x.slot.state === 'FILLED' ? 1 : 0, x.slot.state === 'BACKSTOPPED' ? 1 : 0, DAILY_ACTIVITY_MULTIPLIER) }))),
+      grainProviders.map((x) => ({ identity: x.slot.state === 'FILLED' && !mechanicallyAssisted(x.buildingId) ? identityOf(x.buildingId) : null, site: x.buildingId,
+        quantity: grainDeliveredToday(x.slot.state === 'FILLED' && !mechanicallyAssisted(x.buildingId) ? 1 : 0, x.slot.state === 'BACKSTOPPED' || mechanicallyAssisted(x.buildingId) ? 1 : 0, DAILY_ACTIVITY_MULTIPLIER, undefined, undefined, society?.attendanceRequired ? COMPETITIVE_BACKSTOP_FRACTION : BACKSTOPPED_NODULE_FRACTION) }))),
       regulars: new Map(v2.regulars.importExport) } : attributeSupply(world.seed, day, 'grainSupply',
       millers.filter((m) => m.slot.state === 'FILLED').map((m) => ({ identity: identityOf(m.buildingId), site: m.buildingId,
         quantity: m.value * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR })),
@@ -2185,8 +2219,13 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
         : { identity: null, site: x.buildingId, weight: BACKSTOPPED_NODULE_FRACTION }),
       v2.regulars.importExport);
     const deliveries = attributeDeliveries(world.seed, day, flour.events,
-      couriers.filter((c) => c.slot.state === 'FILLED' && isWorking(c.buildingId)).map((c) => ({ identity: identityOf(c.buildingId), site: c.buildingId,
-        weight: frictionFor(c.buildingId), parcels: frictionFor(c.buildingId) * PARCELS_PER_COURIER_DAY * DAILY_ACTIVITY_MULTIPLIER })),
+      couriers.filter((c) => c.slot.state === 'FILLED' && isWorking(c.buildingId) ||
+        society?.attendanceRequired && (c.slot.state === 'BACKSTOPPED' || mechanicallyAssisted(c.buildingId))).map((c) => {
+        const mechanical=c.slot.state==='BACKSTOPPED'||mechanicallyAssisted(c.buildingId);
+        const rate=frictionFor(c.buildingId)*(mechanical?COMPETITIVE_BACKSTOP_FRACTION:1);
+        return {identity:mechanical?null:identityOf(c.buildingId),site:c.buildingId,
+          weight:rate,parcels:rate*PARCELS_PER_COURIER_DAY*DAILY_ACTIVITY_MULTIPLIER};
+      }),
       v2.regulars.courier);
     dealings.push(...flour.events, ...grain.events, ...deliveries.events);
     regularsNext.miller = flour.regulars;
@@ -2197,8 +2236,8 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
     world.resources,
     stepResourceFlows(
       millers.filter((m) => m.slot.state === 'FILLED' || (society && m.slot.state === 'BACKSTOPPED'))
-        .map((m) => (m.slot.state === 'FILLED' ? m.value : BACKSTOP_PRODUCTIVITY) * grainFactor),
-      servedCustomers,
+        .map((m) => (m.slot.state === 'FILLED' && !mechanicallyAssisted(m.buildingId) ? m.value : backstopFraction) * grainFactor),
+      societyMarket ? societyMarket.served : servedCustomers,
       supportFriction(couriers),
       supportFriction(investigators),
       DAILY_ACTIVITY_MULTIPLIER,
@@ -2919,11 +2958,14 @@ export function stepWorld(world: World, participant?: ParticipantHooks, society?
     lastSabotageCampaignEvents: sabotageEvents,
     ...(society && societyMarket ? { societyEconomy: {
       day: day + 1,
-      prices: Object.fromEntries(bakers.filter((b) => b.slot.state === 'FILLED').map((b) => [b.buildingId, b.value])),
+      prices: Object.fromEntries(societyMarketBakeryPrices),
+      ...(society.attendanceRequired?{mechanicalPrices:Object.fromEntries(societyMarketBakeryRows.filter(row=>row.mechanical&&row.available).map(row=>[row.site,row.price]))}:{}),
+      ...(society.attendanceRequired?{mechanicalFlourSupplies:societyMarket.mechanicalFlourSupplies}:{}),
       quantities: Object.fromEntries(millers.filter((m) => m.slot.state === 'FILLED').map((m) => [m.buildingId, m.value])),
       receipts: societyMarket.receipts,
       flourSold: Object.fromEntries(societyMarket.millerSold),
-      breadSold: Object.fromEntries(bakerFilledForDemand.map((i, pos) => [bakers[i]!.buildingId, societyMarket!.served[pos]! * DAILY_ACTIVITY_MULTIPLIER])),
+      breadSold: Object.fromEntries(bakers.filter(b=>societyMarketBakeryRows.some(row=>row.site===b.buildingId)).map(b=>[b.buildingId,
+        societyMarketBakeryRows.reduce((sum,row,pos)=>sum+(row.site===b.buildingId?societyMarket!.served[pos]!:0),0)*DAILY_ACTIVITY_MULTIPLIER])),
       grainAvailable,
       grainConsumed: intendedMillerSupply * grainFactor * DAILY_ACTIVITY_MULTIPLIER * GRAIN_PER_FLOUR,
       flourProduced: millerSupply * DAILY_ACTIVITY_MULTIPLIER,

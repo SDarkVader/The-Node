@@ -1,0 +1,49 @@
+{
+  "format": "node-competitive-grifter-stopped-run-v1",
+  "date": "2026-10-30",
+  "sourceRevision": "4b57c0611fedb5e3cc1bf6fd3d85209be57c852c",
+  "planSha256": "9e17bfbb8952d9861777ef02e0aeea9b0618162b6a75911479a9eaa78a2c549c",
+  "runId": "competitive-grifter-3day-20261030-142221",
+  "plan": {
+    "requestedDays": 3,
+    "maxCalls": 1545,
+    "maxActionTurnsPerDay": 128,
+    "perRequestReservationMicroUsd": 32000,
+    "allowanceLimitMicroUsd": 25000000,
+    "maximumTheoreticalReservedExposureMicroUsd": 49440000,
+    "controlledRoles": ["Miller", "Baker", "Baker", "Grifter"]
+  },
+  "operatorAction": "Manually stopped the Observatory run after observing two completed days.",
+  "execution": {
+    "status": "stopped",
+    "completedDays": 2,
+    "completedDailyTransitions": 2,
+    "totalDecisions": 800,
+    "paidCalls": 294,
+    "responsesAvailable": 294,
+    "admittedCalls": 294,
+    "runnerStopReason": "society_stale_perception",
+    "finalTick": 2,
+    "plannedDaysCompleted": false,
+    "freshProcessReplayVerified": true,
+    "replayComplete": false,
+    "replayTicks": 2,
+    "finalHash": "42697edf57c9476c1711f9c4aa3a0901029e536a4060bdff880f78a5491ce758",
+    "reportIntegrityIssues": 0,
+    "finalizationErrors": 0
+  },
+  "accounting": {
+    "bookedMicroUsd": "1553744",
+    "heldMicroUsd": "0",
+    "overrun": false,
+    "closureReason": "stopped",
+    "closedAt": "2026-10-30T18:47:03.376Z",
+    "billingReconciled": false
+  },
+  "evidenceHashes": {
+    "societyTapeSha256": "086112f092e9964af6dec42a5df02118ef7ed4ec0e1f88d6e556cda5292c8518",
+    "eventsJsonlSha256": "54ce70d1f59f66e76db6934f43f338bae67c3ce734803b5196bcbad1bff8fafd"
+  },
+  "interpretation": "Execution, accounting and replay facts only. The manual stop after day two means this is an incomplete three-day run. The recorded runner stop reason is retained as a separate fact and is not interpreted as an autonomous simulation stop. No behavioral grade, causal claim, or adversarial-emergence conclusion is made.",
+  "privateRawRequestsResponsesAndAccountingIncluded": false
+}

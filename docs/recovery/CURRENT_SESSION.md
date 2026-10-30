@@ -1,5 +1,11 @@
 # Current Society daily implementation checkpoint
 
+2026-10-30 competitive-grifter three-day plan was launched from PowerShell/Observatory and manually stopped by the owner after two completed days. Source `4b57c0611fedb5e3cc1bf6fd3d85209be57c852c`, plan `9e17bfbb8952d9861777ef02e0aeea9b0618162b6a75911479a9eaa78a2c549c`. The tape has 294 paid calls/responses/admissions, 800 decisions and two completed transitions; fresh-process replay verifies the incomplete prefix with zero report issues. USD 1.553744 booked, zero held, no overrun, allowance closed as stopped under the USD 25 cap. Runner shutdown reason `society_stale_perception` is recorded without contradicting the owner's manual stop. Billing not reconciled. Raw request/response traces and accounting remain private. [Sanitized run evidence](../research/evidence/competitive-grifter-three-day-stopped-2026-10-30.json).
+
+2026-10-30 supervised competitive-grifter day completed on source `6c286779d9aff90212dc77d44def6cf5d38a5700`: 75 actual model calls, 229 total decisions, 22 action turns and one completed day. All requests share the same system hash and high-effort adaptive-summary settings; fresh-process replay reproduces the final hash with zero report issues. Budget: USD 20 ceiling, USD 16.48 maximum reserved exposure, USD 0.383170 booked, zero held, allowance closed. The latest 177-call prior history was carried using a preserved snapshot, with a closure appended only to that snapshot; original journal bytes stayed unchanged. New latest journal is registered in private PC settings; temporary key removed. Day one recorded 14 unaffordable bread orders and zero civic events, so it does not establish intervention or takeover behavior. This one-day authorization is consumed. [Sanitized evidence](../research/evidence/competitive-grifter-live-day-2026-10-30.json).
+
+2026-10-30 competitive-society trial on `codex/competitive-grifter-stopped-run-2026-10-30`, based on main `ea5bbc389a3c02c35b2026148daf771c5a0c3e63`: opt-in fourth controlled inhabitant and shared reputation-primary instructions. PR #60 scoring receives verified achievements and completed workless-day events, with a positive trial baseline. A zero crossing starts three completed days of intervention, then eviction if standing has not recovered; known open roles can be claimed in action order. Competitive mechanical backstops supply 60% role-specific output with anonymous attribution; the Bakery uses its own last valid posted price, subject to actual flour and whole-order capacity. The supervised three-day plan was manually stopped after two completed days; see the run record above. [Scope](../research/COMPETITIVE_REPUTATION_WIP_2026-10-30.md).
+
 2026-10-28 PR #58 merged into `main` at `4f53980` after both offline-conformance
 checks and the Windows offline-verification rerun passed on final head `d8fbc24`.
 The reviewed implementation passed 1,993 local Windows tests across 158 files
@@ -196,7 +202,7 @@ not a claim that every mechanic is complete.
   "format": "the-node-git-session-checkpoint",
   "version": 1,
   "branch": "main",
-  "verifiedBaseCommit": "c48846f21cb3558aa1b27a07b0448add04bd8896",
+  "verifiedBaseCommit": "ea5bbc389a3c02c35b2026148daf771c5a0c3e63",
   "completedWork": [
     "PR58 merged into main at4f539801a56c20ce412ff83f292a2a499340bb82 after finalhead d8fbc2494527e902468660bbf3d2f901550f58a2 passed two offline-conformance checks and the Windows offline-verification rerun. Local source6146265 full nativeGodot suite1993passed/158files/1platformskip, TypeScript and8recoverytests; native six-step nonadjacent arrival/work proof. Review fixed Windows worker cleanup and aligned parent dispatch timeout to plan deadline plus5seconds;49focused nativeGodot tests and TypeScript passed after timeout fix. No paid experiment started for review or merge. PR56 remains draft.",
     "Actual headroom run at30d9527 completed all18HTTP200/end_turn/model admissions/nonempty summaries,6decisions percontrolledinhabitant.73total decisions/6controlled trips33legalsteps. Actual nonadjacent nativeGodot6step trip→arrival firstperson workpermission→workScheduled→followingtaskconfirmed. All18exactsource/private-state noninterference checks, partialreplay, worldchannelprivacy and browser historicalGodot/trace inspection pass,0reportissues/no observedleakage/outsidegame. Expected five-turnstop leaves0completeddays. Booked85607microUSD/held0/closed/carried; all4attempt conservative exposure158947<400000. Previous journals unchanged/keycopyremoved/pendingnull/settingslockreleased. Rawthree6-decision traces and screenshots retained privately; no additional paid approval remains.",
@@ -294,6 +300,6 @@ not a claim that every mechanic is complete.
     "Future civic/multidistrict/A04 mechanics and reasoning-quality evaluation remain separate further work; integrity verification does not grade reasoning."
   ],
   "privateCredentialsOrExperimentalInputsIncluded": false,
-  "reviewBranch": "codex/pr58-merge-handover-2026-10-28"
+  "reviewBranch": "codex/competitive-grifter-stopped-run-2026-10-30"
 }
 NODE_SESSION_CHECKPOINT -->

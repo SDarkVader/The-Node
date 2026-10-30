@@ -8,6 +8,7 @@ import {HOUSING_RESIDENTS_PER_FLOOR} from '../engine/space.js';
 import type {ParticipantHooks} from '../engine/inhabitants.js';
 import type {SocietyAction,SocietyRoutineObservation} from './boundary.js';
 import type {WallPost} from '../comms/grammar.js';
+import {mechanicalShopRef} from './mechanicalShop.js';
 
 export interface SocietyRoutineConfig {maxTurnsPerDay:number;information?:'inhabitant-v1';navigation?:'dual-v1'}
 export function validateSocietyRoutineConfig(value:unknown):asserts value is SocietyRoutineConfig {
@@ -108,22 +109,24 @@ export class SocietyRoutineBook {
         closed:false,postcardsUsed:false,dailyOracleUsed:false,lotteryUsed:false,action:emptyAction(),foodResult:'pending'});
     }
   }
-  observation(state:ParticipantState,person:string,phase:'commit'|'act'):SocietyRoutineObservation {
+  observation(state:ParticipantState,person:string,phase:'commit'|'act',allowFinishWithoutWork=false,assistedBakeries:readonly string[]=[]):SocietyRoutineObservation {
     const row=this.#people.get(person);if(!row)throw Error('society_routine_person');
     const p=state.registry.people.get(person)!,own=personBody(state,p),home=this.#homes.get(person)!;
     const buildings=state.world.shard.districts.flatMap(d=>d.buildings),workplace=buildings.find(b=>b.id===own.workplace);
     const hub=state.world.shard.hubPlot;
-    const bakeries=state.world.bakers.map(b=>{
+    const bakeries=state.world.bakers.flatMap(b=>{
       const place=buildings.find(q=>q.id===b.buildingId)!;
       const inhabitant=b.slot.state==='FILLED'?state.registry.locations.get(b.buildingId):undefined;
-      return {buildingId:b.buildingId,x:place.x,y:place.y,sellerRef:inhabitant?this.#ref(state,person,inhabitant):null};
+      const mechanical=allowFinishWithoutWork&&b.buildingId!==own.workplace&&(b.slot.state==='BACKSTOPPED'||assistedBakeries.includes(b.buildingId))&&Number.isFinite(b.value)&&b.value>=0&&b.value<=2;
+      const personal={buildingId:b.buildingId,x:place.x,y:place.y,sellerRef:inhabitant?this.#ref(state,person,inhabitant):null};
+      return mechanical?[...(inhabitant?[personal]:[]),{...personal,sellerRef:mechanicalShopRef(state,person,b.buildingId)}]:[personal];
     });
     const customers=[...(this.#customers.get(person)??[])].filter(customer=>!this.#contacts.has(`${person}>${customer}`)).map(id=>this.#ref(state,person,id));
     const order=row.action.purchase,sellerRef=order&&'seller' in order?order.seller:null;
     const seller=sellerRef?[...state.registry.people.values()].find(p=>p.location!==null&&this.#ref(state,person,p.id)===sellerRef):undefined;
     const awaitingSeller=seller&&!this.#contacts.has(`${seller.id}>${person}`)?sellerRef:null;
     const allFood=[...this.#people.values()].every(p=>p.tasks.food);
-    const finish=Object.values(row.tasks).every(Boolean)&&customers.length===0&&awaitingSeller===null&&(p.role===null||allFood);
+    const finish=Object.entries(row.tasks).every(([task,done])=>done||allowFinishWithoutWork&&task==='work')&&customers.length===0&&awaitingSeller===null&&(p.role===null||allFood);
     const active=phase==='act'&&!row.closed;
     return {turn:phase==='commit'?0:this.#turn,maxTurnsPerDay:this.config.maxTurnsPerDay,
       home:{buildingId:home.buildingId,x:home.x,y:home.y,floor:home.floor},
@@ -136,7 +139,7 @@ export class SocietyRoutineBook {
       postcardsUsed:row.postcardsUsed,dailyOracleUsed:row.dailyOracleUsed,lotteryUsed:row.lotteryUsed};
   }
   /** Update only proven effects and admitted attempts; no substitute action or content. */
-  acceptTurn(previous:ParticipantState,next:ParticipantState,actions:ReadonlyMap<string,SocietyAction>,result:ParticipantTurnResult):void {
+  acceptTurn(previous:ParticipantState,next:ParticipantState,actions:ReadonlyMap<string,SocietyAction>,result:ParticipantTurnResult,retainAllWork=false):void {
     const dutyEffects:ParticipantTurnResult['effects']=[];
     for(const address of result.addresses){
       this.#contacts.add(`${address.speaker}>${address.listener}`);
@@ -146,15 +149,16 @@ export class SocietyRoutineBook {
       const row=this.#people.get(person)!;
       if(a.communication?.kind==='wallPost')row.tasks.wall=true;
       if(result.social.diaryWrites.includes(person))row.tasks.diary=true;
-      if(a.occupation?.kind==='work'){row.tasks.work=true;dutyEffects.push({person,category:'workScheduled'});if(previous.registry.people.get(person)!.role!==null&&['courier','investigator','importExport'].includes(previous.registry.people.get(person)!.role!))row.action.occupation={kind:'work'};}
+      if(a.occupation?.kind==='work'){row.tasks.work=true;dutyEffects.push({person,category:'workScheduled'});if(previous.registry.people.get(person)!.role!==null&&(retainAllWork||['courier','investigator','importExport'].includes(previous.registry.people.get(person)!.role!)))row.action.occupation={kind:'work'};}
       if(a.purchase){
         row.tasks.food=true;row.action.purchase=structuredClone(a.purchase);dutyEffects.push({person,category:'seller' in a.purchase?'foodOrder':'failedFoodAttempt'});
         if('seller' in a.purchase){
           row.foodResult='ordered';
           const sellerRef=a.purchase.seller;
           const seller=[...previous.registry.people.values()].find(p=>p.location!==null&&this.#ref(previous,person,p.id)===sellerRef);
-          if(!seller)throw Error('society_routine_seller');
-          const customers=this.#customers.get(seller.id)??new Set<string>();customers.add(person);this.#customers.set(seller.id,customers);
+          const mechanical=retainAllWork&&previous.world.bakers.some(b=>mechanicalShopRef(previous,person,b.buildingId)===sellerRef);
+          if(!seller&&!mechanical)throw Error('society_routine_seller');
+          if(seller){const customers=this.#customers.get(seller.id)??new Set<string>();customers.add(person);this.#customers.set(seller.id,customers);}
         }else row.foodResult='noBakery';
       }
       if(a.postcards){row.postcardsUsed=true;row.action.postcards=structuredClone(a.postcards);}
